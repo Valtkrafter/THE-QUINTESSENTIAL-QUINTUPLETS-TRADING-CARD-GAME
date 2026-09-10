@@ -16,8 +16,8 @@ import {
   OpenPackResult,
   PackId,
   PityCounters,
-} from '../types/card.js';
-import { CARD_MAP } from '../config/cardsData.js';
+} from '../types/card';
+import { CARD_MAP } from '../config/cardsData';
 import {
   analyzeBinderPage,
   calculateAccruedIdleEarnings,
@@ -27,7 +27,7 @@ import {
   PACKS_CONFIG,
   rollGrading,
   rollPackDrops,
-} from '../config/economy.js';
+} from '../config/economy';
 
 export interface GameStats {
   totalPacksOpened: number;

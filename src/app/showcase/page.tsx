@@ -9,11 +9,11 @@ import {
   Rarity,
   CardInstance,
   PackId,
-} from '../../types/card.js';
+} from '../../types/card';
 import {
   CARDS_CATALOG,
   getCardsByCharacter,
-} from '../../config/cardsData.js';
+} from '../../config/cardsData';
 import {
   calculateRawCardValue,
   calculateCardMarketValue,
@@ -21,8 +21,8 @@ import {
   GRADE_TIER_CONFIG,
   RARITY_BASE_VALUES,
   PACKS_CONFIG,
-} from '../../config/economy.js';
-import { useGameStore } from '../../store/useGameStore.js';
+} from '../../config/economy';
+import { useGameStore } from '../../store/useGameStore';
 import { CardRenderer, CHARACTER_THEMES, FINISH_LABELS } from '../../components/card/CardRenderer';
 import { GradingSlab } from '../../components/card/GradingSlab';
 import { BoosterPack3D, PACK_THEMES } from '../../components/pack/BoosterPack3D';
@@ -103,6 +103,9 @@ export default function ShowcasePage() {
       finish: selectedFinish,
       obtainedAt: Date.now(),
       grade: activeMockGrade,
+      imageUrl: activeCardDef.imageUrl,
+      name: activeCardDef.name,
+      title: activeCardDef.title,
     };
   }, [activeCardDef, selectedFinish, activeMockGrade]);
 

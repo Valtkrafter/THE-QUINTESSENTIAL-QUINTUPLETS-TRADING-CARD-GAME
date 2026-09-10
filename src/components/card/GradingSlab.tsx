@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useRef, useState, useCallback } from 'react';
-import { CardInstance, GradeResult, GradeTier } from '../../types/card.js';
-import { CARD_MAP, getCardDef } from '../../config/cardsData.js';
+import { CardInstance, GradeResult, GradeTier } from '../../types/card';
+import { CARD_MAP, getCardDef } from '../../config/cardsData';
 import { CardRenderer } from './CardRenderer';
 
 export interface GradingSlabProps {

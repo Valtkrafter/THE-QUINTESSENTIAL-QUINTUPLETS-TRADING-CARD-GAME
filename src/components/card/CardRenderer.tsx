@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useRef, useState, useCallback } from 'react';
-import { CardInstance, CharacterId, Finish, Rarity } from '../../types/card.js';
-import { CARD_MAP, getCardDef } from '../../config/cardsData.js';
-import { calculateCardMarketValue } from '../../config/economy.js';
+import React, { useRef, useState, useCallback, useMemo, useEffect } from 'react';
+import { CardDefinition, CardInstance, CharacterId, Finish, Rarity } from '../../types/card';
+import { CARD_MAP, getCardDef } from '../../config/cardsData';
+import { calculateCardMarketValue } from '../../config/economy';
 
 export interface CardRendererProps {
-  card: CardInstance;
+  card: CardInstance | (CardDefinition & Partial<CardInstance>);
   interactive?: boolean;
   size?: 'sm' | 'md' | 'lg';
   className?: string;
@@ -187,11 +187,51 @@ export const CardRenderer: React.FC<CardRendererProps> = ({
 }) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const [isHovered, setIsHovered] = useState(false);
+  const [hasImageError, setHasImageError] = useState(false);
 
-  const cardDef = getCardDef(card.cardDefId) ?? CARD_MAP['miku_c_01'];
-  const theme = CHARACTER_THEMES[card.characterId] ?? CHARACTER_THEMES.miku;
-  const rarityBadge = RARITY_BADGES[card.rarity] ?? RARITY_BADGES.C;
-  const marketValue = calculateCardMarketValue(card);
+  // Safely resolve the card definition
+  const cardDefId =
+    ('cardDefId' in card ? card.cardDefId : undefined) ??
+    ('id' in card ? card.id : undefined);
+  const cardDef = (cardDefId ? getCardDef(cardDefId) : undefined) ?? CARD_MAP['miku_c_01'];
+
+  // Resolve raw image URL from card or cardDef (handling both imageUrl and image keys)
+  const rawImageUrl =
+    card.imageUrl ??
+    (card as any).image ??
+    cardDef?.imageUrl ??
+    (cardDef as any)?.image;
+
+  // Resolve metadata
+  const characterId: CharacterId = card.characterId ?? cardDef?.characterId ?? 'miku';
+  const rarity: Rarity = card.rarity ?? cardDef?.rarity ?? 'C';
+  const finish: Finish = card.finish ?? 'raw';
+  const theme = CHARACTER_THEMES[characterId] ?? CHARACTER_THEMES.miku;
+  const rarityBadge = RARITY_BADGES[rarity] ?? RARITY_BADGES.C;
+  const marketValue = calculateCardMarketValue(
+    'finish' in card ? (card as CardInstance) : { ...cardDef, finish, obtainedAt: 0, cardDefId: cardDef.id }
+  );
+
+  const cardName = card.name ?? (card as any).name ?? cardDef?.name ?? theme.name;
+  const cardTitle = card.title ?? (card as any).title ?? cardDef?.title ?? cardDef?.name ?? 'Collector Card';
+  const cardLoreQuote = (card as any).loreQuote ?? cardDef?.loreQuote ?? '';
+  const cardNumber = (card as any).cardNumber ?? cardDef?.cardNumber ?? 'TQQ-000';
+  const characterRole = (card as any).characterRole ?? cardDef?.characterRole ?? 'sister';
+
+  // Encode URI to safely handle paths with spaces (e.g. /cards/Ichika/Ichika Tier four.jpg)
+  const cleanImageUrl = useMemo(() => {
+    if (!rawImageUrl) return '';
+    try {
+      return encodeURI(decodeURI(rawImageUrl));
+    } catch {
+      return encodeURI(rawImageUrl);
+    }
+  }, [rawImageUrl]);
+
+  // Reset image error state whenever image source changes
+  useEffect(() => {
+    setHasImageError(false);
+  }, [cleanImageUrl]);
 
   // Pointer tilt physics calculation
   const handlePointerMove = useCallback(
@@ -256,15 +296,17 @@ export const CardRenderer: React.FC<CardRendererProps> = ({
         onPointerLeave={handlePointerLeave}
         style={{
           transform: 'rotateX(var(--rot-x, 0deg)) rotateY(var(--rot-y, 0deg))',
+          backfaceVisibility: 'visible',
+          WebkitBackfaceVisibility: 'visible',
           boxShadow: isHovered
             ? `0 20px 40px -10px rgba(0, 0, 0, 0.8), 0 0 25px ${theme.glowColor}`
             : '0 10px 25px -5px rgba(0, 0, 0, 0.6), 0 0 10px rgba(0, 0, 0, 0.4)',
         }}
-        className={`card-3d-root relative ${sizeClasses} rounded-xl overflow-hidden cursor-pointer bg-zinc-950 border border-zinc-800 ${
+        className={`card-3d-root relative ${sizeClasses} aspect-[63/88] rounded-xl overflow-hidden cursor-pointer bg-zinc-950 border border-zinc-800 ${
           isHovered ? 'is-interacting' : ''
         }`}
       >
-        {/* Ambient Character Rim Glow */}
+        {/* Ambient Character Rim Glow (z-10) */}
         <div
           className="absolute inset-0 rounded-xl pointer-events-none transition-opacity duration-300 z-10"
           style={{
@@ -273,22 +315,20 @@ export const CardRenderer: React.FC<CardRendererProps> = ({
           }}
         />
 
-        {/* Outer Card Matte Border */}
+        {/* Outer Card Matte Border (z-20) */}
         <div className="absolute inset-[3px] rounded-[10px] bg-gradient-to-b from-zinc-900 to-black p-2 flex flex-col justify-between overflow-hidden z-20">
-          
-          {/* HEADER: Title & Rarity & Symbol */}
-          <div className="flex items-center justify-between gap-1 pb-1 border-b border-zinc-800/80 z-30">
+          {/* HEADER: Title & Rarity & Symbol (z-30) */}
+          <div className="relative flex items-center justify-between gap-1 pb-1 border-b border-zinc-800/80 z-30">
             <div className="flex items-center gap-1.5 min-w-0">
               <span className="text-xs" title={theme.name}>
                 {theme.symbol}
               </span>
               <h3 className="font-bold tracking-tight truncate text-zinc-100 text-xs sm:text-sm drop-shadow">
-                {cardDef.title}
+                {cardTitle}
               </h3>
             </div>
 
             <div className="flex items-center gap-1 shrink-0">
-              {/* Rarity Emblem */}
               <span
                 className={`px-1.5 py-0.5 rounded text-[10px] font-extrabold border ${rarityBadge.bgClass} ${rarityBadge.textClass} ${rarityBadge.borderClass}`}
               >
@@ -297,70 +337,105 @@ export const CardRenderer: React.FC<CardRendererProps> = ({
             </div>
           </div>
 
-          {/* MAIN ARTWORK FRAME */}
-          <div className="relative flex-1 my-1.5 rounded-lg overflow-hidden border border-zinc-700/60 bg-gradient-to-br from-zinc-900 via-zinc-950 to-black flex flex-col justify-between items-center group">
-            
-            {/* Thematic Character Backdrop */}
-            <div
-              className={`absolute inset-0 bg-gradient-to-b ${theme.bgGradient} opacity-75`}
-            />
-
-            {/* Geometric Hologram Grid Pattern */}
-            <div
-              className="absolute inset-0 opacity-15"
-              style={{
-                backgroundImage: `radial-gradient(${theme.accent} 1px, transparent 1px)`,
-                backgroundSize: '16px 16px',
-              }}
-            />
-
-            {/* Illustration Image or Archetype Emblem */}
-            {cardDef.imageUrl ? (
-              <img
-                src={cardDef.imageUrl}
-                alt={`${cardDef.name} - ${cardDef.title}`}
-                className="absolute inset-0 w-full h-full object-cover z-10 transition-transform duration-500 group-hover:scale-105"
-                loading="lazy"
+          {/* MAIN ARTWORK FRAME (z-10) */}
+          <div className="relative flex-1 w-full my-1 rounded-lg overflow-hidden border border-zinc-700/60 bg-black/40 z-10 flex flex-col justify-between items-center group">
+            {/* BASE ARTWORK & FALLBACK LAYER (z-0) */}
+            <div className="absolute inset-0 w-full h-full overflow-hidden rounded-lg bg-black/40 z-0">
+              {/* Thematic Character Backdrop Gradient */}
+              <div
+                className={`absolute inset-0 bg-gradient-to-b ${theme.bgGradient} opacity-60 pointer-events-none`}
               />
-            ) : (
-              <div className="relative z-10 flex flex-col items-center justify-center p-3 text-center my-auto">
-                <div
-                  className="w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center mb-2 shadow-inner border border-white/20 transition-transform duration-300 group-hover:scale-105"
-                  style={{
-                    background: `radial-gradient(circle at 30% 30%, ${theme.accent}66, #09090b)`,
-                    boxShadow: `0 0 20px ${theme.glowColor}`,
+
+              {/* Geometric Hologram Grid Pattern */}
+              <div
+                className="absolute inset-0 opacity-15 pointer-events-none"
+                style={{
+                  backgroundImage: `radial-gradient(${theme.accent} 1px, transparent 1px)`,
+                  backgroundSize: '16px 16px',
+                }}
+              />
+
+              {/* Artwork Image or Visual Error Fallback */}
+              {!hasImageError && cleanImageUrl ? (
+                <img
+                  src={cleanImageUrl}
+                  alt={`${cardName} - ${cardTitle}`}
+                  className="w-full h-full object-cover object-center select-none pointer-events-none transition-transform duration-500 group-hover:scale-105"
+                  loading="eager"
+                  decoding="async"
+                  onError={(e) => {
+                    console.error(`Failed to load card artwork: ${cleanImageUrl}`);
+                    setHasImageError(true);
                   }}
-                >
-                  <span className="text-2xl sm:text-3xl filter drop-shadow">
-                    {theme.symbol}
-                  </span>
-                </div>
+                />
+              ) : (
+                /* Visual Error Fallback State */
+                <div className="relative w-full h-full flex flex-col items-center justify-center p-3 text-center my-auto bg-gradient-to-br from-zinc-900 via-zinc-950 to-black select-none pointer-events-none z-0">
+                  <div
+                    className="w-14 h-14 sm:w-16 sm:h-16 rounded-full flex items-center justify-center mb-2 shadow-inner border border-white/20 transition-transform duration-300 group-hover:scale-105"
+                    style={{
+                      background: `radial-gradient(circle at 30% 30%, ${theme.accent}66, #09090b)`,
+                      boxShadow: `0 0 20px ${theme.glowColor}`,
+                    }}
+                  >
+                    <span className="text-2xl sm:text-3xl filter drop-shadow">
+                      {theme.symbol}
+                    </span>
+                  </div>
 
-                <div className="font-extrabold tracking-wide text-zinc-100 text-sm sm:text-base drop-shadow-md">
-                  {cardDef.name}
-                </div>
+                  <div className="font-extrabold tracking-wide text-zinc-100 text-xs sm:text-sm drop-shadow-md">
+                    {cardName}
+                  </div>
 
-                <div className="text-[11px] text-zinc-400 font-medium">
-                  {cardDef.characterRole === 'sister' ? 'Nakano Sister' : 'Support Character'}
+                  <div className="text-[10px] sm:text-[11px] text-zinc-400 font-medium">
+                    {characterRole === 'sister' ? 'Nakano Sister' : 'Support Character'}
+                  </div>
+
+                  <div
+                    className="mt-2 px-2 py-0.5 rounded-full text-[9px] font-bold border tracking-wider uppercase"
+                    style={{
+                      color: theme.accent,
+                      borderColor: `${theme.accent}66`,
+                      backgroundColor: `${theme.accent}15`,
+                    }}
+                  >
+                    {rarityBadge.label} • {FINISH_LABELS[finish]}
+                  </div>
                 </div>
-              </div>
+              )}
+            </div>
+
+            {/* ARTWORK SPECIFIC SHADER FOIL OVERLAYS (z-10, blend directly with base art) */}
+            {finish === 'holo' && (
+              <div className="finish-holo-overlay absolute inset-0 pointer-events-none z-10" />
+            )}
+            {finish === 'sparkle' && (
+              <div className="finish-sparkle-overlay absolute inset-0 pointer-events-none z-10" />
+            )}
+            {finish === 'rainbow' && (
+              <div className="finish-rainbow-overlay absolute inset-0 pointer-events-none z-10" />
+            )}
+            {finish === 'gold_etched' && (
+              <div className="finish-gold-etched-relief absolute inset-0 pointer-events-none z-10" />
             )}
 
-            {/* Top gradient shadow on art to preserve header contrast */}
+            {/* Top gradient shadow on art to preserve header contrast (z-15) */}
             <div className="absolute top-0 inset-x-0 h-8 bg-gradient-to-b from-black/60 to-transparent pointer-events-none z-15" />
 
-            {/* LORE QUOTE OVERLAY */}
-            <div className="relative mt-auto w-full p-1.5 rounded-b-lg bg-black/80 backdrop-blur-md border-t border-zinc-800/80 text-center z-20 shadow-lg">
-              <p className="text-[10px] sm:text-[11px] italic text-zinc-200 line-clamp-2 leading-tight">
-                &ldquo;{cardDef.loreQuote}&rdquo;
-              </p>
-            </div>
+            {/* LORE QUOTE OVERLAY (z-20) */}
+            {cardLoreQuote && (
+              <div className="relative mt-auto w-full p-1.5 rounded-b-lg bg-black/80 backdrop-blur-md border-t border-zinc-800/80 text-center z-20 shadow-lg">
+                <p className="text-[10px] sm:text-[11px] italic text-zinc-200 line-clamp-2 leading-tight">
+                  &ldquo;{cardLoreQuote}&rdquo;
+                </p>
+              </div>
+            )}
           </div>
 
-          {/* FOOTER: Number, Finish, Market Value */}
-          <div className="flex items-center justify-between text-[10px] text-zinc-400 pt-1 border-t border-zinc-800/80 z-30 font-mono">
+          {/* FOOTER: Number, Finish, Market Value (z-30) */}
+          <div className="relative flex items-center justify-between text-[10px] text-zinc-400 pt-1 border-t border-zinc-800/80 z-30 font-mono">
             <div className="flex items-center gap-1.5">
-              <span className="text-zinc-500">{cardDef.cardNumber}</span>
+              <span className="text-zinc-500">{cardNumber}</span>
               <span
                 className="px-1 py-0.2 rounded text-[9px] font-semibold uppercase tracking-wider"
                 style={{
@@ -368,7 +443,7 @@ export const CardRenderer: React.FC<CardRendererProps> = ({
                   backgroundColor: `${theme.accent}15`,
                 }}
               >
-                {FINISH_LABELS[card.finish]}
+                {FINISH_LABELS[finish]}
               </span>
             </div>
 
@@ -382,51 +457,35 @@ export const CardRenderer: React.FC<CardRendererProps> = ({
         </div>
 
         {/* ============================================================
-            CUSTOM FINISH OVERLAYS & SHADERS
+            CUSTOM FINISH OVERLAYS & SHADERS (Full-Card Scope)
             ============================================================ */}
 
         {/* Finish 1: Raw (Matte print texture) */}
-        {card.finish === 'raw' && <div className="finish-raw absolute inset-0 z-24" />}
+        {finish === 'raw' && <div className="finish-raw absolute inset-0 pointer-events-none z-24" />}
 
-        {/* Finish 2: Silver Holo (Iridescent Diagonal Bands) */}
-        {card.finish === 'holo' && (
-          <>
-            <div className="finish-holo-overlay" />
-            <div className="finish-holo-lines" />
-          </>
-        )}
+        {/* Finish 2: Silver Holo (Micro-lines across card) */}
+        {finish === 'holo' && <div className="finish-holo-lines pointer-events-none z-25" />}
 
-        {/* Finish 3: Starlight Sparkle (Twinkling Particle Grid) */}
-        {card.finish === 'sparkle' && (
-          <>
-            <div className="finish-sparkle-overlay" />
-            <div className="finish-sparkle-stars" />
-          </>
-        )}
+        {/* Finish 3: Starlight Sparkle (Floating stars across card) */}
+        {finish === 'sparkle' && <div className="finish-sparkle-stars pointer-events-none z-25" />}
 
-        {/* Finish 4: Prism Rainbow (Spectral Conic Dispersion) */}
-        {card.finish === 'rainbow' && (
-          <>
-            <div className="finish-rainbow-overlay" />
-            <div className="finish-rainbow-shimmer" />
-          </>
-        )}
+        {/* Finish 4: Prism Rainbow (Shimmer light bar across card) */}
+        {finish === 'rainbow' && <div className="finish-rainbow-shimmer pointer-events-none z-25" />}
 
         {/* Finish 5: Gold Etched (Embossed Relief Gold Borders & Texture) */}
-        {card.finish === 'gold_etched' && (
+        {finish === 'gold_etched' && (
           <>
-            <div className="finish-gold-etched-frame" />
-            <div className="finish-gold-etched-relief" />
-            <div className="finish-gold-texture" />
+            <div className="finish-gold-etched-frame pointer-events-none z-26" />
+            <div className="finish-gold-texture pointer-events-none z-25" />
           </>
         )}
 
         {/* Finish 6: Signed (Voice Actor Hot Stamp Seal) */}
-        {card.finish === 'signed' && (
+        {finish === 'signed' && (
           <>
-            <div className="finish-holo-overlay opacity-40" />
-            <div className="finish-signed-stamp-container">
-              <div className="finish-signed-gleam" />
+            <div className="finish-holo-overlay opacity-40 pointer-events-none z-25" />
+            <div className="finish-signed-stamp-container pointer-events-none z-35">
+              <div className="finish-signed-gleam pointer-events-none" />
               <div className="finish-signed-stamp text-xs sm:text-sm font-black flex flex-col items-end leading-none">
                 <span className="text-[9px] tracking-widest uppercase opacity-80">
                   Official Cast Stamp
@@ -439,8 +498,8 @@ export const CardRenderer: React.FC<CardRendererProps> = ({
           </>
         )}
 
-        {/* Specular Laminate Glare (Direct Light Reflection) */}
-        <div className="card-specular-glare" />
+        {/* Specular Laminate Glare (Direct Light Reflection) (z-40) */}
+        <div className="card-specular-glare pointer-events-none z-40" />
       </div>
     </div>
   );

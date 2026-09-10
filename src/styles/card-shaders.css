@@ -17,16 +17,38 @@
 .card-perspective-wrapper {
   perspective: 1200px;
   transform-style: preserve-3d;
+  backface-visibility: visible;
+  -webkit-backface-visibility: visible;
 }
 
 .card-3d-root {
   transform-style: preserve-3d;
+  backface-visibility: visible;
+  -webkit-backface-visibility: visible;
   transition: transform 0.15s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.3s ease;
   will-change: transform;
 }
 
 .card-3d-root.is-interacting {
   transition: none;
+}
+
+/* 3D Flip-In Animation */
+@keyframes flipIn {
+  0% {
+    transform: perspective(1000px) rotateY(90deg) scale(0.92);
+    opacity: 0;
+  }
+  100% {
+    transform: perspective(1000px) rotateY(0deg) scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-flipIn {
+  animation: flipIn 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  backface-visibility: visible;
+  -webkit-backface-visibility: visible;
 }
 
 /* Base Specular Glare (Physical laminate reflection) */
@@ -52,12 +74,17 @@
    FINISH 1: RAW / MATTE
    ============================================================ */
 .finish-raw {
-  /* Subtle diffuse paper texture & vignette, no metallic reflection */
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
   background: radial-gradient(
     circle at 50% 30%,
     rgba(255, 255, 255, 0.03) 0%,
-    rgba(0, 0, 0, 0.25) 100%
+    rgba(0, 0, 0, 0.22) 100%
   );
+  mix-blend-mode: multiply;
+  z-index: 10;
 }
 
 /* ============================================================

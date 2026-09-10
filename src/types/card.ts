@@ -72,6 +72,9 @@ export interface CardInstance {
     pageId: string;
     slotIndex: number;
   };
+  imageUrl?: string;
+  name?: string;
+  title?: string;
 }
 
 export type PackId =

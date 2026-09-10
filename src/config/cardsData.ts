@@ -4,7 +4,7 @@
  * across all rarities (C, UC, R, SR, UR, SEC, MR), mapped to official artwork assets.
  */
 
-import { CardDefinition, CharacterId, Rarity } from '../types/card.js';
+import { CardDefinition, CharacterId, Rarity } from '../types/card';
 
 export const CARDS_CATALOG: CardDefinition[] = [
   // ==========================================

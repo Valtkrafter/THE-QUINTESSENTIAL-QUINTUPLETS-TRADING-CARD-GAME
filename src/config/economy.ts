@@ -22,8 +22,8 @@ import {
   Rarity,
   SisterId,
   SupportId,
-} from '../types/card.js';
-import { CARDS_BY_RARITY, CARD_MAP } from './cardsData.js';
+} from '../types/card';
+import { CARDS_BY_RARITY, CARD_MAP } from './cardsData';
 
 // ==========================================
 // 1. BASE VALUES & MULTIPLIERS
@@ -521,6 +521,9 @@ export function rollPackDrops(
       rarity: rolledRarity,
       finish,
       obtainedAt: Date.now(),
+      imageUrl: cardDef.imageUrl,
+      name: cardDef.name,
+      title: cardDef.title,
     };
 
     cards.push(instance);

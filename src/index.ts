@@ -2,7 +2,7 @@
  * TQQ Vault - Core Module Exports
  */
 
-export * from './types/card.js';
-export * from './config/cardsData.js';
-export * from './config/economy.js';
-export * from './store/useGameStore.js';
+export * from './types/card';
+export * from './config/cardsData';
+export * from './config/economy';
+export * from './store/useGameStore';
