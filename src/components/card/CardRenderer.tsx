@@ -177,6 +177,8 @@ export const FINISH_LABELS: Record<Finish, string> = {
   signed: 'VOICE ACTOR STAMP',
 };
 
+export type ImageFitStatus = 'loading' | 'perfect' | 'tall' | 'wide' | 'error';
+
 export const CardRenderer: React.FC<CardRendererProps> = ({
   card,
   interactive = true,
@@ -186,6 +188,7 @@ export const CardRenderer: React.FC<CardRendererProps> = ({
   showMarketValue = true,
 }) => {
   const cardRef = useRef<HTMLDivElement>(null);
+  const imgRef = useRef<HTMLImageElement>(null);
   const [isHovered, setIsHovered] = useState(false);
   const [hasImageError, setHasImageError] = useState(false);
 
@@ -194,6 +197,17 @@ export const CardRenderer: React.FC<CardRendererProps> = ({
     ('cardDefId' in card ? card.cardDefId : undefined) ??
     ('id' in card ? card.id : undefined);
   const cardDef = (cardDefId ? getCardDef(cardDefId) : undefined) ?? CARD_MAP['miku_c_01'];
+
+  // Resolve forceFit override if specified in card instance or definition
+  const forceFit = card.forceFit ?? cardDef?.forceFit;
+
+  // Track dynamic aspect-ratio fit status
+  const [fitStatus, setFitStatus] = useState<ImageFitStatus>(() => {
+    if (forceFit === 'exact') return 'perfect';
+    if (forceFit === 'top') return 'tall';
+    if (forceFit === 'contain') return 'wide';
+    return 'loading';
+  });
 
   // Resolve raw image URL from card or cardDef (handling both imageUrl and image keys)
   const rawImageUrl =
@@ -232,10 +246,72 @@ export const CardRenderer: React.FC<CardRendererProps> = ({
     }
   }, [rawImageUrl]);
 
-  // Reset image error state whenever resolvedImageUrl changes
+  // Aspect-ratio calculation helper
+  const computeFitStatus = useCallback(
+    (naturalWidth: number, naturalHeight: number, container: HTMLElement | null): ImageFitStatus => {
+      if (forceFit === 'exact') return 'perfect';
+      if (forceFit === 'top') return 'tall';
+      if (forceFit === 'contain') return 'wide';
+
+      if (!naturalWidth || !naturalHeight) return 'loading';
+
+      const targetRatio =
+        container && container.clientWidth && container.clientHeight
+          ? container.clientWidth / container.clientHeight
+          : 63 / 55;
+      const imgRatio = naturalWidth / naturalHeight;
+      const delta = Math.abs(imgRatio - targetRatio);
+
+      if (delta <= 0.06) {
+        return 'perfect';
+      } else if (imgRatio < targetRatio) {
+        return 'tall';
+      } else {
+        return 'wide';
+      }
+    },
+    [forceFit]
+  );
+
+  const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const img = e.currentTarget;
+    const status = computeFitStatus(img.naturalWidth, img.naturalHeight, img.parentElement);
+    setFitStatus(status);
+  };
+
+  const handleImageError = () => {
+    setHasImageError(true);
+    setFitStatus('error');
+    console.error(`[IMAGE LOAD ERROR] Failed to fetch: "${resolvedImageUrl}"`);
+  };
+
+  // Reset image error state and recalculate fit status whenever resolvedImageUrl or forceFit changes
   useEffect(() => {
     setHasImageError(false);
-  }, [resolvedImageUrl]);
+    if (forceFit === 'exact') {
+      setFitStatus('perfect');
+      return;
+    }
+    if (forceFit === 'top') {
+      setFitStatus('tall');
+      return;
+    }
+    if (forceFit === 'contain') {
+      setFitStatus('wide');
+      return;
+    }
+
+    if (imgRef.current && imgRef.current.complete && imgRef.current.naturalWidth > 0) {
+      const status = computeFitStatus(
+        imgRef.current.naturalWidth,
+        imgRef.current.naturalHeight,
+        imgRef.current.parentElement
+      );
+      setFitStatus(status);
+    } else {
+      setFitStatus('loading');
+    }
+  }, [resolvedImageUrl, forceFit, computeFitStatus]);
 
   console.log("[CardRenderer Debug]", {
     cardId: card?.id,
@@ -243,6 +319,7 @@ export const CardRenderer: React.FC<CardRendererProps> = ({
     directImageUrl: card?.imageUrl,
     resolvedImageUrl,
     hasImageError,
+    fitStatus,
   });
 
   // Pointer tilt physics calculation
@@ -367,33 +444,33 @@ export const CardRenderer: React.FC<CardRendererProps> = ({
                 }}
               />
 
-              {/* Artwork Image (Dual-Layer Adaptive Presentation) or Visual Error Fallback */}
-              {resolvedImageUrl ? (
-                <div className="relative w-full h-full overflow-hidden rounded-lg bg-[#0d0d12]">
-                  {/* Layer 1: Ambient Background Fill (Eliminates Letterboxing/Bars) */}
+              {/* Artwork Image or Visual Error Fallback */}
+              {resolvedImageUrl && !hasImageError ? (
+                <div className="relative w-full h-full overflow-hidden">
                   <img
+                    ref={imgRef}
                     src={encodeURI(resolvedImageUrl)}
-                    alt=""
-                    aria-hidden="true"
-                    className="absolute inset-0 w-full h-full object-cover object-center scale-125 blur-xl opacity-40 brightness-75 select-none pointer-events-none"
+                    alt={cardName}
+                    onLoad={handleImageLoad}
+                    onError={handleImageError}
+                    className={`w-full h-full select-none pointer-events-none transition-all duration-300 ${
+                      fitStatus === 'tall'
+                        ? 'object-cover object-top'
+                        : 'object-cover object-center'
+                    } ${fitStatus === 'loading' ? 'opacity-90' : 'opacity-100'}`}
+                    loading="eager"
+                    decoding="async"
                   />
 
-                  {/* Layer 2: Uncompromised Foreground Artwork (Zero Crop) */}
-                  <div className="relative z-10 flex h-full w-full items-center justify-center p-2">
-                    <img
-                      src={encodeURI(resolvedImageUrl)}
-                      alt={cardName}
-                      className="max-h-full max-w-full object-contain object-center select-none pointer-events-none drop-shadow-[0_12px_24px_rgba(0,0,0,0.7)] transition-transform duration-300 group-hover:scale-105"
-                      loading="eager"
-                      decoding="async"
-                      onError={() => {
-                        console.error(`[IMAGE LOAD ERROR] Failed to fetch: "${resolvedImageUrl}"`);
-                      }}
-                    />
-                  </div>
+                  {/* When fitStatus === 'tall': Soft transition gradient only at the very bottom edge */}
+                  {fitStatus === 'tall' && (
+                    <div className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-[#111116] to-transparent opacity-80" />
+                  )}
 
-                  {/* Layer 3: Framing Vignette & Inner Shadow */}
-                  <div className="pointer-events-none absolute inset-0 z-15 shadow-[inset_0_0_25px_rgba(0,0,0,0.85)]" />
+                  {/* When fitStatus === 'wide': Subtle side-vignette shadows only */}
+                  {fitStatus === 'wide' && (
+                    <div className="pointer-events-none absolute inset-0 shadow-[inset_16px_0_20px_-8px_rgba(0,0,0,0.8),inset_-16px_0_20px_-8px_rgba(0,0,0,0.8)] opacity-70" />
+                  )}
                 </div>
               ) : (
                 /* Visual Error Fallback State */
@@ -446,8 +523,10 @@ export const CardRenderer: React.FC<CardRendererProps> = ({
               <div className="finish-gold-etched-relief absolute inset-0 pointer-events-none z-20" />
             )}
 
-            {/* Top gradient shadow on art to preserve header contrast (z-25) */}
-            <div className="absolute top-0 inset-x-0 h-8 bg-gradient-to-b from-black/60 to-transparent pointer-events-none z-25" />
+            {/* Top gradient shadow on art to preserve header contrast only when not perfect */}
+            {fitStatus !== 'perfect' && (
+              <div className="absolute top-0 inset-x-0 h-8 bg-gradient-to-b from-black/60 to-transparent pointer-events-none z-25" />
+            )}
 
             {/* LORE QUOTE OVERLAY (z-30) */}
             {cardLoreQuote && (

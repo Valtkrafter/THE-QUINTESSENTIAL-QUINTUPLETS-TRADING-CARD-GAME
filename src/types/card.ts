@@ -57,6 +57,7 @@ export interface CardDefinition {
   loreQuote: string;
   description: string;
   imageUrl?: string;
+  forceFit?: 'exact' | 'top' | 'contain';
 }
 
 export interface CardInstance {
@@ -76,6 +77,7 @@ export interface CardInstance {
   name?: string;
   title?: string;
   cardNumber?: string;
+  forceFit?: 'exact' | 'top' | 'contain';
 }
 
 export type PackId =

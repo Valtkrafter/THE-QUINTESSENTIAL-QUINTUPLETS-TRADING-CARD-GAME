@@ -37,6 +37,7 @@ export default function ShowcasePage() {
   const [selectedFinish, setSelectedFinish] = useState<Finish>('holo');
   const [slabMode, setSlabMode] = useState<SlabViewMode>('gem10');
   const [openingPackId, setOpeningPackId] = useState<PackId | null>(null);
+  const [selectedFitMode, setSelectedFitMode] = useState<'auto' | 'exact' | 'top' | 'contain'>('auto');
 
   const yen = useGameStore((state) => state.yen);
   const stardust = useGameStore((state) => state.stardust);
@@ -107,8 +108,9 @@ export default function ShowcasePage() {
       cardNumber: activeCardDef.cardNumber,
       name: activeCardDef.name,
       title: activeCardDef.title,
+      forceFit: selectedFitMode === 'auto' ? activeCardDef.forceFit : selectedFitMode,
     };
-  }, [activeCardDef, selectedFinish, activeMockGrade]);
+  }, [activeCardDef, selectedFinish, activeMockGrade, selectedFitMode]);
 
   const baseVal = RARITY_BASE_VALUES[activeCardInstance.rarity];
   const finishMult = FINISH_MULTIPLIERS[selectedFinish];
@@ -547,6 +549,65 @@ export default function ShowcasePage() {
                 <span>Black Label ("THE CHOSEN ONE" • 50.0x)</span>
                 <span>★</span>
               </button>
+            </div>
+
+            {/* 5. DYNAMIC ASPECT-RATIO & ZERO-INTERFERENCE FRAMING */}
+            <div className="p-5 rounded-2xl bg-zinc-900/60 border border-zinc-800">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-400 mb-3 flex items-center justify-between">
+                <span className="flex items-center gap-2">
+                  <Eye className="w-4 h-4 text-amber-400" />
+                  5. Dynamic Aspect-Ratio & Framing
+                </span>
+                <span className="text-[10px] text-amber-400 font-mono font-bold">
+                  {selectedFitMode.toUpperCase()}
+                </span>
+              </h3>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                <button
+                  onClick={() => setSelectedFitMode('auto')}
+                  className={`p-2 rounded-xl border text-center font-bold transition flex flex-col items-center gap-0.5 ${
+                    selectedFitMode === 'auto'
+                      ? 'border-amber-400 bg-amber-500/15 text-amber-200'
+                      : 'border-zinc-800 bg-zinc-950 text-zinc-400 hover:bg-zinc-800'
+                  }`}
+                >
+                  <span>Auto Detect</span>
+                  <span className="text-[9px] font-normal opacity-70">Δ &le; 0.06 &rarr; Clean</span>
+                </button>
+                <button
+                  onClick={() => setSelectedFitMode('exact')}
+                  className={`p-2 rounded-xl border text-center font-bold transition flex flex-col items-center gap-0.5 ${
+                    selectedFitMode === 'exact'
+                      ? 'border-emerald-400 bg-emerald-500/15 text-emerald-200'
+                      : 'border-zinc-800 bg-zinc-950 text-zinc-400 hover:bg-zinc-800'
+                  }`}
+                >
+                  <span>Exact (1:1)</span>
+                  <span className="text-[9px] font-normal opacity-70">Pure Zero-Crop</span>
+                </button>
+                <button
+                  onClick={() => setSelectedFitMode('top')}
+                  className={`p-2 rounded-xl border text-center font-bold transition flex flex-col items-center gap-0.5 ${
+                    selectedFitMode === 'top'
+                      ? 'border-cyan-400 bg-cyan-500/15 text-cyan-200'
+                      : 'border-zinc-800 bg-zinc-950 text-zinc-400 hover:bg-zinc-800'
+                  }`}
+                >
+                  <span>Top Anchor</span>
+                  <span className="text-[9px] font-normal opacity-70">Tall + Bottom Fade</span>
+                </button>
+                <button
+                  onClick={() => setSelectedFitMode('contain')}
+                  className={`p-2 rounded-xl border text-center font-bold transition flex flex-col items-center gap-0.5 ${
+                    selectedFitMode === 'contain'
+                      ? 'border-purple-400 bg-purple-500/15 text-purple-200'
+                      : 'border-zinc-800 bg-zinc-950 text-zinc-400 hover:bg-zinc-800'
+                  }`}
+                >
+                  <span>Contain / Wide</span>
+                  <span className="text-[9px] font-normal opacity-70">Side Vignette</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
