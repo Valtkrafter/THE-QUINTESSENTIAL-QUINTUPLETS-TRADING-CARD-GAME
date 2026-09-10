@@ -4,14 +4,27 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "tsc --noEmit",
-    "test": "node --loader ts-node/esm scripts/test-engine.ts"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "test": "node scripts/test-engine.js"
   },
   "dependencies": {
+    "lucide-react": "^1.16.0",
+    "next": "^15.2.1",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
     "zustand": "^5.0.3"
   },
   "devDependencies": {
     "@types/node": "^22.10.7",
+    "@types/react": "^19.0.10",
+    "@types/react-dom": "^19.0.4",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.5.3",
+    "tailwindcss": "^3.4.17",
+    "tsx": "^4.23.13",
     "typescript": "^5.7.3"
   }
 }
