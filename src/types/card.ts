@@ -56,6 +56,7 @@ export interface CardDefinition {
   rarity: Rarity;
   loreQuote: string;
   description: string;
+  imageUrl?: string;
 }
 
 export interface CardInstance {

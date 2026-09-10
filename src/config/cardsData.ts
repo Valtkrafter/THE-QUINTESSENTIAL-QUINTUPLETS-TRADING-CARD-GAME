@@ -1,7 +1,7 @@
 /**
  * TQQ Vault - Master Card Metadata Catalog
  * Contains card definitions spanning all 5 Nakano sisters and support characters
- * across all rarities (C, UC, R, SR, UR, SEC, MR).
+ * across all rarities (C, UC, R, SR, UR, SEC, MR), mapped to official artwork assets.
  */
 
 import { CardDefinition, CharacterId, Rarity } from '../types/card.js';
@@ -20,6 +20,7 @@ export const CARDS_CATALOG: CardDefinition[] = [
     rarity: 'C',
     loreQuote: 'Five minutes more, Fuutarou-kun... Big sisters need their beauty sleep.',
     description: 'A candid snapshot of Ichika still tangled in her sheets before morning study session.',
+    imageUrl: '/cards/Ichika/Ichika Tier ONE.jpg',
   },
   {
     id: 'ichika_uc_01',
@@ -31,6 +32,7 @@ export const CARDS_CATALOG: CardDefinition[] = [
     rarity: 'UC',
     loreQuote: 'I have to balance school and auditions. Neither can be treated half-heartedly.',
     description: 'Ichika memorizing her lines during lunch break with dog-eared script pages.',
+    imageUrl: '/cards/Ichika/Ichika Tier TWO.jpg',
   },
   {
     id: 'ichika_r_01',
@@ -42,6 +44,7 @@ export const CARDS_CATALOG: CardDefinition[] = [
     rarity: 'R',
     loreQuote: 'The camera doesn\'t lie, but an actress knows how to show only what she desires.',
     description: 'Ichika stepping onto her first television set as a rising starlet.',
+    imageUrl: '/cards/Ichika/Ichika Tier Three.jpg',
   },
   {
     id: 'ichika_sr_01',
@@ -53,6 +56,7 @@ export const CARDS_CATALOG: CardDefinition[] = [
     rarity: 'SR',
     loreQuote: 'You blushed just now, didn\'t you? Don\'t worry, big sister won\'t tell the others.',
     description: 'Ichika leaning dangerously close with her trademark wink in the library.',
+    imageUrl: '/cards/Ichika/Ichika Tier four.jpg',
   },
   {
     id: 'ichika_ur_01',
@@ -64,6 +68,7 @@ export const CARDS_CATALOG: CardDefinition[] = [
     rarity: 'UR',
     loreQuote: 'I stand here because you believed in me before anyone else knew my name.',
     description: 'Ichika dressed in an emerald gala gown, turning back towards the flashbulbs.',
+    imageUrl: '/cards/Ichika/Ichika Tier fife.jpg',
   },
   {
     id: 'ichika_sec_01',
@@ -75,6 +80,7 @@ export const CARDS_CATALOG: CardDefinition[] = [
     rarity: 'SEC',
     loreQuote: 'Everything I said back then... what if none of it was acting?',
     description: 'A rain-soaked promenade where Ichika drops her composed facade.',
+    imageUrl: '/cards/Ichika/Ichika Tier six.jpg',
   },
   {
     id: 'ichika_mr_01',
@@ -86,6 +92,7 @@ export const CARDS_CATALOG: CardDefinition[] = [
     rarity: 'MR',
     loreQuote: 'As the eldest, I always stepped aside... but this hand, I will never let go.',
     description: 'Ichika in a flowing veil with gentle yellow roses, smiling with serene devotion.',
+    imageUrl: '/cards/Ichika/Ichika Tier seven.jpg',
   },
 
   // ==========================================
@@ -101,6 +108,7 @@ export const CARDS_CATALOG: CardDefinition[] = [
     rarity: 'C',
     loreQuote: 'Don\'t think this Earl Grey means I accept you as our tutor!',
     description: 'Nino sliding a saucer across the kitchen counter with crossed arms and a pout.',
+    imageUrl: '/cards/Nino/Nino 1.jpg',
   },
   {
     id: 'nino_uc_01',
@@ -112,6 +120,7 @@ export const CARDS_CATALOG: CardDefinition[] = [
     rarity: 'UC',
     loreQuote: 'Cooking is precision. If the temperature drops by two degrees, the soufflé dies.',
     description: 'Nino in her frilled apron meticulously whipping fresh cream to stiff peaks.',
+    imageUrl: '/cards/Nino/nino 2.jpg',
   },
   {
     id: 'nino_r_01',
@@ -123,6 +132,7 @@ export const CARDS_CATALOG: CardDefinition[] = [
     rarity: 'R',
     loreQuote: 'I protect this family. Anyone who tries to break our bond will answer to me.',
     description: 'Nino with her iconic black twin ribbons fluttering as she stands her ground.',
+    imageUrl: '/cards/Nino/nino 3.jpg',
   },
   {
     id: 'nino_sr_01',
@@ -134,6 +144,7 @@ export const CARDS_CATALOG: CardDefinition[] = [
     rarity: 'SR',
     loreQuote: 'I won\'t play mind games like Ichika or hesitate like Miku. I love you, idiot!',
     description: 'Nino turning around on the back of the motorcycle, delivering her unfiltered confession.',
+    imageUrl: '/cards/Nino/nino 4.jpg',
   },
   {
     id: 'nino_ur_01',
@@ -145,6 +156,7 @@ export const CARDS_CATALOG: CardDefinition[] = [
     rarity: 'UR',
     loreQuote: 'Every pastry I bake holds a piece of our shared memories.',
     description: 'Nino as master chef in her boutique bakery surrounded by strawberry tarts and macarons.',
+    imageUrl: '/cards/Nino/nino 5.jpg',
   },
   {
     id: 'nino_sec_01',
@@ -156,6 +168,7 @@ export const CARDS_CATALOG: CardDefinition[] = [
     rarity: 'SEC',
     loreQuote: 'Even if my heart breaks a thousand times, I will always choose to love fiercely.',
     description: 'Nino under the hotel veranda lights after shearing her long locks into a chic bob.',
+    imageUrl: '/cards/Nino/nino 6.jpg',
   },
   {
     id: 'nino_mr_01',
@@ -167,6 +180,7 @@ export const CARDS_CATALOG: CardDefinition[] = [
     rarity: 'MR',
     loreQuote: 'You made me wait, Fuu-kun. Now spend the rest of your life making it up to me.',
     description: 'Nino wearing an extravagant lace wedding dress adorned with twin silk ribbons.',
+    imageUrl: '/cards/Nino/nino 7.jpg',
   },
 
   // ==========================================
@@ -182,6 +196,7 @@ export const CARDS_CATALOG: CardDefinition[] = [
     rarity: 'C',
     loreQuote: 'Please keep your voice down... I am listening to the Battle of Sekigahara lecture.',
     description: 'Miku resting her chin inside her soft blue cardigan, blue triangular headphones secured.',
+    imageUrl: '/cards/Miku/miku 1.jpg',
   },
   {
     id: 'miku_uc_01',
@@ -193,6 +208,7 @@ export const CARDS_CATALOG: CardDefinition[] = [
     rarity: 'UC',
     loreQuote: 'Takeda Shingen and Uesugi Kenshin fought five times at Kawanakajima. True devotion.',
     description: 'Miku clutching a warm can of green matcha tea while quizzing Fuutarou on Sengoku trivia.',
+    imageUrl: '/cards/Miku/miku 2.jpg',
   },
   {
     id: 'miku_r_01',
@@ -204,6 +220,7 @@ export const CARDS_CATALOG: CardDefinition[] = [
     rarity: 'R',
     loreQuote: 'It may look charred on the bottom, but... taste it. I made it just for you.',
     description: 'Miku presenting a slightly burned loaf of matcha bread with flour dusted on her cheek.',
+    imageUrl: '/cards/Miku/miku 3.jpg',
   },
   {
     id: 'miku_sr_01',
@@ -215,6 +232,7 @@ export const CARDS_CATALOG: CardDefinition[] = [
     rarity: 'SR',
     loreQuote: 'You... you\'re Fuutarou! See? I knew who you were even without looking.',
     description: 'Miku extending her hand on the school roof terrace, unmasking Fuutarou\'s disguise.',
+    imageUrl: '/cards/Miku/miku 4.jpg',
   },
   {
     id: 'miku_ur_01',
@@ -226,6 +244,7 @@ export const CARDS_CATALOG: CardDefinition[] = [
     rarity: 'UR',
     loreQuote: 'I started from zero. If I can master French baking, I can win your heart too.',
     description: 'Miku presenting a flawless three-tier matcha opera cake alongside Nino in their bistro.',
+    imageUrl: '/cards/Miku/miku 5.jpg',
   },
   {
     id: 'miku_sec_01',
@@ -237,6 +256,7 @@ export const CARDS_CATALOG: CardDefinition[] = [
     rarity: 'SEC',
     loreQuote: 'Like the warriors of old, I staked everything on one decisive march.',
     description: 'Miku enveloped in falling cherry blossoms beneath Kyoto\'s historic pagoda temples.',
+    imageUrl: '/cards/Miku/miku 6.jpg',
   },
   {
     id: 'miku_mr_01',
@@ -248,6 +268,7 @@ export const CARDS_CATALOG: CardDefinition[] = [
     rarity: 'MR',
     loreQuote: 'My heart belongs to you, in this life and across all historical eras.',
     description: 'Miku in an exquisite indigo-trimmed silk bridal kimono holding a white folding fan.',
+    imageUrl: '/cards/Miku/miku 7.jpg',
   },
 
   // ==========================================
@@ -263,6 +284,7 @@ export const CARDS_CATALOG: CardDefinition[] = [
     rarity: 'C',
     loreQuote: 'Uesugi-san! Need help carrying those textbooks? I have plenty of stamina!',
     description: 'Yotsuba jogging backwards across the track field, bright green ribbon bouncing.',
+    imageUrl: '/cards/Yotsuba/yotsu 1.jpg',
   },
   {
     id: 'yotsuba_uc_01',
@@ -274,6 +296,7 @@ export const CARDS_CATALOG: CardDefinition[] = [
     rarity: 'UC',
     loreQuote: 'Someone needed to volunteer, so I stepped up! Helping others makes me happy.',
     description: 'Yotsuba carrying four armfuls of sports festival banners with an earnest grin.',
+    imageUrl: '/cards/Yotsuba/yotsu 2.jpg',
   },
   {
     id: 'yotsuba_r_01',
@@ -285,6 +308,7 @@ export const CARDS_CATALOG: CardDefinition[] = [
     rarity: 'R',
     loreQuote: 'I like you, Uesugi-san! ...Just kidding, ehehe! Did your heart skip a beat?',
     description: 'Yotsuba resting against the glass gondola high above the sunset amusement park.',
+    imageUrl: '/cards/Yotsuba/yotsu 3.jpg',
   },
   {
     id: 'yotsuba_sr_01',
@@ -296,6 +320,7 @@ export const CARDS_CATALOG: CardDefinition[] = [
     rarity: 'SR',
     loreQuote: 'If you want to clear your head, you have to jump as far as humanly possible!',
     description: 'Yotsuba soaring through the twilight air off the playground swing with boundless glee.',
+    imageUrl: '/cards/Yotsuba/yotsu 4.jpg',
   },
   {
     id: 'yotsuba_ur_01',
@@ -307,6 +332,7 @@ export const CARDS_CATALOG: CardDefinition[] = [
     rarity: 'UR',
     loreQuote: 'I promised myself I would support my sisters, even if it meant burying my own heart.',
     description: 'Yotsuba clutching her green ribbon under the Kyoto rain, tears streaming down her smiling face.',
+    imageUrl: '/cards/Yotsuba/yotsu 5.jpg',
   },
   {
     id: 'yotsuba_sec_01',
@@ -318,6 +344,7 @@ export const CARDS_CATALOG: CardDefinition[] = [
     rarity: 'SEC',
     loreQuote: 'The bell rang for us that snowy afternoon... an unbreakable promise etched in time.',
     description: 'The silhouette beneath the resort bell tower amidst swirling snowflakes.',
+    imageUrl: '/cards/Yotsuba/yotsu 6.jpg',
   },
   {
     id: 'yotsuba_mr_01',
@@ -329,6 +356,7 @@ export const CARDS_CATALOG: CardDefinition[] = [
     rarity: 'MR',
     loreQuote: 'Thank you for finding me, Fuutarou. From Kyoto until forever, I am yours.',
     description: 'Yotsuba radiant in a pure white gown woven with clover filigree, holding Fuutarou\'s hand.',
+    imageUrl: '/cards/Yotsuba/yotsu 7.jpg',
   },
 
   // ==========================================
@@ -344,6 +372,7 @@ export const CARDS_CATALOG: CardDefinition[] = [
     rarity: 'C',
     loreQuote: 'Eating properly is fundamental for cognitive retention! Nom... delicious!',
     description: 'Itsuki biting into a steaming pork bun outside the convenience store with puffed cheeks.',
+    imageUrl: '/cards/Itsuki/istu 1.jpg',
   },
   {
     id: 'itsuki_uc_01',
@@ -355,6 +384,7 @@ export const CARDS_CATALOG: CardDefinition[] = [
     rarity: 'UC',
     loreQuote: 'Mother was an educator. I will not tarnish her legacy by giving up on these equations.',
     description: 'Itsuki adjusting her twin star hairpins before diving into a thick chemistry workbook.',
+    imageUrl: '/cards/Itsuki/itsu 2.jpg',
   },
   {
     id: 'itsuki_r_01',
@@ -366,6 +396,7 @@ export const CARDS_CATALOG: CardDefinition[] = [
     rarity: 'R',
     loreQuote: 'Uesugi-kun, you worked so hard preparing these flashcards... I won\'t let them go to waste.',
     description: 'Itsuki studying at Fuutarou\'s modest dining table under the warm glow of a desk lamp.',
+    imageUrl: '/cards/Itsuki/itsu 3.jpg',
   },
   {
     id: 'itsuki_sr_01',
@@ -377,6 +408,7 @@ export const CARDS_CATALOG: CardDefinition[] = [
     rarity: 'SR',
     loreQuote: 'Five plates of yakisoba, three crepes, and two melon breads. That constitutes a light snack.',
     description: 'Itsuki balancing three food trays at the school festival with an angelic satisfied expression.',
+    imageUrl: '/cards/Itsuki/itsu 4.jpg',
   },
   {
     id: 'itsuki_ur_01',
@@ -388,6 +420,7 @@ export const CARDS_CATALOG: CardDefinition[] = [
     rarity: 'UR',
     loreQuote: 'Just as you guided us five, I will stand before the classroom and light the way for others.',
     description: 'Itsuki standing tall at the lecture podium with chalk in hand, fulfilling her mother\'s dream.',
+    imageUrl: '/cards/Itsuki/itsu 5.jpg',
   },
   {
     id: 'itsuki_sec_01',
@@ -399,6 +432,7 @@ export const CARDS_CATALOG: CardDefinition[] = [
     rarity: 'SEC',
     loreQuote: 'The girl from your past wished you happiness. Now, as Itsuki, I wish for the same.',
     description: 'Itsuki standing by the serene lake at sunset, the hat of "Rena" resting in her hands.',
+    imageUrl: '/cards/Itsuki/itsu 6.jpg',
   },
   {
     id: 'itsuki_mr_01',
@@ -410,6 +444,7 @@ export const CARDS_CATALOG: CardDefinition[] = [
     rarity: 'MR',
     loreQuote: 'We met over cafeteria food, clashed over pride, and grew into an eternal bond.',
     description: 'Itsuki in a regal bridal gown with shimmering star embroidery and a crimson rose bouquet.',
+    imageUrl: '/cards/Itsuki/itsu 7.jpg',
   },
 
   // ==========================================
@@ -425,6 +460,7 @@ export const CARDS_CATALOG: CardDefinition[] = [
     rarity: 'R',
     loreQuote: 'If you combine all five of your scores... congratulations, you barely scored 100 points total.',
     description: 'Fuutarou holding five failing test papers while nursing a pounding headache.',
+    imageUrl: '/cards/Futarou/futa 1.jpg',
   },
   {
     id: 'fuutarou_sr_01',
@@ -436,6 +472,7 @@ export const CARDS_CATALOG: CardDefinition[] = [
     rarity: 'SR',
     loreQuote: 'A photo kept inside a student handbook for five long years. The boy who promised to study.',
     description: 'The faded childhood photograph taken in Kyoto between Fuutarou and a mysterious girl.',
+    imageUrl: '/cards/Futarou/futa 2.jpg',
   },
   {
     id: 'fuutarou_ur_01',
@@ -447,6 +484,7 @@ export const CARDS_CATALOG: CardDefinition[] = [
     rarity: 'UR',
     loreQuote: 'I used to think study was everything. You five taught me that people are what truly matter.',
     description: 'Fuutarou standing at the chapel altar in a pristine white tuxedo, awaiting his bride.',
+    imageUrl: '/cards/Futarou/futa 3.jpg',
   },
   {
     id: 'fuutarou_sec_01',
@@ -458,6 +496,7 @@ export const CARDS_CATALOG: CardDefinition[] = [
     rarity: 'SEC',
     loreQuote: 'Every single one of you passed. Not one left behind. We did it together.',
     description: 'Fuutarou shedding rare tears of relief as five graduation diplomas are displayed together.',
+    imageUrl: '/cards/Futarou/futa 3.jpg',
   },
 
   // ==========================================
@@ -473,6 +512,7 @@ export const CARDS_CATALOG: CardDefinition[] = [
     rarity: 'UC',
     loreQuote: 'Onii-chan! The Nakano sisters are here! Be nice to them or I won\'t make hamburg steak!',
     description: 'Raiha welcoming the quints into the Uesugi household with her infectious grin.',
+    imageUrl: '/cards/Raiha/raiha 1.jpg',
   },
   {
     id: 'raiha_r_01',
@@ -484,6 +524,7 @@ export const CARDS_CATALOG: CardDefinition[] = [
     rarity: 'R',
     loreQuote: 'When Raiha is around, good fortunes always follow! Even grumpy Onii-chan smiles.',
     description: 'Raiha holding up handcrafted omamori lucky charms for all five sisters.',
+    imageUrl: '/cards/Raiha/raiha 2.jpg',
   },
   {
     id: 'raiha_sr_01',
@@ -495,6 +536,7 @@ export const CARDS_CATALOG: CardDefinition[] = [
     rarity: 'SR',
     loreQuote: 'Whichever sister Onii-chan chooses, I will be the happiest little sister in Japan!',
     description: 'Raiha serving hot piping curry at the dinner table with five extra place settings.',
+    imageUrl: '/cards/Raiha/raiha 2.jpg',
   },
 
   // ==========================================
@@ -510,6 +552,7 @@ export const CARDS_CATALOG: CardDefinition[] = [
     rarity: 'R',
     loreQuote: 'Failing grades are unacceptable. If they fail the midterm, you are dismissed immediately.',
     description: 'Maruo inspecting medical charts through his silver rimless spectacles with cold authority.',
+    imageUrl: '/cards/Maruo/maru 1.jpg',
   },
   {
     id: 'maruo_sr_01',
@@ -521,6 +564,7 @@ export const CARDS_CATALOG: CardDefinition[] = [
     rarity: 'SR',
     loreQuote: 'I may not speak with warmth, but their future is the only thing I have sworn to safeguard.',
     description: 'Maruo sitting in the back of his executive limousine, observing his daughters from afar.',
+    imageUrl: '/cards/Maruo/maru 1.jpg',
   },
   {
     id: 'maruo_ur_01',
@@ -532,6 +576,7 @@ export const CARDS_CATALOG: CardDefinition[] = [
     rarity: 'UR',
     loreQuote: 'Uesugi-kun... take care of my daughter. You have earned my begrudging respect.',
     description: 'Maruo raising a ceremonial toast at the reception with a faint, proud smile.',
+    imageUrl: '/cards/Maruo/maru 1.jpg',
   },
 
   // ==========================================
@@ -547,6 +592,7 @@ export const CARDS_CATALOG: CardDefinition[] = [
     rarity: 'UC',
     loreQuote: 'Youth is for riding full throttle! Don\'t get old before your time, Fuutarou!',
     description: 'Isanari in his leather jacket, giving a thumbs up beside his vintage motorcycle.',
+    imageUrl: '/cards/isanari/isa 1.jpg',
   },
   {
     id: 'isanari_r_01',
@@ -558,6 +604,7 @@ export const CARDS_CATALOG: CardDefinition[] = [
     rarity: 'R',
     loreQuote: 'Maruo and I go way back! That stiff-collared doctor used to have quite the temper himself!',
     description: 'Isanari laughing boisterously while recounting nostalgic schoolboy rivalry stories.',
+    imageUrl: '/cards/isanari/isa 1.jpg',
   },
 
   // ==========================================
@@ -573,6 +620,7 @@ export const CARDS_CATALOG: CardDefinition[] = [
     rarity: 'C',
     loreQuote: 'My gaze is fixed upon outer space! A mere high school mock exam is just one small step.',
     description: 'Takeda pointing dramatically toward the celestial cosmos from the rooftop observatory.',
+    imageUrl: '/cards/Yusuke/yusuke 1.jpg',
   },
   {
     id: 'takeda_uc_01',
@@ -584,6 +632,7 @@ export const CARDS_CATALOG: CardDefinition[] = [
     rarity: 'UC',
     loreQuote: 'Uesugi Fuutarou! Today I shall claim first place on the national ranking board!',
     description: 'Takeda unfurling his exam results parchment with flair, only to find Fuutarou tied for first.',
+    imageUrl: '/cards/Yusuke/yusuke 1.jpg',
   },
   {
     id: 'takeda_r_01',
@@ -595,6 +644,7 @@ export const CARDS_CATALOG: CardDefinition[] = [
     rarity: 'R',
     loreQuote: 'A true gentleman acknowledges when he meets an equal. Let us strive for greatness together!',
     description: 'Takeda shaking Fuutarou\'s hand with magnanimous sportsmanship after the national finals.',
+    imageUrl: '/cards/Yusuke/yusuke 1.jpg',
   },
 ];
 

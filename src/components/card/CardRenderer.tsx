@@ -298,7 +298,7 @@ export const CardRenderer: React.FC<CardRendererProps> = ({
           </div>
 
           {/* MAIN ARTWORK FRAME */}
-          <div className="relative flex-1 my-1.5 rounded-lg overflow-hidden border border-zinc-700/60 bg-gradient-to-br from-zinc-900 via-zinc-950 to-black flex flex-col justify-center items-center group">
+          <div className="relative flex-1 my-1.5 rounded-lg overflow-hidden border border-zinc-700/60 bg-gradient-to-br from-zinc-900 via-zinc-950 to-black flex flex-col justify-between items-center group">
             
             {/* Thematic Character Backdrop */}
             <div
@@ -314,32 +314,44 @@ export const CardRenderer: React.FC<CardRendererProps> = ({
               }}
             />
 
-            {/* Character Emblem / Central Artwork Focus */}
-            <div className="relative z-10 flex flex-col items-center justify-center p-3 text-center">
-              <div
-                className="w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center mb-2 shadow-inner border border-white/20 transition-transform duration-300 group-hover:scale-105"
-                style={{
-                  background: `radial-gradient(circle at 30% 30%, ${theme.accent}66, #09090b)`,
-                  boxShadow: `0 0 20px ${theme.glowColor}`,
-                }}
-              >
-                <span className="text-2xl sm:text-3xl filter drop-shadow">
-                  {theme.symbol}
-                </span>
-              </div>
+            {/* Illustration Image or Archetype Emblem */}
+            {cardDef.imageUrl ? (
+              <img
+                src={cardDef.imageUrl}
+                alt={`${cardDef.name} - ${cardDef.title}`}
+                className="absolute inset-0 w-full h-full object-cover z-10 transition-transform duration-500 group-hover:scale-105"
+                loading="lazy"
+              />
+            ) : (
+              <div className="relative z-10 flex flex-col items-center justify-center p-3 text-center my-auto">
+                <div
+                  className="w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center mb-2 shadow-inner border border-white/20 transition-transform duration-300 group-hover:scale-105"
+                  style={{
+                    background: `radial-gradient(circle at 30% 30%, ${theme.accent}66, #09090b)`,
+                    boxShadow: `0 0 20px ${theme.glowColor}`,
+                  }}
+                >
+                  <span className="text-2xl sm:text-3xl filter drop-shadow">
+                    {theme.symbol}
+                  </span>
+                </div>
 
-              <div className="font-extrabold tracking-wide text-zinc-100 text-sm sm:text-base drop-shadow-md">
-                {cardDef.name}
-              </div>
+                <div className="font-extrabold tracking-wide text-zinc-100 text-sm sm:text-base drop-shadow-md">
+                  {cardDef.name}
+                </div>
 
-              <div className="text-[11px] text-zinc-400 font-medium">
-                {cardDef.characterRole === 'sister' ? 'Nakano Sister' : 'Support Character'}
+                <div className="text-[11px] text-zinc-400 font-medium">
+                  {cardDef.characterRole === 'sister' ? 'Nakano Sister' : 'Support Character'}
+                </div>
               </div>
-            </div>
+            )}
+
+            {/* Top gradient shadow on art to preserve header contrast */}
+            <div className="absolute top-0 inset-x-0 h-8 bg-gradient-to-b from-black/60 to-transparent pointer-events-none z-15" />
 
             {/* LORE QUOTE OVERLAY */}
-            <div className="absolute bottom-1.5 inset-x-1.5 p-1.5 rounded bg-black/75 backdrop-blur-sm border border-zinc-800/80 text-center z-20">
-              <p className="text-[10px] sm:text-[11px] italic text-zinc-300 line-clamp-2 leading-tight">
+            <div className="relative mt-auto w-full p-1.5 rounded-b-lg bg-black/80 backdrop-blur-md border-t border-zinc-800/80 text-center z-20 shadow-lg">
+              <p className="text-[10px] sm:text-[11px] italic text-zinc-200 line-clamp-2 leading-tight">
                 &ldquo;{cardDef.loreQuote}&rdquo;
               </p>
             </div>
