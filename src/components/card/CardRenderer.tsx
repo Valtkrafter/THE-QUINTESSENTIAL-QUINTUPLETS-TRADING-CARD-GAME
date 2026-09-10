@@ -187,7 +187,6 @@ export const CardRenderer: React.FC<CardRendererProps> = ({
 }) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const [isHovered, setIsHovered] = useState(false);
-  const [hasImageError, setHasImageError] = useState(false);
 
   // Safely resolve the card definition
   const cardDefId =
@@ -218,20 +217,19 @@ export const CardRenderer: React.FC<CardRendererProps> = ({
   const cardNumber = (card as any).cardNumber ?? cardDef?.cardNumber ?? 'TQQ-000';
   const characterRole = (card as any).characterRole ?? cardDef?.characterRole ?? 'sister';
 
-  // Encode URI to safely handle paths with spaces (e.g. /cards/Ichika/Ichika Tier four.jpg)
-  const cleanImageUrl = useMemo(() => {
+  // Ensure path starts with /cards/ and is unencoded so encodeURI cleanly encodes spaces without double-encoding
+  const resolvedImageUrl = useMemo(() => {
     if (!rawImageUrl) return '';
+    let pathStr = String(rawImageUrl).trim();
+    if (!pathStr.startsWith('/') && !pathStr.startsWith('http')) {
+      pathStr = '/' + pathStr;
+    }
     try {
-      return encodeURI(decodeURI(rawImageUrl));
+      return decodeURI(pathStr);
     } catch {
-      return encodeURI(rawImageUrl);
+      return pathStr;
     }
   }, [rawImageUrl]);
-
-  // Reset image error state whenever image source changes
-  useEffect(() => {
-    setHasImageError(false);
-  }, [cleanImageUrl]);
 
   // Pointer tilt physics calculation
   const handlePointerMove = useCallback(
@@ -356,16 +354,15 @@ export const CardRenderer: React.FC<CardRendererProps> = ({
               />
 
               {/* Artwork Image or Visual Error Fallback */}
-              {!hasImageError && cleanImageUrl ? (
+              {resolvedImageUrl ? (
                 <img
-                  src={cleanImageUrl}
-                  alt={`${cardName} - ${cardTitle}`}
+                  src={encodeURI(resolvedImageUrl)}
+                  alt={cardName}
                   className="w-full h-full object-cover object-center select-none pointer-events-none transition-transform duration-500 group-hover:scale-105"
                   loading="eager"
                   decoding="async"
                   onError={(e) => {
-                    console.error(`Failed to load card artwork: ${cleanImageUrl}`);
-                    setHasImageError(true);
+                    console.error(`[IMAGE LOAD ERROR] Failed to fetch: "${resolvedImageUrl}"`);
                   }}
                 />
               ) : (
