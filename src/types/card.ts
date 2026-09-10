@@ -1,7 +1,11 @@
-/**
- * TQQ Vault - Core TypeScript Type Definitions
- * Data layer, gacha schemas, grading vault types, binder structures, and economy interfaces.
- */
+import type { MotionValue } from 'framer-motion';
+
+export interface CardLightState {
+  lightX: MotionValue<string>;
+  lightY: MotionValue<string>;
+  foilAngle: MotionValue<string>;
+  sheenOpacity: MotionValue<number>;
+}
 
 export type SisterId = 'ichika' | 'nino' | 'miku' | 'yotsuba' | 'itsuki';
 

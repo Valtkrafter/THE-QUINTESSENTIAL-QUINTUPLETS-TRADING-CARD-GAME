@@ -1,9 +1,11 @@
 'use client';
 
 import React, { useRef, useState, useCallback } from 'react';
+import { motion } from 'framer-motion';
 import { PackId } from '../../types/card';
 import { PACKS_CONFIG } from '../../config/economy';
 import { soundEngine } from '../../utils/audioEngine';
+import { useSmoothTilt } from '../../hooks/useSmoothTilt';
 
 export interface BoosterPack3DProps {
   packId: PackId;
@@ -136,55 +138,29 @@ export const BoosterPack3D: React.FC<BoosterPack3DProps> = ({
   isTorn = false,
   tearProgress = 0,
 }) => {
-  const packRef = useRef<HTMLDivElement>(null);
-  const [isHovered, setIsHovered] = useState(false);
+  // Universal smooth 3D tilt engine with derived light vector dynamics
+  const {
+    tiltStyle,
+    glareStyle,
+    isHovered,
+    containerProps,
+  } = useSmoothTilt({
+    maxRotation: 10,
+    perspective: 1200,
+    disabled: !interactive,
+    onHoverChange: (hovered) => {
+      if (hovered) soundEngine.playFoilRustle();
+    },
+  });
 
   const theme = PACK_THEMES[packId] ?? PACK_THEMES.kiosk;
   const config = PACKS_CONFIG[packId];
   const isGodPack = packId === 'god_pack' || config?.isGodPack;
 
-  // Pointer tilt physics calculation
-  const handlePointerMove = useCallback(
-    (e: React.PointerEvent<HTMLDivElement>) => {
-      if (!interactive || !packRef.current) return;
-
-      const rect = packRef.current.getBoundingClientRect();
-      const xPct = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
-      const yPct = Math.max(0, Math.min(100, ((e.clientY - rect.top) / rect.height) * 100));
-
-      const rotY = Number((((xPct - 50) / 50) * 14).toFixed(2));
-      const rotX = Number((-((yPct - 50) / 50) * 14).toFixed(2));
-
-      const el = packRef.current;
-      el.style.setProperty('--rot-x', `${rotX}deg`);
-      el.style.setProperty('--rot-y', `${rotY}deg`);
-      el.style.setProperty('--glare-x', `${xPct.toFixed(1)}%`);
-      el.style.setProperty('--glare-y', `${yPct.toFixed(1)}%`);
-      el.style.setProperty('--glare-opacity', '0.65');
-    },
-    [interactive]
-  );
-
-  const handlePointerLeave = useCallback(() => {
-    if (!interactive || !packRef.current) return;
-    setIsHovered(false);
-
-    const el = packRef.current;
-    el.style.setProperty('--rot-x', '0deg');
-    el.style.setProperty('--rot-y', '0deg');
-    el.style.setProperty('--glare-opacity', '0');
-  }, [interactive]);
-
-  const handlePointerEnter = useCallback(() => {
-    if (!interactive) return;
-    setIsHovered(true);
-    soundEngine.playFoilRustle();
-  }, [interactive]);
-
   // Crimped zig-zag foil teeth SVG
   const renderCrimpedEdge = (isTop: boolean) => (
     <svg
-      className={`w-full h-3 shrink-0 ${isTop ? 'rotate-180' : ''}`}
+      className={`w-full h-3 shrink-0 ${isTop ? 'rotate-180' : ''} pointer-events-none`}
       viewBox="0 0 100 12"
       preserveAspectRatio="none"
     >
@@ -199,23 +175,20 @@ export const BoosterPack3D: React.FC<BoosterPack3DProps> = ({
 
   return (
     <div
-      className={`card-perspective-wrapper inline-block select-none ${className}`}
+      className={`card-perspective-wrapper inline-block select-none relative before:absolute before:-inset-4 before:content-[''] cursor-pointer ${className}`}
       onClick={onClick}
+      {...containerProps}
     >
-      <div
-        ref={packRef}
-        onPointerMove={handlePointerMove}
-        onPointerEnter={handlePointerEnter}
-        onPointerLeave={handlePointerLeave}
+      <motion.div
         style={{
-          transform: 'rotateX(var(--rot-x, 0deg)) rotateY(var(--rot-y, 0deg))',
+          ...tiltStyle,
           boxShadow: isHovered
             ? `0 30px 60px -10px rgba(0, 0, 0, 0.9), 0 0 35px ${theme.accentGlow}`
             : `0 20px 40px -10px rgba(0, 0, 0, 0.8), 0 0 15px ${theme.accentGlow}66`,
         }}
-        className={`card-3d-root relative w-[290px] sm:w-[320px] h-[440px] sm:h-[480px] rounded-2xl overflow-hidden cursor-pointer flex flex-col justify-between ${
+        className={`card-3d-root relative w-[290px] sm:w-[320px] h-[440px] sm:h-[480px] rounded-2xl overflow-hidden flex flex-col justify-between ${
           isFloating && !isHovered ? 'animate-bounce' : ''
-        } ${isHovered ? 'is-interacting' : ''} ${theme.borderClass} border bg-zinc-950 transition-all duration-300`}
+        } ${isHovered ? 'is-interacting' : ''} ${theme.borderClass} border bg-zinc-950`}
       >
         {/* Top Crimped Foil Edge */}
         <div className="z-30 bg-zinc-900 border-b border-white/10 shadow-md">
@@ -340,13 +313,13 @@ export const BoosterPack3D: React.FC<BoosterPack3DProps> = ({
         </div>
 
         {/* Specular Laminate Reflection Overlay */}
-        <div className="card-specular-glare" />
+        <motion.div className="card-specular-glare pointer-events-none" style={glareStyle} />
 
         {/* God Pack Divine Rays */}
         {isGodPack && (
           <div className="absolute inset-0 pointer-events-none mix-blend-screen opacity-50 bg-[radial-gradient(circle,rgba(255,215,0,0.8)_0%,transparent_70%)] animate-pulse" />
         )}
-      </div>
+      </motion.div>
     </div>
   );
 };

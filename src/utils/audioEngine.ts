@@ -4,7 +4,7 @@
  * for foil rustles, tearing pops, spark bursts, anticipation rumbles, and victory reveals.
  */
 
-import { Rarity } from '../types/card';
+import { GradeTier, Rarity } from '../types/card';
 
 class AudioEngine {
   private ctx: AudioContext | null = null;
@@ -298,6 +298,367 @@ class AudioEngine {
         osc.start(ctx.currentTime + i * 0.04);
         osc.stop(ctx.currentTime + i * 0.04 + 0.9);
       });
+    } catch {
+      // Audio fallback
+    }
+  }
+
+  /**
+   * Laser Scanner: Dual neon cyan sweep with frequency modulated sci-fi hum
+   */
+  public playLaserScanSound(): void {
+    if (this.muted) return;
+    const ctx = this.getContext();
+    if (!ctx) return;
+
+    try {
+      const now = ctx.currentTime;
+      // Dual pass sweep (two passes, each ~0.8s)
+      [0, 0.9].forEach((offset) => {
+        const osc = ctx.createOscillator();
+        const filter = ctx.createBiquadFilter();
+        const gain = ctx.createGain();
+
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(350, now + offset);
+        osc.frequency.exponentialRampToValueAtTime(1400, now + offset + 0.4);
+        osc.frequency.exponentialRampToValueAtTime(320, now + offset + 0.8);
+
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(800, now + offset);
+        filter.frequency.exponentialRampToValueAtTime(2800, now + offset + 0.4);
+        filter.frequency.exponentialRampToValueAtTime(750, now + offset + 0.8);
+        filter.Q.setValueAtTime(5, now + offset);
+
+        gain.gain.setValueAtTime(0.01, now + offset);
+        gain.gain.linearRampToValueAtTime(0.1, now + offset + 0.2);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + offset + 0.85);
+
+        osc.connect(filter);
+        filter.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.start(now + offset);
+        osc.stop(now + offset + 0.9);
+      });
+    } catch {
+      // Audio fallback
+    }
+  }
+
+  /**
+   * Hydraulic Clamp Stamp: Heavy pneumatic impact + sub-bass slam + pressure hiss
+   */
+  public playHydraulicStampSound(): void {
+    if (this.muted) return;
+    const ctx = this.getContext();
+    if (!ctx) return;
+
+    try {
+      const now = ctx.currentTime;
+
+      // 1. Heavy bass thud (low sine drop)
+      const subOsc = ctx.createOscillator();
+      const subGain = ctx.createGain();
+      subOsc.type = 'sine';
+      subOsc.frequency.setValueAtTime(140, now);
+      subOsc.frequency.exponentialRampToValueAtTime(32, now + 0.35);
+
+      subGain.gain.setValueAtTime(0.45, now);
+      subGain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+
+      subOsc.connect(subGain);
+      subGain.connect(ctx.destination);
+      subOsc.start(now);
+      subOsc.stop(now + 0.5);
+
+      // 2. Mechanical metal slam transient
+      const slamOsc = ctx.createOscillator();
+      const slamGain = ctx.createGain();
+      slamOsc.type = 'triangle';
+      slamOsc.frequency.setValueAtTime(480, now);
+      slamOsc.frequency.exponentialRampToValueAtTime(90, now + 0.12);
+
+      slamGain.gain.setValueAtTime(0.3, now);
+      slamGain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+
+      slamOsc.connect(slamGain);
+      slamGain.connect(ctx.destination);
+      slamOsc.start(now);
+      slamOsc.stop(now + 0.2);
+
+      // 3. High pressure steam hiss
+      const bufferSize = ctx.sampleRate * 0.4;
+      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = Math.random() * 2 - 1;
+      }
+
+      const noise = ctx.createBufferSource();
+      noise.buffer = buffer;
+
+      const hissFilter = ctx.createBiquadFilter();
+      hissFilter.type = 'highpass';
+      hissFilter.frequency.setValueAtTime(2200, now);
+
+      const hissGain = ctx.createGain();
+      hissGain.gain.setValueAtTime(0.18, now + 0.05);
+      hissGain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+
+      noise.connect(hissFilter);
+      hissFilter.connect(hissGain);
+      hissGain.connect(ctx.destination);
+
+      noise.start(now + 0.04);
+      noise.stop(now + 0.45);
+    } catch {
+      // Audio fallback
+    }
+  }
+
+  /**
+   * Grade Reveal Impact: Color-coded audio cues per grade tier
+   */
+  public playGradeReveal(tier: GradeTier): void {
+    if (this.muted) return;
+    const ctx = this.getContext();
+    if (!ctx) return;
+
+    try {
+      const now = ctx.currentTime;
+
+      if (tier === 'POOR_1_3') {
+        // Harsh dissonant descending buzzer & dull thud ("Schulhof-Müll")
+        const osc1 = ctx.createOscillator();
+        const osc2 = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        osc1.type = 'sawtooth';
+        osc2.type = 'sawtooth';
+        osc1.frequency.setValueAtTime(160, now);
+        osc1.frequency.linearRampToValueAtTime(80, now + 0.6);
+        osc2.frequency.setValueAtTime(175, now); // Dissonant minor 2nd beat
+        osc2.frequency.linearRampToValueAtTime(85, now + 0.6);
+
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.65);
+
+        osc1.connect(gain);
+        osc2.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc1.start(now);
+        osc2.start(now);
+        osc1.stop(now + 0.7);
+        osc2.stop(now + 0.7);
+        return;
+      }
+
+      if (tier === 'USED_4_6') {
+        // Double mechanical validation tap
+        [0, 0.12].forEach((offset) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(440, now + offset);
+          gain.gain.setValueAtTime(0.12, now + offset);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + offset + 0.15);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now + offset);
+          osc.stop(now + offset + 0.18);
+        });
+        return;
+      }
+
+      if (tier === 'CRISP_7_8') {
+        // Bright metallic silver chime ("Crisp")
+        const chimeNotes = [659.25, 830.61, 987.77, 1318.51]; // E5, G#5, B5, E6
+        chimeNotes.forEach((freq, i) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, now + i * 0.05);
+
+          gain.gain.setValueAtTime(0.14, now + i * 0.05);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.05 + 1.2);
+
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now + i * 0.05);
+          osc.stop(now + i * 0.05 + 1.3);
+        });
+        return;
+      }
+
+      if (tier === 'MINT_9') {
+        // Platinum shimmer harmonic arpeggio
+        const mintNotes = [523.25, 659.25, 783.99, 987.77, 1046.5]; // C5, E5, G5, B5, C6
+        mintNotes.forEach((freq, i) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, now + i * 0.04);
+
+          gain.gain.setValueAtTime(0.15, now + i * 0.04);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.04 + 1.4);
+
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now + i * 0.04);
+          osc.stop(now + i * 0.04 + 1.5);
+        });
+        return;
+      }
+
+      if (tier === 'GEM_MINT_10') {
+        // Golden Explosion & Fanfare ("PEAK FICTION")
+        const fanfare = [587.33, 739.99, 880.0, 1174.66, 1760.0]; // D Major Epic
+        fanfare.forEach((freq, i) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(freq, now + i * 0.05);
+
+          const filter = ctx.createBiquadFilter();
+          filter.type = 'lowpass';
+          filter.frequency.setValueAtTime(3000, now);
+
+          gain.gain.setValueAtTime(0.12, now + i * 0.05);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.05 + 2.0);
+
+          osc.connect(filter);
+          filter.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now + i * 0.05);
+          osc.stop(now + i * 0.05 + 2.1);
+        });
+
+        // Add sub-boom
+        const sub = ctx.createOscillator();
+        const subGain = ctx.createGain();
+        sub.type = 'sine';
+        sub.frequency.setValueAtTime(90, now);
+        sub.frequency.exponentialRampToValueAtTime(25, now + 0.8);
+        subGain.gain.setValueAtTime(0.4, now);
+        subGain.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
+        sub.connect(subGain);
+        subGain.connect(ctx.destination);
+        sub.start(now);
+        sub.stop(now + 0.85);
+        return;
+      }
+
+      if (tier === 'BLACK_LABEL') {
+        // Obsidian Void flare & Dark Lightning ("THE CHOSEN ONE")
+        // 1. Deep seismic rumble
+        const sub = ctx.createOscillator();
+        const subGain = ctx.createGain();
+        sub.type = 'sine';
+        sub.frequency.setValueAtTime(45, now);
+        sub.frequency.exponentialRampToValueAtTime(20, now + 1.8);
+        subGain.gain.setValueAtTime(0.5, now);
+        subGain.gain.exponentialRampToValueAtTime(0.001, now + 1.8);
+        sub.connect(subGain);
+        subGain.connect(ctx.destination);
+        sub.start(now);
+        sub.stop(now + 2.0);
+
+        // 2. Multi-strike lightning crackles
+        this.playLightningSound();
+        setTimeout(() => this.playLightningSound(), 120);
+        setTimeout(() => this.playLightningSound(), 260);
+
+        // 3. Dark cathedral choir resonance (G minor cosmic chords)
+        const darkChord = [196.0, 233.08, 293.66, 392.0, 587.33, 783.99]; // G3, Bb3, D4, G4, D5, G5
+        darkChord.forEach((freq, idx) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, now + idx * 0.06);
+
+          gain.gain.setValueAtTime(0.12, now + idx * 0.06);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.06 + 3.0);
+
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now + idx * 0.06);
+          osc.stop(now + idx * 0.06 + 3.2);
+        });
+      }
+    } catch {
+      // Audio fallback
+    }
+  }
+
+  /**
+   * Dusting / Recycler: Sci-Fi particle vaporization burn
+   */
+  public playDustVaporizeSound(): void {
+    if (this.muted) return;
+    const ctx = this.getContext();
+    if (!ctx) return;
+
+    try {
+      const now = ctx.currentTime;
+      const bufferSize = ctx.sampleRate * 0.5;
+      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = Math.random() * 2 - 1;
+      }
+
+      const noise = ctx.createBufferSource();
+      noise.buffer = buffer;
+
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'bandpass';
+      filter.frequency.setValueAtTime(3200, now);
+      filter.frequency.exponentialRampToValueAtTime(400, now + 0.5);
+      filter.Q.setValueAtTime(4, now);
+
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(0.25, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+
+      noise.connect(filter);
+      filter.connect(gain);
+      gain.connect(ctx.destination);
+
+      noise.start(now);
+      noise.stop(now + 0.55);
+
+      // Crystalline shimmer after-ring
+      this.playSparkleSound();
+    } catch {
+      // Audio fallback
+    }
+  }
+
+  /**
+   * Tool purchase or equip chime
+   */
+  public playToolClickSound(): void {
+    if (this.muted) return;
+    const ctx = this.getContext();
+    if (!ctx) return;
+
+    try {
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(880, now);
+      osc.frequency.exponentialRampToValueAtTime(1760, now + 0.08);
+
+      gain.gain.setValueAtTime(0.12, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.1);
     } catch {
       // Audio fallback
     }

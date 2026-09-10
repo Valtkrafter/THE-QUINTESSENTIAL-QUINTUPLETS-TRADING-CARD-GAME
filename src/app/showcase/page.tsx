@@ -27,7 +27,9 @@ import { CardRenderer, CHARACTER_THEMES, FINISH_LABELS } from '../../components/
 import { GradingSlab } from '../../components/card/GradingSlab';
 import { BoosterPack3D, PACK_THEMES } from '../../components/pack/BoosterPack3D';
 import { PackOpeningModal } from '../../components/pack/PackOpeningModal';
-import { Sparkles, Layers, Award, Eye, PackageOpen, Coins, Plus, RotateCcw } from 'lucide-react';
+import { GradingStation } from '../../components/vault/GradingStation';
+import { DustingWorkshop } from '../../components/dusting/DustingWorkshop';
+import { Sparkles, Layers, Award, Eye, PackageOpen, Coins, Plus, RotateCcw, Flame } from 'lucide-react';
 
 type SlabViewMode = 'raw' | 'poor' | 'used' | 'crisp' | 'mint9' | 'gem10' | 'black_label';
 
@@ -38,6 +40,7 @@ export default function ShowcasePage() {
   const [slabMode, setSlabMode] = useState<SlabViewMode>('gem10');
   const [openingPackId, setOpeningPackId] = useState<PackId | null>(null);
   const [selectedFitMode, setSelectedFitMode] = useState<'auto' | 'exact' | 'top' | 'contain'>('auto');
+  const [activeTab, setActiveTab] = useState<'vault' | 'workshop' | 'packs' | 'shaders'>('vault');
 
   const yen = useGameStore((state) => state.yen);
   const stardust = useGameStore((state) => state.stardust);
@@ -195,26 +198,86 @@ export default function ShowcasePage() {
         </div>
       </div>
 
-      {/* HEADER */}
-      <header className="max-w-6xl w-full mb-8 text-center flex flex-col items-center">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-bold uppercase tracking-widest mb-3">
-          <Sparkles className="w-3.5 h-3.5" />
-          TQQ Vault Physical Renderer & Gacha Ceremony
-        </div>
-        <h1 className="text-3xl sm:text-5xl font-black tracking-tight bg-gradient-to-r from-zinc-100 via-amber-200 to-yellow-500 bg-clip-text text-transparent">
-          3D Card Shaders & Booster Ceremony
-        </h1>
-        <p className="text-zinc-400 text-sm sm:text-base max-w-2xl mt-2">
-          Experience real-world TCG physics with interactive cursor pitch & yaw, dynamic specular
-          glare, multi-layered iridescent foils, museum-grade acrylic grading slabs, and tactile booster pack opening.
-        </p>
-      </header>
+      {/* TOP NAVIGATION TABS */}
+      <div className="w-full max-w-7xl flex flex-wrap items-center justify-center gap-2 mb-8 p-1.5 rounded-2xl bg-zinc-900/60 border border-zinc-800">
+        <button
+          onClick={() => setActiveTab('vault')}
+          className={`px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm flex items-center gap-2 transition ${
+            activeTab === 'vault'
+              ? 'bg-amber-500 text-black shadow-lg shadow-amber-500/20'
+              : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
+          }`}
+        >
+          <Award className="w-4 h-4" />
+          <span>The Vault (Grading Lab)</span>
+          <span className="text-[10px] px-1.5 py-0.2 rounded bg-black/30 font-mono font-bold">
+            Stage 4
+          </span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('workshop')}
+          className={`px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm flex items-center gap-2 transition ${
+            activeTab === 'workshop'
+              ? 'bg-cyan-500 text-black shadow-lg shadow-cyan-500/20'
+              : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
+          }`}
+        >
+          <Flame className="w-4 h-4" />
+          <span>Stardust Workshop</span>
+          <span className="text-[10px] px-1.5 py-0.2 rounded bg-black/30 font-mono font-bold">
+            Stage 4
+          </span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('packs')}
+          className={`px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm flex items-center gap-2 transition ${
+            activeTab === 'packs'
+              ? 'bg-amber-500 text-black shadow-lg shadow-amber-500/20'
+              : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
+          }`}
+        >
+          <PackageOpen className="w-4 h-4" />
+          <span>Booster Packs</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('shaders')}
+          className={`px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm flex items-center gap-2 transition ${
+            activeTab === 'shaders'
+              ? 'bg-amber-500 text-black shadow-lg shadow-amber-500/20'
+              : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
+          }`}
+        >
+          <Layers className="w-4 h-4" />
+          <span>3D Shader Laboratory</span>
+        </button>
+      </div>
 
       {/* ============================================================
-          SECTION 1: BOOSTER PACK OPENING HUB
+          TAB 1: THE VAULT (GRADING LAB)
           ============================================================ */}
-      <section className="max-w-7xl w-full mb-16">
-        <div className="flex items-center justify-between mb-4">
+      {activeTab === 'vault' && (
+        <GradingStation
+          onOpenShop={() => setActiveTab('workshop')}
+          onOpenPacks={() => setActiveTab('packs')}
+        />
+      )}
+
+      {/* ============================================================
+          TAB 2: STARDUST WORKSHOP & CARD RECYCLER
+          ============================================================ */}
+      {activeTab === 'workshop' && (
+        <DustingWorkshop onGoToGrading={() => setActiveTab('vault')} />
+      )}
+
+      {/* ============================================================
+          TAB 3: BOOSTER PACK OPENING HUB
+          ============================================================ */}
+      {activeTab === 'packs' && (
+        <section className="max-w-7xl w-full mb-16">
+          <div className="flex items-center justify-between mb-4">
           <div>
             <h2 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
               <PackageOpen className="w-5 h-5 text-amber-400" />
@@ -262,12 +325,15 @@ export default function ShowcasePage() {
           })}
         </div>
       </section>
+      )}
 
       {/* ============================================================
-          SECTION 2: 3D CARD RENDERER & SLAB LABORATORY
+          TAB 4: 3D CARD RENDERER & SLAB LABORATORY
           ============================================================ */}
-      <section className="max-w-7xl w-full">
-        <div className="flex items-center justify-between mb-6">
+      {activeTab === 'shaders' && (
+        <>
+          <section className="max-w-7xl w-full">
+            <div className="flex items-center justify-between mb-6">
           <div>
             <h2 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
               <Layers className="w-5 h-5 text-amber-400" />
@@ -657,6 +723,8 @@ export default function ShowcasePage() {
           })}
         </div>
       </section>
+      </>
+      )}
 
       {/* PACK OPENING CEREMONY MODAL */}
       {openingPackId !== null && (
@@ -670,7 +738,7 @@ export default function ShowcasePage() {
 
       {/* FOOTER */}
       <footer className="max-w-6xl w-full mt-16 pt-8 border-t border-zinc-900 text-center text-xs text-zinc-500 font-mono">
-        TQQ VAULT • 3D CARD RENDERER & BOOSTER PACK CEREMONY • STAGE 3
+        TQQ VAULT • THE VAULT (GRADING LAB) & STARDUST WORKSHOP • STAGE 4
       </footer>
     </main>
   );

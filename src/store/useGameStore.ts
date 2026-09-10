@@ -64,7 +64,10 @@ export interface GameState {
   // Actions
   openPack: (packId: PackId) => OpenPackResult;
   gradeCard: (cardInstanceId: string, toolOverrides?: ConsumableToolId[]) => GradingResultInfo;
+  submitForGrading: (cardInstanceId: string, toolOverrides?: ConsumableToolId[]) => GradingResultInfo;
   dustCard: (cardInstanceId: string) => number;
+  vaporizeCard: (cardInstanceId: string) => number;
+  dustCards: (cardInstanceIds: string[]) => number;
   buyTool: (toolId: ConsumableToolId, quantity?: number) => void;
   equipTool: (toolId: ConsumableToolId) => void;
   unequipTool: (toolId: ConsumableToolId) => void;
@@ -287,6 +290,13 @@ export const useGameStore = create<GameState>()(
         };
       },
 
+      submitForGrading: (
+        cardInstanceId: string,
+        toolOverrides?: ConsumableToolId[]
+      ): GradingResultInfo => {
+        return get().gradeCard(cardInstanceId, toolOverrides);
+      },
+
       dustCard: (cardInstanceId: string): number => {
         const state = get();
         const cardIndex = state.inventory.findIndex((c) => c.id === cardInstanceId);
@@ -333,6 +343,61 @@ export const useGameStore = create<GameState>()(
         return dustEarned;
       },
 
+      vaporizeCard: (cardInstanceId: string): number => {
+        return get().dustCard(cardInstanceId);
+      },
+
+      dustCards: (cardInstanceIds: string[]): number => {
+        if (cardInstanceIds.length === 0) return 0;
+        const state = get();
+        const idSet = new Set(cardInstanceIds);
+
+        // Check Maruo support bonus (+20%)
+        const cardMap = new Map<string, CardInstance>();
+        for (const c of state.inventory) {
+          cardMap.set(c.id, c);
+        }
+        const report = analyzeBinderPage(state.binder, cardMap);
+        const hasMaruo = report.supportCharacterId === 'maruo';
+
+        let totalDustEarned = 0;
+        const unslottedBinderIds = new Set<string>();
+
+        const updatedInventory = state.inventory.filter((card) => {
+          if (!idSet.has(card.id)) return true;
+          // Graded cards cannot be dusted
+          if (card.grade) return true;
+
+          totalDustEarned += calculateDustYield(card, hasMaruo);
+          if (card.slottedBinder) {
+            unslottedBinderIds.add(card.id);
+          }
+          return false;
+        });
+
+        let updatedBinder = state.binder;
+        if (unslottedBinderIds.size > 0) {
+          const newSlots = state.binder.slots.map((s) =>
+            s.cardInstanceId && unslottedBinderIds.has(s.cardInstanceId)
+              ? { ...s, cardInstanceId: null }
+              : s
+          );
+          updatedBinder = { ...state.binder, slots: newSlots };
+        }
+
+        set({
+          stardust: state.stardust + totalDustEarned,
+          inventory: updatedInventory,
+          binder: updatedBinder,
+          stats: {
+            ...state.stats,
+            totalStardustEarned: state.stats.totalStardustEarned + totalDustEarned,
+          },
+        });
+
+        return totalDustEarned;
+      },
+
       buyTool: (toolId: ConsumableToolId, quantity: number = 1): void => {
         const state = get();
         const toolConfig = CONSUMABLE_TOOLS[toolId];
@@ -361,13 +426,13 @@ export const useGameStore = create<GameState>()(
 
       equipTool: (toolId: ConsumableToolId): void => {
         const state = get();
-        if (state.equippedTools.includes(toolId)) return;
         const owned = state.tools[toolId] ?? 0;
         if (owned <= 0) {
           throw new Error(`Tool not owned: ${toolId}`);
         }
+        // Workstation supports 1 tool socket upgrade at a time
         set({
-          equippedTools: [...state.equippedTools, toolId],
+          equippedTools: [toolId],
         });
       },
 

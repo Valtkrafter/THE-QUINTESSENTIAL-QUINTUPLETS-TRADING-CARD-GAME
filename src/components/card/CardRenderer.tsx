@@ -1,9 +1,11 @@
 'use client';
 
 import React, { useRef, useState, useCallback, useMemo, useEffect } from 'react';
-import { CardDefinition, CardInstance, CharacterId, Finish, Rarity } from '../../types/card';
+import { motion, useTransform, MotionStyle } from 'framer-motion';
+import { CardDefinition, CardInstance, CardLightState, CharacterId, Finish, Rarity } from '../../types/card';
 import { CARD_MAP, getCardDef } from '../../config/cardsData';
 import { calculateCardMarketValue } from '../../config/economy';
+import { useSmoothTilt } from '../../hooks/useSmoothTilt';
 
 export interface CardRendererProps {
   card: CardInstance | (CardDefinition & Partial<CardInstance>);
@@ -12,6 +14,8 @@ export interface CardRendererProps {
   className?: string;
   onClick?: () => void;
   showMarketValue?: boolean;
+  disableTilt?: boolean;
+  externalLight?: CardLightState;
 }
 
 // Character visual theme styling
@@ -186,10 +190,11 @@ export const CardRenderer: React.FC<CardRendererProps> = ({
   className = '',
   onClick,
   showMarketValue = true,
+  disableTilt = false,
+  externalLight,
 }) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
-  const [isHovered, setIsHovered] = useState(false);
   const [hasImageError, setHasImageError] = useState(false);
 
   // Safely resolve the card definition
@@ -322,77 +327,64 @@ export const CardRenderer: React.FC<CardRendererProps> = ({
     fitStatus,
   });
 
-  // Pointer tilt physics calculation
-  const handlePointerMove = useCallback(
-    (e: React.PointerEvent<HTMLDivElement>) => {
-      if (!interactive || !cardRef.current) return;
+  // Universal smooth 3D tilt and physically-driven light mapping
+  const localTilt = useSmoothTilt({
+    maxRotation: 16,
+    perspective: 1200,
+    disabled: !interactive || disableTilt || Boolean(externalLight),
+  });
 
-      const rect = cardRef.current.getBoundingClientRect();
-      const clientX = e.clientX;
-      const clientY = e.clientY;
+  // Conditional Light Source Resolution:
+  // If externalLight is passed from a parent (e.g., GradingSlab), use externalLight;
+  // Otherwise use localTilt.light.
+  const resolvedLight: CardLightState = externalLight ?? localTilt.light;
 
-      const x = clientX - rect.left;
-      const y = clientY - rect.top;
-
-      const xPct = Math.max(0, Math.min(100, (x / rect.width) * 100));
-      const yPct = Math.max(0, Math.min(100, (y / rect.height) * 100));
-
-      // Pitch and yaw clamped to +/- 16 degrees
-      const rotY = Number((((xPct - 50) / 50) * 16).toFixed(2));
-      const rotX = Number((-((yPct - 50) / 50) * 16).toFixed(2));
-
-      const cardEl = cardRef.current;
-      cardEl.style.setProperty('--rot-x', `${rotX}deg`);
-      cardEl.style.setProperty('--rot-y', `${rotY}deg`);
-      cardEl.style.setProperty('--glare-x', `${xPct.toFixed(1)}%`);
-      cardEl.style.setProperty('--glare-y', `${yPct.toFixed(1)}%`);
-      cardEl.style.setProperty('--glare-opacity', '0.75');
-    },
-    [interactive]
+  // Derive glare background and style for specular reflection
+  const resolvedGlareBackground = useTransform(
+    [resolvedLight.lightX, resolvedLight.lightY],
+    ([gx, gy]: string[]) =>
+      `radial-gradient(circle 240px at ${gx} ${gy}, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0.2) 30%, rgba(255, 255, 255, 0.05) 55%, transparent 80%)`
   );
 
-  const handlePointerLeave = useCallback(() => {
-    if (!interactive || !cardRef.current) return;
-    setIsHovered(false);
-
-    const cardEl = cardRef.current;
-    cardEl.style.setProperty('--rot-x', '0deg');
-    cardEl.style.setProperty('--rot-y', '0deg');
-    cardEl.style.setProperty('--glare-opacity', '0');
-  }, [interactive]);
-
-  const handlePointerEnter = useCallback(() => {
-    if (!interactive) return;
-    setIsHovered(true);
-  }, [interactive]);
+  const resolvedGlareStyle: MotionStyle = {
+    background: resolvedGlareBackground,
+    opacity: resolvedLight.sheenOpacity,
+  };
 
   // Dimensions based on standard 63mm x 88mm ratio
   const sizeClasses = {
-    sm: 'w-[189px] h-[264px] text-xs', // 3x scale down
-    md: 'w-[280px] h-[391px] text-sm', // standard display
-    lg: 'w-[350px] h-[489px] text-base', // detailed view
+    sm: 'w-[190px]',
+    md: 'w-[260px]',
+    lg: 'w-[320px]',
   }[size];
 
   return (
     <div
-      className={`card-perspective-wrapper inline-block select-none ${className}`}
+      className={`card-perspective-wrapper inline-block select-none relative before:absolute before:-inset-4 before:content-[''] cursor-pointer ${className}`}
       onClick={onClick}
+      {...(disableTilt || externalLight ? {} : localTilt.containerProps)}
     >
-      <div
+      <motion.div
         ref={cardRef}
-        onPointerMove={handlePointerMove}
-        onPointerEnter={handlePointerEnter}
-        onPointerLeave={handlePointerLeave}
         style={{
-          transform: 'rotateX(var(--rot-x, 0deg)) rotateY(var(--rot-y, 0deg))',
+          ...(disableTilt ? {} : localTilt.tiltStyle),
+          '--light-x': resolvedLight.lightX,
+          '--light-y': resolvedLight.lightY,
+          '--foil-angle': resolvedLight.foilAngle,
+          '--sheen-opacity': resolvedLight.sheenOpacity,
+          '--glare-x': resolvedLight.lightX,
+          '--glare-y': resolvedLight.lightY,
+          '--glare-opacity': resolvedLight.sheenOpacity,
           backfaceVisibility: 'visible',
           WebkitBackfaceVisibility: 'visible',
-          boxShadow: isHovered
+          boxShadow: localTilt.isHovered && !disableTilt
             ? `0 20px 40px -10px rgba(0, 0, 0, 0.8), 0 0 25px ${theme.glowColor}`
             : '0 10px 25px -5px rgba(0, 0, 0, 0.6), 0 0 10px rgba(0, 0, 0, 0.4)',
-        }}
-        className={`card-3d-root relative ${sizeClasses} aspect-[63/88] rounded-xl overflow-hidden cursor-pointer bg-zinc-950 border border-zinc-800 ${
-          isHovered ? 'is-interacting' : ''
+        } as any}
+        className={`card-3d-root relative ${sizeClasses} aspect-[63/88] rounded-xl overflow-hidden ${
+          disableTilt ? 'pointer-events-none' : 'cursor-pointer'
+        } bg-zinc-950 border border-zinc-800 ${
+          localTilt.isHovered && !disableTilt ? 'is-interacting' : ''
         }`}
       >
         {/* Ambient Character Rim Glow (z-10) */}
@@ -605,8 +597,8 @@ export const CardRenderer: React.FC<CardRendererProps> = ({
         )}
 
         {/* Specular Laminate Glare (Direct Light Reflection) (z-40) */}
-        <div className="card-specular-glare pointer-events-none z-40" />
-      </div>
+        <motion.div className="card-specular-glare pointer-events-none z-40" style={resolvedGlareStyle} />
+      </motion.div>
     </div>
   );
 };

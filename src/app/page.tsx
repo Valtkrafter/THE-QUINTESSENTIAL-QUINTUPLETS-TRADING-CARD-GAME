@@ -1,5 +1,5 @@
-import ShowcasePage from './showcase/page';
+import { GrandBinder } from '../components/binder/GrandBinder';
 
 export default function Home() {
-  return <ShowcasePage />;
+  return <GrandBinder />;
 }

@@ -1,9 +1,11 @@
 'use client';
 
-import React, { useRef, useState, useCallback } from 'react';
+import React from 'react';
+import { motion, useMotionTemplate } from 'framer-motion';
 import { CardInstance, GradeResult, GradeTier } from '../../types/card';
 import { CARD_MAP, getCardDef } from '../../config/cardsData';
 import { CardRenderer } from './CardRenderer';
+import { useSmoothTilt } from '../../hooks/useSmoothTilt';
 
 export interface GradingSlabProps {
   card: CardInstance;
@@ -24,10 +26,19 @@ export const GradingSlab: React.FC<GradingSlabProps> = ({
   showMarketValue = true,
   mockGrade,
 }) => {
-  const slabRef = useRef<HTMLDivElement>(null);
-  const [isHovered, setIsHovered] = useState(false);
-
   const activeGrade: GradeResult | undefined = card.grade ?? mockGrade;
+
+  // Unified smooth tilt engine with derived light vector dynamics
+  const {
+    tiltStyle,
+    isHovered,
+    containerProps,
+    light,
+  } = useSmoothTilt({
+    maxRotation: 12,
+    perspective: 1200,
+    disabled: !interactive || !activeGrade,
+  });
 
   // If card is raw and no mockGrade provided, render standard raw card
   if (!activeGrade) {
@@ -46,49 +57,6 @@ export const GradingSlab: React.FC<GradingSlabProps> = ({
   const cardDef = getCardDef(card.cardDefId) ?? CARD_MAP['miku_c_01'];
   const isBlackLabel = activeGrade.isBlackLabel || activeGrade.tier === 'BLACK_LABEL';
   const tier = activeGrade.tier;
-
-  // Pointer tilt physics for the entire acrylic slab unit
-  const handlePointerMove = useCallback(
-    (e: React.PointerEvent<HTMLDivElement>) => {
-      if (!interactive || !slabRef.current) return;
-
-      const rect = slabRef.current.getBoundingClientRect();
-      const clientX = e.clientX;
-      const clientY = e.clientY;
-
-      const x = clientX - rect.left;
-      const y = clientY - rect.top;
-
-      const xPct = Math.max(0, Math.min(100, (x / rect.width) * 100));
-      const yPct = Math.max(0, Math.min(100, (y / rect.height) * 100));
-
-      const rotY = Number((((xPct - 50) / 50) * 15).toFixed(2));
-      const rotX = Number((-((yPct - 50) / 50) * 15).toFixed(2));
-
-      const el = slabRef.current;
-      el.style.setProperty('--rot-x', `${rotX}deg`);
-      el.style.setProperty('--rot-y', `${rotY}deg`);
-      el.style.setProperty('--glare-x', `${xPct.toFixed(1)}%`);
-      el.style.setProperty('--glare-y', `${yPct.toFixed(1)}%`);
-      el.style.setProperty('--glare-opacity', '0.65');
-    },
-    [interactive]
-  );
-
-  const handlePointerLeave = useCallback(() => {
-    if (!interactive || !slabRef.current) return;
-    setIsHovered(false);
-
-    const el = slabRef.current;
-    el.style.setProperty('--rot-x', '0deg');
-    el.style.setProperty('--rot-y', '0deg');
-    el.style.setProperty('--glare-opacity', '0');
-  }, [interactive]);
-
-  const handlePointerEnter = useCallback(() => {
-    if (!interactive) return;
-    setIsHovered(true);
-  }, [interactive]);
 
   // Scaled dimensions to fit around standard 63mm x 88mm card
   const slabSizeClasses = {
@@ -144,41 +112,39 @@ export const GradingSlab: React.FC<GradingSlabProps> = ({
   const certNumber = `CERT #${(activeGrade.gradedAt % 90000 + 10000)}`;
 
   return (
+    /* Outermost Container with Extended Hit Area Buffer to prevent mouse slipping off during 3D tilt */
     <div
-      className={`card-perspective-wrapper inline-block select-none ${className}`}
+      className={`card-perspective-wrapper inline-block select-none p-4 -m-4 sm:p-6 sm:-m-6 relative before:absolute before:-inset-4 before:content-[''] cursor-pointer ${className}`}
       onClick={onClick}
+      {...containerProps}
     >
-      <div
-        ref={slabRef}
-        onPointerMove={handlePointerMove}
-        onPointerEnter={handlePointerEnter}
-        onPointerLeave={handlePointerLeave}
+      <motion.div
         style={{
-          transform: 'rotateX(var(--rot-x, 0deg)) rotateY(var(--rot-y, 0deg))',
+          ...tiltStyle,
           boxShadow: isBlackLabel
             ? '0 30px 60px -10px rgba(0,0,0,0.95), 0 0 25px rgba(212,175,55,0.35)'
             : isHovered
             ? '0 30px 60px -15px rgba(0, 0, 0, 0.85), 0 0 20px rgba(255, 255, 255, 0.2)'
             : '0 20px 45px -10px rgba(0, 0, 0, 0.75)',
         }}
-        className={`card-3d-root relative ${slabSizeClasses} ${
+        className={`relative ${slabSizeClasses} ${
           isBlackLabel ? 'slab-acrylic-black-label' : 'slab-acrylic-casing'
-        } ${isHovered ? 'is-interacting' : ''} cursor-pointer flex flex-col items-center`}
+        } flex flex-col items-center pointer-events-none`}
       >
         {/* Physical Beveled Glass Reflection Rim */}
-        <div className="slab-bevel-edge" />
+        <div className="slab-bevel-edge pointer-events-none" />
 
         {/* 4 Sonic-Welded Corner Rivets */}
-        <div className="absolute top-2 left-2 w-2 h-2 rounded-full bg-white/30 border border-white/40 shadow-inner" />
-        <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-white/30 border border-white/40 shadow-inner" />
-        <div className="absolute bottom-2 left-2 w-2 h-2 rounded-full bg-white/30 border border-white/40 shadow-inner" />
-        <div className="absolute bottom-2 right-2 w-2 h-2 rounded-full bg-white/30 border border-white/40 shadow-inner" />
+        <div className="absolute top-2 left-2 w-2 h-2 rounded-full bg-white/30 border border-white/40 shadow-inner pointer-events-none" />
+        <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-white/30 border border-white/40 shadow-inner pointer-events-none" />
+        <div className="absolute bottom-2 left-2 w-2 h-2 rounded-full bg-white/30 border border-white/40 shadow-inner pointer-events-none" />
+        <div className="absolute bottom-2 right-2 w-2 h-2 rounded-full bg-white/30 border border-white/40 shadow-inner pointer-events-none" />
 
         {/* ============================================================
-            SLAB HEADER LABEL PLATE
+            SLAB HEADER LABEL PLATE (pointer-events-none)
             ============================================================ */}
         <div
-          className={`w-full mb-3 rounded-lg border p-2.5 ${headerStyle.plateBg} ${headerStyle.plateBorder} relative overflow-hidden z-30 transition-transform duration-200`}
+          className={`w-full mb-3 rounded-lg border p-2.5 ${headerStyle.plateBg} ${headerStyle.plateBorder} relative overflow-hidden z-30 pointer-events-none`}
         >
           {/* Subtle Security Guilloche Watermark Pattern */}
           <div
@@ -190,9 +156,9 @@ export const GradingSlab: React.FC<GradingSlabProps> = ({
             }}
           />
 
-          <div className="relative z-10 flex items-start justify-between gap-2">
+          <div className="relative z-10 flex items-start justify-between gap-2 pointer-events-none">
             {/* Left: Metadata */}
-            <div className="flex-1 min-w-0">
+            <div className="flex-1 min-w-0 pointer-events-none">
               <div className="flex items-center gap-1.5 leading-none mb-1">
                 <span className="text-[10px] tracking-widest font-black uppercase text-amber-500">
                   TQQ VAULT
@@ -214,7 +180,7 @@ export const GradingSlab: React.FC<GradingSlabProps> = ({
             </div>
 
             {/* Right: Numeric Grade & Tier Badge */}
-            <div className="flex flex-col items-end justify-center shrink-0 min-w-[65px] text-right pl-2 border-l border-black/10">
+            <div className="flex flex-col items-end justify-center shrink-0 min-w-[65px] text-right pl-2 border-l border-black/10 pointer-events-none">
               <span className="text-[8px] font-bold uppercase tracking-wider opacity-80">
                 {headerStyle.label}
               </span>
@@ -229,7 +195,7 @@ export const GradingSlab: React.FC<GradingSlabProps> = ({
 
           {/* Subgrades Bar for Black Label & Pristine 10 */}
           {(isBlackLabel || tier === 'GEM_MINT_10') && (
-            <div className="mt-2 pt-1.5 border-t border-black/15 flex items-center justify-between text-[9px] font-mono leading-none">
+            <div className="mt-2 pt-1.5 border-t border-black/15 flex items-center justify-between text-[9px] font-mono leading-none pointer-events-none">
               <div className="flex flex-col items-center">
                 <span className="opacity-70 text-[8px]">Centering</span>
                 <span className="font-bold">{activeGrade.subgrades.centering.toFixed(1)}</span>
@@ -251,13 +217,15 @@ export const GradingSlab: React.FC<GradingSlabProps> = ({
         </div>
 
         {/* ============================================================
-            INNER RECESSED CARD WELL
+            INNER RECESSED CARD WELL (disableTilt={true} + pointer-events-none)
             ============================================================ */}
-        <div className="w-full flex justify-center items-center rounded-xl slab-inner-well bg-black/60 p-1 relative z-20 overflow-hidden border border-white/10">
-          <div className="transition-transform duration-200 group-hover:scale-[1.01]">
+        <div className="w-full flex justify-center items-center rounded-xl slab-inner-well bg-black/60 p-1 relative z-20 overflow-hidden border border-white/10 pointer-events-none">
+          <div className="pointer-events-none">
             <CardRenderer
               card={card}
-              interactive={false} // Slab itself handles 3D physics
+              interactive={false} // Outer slab alone handles 3D physics
+              disableTilt={true}   // Strict single source of truth
+              externalLight={light} // Propagates tilt light to inner card shaders
               size={size}
               showMarketValue={showMarketValue}
             />
@@ -265,7 +233,7 @@ export const GradingSlab: React.FC<GradingSlabProps> = ({
         </div>
 
         {/* Bottom Bar: Acrylic Refraction Stamp & Multiplier */}
-        <div className="w-full mt-2.5 flex items-center justify-between text-[10px] text-zinc-400 px-1 z-30 font-mono">
+        <div className="w-full mt-2.5 flex items-center justify-between text-[10px] text-zinc-400 px-1 z-30 font-mono pointer-events-none">
           <span className="text-[9px] text-zinc-500 uppercase tracking-widest flex items-center gap-1">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
             Authenticated Vault Slab
@@ -282,9 +250,15 @@ export const GradingSlab: React.FC<GradingSlabProps> = ({
           </span>
         </div>
 
-        {/* Acrylic Exterior Specular Glare */}
-        <div className="card-specular-glare" />
-      </div>
+        {/* Acrylic Surface Glare (Outer Glass Layer) */}
+        <motion.div
+          className="pointer-events-none absolute inset-0 z-50 rounded-2xl mix-blend-overlay"
+          style={{
+            background: useMotionTemplate`radial-gradient(circle 380px at ${light.lightX} ${light.lightY}, rgba(255, 255, 255, 0.35) 0%, transparent 70%)`,
+            opacity: light.sheenOpacity,
+          }}
+        />
+      </motion.div>
     </div>
   );
 };

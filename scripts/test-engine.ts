@@ -300,6 +300,20 @@ async function runTests() {
   assert(useGameStore.getState().equippedTools.length === 0, 'Equipped tools cleared after grading');
   console.log(`✅ gradeCard action verified: Card graded as ${gradeResult.grade.tierLabel} (Grade ${gradeResult.grade.numericGrade}, ${gradeResult.grade.multiplier}x).`);
 
+  // Test Batch dustCards action
+  const remainingRawCards = useGameStore.getState().inventory.filter((c) => !c.grade);
+  if (remainingRawCards.length >= 2) {
+    const idsToDust = [remainingRawCards[0].id, remainingRawCards[1].id];
+    const initialStardust = useGameStore.getState().stardust;
+    const initialInvCount = useGameStore.getState().inventory.length;
+    const dustYield = useGameStore.getState().dustCards(idsToDust);
+
+    assert(dustYield > 0, 'dustCards must yield Stardust');
+    assert(useGameStore.getState().stardust === initialStardust + dustYield, 'Stardust increased correctly');
+    assert(useGameStore.getState().inventory.length === initialInvCount - 2, 'Two cards removed from inventory');
+    console.log(`✅ dustCards batch action verified: ${dustYield} Stardust earned from 2 cards.`);
+  }
+
   // Test Binder Slotting
   // Find a sister card and slot it into slot 0
   const sisterCard = useGameStore.getState().inventory.find((c) => {
