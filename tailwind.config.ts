@@ -46,6 +46,11 @@ const config: Config = {
       aspectRatio: {
         'card': '63 / 88',
       },
+      zIndex: {
+        '15': '15',
+        '25': '25',
+        '35': '35',
+      },
       boxShadow: {
         'slab': '0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.15)',
         'slab-black': '0 25px 60px -10px rgba(0, 0, 0, 0.95), 0 0 15px rgba(212, 175, 55, 0.35)',

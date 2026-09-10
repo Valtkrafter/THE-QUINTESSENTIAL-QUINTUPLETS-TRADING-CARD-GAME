@@ -350,9 +350,9 @@ export const CardRenderer: React.FC<CardRendererProps> = ({
           </div>
 
           {/* MAIN ARTWORK FRAME (z-10) */}
-          <div className="relative flex-1 w-full my-1 rounded-lg overflow-hidden border border-zinc-700/60 bg-black/40 z-10 flex flex-col justify-between items-center group">
+          <div className="relative flex-1 w-full my-1 rounded-lg overflow-hidden border border-zinc-700/60 bg-[#0d0d12] z-10 flex flex-col justify-between items-center group">
             {/* BASE ARTWORK & FALLBACK LAYER (z-0) */}
-            <div className="absolute inset-0 w-full h-full overflow-hidden rounded-lg bg-black/40 z-0">
+            <div className="absolute inset-0 w-full h-full overflow-hidden rounded-lg bg-[#0d0d12] z-0">
               {/* Thematic Character Backdrop Gradient */}
               <div
                 className={`absolute inset-0 bg-gradient-to-b ${theme.bgGradient} opacity-60 pointer-events-none`}
@@ -367,18 +367,34 @@ export const CardRenderer: React.FC<CardRendererProps> = ({
                 }}
               />
 
-              {/* Artwork Image or Visual Error Fallback */}
+              {/* Artwork Image (Dual-Layer Adaptive Presentation) or Visual Error Fallback */}
               {resolvedImageUrl ? (
-                <img
-                  src={encodeURI(resolvedImageUrl)}
-                  alt={cardName}
-                  className="w-full h-full object-cover object-center select-none pointer-events-none transition-transform duration-500 group-hover:scale-105"
-                  loading="eager"
-                  decoding="async"
-                  onError={(e) => {
-                    console.error(`[IMAGE LOAD ERROR] Failed to fetch: "${resolvedImageUrl}"`);
-                  }}
-                />
+                <div className="relative w-full h-full overflow-hidden rounded-lg bg-[#0d0d12]">
+                  {/* Layer 1: Ambient Background Fill (Eliminates Letterboxing/Bars) */}
+                  <img
+                    src={encodeURI(resolvedImageUrl)}
+                    alt=""
+                    aria-hidden="true"
+                    className="absolute inset-0 w-full h-full object-cover object-center scale-125 blur-xl opacity-40 brightness-75 select-none pointer-events-none"
+                  />
+
+                  {/* Layer 2: Uncompromised Foreground Artwork (Zero Crop) */}
+                  <div className="relative z-10 flex h-full w-full items-center justify-center p-2">
+                    <img
+                      src={encodeURI(resolvedImageUrl)}
+                      alt={cardName}
+                      className="max-h-full max-w-full object-contain object-center select-none pointer-events-none drop-shadow-[0_12px_24px_rgba(0,0,0,0.7)] transition-transform duration-300 group-hover:scale-105"
+                      loading="eager"
+                      decoding="async"
+                      onError={() => {
+                        console.error(`[IMAGE LOAD ERROR] Failed to fetch: "${resolvedImageUrl}"`);
+                      }}
+                    />
+                  </div>
+
+                  {/* Layer 3: Framing Vignette & Inner Shadow */}
+                  <div className="pointer-events-none absolute inset-0 z-15 shadow-[inset_0_0_25px_rgba(0,0,0,0.85)]" />
+                </div>
               ) : (
                 /* Visual Error Fallback State */
                 <div className="relative w-full h-full flex flex-col items-center justify-center p-3 text-center my-auto bg-gradient-to-br from-zinc-900 via-zinc-950 to-black select-none pointer-events-none z-0">
@@ -416,26 +432,26 @@ export const CardRenderer: React.FC<CardRendererProps> = ({
               )}
             </div>
 
-            {/* ARTWORK SPECIFIC SHADER FOIL OVERLAYS (z-10, blend directly with base art) */}
+            {/* ARTWORK SPECIFIC SHADER FOIL OVERLAYS (z-20+, blend directly with base art) */}
             {finish === 'holo' && (
-              <div className="finish-holo-overlay absolute inset-0 pointer-events-none z-10" />
+              <div className="finish-holo-overlay absolute inset-0 pointer-events-none z-20" />
             )}
             {finish === 'sparkle' && (
-              <div className="finish-sparkle-overlay absolute inset-0 pointer-events-none z-10" />
+              <div className="finish-sparkle-overlay absolute inset-0 pointer-events-none z-20" />
             )}
             {finish === 'rainbow' && (
-              <div className="finish-rainbow-overlay absolute inset-0 pointer-events-none z-10" />
+              <div className="finish-rainbow-overlay absolute inset-0 pointer-events-none z-20" />
             )}
             {finish === 'gold_etched' && (
-              <div className="finish-gold-etched-relief absolute inset-0 pointer-events-none z-10" />
+              <div className="finish-gold-etched-relief absolute inset-0 pointer-events-none z-20" />
             )}
 
-            {/* Top gradient shadow on art to preserve header contrast (z-15) */}
-            <div className="absolute top-0 inset-x-0 h-8 bg-gradient-to-b from-black/60 to-transparent pointer-events-none z-15" />
+            {/* Top gradient shadow on art to preserve header contrast (z-25) */}
+            <div className="absolute top-0 inset-x-0 h-8 bg-gradient-to-b from-black/60 to-transparent pointer-events-none z-25" />
 
-            {/* LORE QUOTE OVERLAY (z-20) */}
+            {/* LORE QUOTE OVERLAY (z-30) */}
             {cardLoreQuote && (
-              <div className="relative mt-auto w-full p-1.5 rounded-b-lg bg-black/80 backdrop-blur-md border-t border-zinc-800/80 text-center z-20 shadow-lg">
+              <div className="relative mt-auto w-full p-1.5 rounded-b-lg bg-black/80 backdrop-blur-md border-t border-zinc-800/80 text-center z-30 shadow-lg">
                 <p className="text-[10px] sm:text-[11px] italic text-zinc-200 line-clamp-2 leading-tight">
                   &ldquo;{cardLoreQuote}&rdquo;
                 </p>
