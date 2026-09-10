@@ -75,6 +75,7 @@ export interface CardInstance {
   imageUrl?: string;
   name?: string;
   title?: string;
+  cardNumber?: string;
 }
 
 export type PackId =

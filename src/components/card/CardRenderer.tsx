@@ -187,6 +187,7 @@ export const CardRenderer: React.FC<CardRendererProps> = ({
 }) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const [isHovered, setIsHovered] = useState(false);
+  const [hasImageError, setHasImageError] = useState(false);
 
   // Safely resolve the card definition
   const cardDefId =
@@ -214,7 +215,7 @@ export const CardRenderer: React.FC<CardRendererProps> = ({
   const cardName = card.name ?? (card as any).name ?? cardDef?.name ?? theme.name;
   const cardTitle = card.title ?? (card as any).title ?? cardDef?.title ?? cardDef?.name ?? 'Collector Card';
   const cardLoreQuote = (card as any).loreQuote ?? cardDef?.loreQuote ?? '';
-  const cardNumber = (card as any).cardNumber ?? cardDef?.cardNumber ?? 'TQQ-000';
+  const cardNumber = card.cardNumber ?? (card as any).cardNumber ?? cardDef?.cardNumber ?? 'TQQ-000';
   const characterRole = (card as any).characterRole ?? cardDef?.characterRole ?? 'sister';
 
   // Ensure path starts with /cards/ and is unencoded so encodeURI cleanly encodes spaces without double-encoding
@@ -230,6 +231,19 @@ export const CardRenderer: React.FC<CardRendererProps> = ({
       return pathStr;
     }
   }, [rawImageUrl]);
+
+  // Reset image error state whenever resolvedImageUrl changes
+  useEffect(() => {
+    setHasImageError(false);
+  }, [resolvedImageUrl]);
+
+  console.log("[CardRenderer Debug]", {
+    cardId: card?.id,
+    cardNumber: card?.cardNumber ?? cardDef?.cardNumber,
+    directImageUrl: card?.imageUrl,
+    resolvedImageUrl,
+    hasImageError,
+  });
 
   // Pointer tilt physics calculation
   const handlePointerMove = useCallback(

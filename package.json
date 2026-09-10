@@ -8,7 +8,7 @@
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
-    "test": "node scripts/test-engine.js"
+    "test": "tsx scripts/test-engine.ts"
   },
   "dependencies": {
     "lucide-react": "^1.16.0",

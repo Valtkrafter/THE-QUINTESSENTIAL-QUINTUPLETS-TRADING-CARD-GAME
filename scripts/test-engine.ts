@@ -9,7 +9,7 @@ import {
   CARDS_BY_RARITY,
   CARDS_BY_CHARACTER,
   getCardDef,
-} from '../src/config/cardsData.js';
+} from '../src/config/cardsData';
 import {
   calculateRawCardValue,
   calculateGradedCardValue,
@@ -23,9 +23,9 @@ import {
   CONSUMABLE_TOOLS,
   GRADE_TIER_CONFIG,
   NAKANO_SISTERS,
-} from '../src/config/economy.js';
-import { useGameStore } from '../src/store/useGameStore.js';
-import { CardInstance, BinderPage, Rarity, GradeTier } from '../src/types/card.js';
+} from '../src/config/economy';
+import { useGameStore } from '../src/store/useGameStore';
+import { CardInstance, BinderPage, Rarity, GradeTier } from '../src/types/card';
 
 function assert(condition: boolean, message: string): void {
   if (!condition) {

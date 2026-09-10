@@ -104,6 +104,7 @@ export default function ShowcasePage() {
       obtainedAt: Date.now(),
       grade: activeMockGrade,
       imageUrl: activeCardDef.imageUrl,
+      cardNumber: activeCardDef.cardNumber,
       name: activeCardDef.name,
       title: activeCardDef.title,
     };
