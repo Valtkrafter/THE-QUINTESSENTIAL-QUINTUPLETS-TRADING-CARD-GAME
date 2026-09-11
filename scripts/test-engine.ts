@@ -32,7 +32,7 @@ import {
   isFinishHigher,
   isGradeHigher,
 } from '../src/config/economy';
-import { useGameStore, DEFAULT_SHOWCASE_SLOTS, createInitialCardDex } from '../src/store/useGameStore';
+import { useGameStore, DEFAULT_SHOWCASE_SLOTS, createInitialCardDex, CURRENT_PATCH_VERSION } from '../src/store/useGameStore';
 import { CardInstance, BinderPage, Rarity, GradeTier, ShowcaseSlot, GradeResult } from '../src/types/card';
 
 function assert(condition: boolean, message: string): void {
@@ -740,6 +740,26 @@ async function runTests() {
   assert(claimedYen >= 60, 'Claimed at least 60 Yen base floor');
   assert(useGameStore.getState().yen === preClaimYen + claimedYen, 'Yen balance credited from showcase claim');
   console.log(`✅ claimShowcaseRevenue verified: Claimed ${claimedYen} ¥.`);
+
+  // 9. Patch Notes Version Tracking
+  testSection('SECTION 9: PATCH NOTES VERSION TRACKING & STORE MUTATIONS');
+  assert(CURRENT_PATCH_VERSION === 'v0.2.0', 'CURRENT_PATCH_VERSION is v0.2.0');
+
+  useGameStore.setState({ lastSeenPatchVersion: '' });
+  assert(useGameStore.getState().lastSeenPatchVersion === '', 'Initial lastSeenPatchVersion is empty');
+
+  useGameStore.getState().markPatchNotesSeen();
+  assert(
+    useGameStore.getState().lastSeenPatchVersion === CURRENT_PATCH_VERSION,
+    'markPatchNotesSeen() updates lastSeenPatchVersion to current version'
+  );
+
+  useGameStore.getState().markPatchNotesSeen('v0.3.0');
+  assert(
+    useGameStore.getState().lastSeenPatchVersion === 'v0.3.0',
+    'markPatchNotesSeen(custom) updates lastSeenPatchVersion to custom version'
+  );
+  console.log('✅ Patch notes version tracking and store mutations verified.');
 
   testSection('🎉 ALL TESTS PASSED SUCCESSFULLY! 100% SPEC COMPLIANCE.');
 }

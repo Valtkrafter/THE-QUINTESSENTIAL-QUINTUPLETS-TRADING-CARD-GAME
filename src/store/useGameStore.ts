@@ -45,6 +45,8 @@ import {
   isGradeHigher,
 } from '../config/economy';
 
+export const CURRENT_PATCH_VERSION = 'v0.2.0';
+
 export interface GameStats {
   totalPacksOpened: number;
   totalCardsGraded: number;
@@ -83,8 +85,11 @@ export interface GameState {
   kioskStock: KioskOffering[];
   kioskLastRefreshed: number;
 
-  // Lifetime Stats
+  // Stats
   stats: GameStats;
+
+  // Patch Notes Version Tracking
+  lastSeenPatchVersion: string;
 
   // Actions
   openPack: (packId: PackId) => OpenPackResult;
@@ -106,6 +111,7 @@ export interface GameState {
   buyKioskCard: (offeringId: string) => CardInstance;
   checkAndRotateKiosk: () => void;
   resetSave: () => void;
+  markPatchNotesSeen: (version?: string) => void;
 
   // STAGE 2 Actions
   slotShowcaseCard: (slotIndex: number, cardInstanceId: string | null) => void;
@@ -228,6 +234,7 @@ const INITIAL_STATE = {
   lastActiveTimestamp: Date.now(),
   kioskStock: [] as KioskOffering[],
   kioskLastRefreshed: 0,
+  lastSeenPatchVersion: '',
   stats: {
     totalPacksOpened: 0,
     totalCardsGraded: 0,
@@ -1036,6 +1043,10 @@ export const useGameStore = create<GameState>()(
         set({ cardDex: synchronized });
       },
 
+      markPatchNotesSeen: (version?: string): void => {
+        set({ lastSeenPatchVersion: version ?? CURRENT_PATCH_VERSION });
+      },
+
       resetSave: (): void => {
         set({
           ...INITIAL_STATE,
@@ -1052,6 +1063,9 @@ export const useGameStore = create<GameState>()(
       name: 'tqq-vault-save',
       onRehydrateStorage: () => (state) => {
         if (state) {
+          if (state.lastSeenPatchVersion === undefined) {
+            state.lastSeenPatchVersion = '';
+          }
           if (!state.showcaseSlots || state.showcaseSlots.length !== 5) {
             state.showcaseSlots = DEFAULT_SHOWCASE_SLOTS;
           }

@@ -29,6 +29,7 @@
 - **5-Slot Acrylic Showcase (Vitrine):** Semi-circular 3D acrylic pedestal stage with dynamic overhead character spotlights, live $\yen$ revenue ticker, and team synergy multipliers. Serves as the **exclusive source of passive idle revenue** (legacy binder yields purged).
 - **42-Card Master Card-Dex:** Comprehensive completion catalog (35 Nakano Sisters + 7 unique Support artworks) with undiscovered silhouette shaders, 100% golden holographic aura, and highest finish / grade tracking.
 - **Grand Binder & Collection Hub:** Filterable and sortable card collection with bulk liquidation and individual card inspection.
+- **One-Time Patch Notes System:** Automatic one-time onboarding modal introducing major updates with on-demand header access.
 - **Pure Procedural Web Audio API Engine:** 100% synthesizer-driven procedural sound design. Zero external `.mp3` dependencies for lightning-fast, zero-latency, zero-bandwidth pack opening ceremonies.
 
 ---
@@ -135,6 +136,12 @@ Zero external `.mp3` or `.wav` files. All audio is synthesized procedurally in r
 - **100% Golden Holographic Shimmer Aura:** Attaining full 42/42 completion permanently bathes the Card-Dex header and border frame in an animated rainbow prismatic gold aura.
 - **Comprehensive Card Dossier Modal:** Detailed inspection modal featuring real-time 3D tilt, subgrade plate inspection, authenticated voice actress credentials, character quotes, and acquisition origins.
 
+### 📜 10. Persistent One-Time Patch Notes Modal
+- **One-Time Auto-Display:** Automatically introduces returning and new collectors to all new systems (Vitrine, Card-Dex, BGS 2.0, Singles Kiosk, peel physics) upon launching a new version.
+- **Persistent Version Tracking:** Backed by Zustand `persist` (`lastSeenPatchVersion`), ensuring the modal is presented exactly once automatically and never irritates players on subsequent visits.
+- **On-Demand Inspection:** Easily re-opened at any time directly from the Grand Binder top header via the dedicated `v0.2.0 Notes` sparkle button.
+- **Modern Accessible Dialog Standards:** Fully keyboard navigable (`Escape` key dismiss), light-dismiss backdrop interaction, and fluid spring entrance/exit transitions.
+
 ---
 
 ## 📊 Card Catalog & Economy System
@@ -234,6 +241,8 @@ tqqtcg/
 │   │   │   └── GradingSlab.tsx      # Acrylic BGS-style grading slab with subgrade plates
 │   │   ├── catalog/
 │   │   │   └── CardDex.tsx          # 42-card master catalog with silhouettes & 100% gold shimmer
+│   │   ├── common/
+│   │   │   └── PatchNotesModal.tsx  # Accessible one-time patch notes modal with version tracking
 │   │   ├── dusting/
 │   │   │   └── DustingWorkshop.tsx  # Card vaporization and Stardust exchange station
 │   │   ├── market/
