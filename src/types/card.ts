@@ -185,3 +185,39 @@ export interface BulkSellResult {
   soldCards: CardInstance[];
 }
 
+// ==========================================
+// STAGE 2: 5-SLOT SHOWCASE (VITRINE) & DEX
+// ==========================================
+
+export interface ShowcaseSlot {
+  slotIndex: number; // 0 to 4 (Exactly 5 pedestals)
+  cardInstanceId: string | null;
+}
+
+export interface ShowcaseSynergyReport {
+  quintupletHarmony: boolean; // Ichika, Nino, Miku, Yotsuba, Itsuki all slotted (+50%)
+  monoWaifu: boolean; // 5 copies of the same sister (+30%)
+  monoWaifuSisterId: SisterId | null;
+  vaultExcellence: boolean; // All 5 cards are Slabs with Grade >= 9 (+100%)
+  synergyMultiplier: number; // Combined multiplier (base 1.0 + bonuses)
+  totalMarketValue: number; // Total market valuation in Yen across slotted cards
+  baseFloorPerMinute: number; // Guaranteed base floor: 60 Yen/min (1 Yen/sec) per slotted card
+  marketBonusPerMinute: number; // Sum of (Market Value * 0.0002)
+  effectiveYieldPerMinute: number; // Sum(60 + Market Value * 0.0002) * synergyMultiplier
+  effectiveYieldPerSecond: number; // effectiveYieldPerMinute / 60
+  slottedCount: number; // 0 to 5
+}
+
+export interface CardDexEntry {
+  cardDefId: string;
+  cardNumber: string; // e.g. "TQQ-001"
+  characterId: CharacterId;
+  characterRole: CharacterRole;
+  rarity: Rarity;
+  discovered: boolean;
+  discoveredAt?: number;
+  highestFinish?: Finish;
+  bestGrade?: GradeResult;
+  timesObtained: number;
+}
+

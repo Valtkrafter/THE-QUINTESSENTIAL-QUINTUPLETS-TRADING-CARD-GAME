@@ -27,9 +27,13 @@ import {
   CONSUMABLE_TOOLS,
   GRADE_TIER_CONFIG,
   NAKANO_SISTERS,
+  analyzeShowcaseSlots,
+  calculateShowcaseIdleEarnings,
+  isFinishHigher,
+  isGradeHigher,
 } from '../src/config/economy';
-import { useGameStore } from '../src/store/useGameStore';
-import { CardInstance, BinderPage, Rarity, GradeTier } from '../src/types/card';
+import { useGameStore, DEFAULT_SHOWCASE_SLOTS, createInitialCardDex } from '../src/store/useGameStore';
+import { CardInstance, BinderPage, Rarity, GradeTier, ShowcaseSlot, GradeResult } from '../src/types/card';
 
 function assert(condition: boolean, message: string): void {
   if (!condition) {
@@ -539,6 +543,200 @@ async function runTests() {
   }
   assert(doubleBuyError, 'Cannot buy already purchased kiosk offering');
   console.log('✅ buyKioskCard verified: Inventory added, Yen deducted, and duplicate buy blocked.');
+
+  testSection('8. Stage 2: 5-Slot Acrylic Showcase (Vitrine) & Master Card-Dex');
+
+  // 1. Vitrine Base Floor & Empty Showcase
+  const emptyReport = analyzeShowcaseSlots(DEFAULT_SHOWCASE_SLOTS, new Map());
+  assert(emptyReport.slottedCount === 0, 'Empty showcase has 0 slotted cards');
+  assert(emptyReport.totalMarketValue === 0, 'Empty showcase has 0 market value');
+  assert(emptyReport.effectiveYieldPerMinute === 0, 'Empty showcase produces 0 yield');
+  assert(emptyReport.synergyMultiplier === 1.0, 'Base synergy multiplier is 1.0');
+
+  // Base floor validation: 1 card with market value generates 60 Yen/min (1 Yen/sec)
+  const dummyMikuCard: CardInstance = {
+    id: 'vitrine_test_c_1',
+    cardDefId: 'miku_c_01',
+    characterId: 'miku',
+    rarity: 'C',
+    finish: 'raw',
+    obtainedAt: Date.now(),
+  };
+  const dummyMap = new Map<string, CardInstance>([[dummyMikuCard.id, dummyMikuCard]]);
+  const singleSlot: ShowcaseSlot[] = [
+    { slotIndex: 0, cardInstanceId: dummyMikuCard.id },
+    { slotIndex: 1, cardInstanceId: null },
+    { slotIndex: 2, cardInstanceId: null },
+    { slotIndex: 3, cardInstanceId: null },
+    { slotIndex: 4, cardInstanceId: null },
+  ];
+  const singleReport = analyzeShowcaseSlots(singleSlot, dummyMap);
+  assert(singleReport.slottedCount === 1, '1 card slotted');
+  assert(singleReport.baseFloorPerMinute === 60, 'Base floor is 60 Yen/min (1 Yen/sec)');
+  assert(singleReport.effectiveYieldPerMinute >= 60, 'Guaranteed minimum yield floor of 60 Yen/min');
+  console.log('✅ Base floor guarantee verified (60 Yen/min per slotted card).');
+
+  // 2. Quintuplet Harmony (+50%)
+  const fiveSistersCards: CardInstance[] = [
+    { id: 'v_ichika', cardDefId: 'ichika_c_01', characterId: 'ichika', rarity: 'C', finish: 'raw', obtainedAt: Date.now() },
+    { id: 'v_nino', cardDefId: 'nino_c_01', characterId: 'nino', rarity: 'C', finish: 'raw', obtainedAt: Date.now() },
+    { id: 'v_miku', cardDefId: 'miku_c_01', characterId: 'miku', rarity: 'C', finish: 'raw', obtainedAt: Date.now() },
+    { id: 'v_yotsuba', cardDefId: 'yotsuba_c_01', characterId: 'yotsuba', rarity: 'C', finish: 'raw', obtainedAt: Date.now() },
+    { id: 'v_itsuki', cardDefId: 'itsuki_c_01', characterId: 'itsuki', rarity: 'C', finish: 'raw', obtainedAt: Date.now() },
+  ];
+  const fiveSistersMap = new Map<string, CardInstance>();
+  fiveSistersCards.forEach((c) => fiveSistersMap.set(c.id, c));
+  const fiveSistersSlots: ShowcaseSlot[] = fiveSistersCards.map((c, i) => ({ slotIndex: i, cardInstanceId: c.id }));
+
+  const harmonyReport = analyzeShowcaseSlots(fiveSistersSlots, fiveSistersMap);
+  assert(harmonyReport.quintupletHarmony === true, 'Quintuplet Harmony active with all 5 sisters');
+  assert(harmonyReport.monoWaifu === false, 'Not Mono-Waifu');
+  assert(harmonyReport.vaultExcellence === false, 'Not Vault Excellence (raw cards)');
+  assert(harmonyReport.synergyMultiplier === 1.5, 'Quintuplet Harmony gives +50% (1.5x multiplier)');
+  console.log('✅ Quintuplet Harmony (+50% / 1.5x) verified.');
+
+  // 3. Mono-Waifu Obsession (+30%)
+  const monoMikuCards: CardInstance[] = [
+    { id: 'v_m1', cardDefId: 'miku_c_01', characterId: 'miku', rarity: 'C', finish: 'raw', obtainedAt: Date.now() },
+    { id: 'v_m2', cardDefId: 'miku_uc_01', characterId: 'miku', rarity: 'UC', finish: 'raw', obtainedAt: Date.now() },
+    { id: 'v_m3', cardDefId: 'miku_r_01', characterId: 'miku', rarity: 'R', finish: 'raw', obtainedAt: Date.now() },
+    { id: 'v_m4', cardDefId: 'miku_sr_01', characterId: 'miku', rarity: 'SR', finish: 'raw', obtainedAt: Date.now() },
+    { id: 'v_m5', cardDefId: 'miku_ur_01', characterId: 'miku', rarity: 'UR', finish: 'raw', obtainedAt: Date.now() },
+  ];
+  const monoMikuMap = new Map<string, CardInstance>();
+  monoMikuCards.forEach((c) => monoMikuMap.set(c.id, c));
+  const monoMikuSlots: ShowcaseSlot[] = monoMikuCards.map((c, i) => ({ slotIndex: i, cardInstanceId: c.id }));
+
+  const monoReport = analyzeShowcaseSlots(monoMikuSlots, monoMikuMap);
+  assert(monoReport.monoWaifu === true, 'Mono-Waifu active with 5 Miku cards');
+  assert(monoReport.monoWaifuSisterId === 'miku', 'Mono-Waifu sister ID is miku');
+  assert(monoReport.quintupletHarmony === false, 'Not Quintuplet Harmony');
+  assert(monoReport.synergyMultiplier === 1.3, 'Mono-Waifu gives +30% (1.3x multiplier)');
+  console.log('✅ Mono-Waifu Obsession (+30% / 1.3x) verified.');
+
+  // 4. Vault Excellence (+100%) and Synergy Stacking (Harmony + Excellence = 2.5x)
+  const mockGrade9: GradeResult = {
+    tier: 'MINT_9',
+    tierLabel: 'God-Tier',
+    numericGrade: 9,
+    isBlackLabel: false,
+    multiplier: 3.0,
+    subgrades: { centering: 9.0, surface: 9.0, corners: 9.0, edges: 9.0 },
+    gradedAt: Date.now(),
+  };
+  const mockGrade10: GradeResult = {
+    tier: 'BLACK_LABEL',
+    tierLabel: 'THE CHOSEN ONE',
+    numericGrade: 10,
+    isBlackLabel: true,
+    multiplier: 50.0,
+    subgrades: { centering: 10.0, surface: 10.0, corners: 10.0, edges: 10.0 },
+    gradedAt: Date.now(),
+  };
+
+  const gradedSistersCards: CardInstance[] = [
+    { id: 'vg_1', cardDefId: 'ichika_mr_01', characterId: 'ichika', rarity: 'MR', finish: 'signed', grade: mockGrade10, obtainedAt: Date.now() },
+    { id: 'vg_2', cardDefId: 'nino_sec_01', characterId: 'nino', rarity: 'SEC', finish: 'rainbow', grade: mockGrade9, obtainedAt: Date.now() },
+    { id: 'vg_3', cardDefId: 'miku_mr_01', characterId: 'miku', rarity: 'MR', finish: 'signed', grade: mockGrade10, obtainedAt: Date.now() },
+    { id: 'vg_4', cardDefId: 'yotsuba_ur_01', characterId: 'yotsuba', rarity: 'UR', finish: 'gold_etched', grade: mockGrade9, obtainedAt: Date.now() },
+    { id: 'vg_5', cardDefId: 'itsuki_mr_01', characterId: 'itsuki', rarity: 'MR', finish: 'signed', grade: mockGrade10, obtainedAt: Date.now() },
+  ];
+  const gradedMap = new Map<string, CardInstance>();
+  gradedSistersCards.forEach((c) => gradedMap.set(c.id, c));
+  const gradedSlots: ShowcaseSlot[] = gradedSistersCards.map((c, i) => ({ slotIndex: i, cardInstanceId: c.id }));
+
+  const stackedReport = analyzeShowcaseSlots(gradedSlots, gradedMap);
+  assert(stackedReport.quintupletHarmony === true, 'Harmony active');
+  assert(stackedReport.vaultExcellence === true, 'Vault Excellence active (all 5 are Grade >= 9)');
+  // Multipliers combine: 1.0 (base) + 0.5 (harmony) + 1.0 (excellence) = 2.5
+  assert(stackedReport.synergyMultiplier === 2.5, 'Combined Harmony + Vault Excellence = 2.5x multiplier');
+  console.log('✅ Vault Excellence (+100%) and Synergy Stacking (2.5x) verified.');
+
+  // 5. 12-Hour Offline Idle Revenue Accrual Cap
+  const ratePerMin = stackedReport.effectiveYieldPerMinute;
+  assert(calculateShowcaseIdleEarnings(stackedReport, 60, 12) === Math.floor(60 * ratePerMin), '1 hour earnings correct');
+  assert(calculateShowcaseIdleEarnings(stackedReport, 720, 12) === Math.floor(720 * ratePerMin), '12 hours earnings correct');
+  assert(calculateShowcaseIdleEarnings(stackedReport, 1440, 12) === Math.floor(720 * ratePerMin), '24 hours capped at 12 hours (720 min)');
+  console.log('✅ 12-Hour offline idle revenue accrual cap verified.');
+
+  // 6. Master Card-Dex 50-Card Registry & Discovery Engine
+  const initialDex = createInitialCardDex();
+  const dexKeys = Object.keys(initialDex);
+  assert(dexKeys.length === 50, 'Master Card-Dex tracks all 50 cards');
+  assert(CARDS_CATALOG.every((c) => initialDex[c.id] !== undefined), 'Every card from catalog has an entry in Dex');
+  assert(CARDS_CATALOG.every((c) => initialDex[c.id].cardNumber.startsWith('TQQ-')), 'All cards formatted as TQQ-XXX');
+  console.log('✅ Master Card-Dex 50-card catalog registry verified.');
+
+  // Test Discovery Mutation in Zustand Store
+  const testDiscoveryCard: CardInstance = {
+    id: 'dex_test_card_1',
+    cardDefId: 'ichika_mr_01',
+    characterId: 'ichika',
+    rarity: 'MR',
+    finish: 'signed',
+    grade: mockGrade10,
+    obtainedAt: Date.now(),
+  };
+  useGameStore.getState().recordCardDiscovery(testDiscoveryCard);
+  const updatedDexEntry = useGameStore.getState().cardDex['ichika_mr_01'];
+  assert(updatedDexEntry.discovered === true, 'Card marked discovered');
+  assert(updatedDexEntry.highestFinish === 'signed', 'Highest finish tracked as signed');
+  assert(updatedDexEntry.bestGrade?.isBlackLabel === true, 'Best grade tracked as Black Label');
+
+  // Test that a lower finish does NOT overwrite higher finish
+  const lowerFinishCard: CardInstance = {
+    id: 'dex_test_card_2',
+    cardDefId: 'ichika_mr_01',
+    characterId: 'ichika',
+    rarity: 'MR',
+    finish: 'raw',
+    obtainedAt: Date.now(),
+  };
+  useGameStore.getState().recordCardDiscovery(lowerFinishCard);
+  assert(useGameStore.getState().cardDex['ichika_mr_01'].highestFinish === 'signed', 'Higher finish preserved');
+  console.log('✅ Card-Dex discovery tracking, finish hierarchy, and grade persistence verified.');
+
+  // 7. Showcase Slot Actions & Liquidation Protection
+  useGameStore.setState((prev) => ({
+    inventory: [...prev.inventory, testDiscoveryCard],
+  }));
+
+  // Mount card into Vitrine Pedestal 0
+  useGameStore.getState().slotShowcaseCard(0, testDiscoveryCard.id);
+  assert(useGameStore.getState().showcaseSlots[0].cardInstanceId === testDiscoveryCard.id, 'Mounted to pedestal 0');
+
+  // Verify liquidation protection throws error
+  let vitrineSellBlocked = false;
+  try {
+    useGameStore.getState().sellCard(testDiscoveryCard.id);
+  } catch {
+    vitrineSellBlocked = true;
+  }
+  assert(vitrineSellBlocked, 'Card mounted in showcase cannot be sold');
+
+  let vitrineDustBlocked = false;
+  try {
+    useGameStore.getState().vaporizeCard(testDiscoveryCard.id);
+  } catch {
+    vitrineDustBlocked = true;
+  }
+  assert(vitrineDustBlocked, 'Card mounted in showcase cannot be dusted');
+
+  // Unmount from showcase
+  useGameStore.getState().slotShowcaseCard(0, null);
+  assert(useGameStore.getState().showcaseSlots[0].cardInstanceId === null, 'Pedestal 0 vacated');
+  console.log('✅ Showcase slot mount/unmount and liquidation protections verified.');
+
+  // 8. Showcase Revenue Claim Action
+  useGameStore.setState({
+    showcaseLastClaimedTimestamp: Date.now() - 60000, // 1 minute ago
+  });
+  useGameStore.getState().slotShowcaseCard(0, testDiscoveryCard.id);
+  const preClaimYen = useGameStore.getState().yen;
+  const claimedYen = useGameStore.getState().claimShowcaseRevenue();
+  assert(claimedYen >= 60, 'Claimed at least 60 Yen base floor');
+  assert(useGameStore.getState().yen === preClaimYen + claimedYen, 'Yen balance credited from showcase claim');
+  console.log(`✅ claimShowcaseRevenue verified: Claimed ${claimedYen} ¥.`);
 
   testSection('🎉 ALL TESTS PASSED SUCCESSFULLY! 100% SPEC COMPLIANCE.');
 }

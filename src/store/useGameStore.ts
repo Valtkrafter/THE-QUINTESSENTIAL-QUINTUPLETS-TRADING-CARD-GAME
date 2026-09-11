@@ -20,8 +20,11 @@ import {
   PackId,
   PityCounters,
   Rarity,
+  ShowcaseSlot,
+  ShowcaseSynergyReport,
+  CardDexEntry,
 } from '../types/card';
-import { CARD_MAP } from '../config/cardsData';
+import { CARD_MAP, CARDS_CATALOG } from '../config/cardsData';
 import {
   analyzeBinderPage,
   calculateAccruedIdleEarnings,
@@ -36,6 +39,10 @@ import {
   PACKS_CONFIG,
   rollGrading,
   rollPackDrops,
+  analyzeShowcaseSlots,
+  calculateShowcaseIdleEarnings,
+  isFinishHigher,
+  isGradeHigher,
 } from '../config/economy';
 
 export interface GameStats {
@@ -55,6 +62,11 @@ export interface GameState {
   // Inventory & Collection
   inventory: CardInstance[];
   binder: BinderPage;
+
+  // STAGE 2: 5-Slot Acrylic Showcase (Vitrine) & Master Card-Dex
+  showcaseSlots: ShowcaseSlot[];
+  cardDex: Record<string, CardDexEntry>;
+  showcaseLastClaimedTimestamp: number;
 
   // Tools & Consumables
   tools: Record<ConsumableToolId, number>;
@@ -94,6 +106,13 @@ export interface GameState {
   buyKioskCard: (offeringId: string) => CardInstance;
   checkAndRotateKiosk: () => void;
   resetSave: () => void;
+
+  // STAGE 2 Actions
+  slotShowcaseCard: (slotIndex: number, cardInstanceId: string | null) => void;
+  claimShowcaseRevenue: () => number;
+  getShowcaseSynergyReport: () => ShowcaseSynergyReport;
+  recordCardDiscovery: (card: CardInstance) => void;
+  syncCardDex: () => void;
 }
 
 const DEFAULT_BINDER_SLOTS: BinderSlot[] = [
@@ -105,6 +124,76 @@ const DEFAULT_BINDER_SLOTS: BinderSlot[] = [
   { slotIndex: 5, allowedRole: 'support', cardInstanceId: null },
 ];
 
+export const DEFAULT_SHOWCASE_SLOTS: ShowcaseSlot[] = [
+  { slotIndex: 0, cardInstanceId: null },
+  { slotIndex: 1, cardInstanceId: null },
+  { slotIndex: 2, cardInstanceId: null },
+  { slotIndex: 3, cardInstanceId: null },
+  { slotIndex: 4, cardInstanceId: null },
+];
+
+export function createInitialCardDex(): Record<string, CardDexEntry> {
+  const dex: Record<string, CardDexEntry> = {};
+  for (const card of CARDS_CATALOG) {
+    dex[card.id] = {
+      cardDefId: card.id,
+      cardNumber: card.cardNumber,
+      characterId: card.characterId,
+      characterRole: card.characterRole,
+      rarity: card.rarity,
+      discovered: false,
+      timesObtained: 0,
+    };
+  }
+  return dex;
+}
+
+export function syncDexWithInventory(
+  currentDex: Record<string, CardDexEntry> | undefined,
+  inventory: CardInstance[]
+): Record<string, CardDexEntry> {
+  const updated: Record<string, CardDexEntry> = currentDex ? { ...currentDex } : createInitialCardDex();
+  for (const card of CARDS_CATALOG) {
+    if (!updated[card.id]) {
+      updated[card.id] = {
+        cardDefId: card.id,
+        cardNumber: card.cardNumber,
+        characterId: card.characterId,
+        characterRole: card.characterRole,
+        rarity: card.rarity,
+        discovered: false,
+        timesObtained: 0,
+      };
+    }
+  }
+
+  for (const card of inventory) {
+    const existing = updated[card.cardDefId];
+    if (!existing) continue;
+
+    const highestFinish = isFinishHigher(card.finish, existing.highestFinish)
+      ? card.finish
+      : existing.highestFinish ?? card.finish;
+
+    const bestGrade = card.grade
+      ? isGradeHigher(card.grade, existing.bestGrade)
+        ? card.grade
+        : existing.bestGrade
+      : existing.bestGrade;
+
+    updated[card.cardDefId] = {
+      ...existing,
+      discovered: true,
+      discoveredAt: existing.discoveredAt ?? card.obtainedAt ?? Date.now(),
+      highestFinish,
+      bestGrade,
+      timesObtained: Math.max(existing.timesObtained, 1),
+    };
+  }
+
+  return updated;
+}
+
 const INITIAL_STATE = {
   yen: 1000,
   stardust: 0,
@@ -114,6 +203,9 @@ const INITIAL_STATE = {
     name: 'Quintessential Page 1',
     slots: DEFAULT_BINDER_SLOTS,
   } as BinderPage,
+  showcaseSlots: DEFAULT_SHOWCASE_SLOTS,
+  cardDex: createInitialCardDex(),
+  showcaseLastClaimedTimestamp: Date.now(),
   tools: {
     microfiber_cloth: 0,
     centering_laser: 0,
@@ -210,9 +302,43 @@ export const useGameStore = create<GameState>()(
           if (card.grade?.isBlackLabel) newBlackLabels += 1;
         }
 
+        // STAGE 2: Update Card-Dex with all pulled cards
+        const updatedDex = { ...(state.cardDex ?? createInitialCardDex()) };
+        for (const card of rollResult.cards) {
+          const cardDef = CARD_MAP[card.cardDefId];
+          if (!cardDef) continue;
+          const cur = updatedDex[card.cardDefId] ?? {
+            cardDefId: cardDef.id,
+            cardNumber: cardDef.cardNumber,
+            characterId: cardDef.characterId,
+            characterRole: cardDef.characterRole,
+            rarity: cardDef.rarity,
+            discovered: false,
+            timesObtained: 0,
+          };
+          const highestFinish = isFinishHigher(card.finish, cur.highestFinish)
+            ? card.finish
+            : cur.highestFinish ?? card.finish;
+          const bestGrade = card.grade
+            ? isGradeHigher(card.grade, cur.bestGrade)
+              ? card.grade
+              : cur.bestGrade
+            : cur.bestGrade;
+
+          updatedDex[card.cardDefId] = {
+            ...cur,
+            discovered: true,
+            discoveredAt: cur.discoveredAt ?? card.obtainedAt ?? Date.now(),
+            highestFinish,
+            bestGrade,
+            timesObtained: (cur.timesObtained ?? 0) + 1,
+          };
+        }
+
         set({
           yen: state.yen - packConfig.costYen,
           inventory: [...state.inventory, ...rollResult.cards],
+          cardDex: updatedDex,
           pityCounters: rollResult.newPityCounters,
           packCooldowns: newCooldowns,
           stats: {
@@ -288,9 +414,22 @@ export const useGameStore = create<GameState>()(
         const updatedInventory = [...state.inventory];
         updatedInventory[cardIndex] = updatedCard;
 
+        // STAGE 2: Update Card-Dex bestGrade
+        const updatedDex = { ...(state.cardDex ?? createInitialCardDex()) };
+        const existingDexEntry = updatedDex[card.cardDefId];
+        if (existingDexEntry) {
+          if (isGradeHigher(gradeResult, existingDexEntry.bestGrade)) {
+            updatedDex[card.cardDefId] = {
+              ...existingDexEntry,
+              bestGrade: gradeResult,
+            };
+          }
+        }
+
         set({
           yen: state.yen - fee,
           inventory: updatedInventory,
+          cardDex: updatedDex,
           tools: toolCounts,
           equippedTools: [], // Clear equipped tools once consumed
           stats: {
@@ -327,6 +466,12 @@ export const useGameStore = create<GameState>()(
         const card = state.inventory[cardIndex];
         if (card.grade) {
           throw new Error('Graded cards cannot be dusted. Only raw cards can be converted to Stardust.');
+        }
+
+        // Showcase protection
+        const isSlottedInShowcase = (state.showcaseSlots ?? []).some((s) => s.cardInstanceId === cardInstanceId);
+        if (isSlottedInShowcase) {
+          throw new Error('This card is currently mounted in your 5-slot Acrylic Showcase! Unmount it before dusting.');
         }
 
         // Check Maruo support bonus (+20%)
@@ -380,13 +525,18 @@ export const useGameStore = create<GameState>()(
         const report = analyzeBinderPage(state.binder, cardMap);
         const hasMaruo = report.supportCharacterId === 'maruo';
 
+        const slottedShowcaseIds = new Set<string>();
+        for (const s of (state.showcaseSlots ?? [])) {
+          if (s.cardInstanceId) slottedShowcaseIds.add(s.cardInstanceId);
+        }
+
         let totalDustEarned = 0;
         const unslottedBinderIds = new Set<string>();
 
         const updatedInventory = state.inventory.filter((card) => {
           if (!idSet.has(card.id)) return true;
-          // Graded cards cannot be dusted
-          if (card.grade) return true;
+          // Graded cards and showcase slotted cards cannot be dusted
+          if (card.grade || slottedShowcaseIds.has(card.id)) return true;
 
           totalDustEarned += calculateDustYield(card, hasMaruo);
           if (card.slottedBinder) {
@@ -436,6 +586,10 @@ export const useGameStore = create<GameState>()(
         if (isSlottedInBinder) {
           throw new Error('This card is currently slotted in your binder showcase. Unslot it before liquidating.');
         }
+        const isSlottedInShowcase = (state.showcaseSlots ?? []).some((s) => s.cardInstanceId === cardInstanceId);
+        if (isSlottedInShowcase) {
+          throw new Error('This card is currently mounted in your 5-slot Acrylic Showcase! Unmount it before liquidating.');
+        }
 
         // Computes exact sell value: baseValue * finishMultiplier * gradeMultiplier
         const sellValue = calculateCardSellValue(card);
@@ -467,11 +621,18 @@ export const useGameStore = create<GameState>()(
           }
         }
 
+        const slottedShowcaseIds = new Set<string>();
+        for (const slot of (state.showcaseSlots ?? [])) {
+          if (slot.cardInstanceId) {
+            slottedShowcaseIds.add(slot.cardInstanceId);
+          }
+        }
+
         const eligibleCards: CardInstance[] = [];
         const retainedCards: CardInstance[] = [];
 
         for (const card of state.inventory) {
-          const isLocked = card.isLocked || card.slottedBinder !== undefined || slottedBinderIds.has(card.id);
+          const isLocked = card.isLocked || card.slottedBinder !== undefined || slottedBinderIds.has(card.id) || slottedShowcaseIds.has(card.id);
           const matchesRarity = targetRarities.has(card.rarity);
           const matchesCertification = filter.uncertifiedOnly ? !card.grade : true;
 
@@ -724,10 +885,33 @@ export const useGameStore = create<GameState>()(
           isPurchased: true,
         };
 
+        // STAGE 2: Update Card-Dex with kiosk purchased card
+        const updatedDex = { ...(state.cardDex ?? createInitialCardDex()) };
+        const curDexEntry = updatedDex[newCard.cardDefId] ?? {
+          cardDefId: cardDef.id,
+          cardNumber: cardDef.cardNumber,
+          characterId: cardDef.characterId,
+          characterRole: cardDef.characterRole,
+          rarity: cardDef.rarity,
+          discovered: false,
+          timesObtained: 0,
+        };
+        const highestFinish = isFinishHigher(newCard.finish, curDexEntry.highestFinish)
+          ? newCard.finish
+          : curDexEntry.highestFinish ?? newCard.finish;
+        updatedDex[newCard.cardDefId] = {
+          ...curDexEntry,
+          discovered: true,
+          discoveredAt: curDexEntry.discoveredAt ?? newCard.obtainedAt,
+          highestFinish,
+          timesObtained: (curDexEntry.timesObtained ?? 0) + 1,
+        };
+
         set({
           yen: state.yen - offering.priceYen,
           inventory: [...state.inventory, newCard],
           kioskStock: updatedStock,
+          cardDex: updatedDex,
         });
 
         return newCard;
@@ -744,17 +928,150 @@ export const useGameStore = create<GameState>()(
         }
       },
 
+      // ==========================================
+      // STAGE 2 ACTIONS: 5-SLOT VITRINE & DEX
+      // ==========================================
+
+      slotShowcaseCard: (slotIndex: number, cardInstanceId: string | null): void => {
+        const state = get();
+        if (slotIndex < 0 || slotIndex > 4) {
+          throw new Error(`Invalid showcase slot index: ${slotIndex}. Must be 0 to 4.`);
+        }
+
+        const currentSlots = state.showcaseSlots ?? DEFAULT_SHOWCASE_SLOTS;
+
+        // Case 1: Unslotting
+        if (cardInstanceId === null) {
+          const updatedSlots = currentSlots.map((s) =>
+            s.slotIndex === slotIndex ? { ...s, cardInstanceId: null } : s
+          );
+          set({ showcaseSlots: updatedSlots });
+          return;
+        }
+
+        // Case 2: Slotting card from inventory
+        const card = state.inventory.find((c) => c.id === cardInstanceId);
+        if (!card) {
+          throw new Error(`Card not found in inventory: ${cardInstanceId}`);
+        }
+
+        // If card was already mounted in another showcase pedestal, unslot it there
+        const updatedSlots = currentSlots.map((s) => {
+          if (s.slotIndex === slotIndex) {
+            return { ...s, cardInstanceId };
+          }
+          if (s.cardInstanceId === cardInstanceId) {
+            return { ...s, cardInstanceId: null };
+          }
+          return s;
+        });
+
+        set({ showcaseSlots: updatedSlots });
+      },
+
+      claimShowcaseRevenue: (): number => {
+        const state = get();
+        const report = state.getShowcaseSynergyReport();
+
+        const now = Date.now();
+        const lastClaimed = state.showcaseLastClaimedTimestamp ?? now;
+        const elapsedMinutes = (now - lastClaimed) / 60000;
+        const earnedYen = calculateShowcaseIdleEarnings(report, elapsedMinutes, 12);
+
+        set({
+          yen: state.yen + earnedYen,
+          showcaseLastClaimedTimestamp: now,
+          stats: {
+            ...state.stats,
+            totalYenEarned: state.stats.totalYenEarned + earnedYen,
+          },
+        });
+
+        return earnedYen;
+      },
+
+      getShowcaseSynergyReport: (): ShowcaseSynergyReport => {
+        const { showcaseSlots, inventory } = get();
+        const cardMap = new Map<string, CardInstance>();
+        for (const card of inventory) {
+          cardMap.set(card.id, card);
+        }
+        return analyzeShowcaseSlots(showcaseSlots ?? DEFAULT_SHOWCASE_SLOTS, cardMap);
+      },
+
+      recordCardDiscovery: (card: CardInstance): void => {
+        const state = get();
+        const cardDef = CARD_MAP[card.cardDefId];
+        if (!cardDef) return;
+
+        const currentDex = { ...(state.cardDex ?? createInitialCardDex()) };
+        const existing = currentDex[card.cardDefId] ?? {
+          cardDefId: cardDef.id,
+          cardNumber: cardDef.cardNumber,
+          characterId: cardDef.characterId,
+          characterRole: cardDef.characterRole,
+          rarity: cardDef.rarity,
+          discovered: false,
+          timesObtained: 0,
+        };
+
+        const highestFinish = isFinishHigher(card.finish, existing.highestFinish)
+          ? card.finish
+          : existing.highestFinish ?? card.finish;
+
+        const bestGrade = card.grade
+          ? isGradeHigher(card.grade, existing.bestGrade)
+            ? card.grade
+            : existing.bestGrade
+          : existing.bestGrade;
+
+        currentDex[card.cardDefId] = {
+          ...existing,
+          discovered: true,
+          discoveredAt: existing.discoveredAt ?? card.obtainedAt ?? Date.now(),
+          highestFinish,
+          bestGrade,
+          timesObtained: (existing.timesObtained ?? 0) + 1,
+        };
+
+        set({ cardDex: currentDex });
+      },
+
+      syncCardDex: (): void => {
+        const state = get();
+        const synchronized = syncDexWithInventory(state.cardDex, state.inventory);
+        set({ cardDex: synchronized });
+      },
+
       resetSave: (): void => {
         set({
           ...INITIAL_STATE,
           lastActiveTimestamp: Date.now(),
+          showcaseLastClaimedTimestamp: Date.now(),
           kioskStock: generateKioskStock(),
           kioskLastRefreshed: Date.now(),
+          cardDex: createInitialCardDex(),
+          showcaseSlots: DEFAULT_SHOWCASE_SLOTS,
         });
       },
     }),
     {
       name: 'tqq-vault-save',
+      onRehydrateStorage: () => (state) => {
+        if (state) {
+          if (!state.showcaseSlots || state.showcaseSlots.length !== 5) {
+            state.showcaseSlots = DEFAULT_SHOWCASE_SLOTS;
+          }
+          if (!state.cardDex) {
+            state.cardDex = syncDexWithInventory(createInitialCardDex(), state.inventory || []);
+          } else {
+            state.cardDex = syncDexWithInventory(state.cardDex, state.inventory || []);
+          }
+          if (!state.showcaseLastClaimedTimestamp) {
+            state.showcaseLastClaimedTimestamp = Date.now();
+          }
+        }
+      },
       storage: createJSONStorage(() => {
         if (typeof window !== 'undefined' && window.localStorage) {
           return window.localStorage;

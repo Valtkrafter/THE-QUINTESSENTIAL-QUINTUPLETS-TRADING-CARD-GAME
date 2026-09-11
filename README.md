@@ -26,7 +26,9 @@
 - **Physically Interactive 3D Booster Packs:** Real-time 3D gyro tilt with metallic crimp textures, Euro-hole punch, and a custom flat-plane pointer tear mechanism across foil perforations.
 - **Holographic Foil Shader Engine:** Dynamic angle-based light reflections, glitter sheens, prismatic rainbow gradients, gold etching, and voice actress signatures.
 - **BGS-Style Grading Slabs:** Subgrade inspection (Centering, Surface, Corners, Edges) with gold foil headers, acrylic frosted borders, and the elusive **Black Label (Quad 10)**.
-- **Grand Binder & Idle Economy:** 6-slot binder pages (5 Sisters + 1 Support) generating passive offline $\yen$ revenue boosted by sister team synergies.
+- **5-Slot Acrylic Showcase (Vitrine):** Semi-circular 3D acrylic pedestal stage with dynamic overhead character spotlights, live $\yen$ revenue ticker, and team synergy multipliers.
+- **50-Card Master Card-Dex:** Comprehensive completion catalog with undiscovered silhouette shaders, 100% golden holographic aura, and highest finish / grade tracking.
+- **Grand Binder & Collection Hub:** Filterable and sortable card collection with bulk liquidation and individual card inspection.
 - **Pure Procedural Web Audio API Engine:** 100% synthesizer-driven procedural sound design. Zero external `.mp3` dependencies for lightning-fast, zero-latency, zero-bandwidth pack opening ceremonies.
 
 ---
@@ -74,25 +76,34 @@ Submit raw cards to the **Grading Station** to be certified in heavy acrylic sla
   - **Centering Laser:** Doubles the chance of rolling a Gem Mint 10 Centering subgrade.
   - **Vault Insurance:** Guarantees a free automatic re-roll if a card scores below Grade 7.
 
-### 📖 4. Grand Binder & Idle Economy System
-- **6-Slot Grand Binder:** 5 slots reserved for the Nakano sisters and 1 slot for a support character.
-- **Synergy Multipliers:**
-  - **All 5 Sisters Bonus:** Slotting Ichika, Nino, Miku, Yotsuba, and Itsuki grants a $+50\%$ yield boost ($1.5\times$).
-  - **Mono-Waifu Synergy:** Slotting 5 copies of the same sister grants a $+25\%$ yield boost ($1.25\times$).
-  - **Support Character Passives:**
-    - **Fuutarou Uesugi:** Doubles the entire binder's passive idle revenue ($2\times$ multiplier).
-    - **Raiha Uesugi:** Grants a $25\%$ discount on all grading lab fees.
-    - **Maruo Nakano:** Increases card vaporization stardust yield by $+50\%$.
-    - **Isanari Uesugi:** Increases raw card base market value by $+15\%$.
-    - **Yuusuke Takeda:** Reduces Test Sheet cooldown timer by $50\%$.
-- **Passive Offline Revenue:** Slotted binder cards accrue $\yen$ continuously even when the app is closed.
+### 🏛️ 4. 5-Slot Acrylic Showcase (Vitrine) & Idle Revenue Engine
+- **Semi-Circular 3D Acrylic Stage:** 5 vertical acrylic pedestals arranged along a curved perspective stage (`perspective: 1200px`) against deep Obsidian dark (`#08080a`) with frosted bases, reflection planes, and metallic edge brackets.
+- **Dynamic Character Overhead Spotlights:** Conical top-down light shafts casting authentic illumination matched to signature character colors:
+  - **Ichika:** Warm Amber (`#F59E0B`) 💛
+  - **Nino:** Vivid Magenta (`#EC4899`) 🦋
+  - **Miku:** Cool Cyan (`#06B6D4`) 🎧
+  - **Yotsuba:** Bright Emerald (`#10B981`) 🍀
+  - **Itsuki:** Crimson Ruby (`#EF4444`) ⭐
+  - **Support / Empty:** Mystic Violet (`#8B5CF6`) / Subtle Slate (`#475569`)
+- **Idle Yield Formula:**
+  $$\text{Yield/Min} = \sum_{i=1}^{5} \left( 60\ \yen + (\text{Market Value}_i \times 0.0002) \right) \times \text{Synergy Multiplier}$$
+- **Guaranteed Base Floor:** Every slotted card generates a guaranteed baseline of $1\ \yen/\text{sec}$ ($60\ \yen/\text{min}$), ensuring newly acquired cards contribute immediate value.
+- **Team Synergy Multipliers:**
+  - **Quintuplet Harmony (+50%):** Slotting all 5 sisters (Ichika, Nino, Miku, Yotsuba, Itsuki) activates a $+50\%$ bonus ($1.5\times$).
+  - **Mono-Waifu Obsession (+30%):** Slotting 5 copies of the same sister activates a $+30\%$ bonus ($1.3\times$).
+  - **Vault Excellence (+100%):** Slotting 5 Grade $\ge 9$ slabs (Mint 9, Gem Mint 10, or Black Label) doubles total showcase yield ($+100\%$ / $2.0\times$).
+  - *Multipliers stack additively onto base $1.0$ (e.g. Harmony + Excellence = $2.5\times$).*
+- **12-Hour Offline Yield Cap:** Revenue accrues continuously up to a strict 12-hour ($720\text{ minutes}$) ceiling while away.
+- **Background Tab Throttling Protection:** Employs `document.visibilitychange` and `window.focus` listeners with wall-clock epoch timestamp reconciliation (`Date.now() - showcaseLastClaimedTimestamp`), completely preventing browser JavaScript timer throttling from shortchanging yield.
+- **Live Revenue Ticker & Particle Claim:** Real-time ticking counter with glowing neon indicators, active synergy chips, and a golden "Claim Vault Revenue" action firing coin bursts and synthesizer pulses.
+- **Interactive Socketing Drawer:** Modal drawer with real-time collection search, character filters, and instant mount/unmount operations.
 
 ### 💰 5. Direct Sell System & Bulk Liquidation
 - **Instant Liquid Sales:** Liquidate raw, holo, or graded cards directly for instant $\yen$ currency from the unified `CardActionModal`.
 - **Dynamic Particle FX & Audio:** Features 18 golden coin particles exploding outward and arcing towards the HUD currency counter accompanied by procedural metallic coin chime audio.
 - **High-Value Guardrail Dialog:** Liquidating high-tier assets ($\ge \text{UR}$ or Grade $\ge 9$) prompts a cautionary shake-animated confirmation modal with a 3-second countdown to prevent accidental sales.
 - **Bulk Liquidation Modal:** One-click bulk sale for Common (C) and Uncommon (UC) inventory cards directly from the Grand Binder, detailing exact quantities, average values, and total payouts.
-- **Showcase Protection Lock:** Cards locked manually or actively slotted in the Grand Binder are strictly immune to liquidation and vaporization.
+- **Showcase & Lock Protection:** Cards locked manually or actively slotted in the 5-slot Acrylic Showcase are strictly immune to liquidation and vaporization.
 
 ### 🏪 6. Daily Rotating Singles Kiosk
 - **Curated Rotating Market:** A brushed dark slate (`#111116`) kiosk offering 4 direct-purchase singles, available via the Grand Binder and Booster Pack modal tabs.
@@ -111,9 +122,17 @@ Zero external `.mp3` or `.wav` files. All audio is synthesized procedurally in r
 - **`card_slide`:** Highpass-filtered white noise ($2800\text{Hz}$, $80\text{ms}$) simulating card sleeve friction.
 - **`sub_bass_pulse`:** Deep exponential sine sweep ($72\text{Hz} \to 30\text{Hz}$, $380\text{ms}$) for rare card anticipation.
 - **`reveal_rare`:** 4-voice chime arpeggio (E6: $1318.5\text{Hz}$, G#6: $1661.2\text{Hz}$, B6: $1975.5\text{Hz}$, E7: $2637.0\text{Hz}$).
-- **`godpack_fanfare`:** 4-voice detuned sawtooth triad through an automated resonant lowpass filter sweep ($400\text{Hz} \to 2800\text{Hz}$).
+- **`godpack_fanfare`:** 4-voice detuned sawtooth triad through an automated resonant lowpass filter sweep ($400\text{Hz} \to 2800\text{Hz Warwick}$ sweep).
 - **`coin_pulse`:** Metallic multi-frequency chime ($987.77\text{Hz} \to 1318.5\text{Hz}$) with harmonic sparkle decay for direct sales.
 - **`receipt_register`:** Dual mechanical cash register latch click followed by a high-frequency ($2489\text{Hz}$) purchase ping for market transactions.
+
+### 📖 9. Master Card-Dex & Discovery Engine
+- **Master 50-Card Registry:** Complete catalog of cards `TQQ-001` through `TQQ-050` tracking global completion status across the entire collection.
+- **Silhouette Mystery Shader:** Undiscovered cards render as matte pitch-black silhouettes (`#0c0c10`) with animated smoky particle shimmers, frosted borders, padlock icons, and hidden identity codes.
+- **Highest Finish & Best BGS Grade Memory:** Discovered entries preserve the pinnacle state ever obtained across unboxings, kiosk buys, and grading certifications (even if the physical card is subsequently liquidated or dusted).
+- **Circular SVG Completion Tracker:** Dynamic progress ring visualizing exact collection percentage (`X / 50 Collected (Y%)`).
+- **100% Golden Holographic Shimmer Aura:** Attaining full 50/50 completion permanently bathes the Card-Dex header and border frame in an animated rainbow prismatic gold aura.
+- **Comprehensive Card Dossier Modal:** Detailed inspection modal featuring real-time 3D tilt, subgrade plate inspection, authenticated voice actress credentials, character quotes, and acquisition origins.
 
 ---
 
@@ -165,6 +184,19 @@ $$\text{Market Value} = \text{Base Value}(\text{Rarity}) \times \text{Multiplier
 | **Braut des Schicksals** | $25{,}000\ \yen$ | $5$ | **No Commons or Uncommons.** Guaranteed Rare (R) or higher in every slot. |
 | **Celestial God Pack** | $100{,}000\ \yen$ | $5$ | **★ 100% Ultra, Secret, and Master Rares only!** |
 
+### 5. Showcase Idle Revenue & Synergies
+- **Yield Calculation:**
+  $$\text{Slot Yield/Min} = 60\ \yen + (\text{Market Value} \times 0.0002)$$
+  $$\text{Total Yield/Min} = \left(\sum_{i=1}^{5} \text{Slot Yield/Min}_i\right) \times (1.0 + \sum \text{Synergy Bonuses})$$
+- **Base Yield Guarantee:** $1\ \yen/\text{sec}$ ($60\ \yen/\text{min}$) guaranteed per card slot.
+- **Synergy Multipliers:**
+  - **Quintuplet Harmony:** $+50\%$ ($+0.5$) when all 5 slots contain Ichika, Nino, Miku, Yotsuba, and Itsuki.
+  - **Mono-Waifu Obsession:** $+30\%$ ($+0.3$) when all 5 slots contain the same sister.
+  - **Vault Excellence:** $+100\%$ ($+1.0$) when all 5 slotted cards are Grade $\ge 9$ BGS Slabs (Mint 9, Gem Mint 10, or Black Label).
+  - *Additively stacked (e.g. Harmony $+50\%$ + Excellence $+100\% \implies 2.5\times$ total multiplier).*
+- **Offline Accrual Cap:** Strictly capped at 12 hours ($720\text{ minutes}$ / $43{,}200\text{ seconds}$).
+- **Tab Throttling Safeguard:** Live time-delta calculation based on absolute wall-clock epoch timestamps prevents idle loss in throttled browser background tabs.
+
 ---
 
 ## 🏗️ Project Architecture
@@ -182,20 +214,22 @@ tqqtcg/
 │   └── packs/                   # High-resolution 3D booster foil pack wraps
 ├── rules.md                     # Strict development protocol & architectural standards
 ├── scripts/
-│   └── test-engine.ts           # Comprehensive test suite (10,000-roll Monte Carlo audit & Stage 1 tests)
+│   └── test-engine.ts           # Comprehensive test suite (10,000-roll Monte Carlo audit & Stage 1/2 tests)
 ├── src/
 │   ├── app/
 │   │   ├── layout.tsx           # Global root HTML & font provider
-│   │   ├── page.tsx             # Main entry point (renders GrandBinder)
+│   │   ├── page.tsx             # Main entry point (renders GrandBinder view switcher)
 │   │   └── showcase/page.tsx    # Interactive sandbox showcase & inspection playground
 │   ├── components/
 │   │   ├── binder/
-│   │   │   ├── BinderGrid.tsx       # 6-slot binder page grid with synergy report
+│   │   │   ├── BinderGrid.tsx       # Collection card grid with view filters and stats
 │   │   │   ├── CardActionModal.tsx  # Unified card inspect, slot, grade, sell, and dust modal
-│   │   │   └── GrandBinder.tsx      # Main collection hub with filtering, sorting & bulk sell
+│   │   │   └── GrandBinder.tsx      # Main hub with Showcase / Collection / Card-Dex view switcher
 │   │   ├── card/
 │   │   │   ├── CardRenderer.tsx     # Holographic foil shader engine & card frame
 │   │   │   └── GradingSlab.tsx      # Acrylic BGS-style grading slab with subgrade plates
+│   │   ├── catalog/
+│   │   │   └── CardDex.tsx          # 50-card master catalog with silhouettes & 100% gold shimmer
 │   │   ├── dusting/
 │   │   │   └── DustingWorkshop.tsx  # Card vaporization and Stardust exchange station
 │   │   ├── market/
@@ -205,16 +239,19 @@ tqqtcg/
 │   │   │   ├── PackOpeningModal.tsx # Ceremony modal: tear, suspense, peel & summary
 │   │   │   ├── SelectBoosterModal.tsx # Portal-mounted pack kiosk with live drop odds & kiosk tab
 │   │   │   └── TearMechanism.tsx    # Direct HTML5 window pointer tear engine
+│   │   ├── showcase/
+│   │   │   └── Vitrine.tsx          # 5-slot acrylic pedestal stage with dynamic spotlights & idle claim
 │   │   └── vault/
 │   │       ├── GradingScannerFX.tsx # Particle laser scanner visualizer
 │   │       └── GradingStation.tsx   # Card submission hub & consumable tool equip
 │   ├── config/
 │   │   ├── cardsData.ts         # Catalog of 50 cards with metadata and quotes
-│   │   └── economy.ts           # Pricing matrices, valuation formulas, drop tables, pity logic, synergies
+│   │   └── economy.ts           # Pricing matrices, valuation formulas, drop tables, pity, synergies
 │   ├── hooks/
+│   │   ├── useIdleRevenue.ts    # Background-safe idle yield calculator with 12h offline cap
 │   │   └── useSmoothTilt.ts     # Overdamped 3D spring tilt hook with dynamic lighting
 │   ├── store/
-│   │   └── useGameStore.ts      # Persistent Zustand store (currencies, inventory, kiosk, stats)
+│   │   └── useGameStore.ts      # Persistent Zustand store (currencies, inventory, showcase, dex, stats)
 │   ├── types/
 │   │   └── card.ts              # Strict TypeScript interfaces, enums, and types
 │   └── utils/

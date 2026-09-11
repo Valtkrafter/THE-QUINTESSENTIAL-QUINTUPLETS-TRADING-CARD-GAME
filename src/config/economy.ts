@@ -23,6 +23,8 @@ import {
   SisterId,
   SupportId,
   KioskOffering,
+  ShowcaseSlot,
+  ShowcaseSynergyReport,
 } from '../types/card';
 import { CARDS_BY_RARITY, CARD_MAP, CARDS_CATALOG } from './cardsData';
 
@@ -887,6 +889,132 @@ export function calculateAccruedIdleEarnings(
   maxOfflineHours: number = 24
 ): number {
   const maxMinutes = maxOfflineHours * 60;
+  const effectiveMinutes = Math.min(Math.max(0, elapsedMinutes), maxMinutes);
+  return Math.floor(effectiveMinutes * report.effectiveYieldPerMinute);
+}
+
+// ==========================================
+// 8. STAGE 2: 5-SLOT SHOWCASE & CARD-DEX HELPERS
+// ==========================================
+
+export const FINISH_RANKS: Record<Finish, number> = {
+  raw: 1,
+  holo: 2,
+  sparkle: 3,
+  rainbow: 4,
+  gold_etched: 5,
+  signed: 6,
+};
+
+export function isFinishHigher(candidate: Finish, current?: Finish): boolean {
+  if (!current) return true;
+  return FINISH_RANKS[candidate] > FINISH_RANKS[current];
+}
+
+export function isGradeHigher(candidate: GradeResult, current?: GradeResult): boolean {
+  if (!current) return true;
+  if (candidate.isBlackLabel && !current.isBlackLabel) return true;
+  if (!candidate.isBlackLabel && current.isBlackLabel) return false;
+  if (candidate.numericGrade !== current.numericGrade) {
+    return candidate.numericGrade > current.numericGrade;
+  }
+  return candidate.multiplier > current.multiplier;
+}
+
+/**
+ * Evaluates the 5-slot Acrylic Showcase (Vitrine) synergies and idle yield.
+ *
+ * Idle Yield Formula:
+ * Yield/Min = Sum_{i=1}^5 (60 Yen + Market Value_i * 0.0002) * Synergy Multiplier
+ *
+ * Synergy Multipliers:
+ * - Quintuplet Harmony (all 5 sisters slotted): +50% yield (+0.5)
+ * - Mono-Waifu Obsession (5 copies of the same sister): +30% yield (+0.3)
+ * - Vault Excellence (all 5 cards are Slabs with Grade >= 9): +100% yield (+1.0)
+ *
+ * Base Floor:
+ * Every slotted card generates a guaranteed minimum of 1 Yen/sec (60 Yen/min)
+ * regardless of rarity to prevent softlocks.
+ */
+export function analyzeShowcaseSlots(
+  slots: ShowcaseSlot[],
+  cardMap: Map<string, CardInstance>
+): ShowcaseSynergyReport {
+  let totalMarketValue = 0;
+  let slottedCount = 0;
+  const slottedCards: CardInstance[] = [];
+
+  for (const slot of slots) {
+    if (!slot.cardInstanceId) continue;
+    const card = cardMap.get(slot.cardInstanceId);
+    if (!card) continue;
+    slottedCards.push(card);
+    slottedCount++;
+    totalMarketValue += calculateCardMarketValue(card);
+  }
+
+  // 1. Quintuplet Harmony: Ichika, Nino, Miku, Yotsuba, Itsuki all slotted
+  const sisterSet = new Set<SisterId>();
+  for (const card of slottedCards) {
+    if (NAKANO_SISTERS.includes(card.characterId as SisterId)) {
+      sisterSet.add(card.characterId as SisterId);
+    }
+  }
+  const quintupletHarmony = sisterSet.size === 5 && slottedCount === 5;
+
+  // 2. Mono-Waifu: 5 copies of the same sister
+  let monoWaifu = false;
+  let monoWaifuSisterId: SisterId | null = null;
+  if (slottedCount === 5 && sisterSet.size === 1) {
+    monoWaifu = true;
+    monoWaifuSisterId = Array.from(sisterSet)[0];
+  }
+
+  // 3. Vault Excellence: All 5 cards are Slabs with Grade >= 9
+  const vaultExcellence =
+    slottedCount === 5 &&
+    slottedCards.every((card) => card.grade && card.grade.numericGrade >= 9);
+
+  // Synergy multiplier calculation: Base 1.0
+  let synergyMultiplier = 1.0;
+  if (quintupletHarmony) {
+    synergyMultiplier += 0.5; // +50%
+  } else if (monoWaifu) {
+    synergyMultiplier += 0.3; // +30%
+  }
+  if (vaultExcellence) {
+    synergyMultiplier += 1.0; // +100%
+  }
+
+  const baseFloorPerMinute = slottedCount * 60; // 60 Yen/min per slotted card (1 Yen/sec)
+  const marketBonusPerMinute = totalMarketValue * 0.0002;
+  const effectiveYieldPerMinute = (baseFloorPerMinute + marketBonusPerMinute) * synergyMultiplier;
+  const effectiveYieldPerSecond = effectiveYieldPerMinute / 60;
+
+  return {
+    quintupletHarmony,
+    monoWaifu,
+    monoWaifuSisterId,
+    vaultExcellence,
+    synergyMultiplier,
+    totalMarketValue,
+    baseFloorPerMinute,
+    marketBonusPerMinute,
+    effectiveYieldPerMinute,
+    effectiveYieldPerSecond,
+    slottedCount,
+  };
+}
+
+/**
+ * Calculates accrued Vitrine idle earnings with 12-hour offline accrual cap.
+ */
+export function calculateShowcaseIdleEarnings(
+  report: ShowcaseSynergyReport,
+  elapsedMinutes: number,
+  maxOfflineHours: number = 12
+): number {
+  const maxMinutes = maxOfflineHours * 60; // 720 minutes maximum
   const effectiveMinutes = Math.min(Math.max(0, elapsedMinutes), maxMinutes);
   return Math.floor(effectiveMinutes * report.effectiveYieldPerMinute);
 }

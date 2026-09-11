@@ -20,6 +20,8 @@ import { BinderGrid } from './BinderGrid';
 import { CardActionModal } from './CardActionModal';
 import { PackOpeningModal } from '../pack/PackOpeningModal';
 import { SelectBoosterModal } from '../pack/SelectBoosterModal';
+import { Vitrine } from '../showcase/Vitrine';
+import { CardDex } from '../catalog/CardDex';
 import { soundEngine } from '../../utils/audioEngine';
 import Link from 'next/link';
 import {
@@ -45,19 +47,29 @@ import {
 
 type FilterType = 'all' | 'raw' | 'graded' | 'ichika' | 'nino' | 'miku' | 'yotsuba' | 'itsuki' | 'support';
 type SortType = 'value_desc' | 'value_asc' | 'rarity_desc' | 'grade_desc' | 'recent';
+type MainView = 'vitrine' | 'binder' | 'dex';
 
 export const GrandBinder: React.FC = () => {
+  // Main view switcher (Vitrine Showcase / Collection / Card-Dex)
+  const [activeMainView, setActiveMainView] = useState<MainView>('vitrine');
+
   // Store bindings
   const yen = useGameStore((state) => state.yen);
   const stardust = useGameStore((state) => state.stardust);
   const inventory = useGameStore((state) => state.inventory);
   const binder = useGameStore((state) => state.binder);
+  const cardDex = useGameStore((state) => state.cardDex);
   const lastActive = useGameStore((state) => state.lastActiveTimestamp);
   const getBinderSynergyReport = useGameStore((state) => state.getBinderSynergyReport);
   const claimIdleRevenue = useGameStore((state) => state.claimIdleRevenue);
   const openPack = useGameStore((state) => state.openPack);
   const sellBulkCards = useGameStore((state) => state.sellBulkCards);
   const resetSave = useGameStore((state) => state.resetSave);
+
+  const dexDiscoveredCount = useMemo(() => {
+    if (!cardDex) return 0;
+    return Object.values(cardDex).filter((e) => e.discovered).length;
+  }, [cardDex]);
 
   // Selected card for Card Action Modal
   const [selectedCard, setSelectedCard] = useState<CardInstance | null>(null);
@@ -280,6 +292,43 @@ export const GrandBinder: React.FC = () => {
           </div>
         </div>
 
+        {/* Center: Primary View Tabs (Vitrine Showcase / Collection / Card-Dex) */}
+        <div className="flex items-center gap-1 bg-zinc-900/90 border border-white/10 p-1 rounded-2xl font-mono text-xs shadow-inner">
+          <button
+            onClick={() => setActiveMainView('vitrine')}
+            className={`px-3.5 py-1.5 rounded-xl font-bold transition flex items-center gap-1.5 ${
+              activeMainView === 'vitrine'
+                ? 'bg-amber-500 text-zinc-950 shadow-md font-black'
+                : 'text-zinc-400 hover:text-white hover:bg-white/5'
+            }`}
+          >
+            <span>🏛️</span>
+            <span>Showcase</span>
+          </button>
+          <button
+            onClick={() => setActiveMainView('binder')}
+            className={`px-3.5 py-1.5 rounded-xl font-bold transition flex items-center gap-1.5 ${
+              activeMainView === 'binder'
+                ? 'bg-amber-500 text-zinc-950 shadow-md font-black'
+                : 'text-zinc-400 hover:text-white hover:bg-white/5'
+            }`}
+          >
+            <span>🎴</span>
+            <span>Collection ({inventory.length})</span>
+          </button>
+          <button
+            onClick={() => setActiveMainView('dex')}
+            className={`px-3.5 py-1.5 rounded-xl font-bold transition flex items-center gap-1.5 ${
+              activeMainView === 'dex'
+                ? 'bg-amber-500 text-zinc-950 shadow-md font-black'
+                : 'text-zinc-400 hover:text-white hover:bg-white/5'
+            }`}
+          >
+            <span>📖</span>
+            <span>Card-Dex ({dexDiscoveredCount}/50)</span>
+          </button>
+        </div>
+
         {/* Right: Currencies & Primary Pack Opener */}
         <div className="flex items-center gap-3">
           {/* Live Yen & Dust Counters */}
@@ -334,127 +383,146 @@ export const GrandBinder: React.FC = () => {
       </header>
 
       {/* ============================================================
-          FILTER & SORT SUB-HEADER BAR
+          VIEW 1: 5-SLOT ACRYLIC SHOWCASE (VITRINE)
           ============================================================ */}
-      <div className="h-14 shrink-0 border-b border-white/5 px-6 flex items-center justify-between gap-4 bg-zinc-950/40 text-xs">
-        {/* Filter Pills */}
-        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
-          <button
-            onClick={() => setActiveFilter('all')}
-            className={`px-3 py-1.5 rounded-xl font-bold transition whitespace-nowrap ${
-              activeFilter === 'all'
-                ? 'bg-amber-500 text-black shadow'
-                : 'text-zinc-400 hover:text-white bg-white/5 hover:bg-white/10'
-            }`}
-          >
-            All ({inventory.length})
-          </button>
+      {activeMainView === 'vitrine' && (
+        <main className="flex-1 min-h-0 overflow-hidden flex flex-col">
+          <Vitrine />
+        </main>
+      )}
 
-          <button
-            onClick={() => setActiveFilter('graded')}
-            className={`px-3 py-1.5 rounded-xl font-bold transition flex items-center gap-1.5 whitespace-nowrap ${
-              activeFilter === 'graded'
-                ? 'bg-amber-500 text-black shadow'
-                : 'text-zinc-400 hover:text-white bg-white/5 hover:bg-white/10'
-            }`}
-          >
-            <Award className="w-3.5 h-3.5" />
-            <span>Slabs ({inventory.filter((c) => !!c.grade).length})</span>
-          </button>
+      {/* ============================================================
+          VIEW 2: MASTER CARD-DEX (50-CARD CATALOG)
+          ============================================================ */}
+      {activeMainView === 'dex' && (
+        <main className="flex-1 min-h-0 overflow-hidden flex flex-col">
+          <CardDex />
+        </main>
+      )}
 
-          <button
-            onClick={() => setActiveFilter('raw')}
-            className={`px-3 py-1.5 rounded-xl font-bold transition whitespace-nowrap ${
-              activeFilter === 'raw'
-                ? 'bg-amber-500 text-black shadow'
-                : 'text-zinc-400 hover:text-white bg-white/5 hover:bg-white/10'
-            }`}
-          >
-            Raw ({inventory.filter((c) => !c.grade).length})
-          </button>
-
-          <div className="w-px h-4 bg-white/10 mx-1" />
-
-          {/* Sisters Filters */}
-          {(['ichika', 'nino', 'miku', 'yotsuba', 'itsuki'] as CharacterId[]).map((cId) => {
-            const theme = CHARACTER_THEMES[cId];
-            const isCurrent = activeFilter === cId;
-            return (
+      {/* ============================================================
+          VIEW 3: COLLECTION BINDER & INVENTORY GRID
+          ============================================================ */}
+      {activeMainView === 'binder' && (
+        <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+          {/* FILTER & SORT SUB-HEADER BAR */}
+          <div className="h-14 shrink-0 border-b border-white/5 px-6 flex items-center justify-between gap-4 bg-zinc-950/40 text-xs">
+            {/* Filter Pills */}
+            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
               <button
-                key={cId}
-                onClick={() => setActiveFilter(cId as FilterType)}
-                className={`px-2.5 py-1.5 rounded-xl font-bold transition flex items-center gap-1 whitespace-nowrap capitalize ${
-                  isCurrent
-                    ? 'bg-white/20 text-white border border-white/30 shadow'
+                onClick={() => setActiveFilter('all')}
+                className={`px-3 py-1.5 rounded-xl font-bold transition whitespace-nowrap ${
+                  activeFilter === 'all'
+                    ? 'bg-amber-500 text-black shadow'
                     : 'text-zinc-400 hover:text-white bg-white/5 hover:bg-white/10'
                 }`}
               >
-                <span>{theme.symbol}</span>
-                <span>{cId}</span>
+                All ({inventory.length})
               </button>
-            );
-          })}
 
-          {/* Bulk Sell Quick Action */}
-          <button
-            onClick={() => setShowBulkSellModal(true)}
-            disabled={bulkSellableCards.length === 0}
-            className="px-3 py-1.5 rounded-xl font-bold font-mono transition flex items-center gap-1.5 text-xs bg-emerald-950/50 hover:bg-emerald-900/60 border border-emerald-500/40 text-emerald-300 disabled:opacity-40 disabled:pointer-events-none whitespace-nowrap shadow-sm"
-            title="Liquidate all unlocked raw Commons & Uncommons for Yen"
-          >
-            <Coins className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Bulk Sell ({bulkSellableCards.length})</span>
-            {bulkSellableCards.length > 0 && (
-              <span className="text-[10px] text-emerald-400/80 font-normal hidden sm:inline">
-                +{bulkSellTotalYen.toLocaleString()} ¥
-              </span>
-            )}
-          </button>
-        </div>
-
-        {/* Search & Sort dropdown */}
-        <div className="flex items-center gap-2.5 shrink-0">
-          <div className="relative hidden md:block">
-            <Search className="w-3.5 h-3.5 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search cards..."
-              className="pl-8 pr-3 py-1.5 rounded-xl bg-zinc-900/90 border border-white/10 text-xs text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-amber-400/60 w-44"
-            />
-            {searchQuery && (
               <button
-                onClick={() => setSearchQuery('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white"
+                onClick={() => setActiveFilter('graded')}
+                className={`px-3 py-1.5 rounded-xl font-bold transition flex items-center gap-1.5 whitespace-nowrap ${
+                  activeFilter === 'graded'
+                    ? 'bg-amber-500 text-black shadow'
+                    : 'text-zinc-400 hover:text-white bg-white/5 hover:bg-white/10'
+                }`}
               >
-                <X className="w-3 h-3" />
+                <Award className="w-3.5 h-3.5" />
+                <span>Slabs ({inventory.filter((c) => !!c.grade).length})</span>
               </button>
-            )}
+
+              <button
+                onClick={() => setActiveFilter('raw')}
+                className={`px-3 py-1.5 rounded-xl font-bold transition whitespace-nowrap ${
+                  activeFilter === 'raw'
+                    ? 'bg-amber-500 text-black shadow'
+                    : 'text-zinc-400 hover:text-white bg-white/5 hover:bg-white/10'
+                }`}
+              >
+                Raw ({inventory.filter((c) => !c.grade).length})
+              </button>
+
+              <div className="w-px h-4 bg-white/10 mx-1" />
+
+              {/* Sisters Filters */}
+              {(['ichika', 'nino', 'miku', 'yotsuba', 'itsuki'] as CharacterId[]).map((cId) => {
+                const theme = CHARACTER_THEMES[cId];
+                const isCurrent = activeFilter === cId;
+                return (
+                  <button
+                    key={cId}
+                    onClick={() => setActiveFilter(cId as FilterType)}
+                    className={`px-2.5 py-1.5 rounded-xl font-bold transition flex items-center gap-1 whitespace-nowrap capitalize ${
+                      isCurrent
+                        ? 'bg-white/20 text-white border border-white/30 shadow'
+                        : 'text-zinc-400 hover:text-white bg-white/5 hover:bg-white/10'
+                    }`}
+                  >
+                    <span>{theme.symbol}</span>
+                    <span>{cId}</span>
+                  </button>
+                );
+              })}
+
+              {/* Bulk Sell Quick Action */}
+              <button
+                onClick={() => setShowBulkSellModal(true)}
+                disabled={bulkSellableCards.length === 0}
+                className="px-3 py-1.5 rounded-xl font-bold font-mono transition flex items-center gap-1.5 text-xs bg-emerald-950/50 hover:bg-emerald-900/60 border border-emerald-500/40 text-emerald-300 disabled:opacity-40 disabled:pointer-events-none whitespace-nowrap shadow-sm"
+                title="Liquidate all unlocked raw Commons & Uncommons for Yen"
+              >
+                <Coins className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Bulk Sell ({bulkSellableCards.length})</span>
+                {bulkSellableCards.length > 0 && (
+                  <span className="text-[10px] text-emerald-400/80 font-normal hidden sm:inline">
+                    +{bulkSellTotalYen.toLocaleString()} ¥
+                  </span>
+                )}
+              </button>
+            </div>
+
+            {/* Search & Sort dropdown */}
+            <div className="flex items-center gap-2.5 shrink-0">
+              <div className="relative hidden md:block">
+                <Search className="w-3.5 h-3.5 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search cards..."
+                  className="pl-8 pr-3 py-1.5 rounded-xl bg-zinc-900/90 border border-white/10 text-xs text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-amber-400/60 w-44"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
+
+              <div className="flex items-center gap-1.5 bg-zinc-900/90 border border-white/10 rounded-xl px-2.5 py-1 font-mono text-[11px]">
+                <ArrowUpDown className="w-3 h-3 text-zinc-400" />
+                <select
+                  value={activeSort}
+                  onChange={(e) => setActiveSort(e.target.value as SortType)}
+                  className="bg-transparent text-zinc-200 focus:outline-none cursor-pointer"
+                >
+                  <option value="value_desc" className="bg-zinc-900 text-white">Value (High $\to$ Low)</option>
+                  <option value="value_asc" className="bg-zinc-900 text-white">Value (Low $\to$ High)</option>
+                  <option value="rarity_desc" className="bg-zinc-900 text-white">Rarity (MR $\to$ C)</option>
+                  <option value="grade_desc" className="bg-zinc-900 text-white">Grade (10 $\to$ Raw)</option>
+                  <option value="recent" className="bg-zinc-900 text-white">Recently Pulled</option>
+                </select>
+              </div>
+            </div>
           </div>
 
-          <div className="flex items-center gap-1.5 bg-zinc-900/90 border border-white/10 rounded-xl px-2.5 py-1 font-mono text-[11px]">
-            <ArrowUpDown className="w-3 h-3 text-zinc-400" />
-            <select
-              value={activeSort}
-              onChange={(e) => setActiveSort(e.target.value as SortType)}
-              className="bg-transparent text-zinc-200 focus:outline-none cursor-pointer"
-            >
-              <option value="value_desc" className="bg-zinc-900 text-white">Value (High $\to$ Low)</option>
-              <option value="value_asc" className="bg-zinc-900 text-white">Value (Low $\to$ High)</option>
-              <option value="rarity_desc" className="bg-zinc-900 text-white">Rarity (MR $\to$ C)</option>
-              <option value="grade_desc" className="bg-zinc-900 text-white">Grade (10 $\to$ Raw)</option>
-              <option value="recent" className="bg-zinc-900 text-white">Recently Pulled</option>
-            </select>
-          </div>
-        </div>
-      </div>
+          {/* MAIN ZERO-SCROLLBAR GRID CONTAINER */}
+          <main className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-6">
 
-      {/* ============================================================
-          MAIN ZERO-SCROLLBAR GRID CONTAINER
-          flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-6
-          ============================================================ */}
-      <main className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-6">
         {filteredCards.length === 0 ? (
           /* Empty State */
           <div className="h-full flex flex-col items-center justify-center text-center p-8">
@@ -483,7 +551,9 @@ export const GrandBinder: React.FC = () => {
         ) : (
           <BinderGrid cards={filteredCards} onCardClick={handleCardClick} />
         )}
-      </main>
+          </main>
+        </div>
+      )}
 
       {/* ============================================================
           CONTEXTUAL CARD ACTION MODAL
