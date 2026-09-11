@@ -19,12 +19,15 @@ import {
   TrendingUp,
   ShieldCheck,
   Zap,
+  Store,
 } from 'lucide-react';
+import { SinglesMarket } from '../market/SinglesMarket';
 
 export interface SelectBoosterModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSelectPack: (packId: PackId) => void;
+  initialTab?: 'packs' | 'kiosk';
 }
 
 const ALL_PACK_IDS: PackId[] = [
@@ -54,9 +57,17 @@ export const SelectBoosterModal: React.FC<SelectBoosterModalProps> = ({
   isOpen,
   onClose,
   onSelectPack,
+  initialTab = 'packs',
 }) => {
   const [oddsPackId, setOddsPackId] = useState<PackId | null>(null);
+  const [activeStoreTab, setActiveStoreTab] = useState<'packs' | 'kiosk'>(initialTab);
   const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    if (initialTab) {
+      setActiveStoreTab(initialTab);
+    }
+  }, [initialTab]);
 
   const yen = useGameStore((state) => state.yen);
   const pityCounters = useGameStore((state) => state.pityCounters);
@@ -401,10 +412,48 @@ export const SelectBoosterModal: React.FC<SelectBoosterModalProps> = ({
           </div>
         </div>
 
-        {/* ============================================================
-            8-PACK RESPONSIVE GRID (With Minimalist Circular '?' Odds Button)
-            ============================================================ */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 relative z-10">
+        {/* Store Tabs Switcher: Booster Packs vs. Singles Kiosk */}
+        <div className="flex items-center gap-2 relative z-10 font-mono text-xs">
+          <button
+            onClick={() => setActiveStoreTab('packs')}
+            className={`px-4 py-2 rounded-2xl font-bold flex items-center gap-2 transition-all ${
+              activeStoreTab === 'packs'
+                ? 'bg-amber-500 text-black shadow-lg shadow-amber-500/20'
+                : 'text-zinc-400 hover:text-white bg-zinc-900/80 border border-white/5 hover:border-white/10'
+            }`}
+          >
+            <PackageOpen className="w-4 h-4" />
+            <span>Booster Packs</span>
+          </button>
+
+          <button
+            onClick={() => setActiveStoreTab('kiosk')}
+            className={`px-4 py-2 rounded-2xl font-bold flex items-center gap-2 transition-all ${
+              activeStoreTab === 'kiosk'
+                ? 'bg-emerald-500 text-black shadow-lg shadow-emerald-500/20'
+                : 'text-zinc-400 hover:text-white bg-zinc-900/80 border border-white/5 hover:border-white/10'
+            }`}
+          >
+            <Store className="w-4 h-4" />
+            <span>Singles Kiosk</span>
+            <span
+              className={`text-[9px] px-1.5 py-0.5 rounded font-black ${
+                activeStoreTab === 'kiosk' ? 'bg-black/25 text-black' : 'bg-emerald-500/20 text-emerald-300'
+              }`}
+            >
+              DAILY
+            </span>
+          </button>
+        </div>
+
+        {/* Content View: Singles Kiosk vs. Booster Packs Grid */}
+        {activeStoreTab === 'kiosk' ? (
+          <div className="relative z-10 py-1">
+            <SinglesMarket />
+          </div>
+        ) : (
+          /* 8-PACK RESPONSIVE GRID (With Minimalist Circular '?' Odds Button) */
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 relative z-10">
           {ALL_PACK_IDS.map((pId) => {
             const config = PACKS_CONFIG[pId];
             const theme = PACK_THEMES[pId];
@@ -522,6 +571,7 @@ export const SelectBoosterModal: React.FC<SelectBoosterModalProps> = ({
             );
           })}
         </div>
+      )}
 
         {/* Portal-Mounted Odds Modal */}
         {renderOddsPortal()}

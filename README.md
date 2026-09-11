@@ -87,18 +87,33 @@ Submit raw cards to the **Grading Station** to be certified in heavy acrylic sla
     - **Yuusuke Takeda:** Reduces Test Sheet cooldown timer by $50\%$.
 - **Passive Offline Revenue:** Slotted binder cards accrue $\yen$ continuously even when the app is closed.
 
-### ♻️ 5. Dusting Workshop & Stardust Alchemy
+### 💰 5. Direct Sell System & Bulk Liquidation
+- **Instant Liquid Sales:** Liquidate raw, holo, or graded cards directly for instant $\yen$ currency from the unified `CardActionModal`.
+- **Dynamic Particle FX & Audio:** Features 18 golden coin particles exploding outward and arcing towards the HUD currency counter accompanied by procedural metallic coin chime audio.
+- **High-Value Guardrail Dialog:** Liquidating high-tier assets ($\ge \text{UR}$ or Grade $\ge 9$) prompts a cautionary shake-animated confirmation modal with a 3-second countdown to prevent accidental sales.
+- **Bulk Liquidation Modal:** One-click bulk sale for Common (C) and Uncommon (UC) inventory cards directly from the Grand Binder, detailing exact quantities, average values, and total payouts.
+- **Showcase Protection Lock:** Cards locked manually or actively slotted in the Grand Binder are strictly immune to liquidation and vaporization.
+
+### 🏪 6. Daily Rotating Singles Kiosk
+- **Curated Rotating Market:** A brushed dark slate (`#111116`) kiosk offering 4 direct-purchase singles, available via the Grand Binder and Booster Pack modal tabs.
+- **Deterministic 24-Hour Rotation:** Automatic daily stock rotation with real-time countdown timer (`HH:MM:SS`).
+- **Targeted Acquisition & Currency Sink:** Raw single cards priced at a fixed $2.5\times$ base market valuation to serve as an authentic economic sink.
+- **Manual Stardust Reroll:** Instantly reroll the kiosk lineup at any time for $100\ ★$ Stardust.
+
+### ♻️ 7. Dusting Workshop & Stardust Alchemy
 - Convert unwanted or duplicate cards into **Stardust (★)**.
 - Quick Dust non-rares (C & UC) directly on the pack opening ceremony summary screen.
-- Spend Stardust in the shop to purchase grading consumables (Microfiber Cloth, Centering Laser, Vault Insurance).
+- Spend Stardust in the shop to purchase grading consumables (Microfiber Cloth, Centering Laser, Vault Insurance) or reroll the Singles Kiosk.
 
-### 🔊 6. Procedural Web Audio API Sound Engine
+### 🔊 8. Procedural Web Audio API Sound Engine
 Zero external `.mp3` or `.wav` files. All audio is synthesized procedurally in real time using native browser `AudioContext`:
 - **`tear_pack`:** Resonant bandpass-filtered noise ($1200\text{Hz} \to 3600\text{Hz}$, $Q = 2.5$) with amplitude crackle modulation and an $85\text{Hz} \to 35\text{Hz}$ mechanical foil snap pop.
 - **`card_slide`:** Highpass-filtered white noise ($2800\text{Hz}$, $80\text{ms}$) simulating card sleeve friction.
 - **`sub_bass_pulse`:** Deep exponential sine sweep ($72\text{Hz} \to 30\text{Hz}$, $380\text{ms}$) for rare card anticipation.
 - **`reveal_rare`:** 4-voice chime arpeggio (E6: $1318.5\text{Hz}$, G#6: $1661.2\text{Hz}$, B6: $1975.5\text{Hz}$, E7: $2637.0\text{Hz}$).
 - **`godpack_fanfare`:** 4-voice detuned sawtooth triad through an automated resonant lowpass filter sweep ($400\text{Hz} \to 2800\text{Hz}$).
+- **`coin_pulse`:** Metallic multi-frequency chime ($987.77\text{Hz} \to 1318.5\text{Hz}$) with harmonic sparkle decay for direct sales.
+- **`receipt_register`:** Dual mechanical cash register latch click followed by a high-frequency ($2489\text{Hz}$) purchase ping for market transactions.
 
 ---
 
@@ -129,7 +144,15 @@ $$\text{Market Value} = \text{Base Value}(\text{Rarity}) \times \text{Multiplier
 | **Gold-Etched** | $1.2\%$ | $12.0\times$ | Embossed gold leaf foil borders |
 | **Signed** | $0.3\%$ | $40.0\times$ | Gold-foil stamped voice actress signature |
 
-### 3. Booster Pack Tiers & Drop Rates
+### 3. Singles Kiosk Pricing & Liquidation Formulas
+- **Direct Sell Valuation:**
+  $$\text{Sell Value} = \text{round}\Big(\text{Base Value}(\text{Rarity}) \times \text{Multiplier}(\text{Finish}) \times \text{Multiplier}(\text{Grade})\Big)$$
+- **Singles Kiosk Premium Price (Sink):**
+  $$\text{Kiosk Price} = \text{round}\Big(\text{Base Value}(\text{Rarity}) \times 2.5\Big)$$
+- **Manual Kiosk Reroll:** $100\ ★$ Stardust.
+- **Bulk Liquidation:** Sums the exact calculated Sell Value for all unlocked, unslotted matching cards in a single atomic transaction.
+
+### 4. Booster Pack Tiers & Drop Rates
 
 | Booster Pack | Cost | Cards | Key Mechanics & Guarantees |
 | :--- | :---: | :---: | :--- |
@@ -157,8 +180,9 @@ tqqtcg/
 │   │   ├── Itsuki/
 │   │   └── Support/
 │   └── packs/                   # High-resolution 3D booster foil pack wraps
+├── rules.md                     # Strict development protocol & architectural standards
 ├── scripts/
-│   └── test-engine.ts           # Comprehensive test suite (10,000-roll Monte Carlo audit)
+│   └── test-engine.ts           # Comprehensive test suite (10,000-roll Monte Carlo audit & Stage 1 tests)
 ├── src/
 │   ├── app/
 │   │   ├── layout.tsx           # Global root HTML & font provider
@@ -167,33 +191,35 @@ tqqtcg/
 │   ├── components/
 │   │   ├── binder/
 │   │   │   ├── BinderGrid.tsx       # 6-slot binder page grid with synergy report
-│   │   │   ├── CardActionModal.tsx  # Unified card inspect, slot, grade, and dust modal
-│   │   │   └── GrandBinder.tsx      # Main collection hub with filtering & sorting
+│   │   │   ├── CardActionModal.tsx  # Unified card inspect, slot, grade, sell, and dust modal
+│   │   │   └── GrandBinder.tsx      # Main collection hub with filtering, sorting & bulk sell
 │   │   ├── card/
 │   │   │   ├── CardRenderer.tsx     # Holographic foil shader engine & card frame
 │   │   │   └── GradingSlab.tsx      # Acrylic BGS-style grading slab with subgrade plates
 │   │   ├── dusting/
 │   │   │   └── DustingWorkshop.tsx  # Card vaporization and Stardust exchange station
+│   │   ├── market/
+│   │   │   └── SinglesMarket.tsx    # Brushed dark slate Singles Kiosk with 24h timer & reroll
 │   │   ├── pack/
 │   │   │   ├── BoosterPack3D.tsx    # 3D foil booster with cylindrical pillow shading
 │   │   │   ├── PackOpeningModal.tsx # Ceremony modal: tear, suspense, peel & summary
-│   │   │   ├── SelectBoosterModal.tsx # Portal-mounted pack kiosk with live drop odds
+│   │   │   ├── SelectBoosterModal.tsx # Portal-mounted pack kiosk with live drop odds & kiosk tab
 │   │   │   └── TearMechanism.tsx    # Direct HTML5 window pointer tear engine
 │   │   └── vault/
 │   │       ├── GradingScannerFX.tsx # Particle laser scanner visualizer
 │   │       └── GradingStation.tsx   # Card submission hub & consumable tool equip
 │   ├── config/
 │   │   ├── cardsData.ts         # Catalog of 50 cards with metadata and quotes
-│   │   └── economy.ts           # Pricing matrices, drop tables, pity logic, synergies
+│   │   └── economy.ts           # Pricing matrices, valuation formulas, drop tables, pity logic, synergies
 │   ├── hooks/
 │   │   └── useSmoothTilt.ts     # Overdamped 3D spring tilt hook with dynamic lighting
 │   ├── store/
-│   │   └── useGameStore.ts      # Persistent Zustand store (currencies, inventory, stats)
+│   │   └── useGameStore.ts      # Persistent Zustand store (currencies, inventory, kiosk, stats)
 │   ├── types/
 │   │   └── card.ts              # Strict TypeScript interfaces, enums, and types
 │   └── utils/
 │       ├── audio.ts             # Native Web Audio API procedural synthesis engine
-│       └── audioEngine.ts       # Sound synthesizer client instance
+│       └── audioEngine.ts       # Sound synthesizer client instance with coin & receipt pulses
 ├── package.json
 ├── tsconfig.json
 └── tailwind.config.ts

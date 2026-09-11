@@ -10,20 +10,29 @@ import {
   BinderPage,
   BinderSlot,
   BinderSynergyReport,
+  BulkSellFilter,
+  BulkSellResult,
   CardInstance,
   ConsumableToolId,
   GradingResultInfo,
+  KioskOffering,
   OpenPackResult,
   PackId,
   PityCounters,
+  Rarity,
 } from '../types/card';
 import { CARD_MAP } from '../config/cardsData';
 import {
   analyzeBinderPage,
   calculateAccruedIdleEarnings,
+  calculateBulkSellValue,
+  calculateCardSellValue,
   calculateDustYield,
   calculateGradingFee,
   CONSUMABLE_TOOLS,
+  generateKioskStock,
+  KIOSK_REROLL_STARDUST_COST,
+  KIOSK_ROTATION_INTERVAL_MS,
   PACKS_CONFIG,
   rollGrading,
   rollPackDrops,
@@ -58,6 +67,10 @@ export interface GameState {
   // Idle Timestamps
   lastActiveTimestamp: number;
 
+  // Daily Singles Kiosk
+  kioskStock: KioskOffering[];
+  kioskLastRefreshed: number;
+
   // Lifetime Stats
   stats: GameStats;
 
@@ -68,6 +81,8 @@ export interface GameState {
   dustCard: (cardInstanceId: string) => number;
   vaporizeCard: (cardInstanceId: string) => number;
   dustCards: (cardInstanceIds: string[]) => number;
+  sellCard: (cardInstanceId: string) => number;
+  sellBulkCards: (filter: BulkSellFilter) => BulkSellResult;
   buyTool: (toolId: ConsumableToolId, quantity?: number) => void;
   equipTool: (toolId: ConsumableToolId) => void;
   unequipTool: (toolId: ConsumableToolId) => void;
@@ -75,6 +90,9 @@ export interface GameState {
   claimIdleRevenue: () => number;
   getBinderSynergyReport: () => BinderSynergyReport;
   getTestSheetCooldownRemaining: () => number;
+  refreshKiosk: (isManual?: boolean) => void;
+  buyKioskCard: (offeringId: string) => CardInstance;
+  checkAndRotateKiosk: () => void;
   resetSave: () => void;
 }
 
@@ -108,6 +126,8 @@ const INITIAL_STATE = {
   } as PityCounters,
   packCooldowns: {} as Partial<Record<PackId, number>>,
   lastActiveTimestamp: Date.now(),
+  kioskStock: [] as KioskOffering[],
+  kioskLastRefreshed: 0,
   stats: {
     totalPacksOpened: 0,
     totalCardsGraded: 0,
@@ -398,6 +418,92 @@ export const useGameStore = create<GameState>()(
         return totalDustEarned;
       },
 
+      sellCard: (cardInstanceId: string): number => {
+        const state = get();
+        const card = state.inventory.find((c) => c.id === cardInstanceId);
+        if (!card) {
+          throw new Error(`Card not found in inventory: ${cardInstanceId}`);
+        }
+
+        // Validates that the card is not locked in a showcase slot
+        if (card.isLocked) {
+          throw new Error('This card is locked and cannot be liquidated.');
+        }
+        if (card.slottedBinder) {
+          throw new Error('This card is currently slotted in your binder showcase. Unslot it before liquidating.');
+        }
+        const isSlottedInBinder = state.binder.slots.some((s) => s.cardInstanceId === cardInstanceId);
+        if (isSlottedInBinder) {
+          throw new Error('This card is currently slotted in your binder showcase. Unslot it before liquidating.');
+        }
+
+        // Computes exact sell value: baseValue * finishMultiplier * gradeMultiplier
+        const sellValue = calculateCardSellValue(card);
+
+        // Removes the card from inventory and credits Yen
+        const updatedInventory = state.inventory.filter((c) => c.id !== cardInstanceId);
+
+        set({
+          yen: state.yen + sellValue,
+          inventory: updatedInventory,
+          stats: {
+            ...state.stats,
+            totalYenEarned: state.stats.totalYenEarned + sellValue,
+          },
+        });
+
+        return sellValue;
+      },
+
+      sellBulkCards: (filter: BulkSellFilter): BulkSellResult => {
+        const state = get();
+        const targetRarities = new Set<Rarity>(filter.rarities);
+
+        // Collect slotted binder card IDs to prevent liquidating showcase cards
+        const slottedBinderIds = new Set<string>();
+        for (const slot of state.binder.slots) {
+          if (slot.cardInstanceId) {
+            slottedBinderIds.add(slot.cardInstanceId);
+          }
+        }
+
+        const eligibleCards: CardInstance[] = [];
+        const retainedCards: CardInstance[] = [];
+
+        for (const card of state.inventory) {
+          const isLocked = card.isLocked || card.slottedBinder !== undefined || slottedBinderIds.has(card.id);
+          const matchesRarity = targetRarities.has(card.rarity);
+          const matchesCertification = filter.uncertifiedOnly ? !card.grade : true;
+
+          if (!isLocked && matchesRarity && matchesCertification) {
+            eligibleCards.push(card);
+          } else {
+            retainedCards.push(card);
+          }
+        }
+
+        if (eligibleCards.length === 0) {
+          return { count: 0, totalYen: 0, soldCards: [] };
+        }
+
+        const totalYen = calculateBulkSellValue(eligibleCards);
+
+        set({
+          yen: state.yen + totalYen,
+          inventory: retainedCards,
+          stats: {
+            ...state.stats,
+            totalYenEarned: state.stats.totalYenEarned + totalYen,
+          },
+        });
+
+        return {
+          count: eligibleCards.length,
+          totalYen,
+          soldCards: eligibleCards,
+        };
+      },
+
       buyTool: (toolId: ConsumableToolId, quantity: number = 1): void => {
         const state = get();
         const toolConfig = CONSUMABLE_TOOLS[toolId];
@@ -545,10 +651,105 @@ export const useGameStore = create<GameState>()(
         return earnedYen;
       },
 
+      refreshKiosk: (isManual: boolean = false): void => {
+        const state = get();
+        if (isManual) {
+          if (state.stardust < KIOSK_REROLL_STARDUST_COST) {
+            throw new Error(
+              `Insufficient Stardust for manual reroll. Required: ${KIOSK_REROLL_STARDUST_COST} ★, Available: ${state.stardust} ★`
+            );
+          }
+          set({
+            stardust: state.stardust - KIOSK_REROLL_STARDUST_COST,
+            kioskStock: generateKioskStock(),
+            kioskLastRefreshed: Date.now(),
+          });
+          return;
+        }
+
+        set({
+          kioskStock: generateKioskStock(),
+          kioskLastRefreshed: Date.now(),
+        });
+      },
+
+      buyKioskCard: (offeringId: string): CardInstance => {
+        const state = get();
+        if (state.kioskStock.length === 0) {
+          state.checkAndRotateKiosk();
+        }
+
+        const currentStock = get().kioskStock;
+        const offeringIndex = currentStock.findIndex((o) => o.id === offeringId);
+        if (offeringIndex === -1) {
+          throw new Error(`Offering ${offeringId} not found in Singles Kiosk`);
+        }
+
+        const offering = currentStock[offeringIndex];
+        if (offering.isPurchased) {
+          throw new Error("This card has already been purchased from today's kiosk stock.");
+        }
+
+        if (state.yen < offering.priceYen) {
+          throw new Error(
+            `Insufficient Yen. Required: ${offering.priceYen.toLocaleString()} ¥, Available: ${state.yen.toLocaleString()} ¥`
+          );
+        }
+
+        const cardDef = CARD_MAP[offering.cardDefId];
+        if (!cardDef) {
+          throw new Error(`Card definition ${offering.cardDefId} not found`);
+        }
+
+        const newCard: CardInstance = {
+          id:
+            typeof crypto !== 'undefined' && crypto.randomUUID
+              ? crypto.randomUUID()
+              : `kiosk_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+          cardDefId: cardDef.id,
+          characterId: cardDef.characterId,
+          rarity: offering.rarity,
+          finish: offering.finish,
+          obtainedAt: Date.now(),
+          imageUrl: cardDef.imageUrl,
+          name: cardDef.name,
+          title: cardDef.title,
+          cardNumber: cardDef.cardNumber,
+          forceFit: cardDef.forceFit,
+        };
+
+        const updatedStock = [...currentStock];
+        updatedStock[offeringIndex] = {
+          ...offering,
+          isPurchased: true,
+        };
+
+        set({
+          yen: state.yen - offering.priceYen,
+          inventory: [...state.inventory, newCard],
+          kioskStock: updatedStock,
+        });
+
+        return newCard;
+      },
+
+      checkAndRotateKiosk: (): void => {
+        const { kioskStock, kioskLastRefreshed } = get();
+        const now = Date.now();
+        if (kioskStock.length === 0 || now - kioskLastRefreshed >= KIOSK_ROTATION_INTERVAL_MS) {
+          set({
+            kioskStock: generateKioskStock(),
+            kioskLastRefreshed: now,
+          });
+        }
+      },
+
       resetSave: (): void => {
         set({
           ...INITIAL_STATE,
           lastActiveTimestamp: Date.now(),
+          kioskStock: generateKioskStock(),
+          kioskLastRefreshed: Date.now(),
         });
       },
     }),

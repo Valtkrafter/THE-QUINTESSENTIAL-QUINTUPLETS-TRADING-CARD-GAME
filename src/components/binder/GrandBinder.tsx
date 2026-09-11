@@ -10,6 +10,7 @@ import {
 import {
   calculateCardMarketValue,
   calculateAccruedIdleEarnings,
+  calculateBulkSellValue,
   PACKS_CONFIG,
   RARITY_BASE_VALUES,
 } from '../../config/economy';
@@ -38,6 +39,8 @@ import {
   Flame,
   CheckCircle2,
   ExternalLink,
+  Store,
+  AlertTriangle,
 } from 'lucide-react';
 
 type FilterType = 'all' | 'raw' | 'graded' | 'ichika' | 'nino' | 'miku' | 'yotsuba' | 'itsuki' | 'support';
@@ -53,15 +56,22 @@ export const GrandBinder: React.FC = () => {
   const getBinderSynergyReport = useGameStore((state) => state.getBinderSynergyReport);
   const claimIdleRevenue = useGameStore((state) => state.claimIdleRevenue);
   const openPack = useGameStore((state) => state.openPack);
+  const sellBulkCards = useGameStore((state) => state.sellBulkCards);
   const resetSave = useGameStore((state) => state.resetSave);
 
   // Selected card for Card Action Modal
   const [selectedCard, setSelectedCard] = useState<CardInstance | null>(null);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
 
-  // Pack Opening Modal State
+  // Pack Opening Modal State & Store Tab
   const [activePackId, setActivePackId] = useState<PackId | null>(null);
   const [showPackSelector, setShowPackSelector] = useState<boolean>(false);
+  const [storeInitialTab, setStoreInitialTab] = useState<'packs' | 'kiosk'>('packs');
+
+  // Bulk Liquidation State
+  const [showBulkSellModal, setShowBulkSellModal] = useState<boolean>(false);
+  const [isBulkSelling, setIsBulkSelling] = useState<boolean>(false);
+  const [bulkSellNotification, setBulkSellNotification] = useState<{ count: number; totalYen: number } | null>(null);
 
   // Filter and Sort states
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
@@ -83,17 +93,55 @@ export const GrandBinder: React.FC = () => {
     return () => clearInterval(interval);
   }, [lastActive, synergyReport]);
 
+  // Eligible cards for bulk liquidation (unlocked raw Commons & Uncommons)
+  const slottedCardIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const s of binder.slots) {
+      if (s.cardInstanceId) ids.add(s.cardInstanceId);
+    }
+    return ids;
+  }, [binder.slots]);
+
+  const bulkSellableCards = useMemo(() => {
+    return inventory.filter(
+      (c) =>
+        !c.isLocked &&
+        !c.slottedBinder &&
+        !slottedCardIds.has(c.id) &&
+        !c.grade &&
+        (c.rarity === 'C' || c.rarity === 'UC')
+    );
+  }, [inventory, slottedCardIds]);
+
+  const bulkSellTotalYen = useMemo(() => {
+    return calculateBulkSellValue(bulkSellableCards);
+  }, [bulkSellableCards]);
+
+  const handleExecuteBulkSell = () => {
+    if (bulkSellableCards.length === 0 || isBulkSelling) return;
+    setIsBulkSelling(true);
+
+    try {
+      const result = sellBulkCards({ rarities: ['C', 'UC'], uncertifiedOnly: true });
+      soundEngine.playCoinPulseSound();
+      setBulkSellNotification({ count: result.count, totalYen: result.totalYen });
+      setShowBulkSellModal(false);
+
+      setTimeout(() => {
+        setBulkSellNotification(null);
+      }, 4500);
+    } catch (err) {
+      alert((err as Error).message);
+    } finally {
+      setIsBulkSelling(false);
+    }
+  };
+
   // Claim idle revenue
   const handleClaimIdle = () => {
     const claimed = claimIdleRevenue();
     setAccruedYen(0);
     soundEngine.playRevealSound('SR');
-  };
-
-  // Add test funds
-  const handleAddFunds = (amount: number) => {
-    useGameStore.setState((prev) => ({ yen: prev.yen + amount }));
-    soundEngine.playToolClickSound();
   };
 
   // Pull starter pack if inventory is empty
@@ -249,27 +297,34 @@ export const GrandBinder: React.FC = () => {
             </div>
           </div>
 
-          {/* Quick Cheats (Add funds / Reset) */}
-          <div className="hidden sm:flex items-center gap-1.5">
-            <button
-              onClick={() => handleAddFunds(10000)}
-              className="px-2.5 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-amber-300 text-xs font-bold font-mono border border-white/10 transition"
-              title="Add 10,000 Yen for testing"
-            >
-              +10k ¥
-            </button>
-            <button
-              onClick={resetSave}
-              className="p-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white border border-white/10 transition"
-              title="Reset Save State"
-            >
-              <RotateCcw className="w-3.5 h-3.5" />
-            </button>
-          </div>
+          {/* Singles Kiosk Modal Trigger */}
+          <button
+            onClick={() => {
+              setStoreInitialTab('kiosk');
+              setShowPackSelector(true);
+            }}
+            className="px-3.5 py-2 rounded-2xl bg-[#111116] hover:bg-zinc-800 border border-emerald-500/40 text-emerald-300 hover:text-emerald-200 font-black text-xs uppercase tracking-wider transition active:scale-95 shadow-md flex items-center gap-1.5"
+            title="Open Daily Rotating Singles Kiosk"
+          >
+            <Store className="w-4 h-4 text-emerald-400" />
+            <span className="hidden sm:inline">Singles Kiosk</span>
+          </button>
+
+          {/* Reset Save State Button */}
+          <button
+            onClick={resetSave}
+            className="p-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white border border-white/10 transition"
+            title="Reset Save State"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+          </button>
 
           {/* Pack Opening Ceremony Trigger */}
           <button
-            onClick={() => setShowPackSelector(true)}
+            onClick={() => {
+              setStoreInitialTab('packs');
+              setShowPackSelector(true);
+            }}
             className="px-4 py-2 rounded-2xl bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 hover:brightness-110 text-zinc-950 font-black text-xs uppercase tracking-wider transition active:scale-95 shadow-lg shadow-amber-500/20 flex items-center gap-2"
           >
             <PackageOpen className="w-4 h-4" />
@@ -339,6 +394,22 @@ export const GrandBinder: React.FC = () => {
               </button>
             );
           })}
+
+          {/* Bulk Sell Quick Action */}
+          <button
+            onClick={() => setShowBulkSellModal(true)}
+            disabled={bulkSellableCards.length === 0}
+            className="px-3 py-1.5 rounded-xl font-bold font-mono transition flex items-center gap-1.5 text-xs bg-emerald-950/50 hover:bg-emerald-900/60 border border-emerald-500/40 text-emerald-300 disabled:opacity-40 disabled:pointer-events-none whitespace-nowrap shadow-sm"
+            title="Liquidate all unlocked raw Commons & Uncommons for Yen"
+          >
+            <Coins className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Bulk Sell ({bulkSellableCards.length})</span>
+            {bulkSellableCards.length > 0 && (
+              <span className="text-[10px] text-emerald-400/80 font-normal hidden sm:inline">
+                +{bulkSellTotalYen.toLocaleString()} ¥
+              </span>
+            )}
+          </button>
         </div>
 
         {/* Search & Sort dropdown */}
@@ -436,12 +507,78 @@ export const GrandBinder: React.FC = () => {
           ============================================================ */}
       <SelectBoosterModal
         isOpen={showPackSelector}
+        initialTab={storeInitialTab}
         onClose={() => setShowPackSelector(false)}
         onSelectPack={(pId) => {
           setShowPackSelector(false);
           setActivePackId(pId);
         }}
       />
+
+      {/* ============================================================
+          BULK SELL CONFIRMATION MODAL & NOTIFICATION
+          ============================================================ */}
+      {showBulkSellModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4 animate-fadeIn select-none"
+          onClick={() => setShowBulkSellModal(false)}
+        >
+          <div
+            className="w-full max-w-md p-6 rounded-3xl bg-[#0e0e14] border border-emerald-500/40 shadow-2xl space-y-4 text-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-14 h-14 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 mx-auto">
+              <Coins className="w-8 h-8" />
+            </div>
+
+            <div>
+              <h3 className="text-base font-black text-white uppercase tracking-wider font-mono">
+                Bulk Liquidation (C &amp; UC)
+              </h3>
+              <p className="text-xs text-zinc-300 mt-2 leading-relaxed">
+                Liquidate all <span className="font-bold text-white">{bulkSellableCards.length} unlocked raw Commons and Uncommons</span> for an instant payout of:
+              </p>
+              <div className="text-2xl font-black text-amber-400 font-mono mt-2">
+                +{bulkSellTotalYen.toLocaleString()} ¥
+              </div>
+              <p className="text-[11px] text-zinc-500 mt-1">
+                Cards slotted in your binder or certified in acrylic slabs will not be affected.
+              </p>
+            </div>
+
+            <div className="flex gap-3 justify-center pt-2 font-mono">
+              <button
+                onClick={() => setShowBulkSellModal(false)}
+                disabled={isBulkSelling}
+                className="px-5 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-bold transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleExecuteBulkSell}
+                disabled={isBulkSelling}
+                className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:brightness-110 text-zinc-950 text-xs font-black uppercase tracking-wider transition shadow-lg shadow-emerald-500/30 flex items-center gap-1.5"
+              >
+                <Coins className="w-4 h-4" />
+                <span>{isBulkSelling ? 'Liquidating...' : 'Confirm Bulk Sale'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Floating Bulk Sell Notification Toast */}
+      {bulkSellNotification && (
+        <div className="fixed bottom-6 right-6 z-50 p-4 rounded-2xl bg-emerald-950/90 border border-emerald-500/50 shadow-2xl flex items-center gap-3 text-white font-mono animate-fadeIn backdrop-blur-md">
+          <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+          <div className="flex flex-col">
+            <span className="text-xs font-bold text-emerald-300">BULK SALE COMPLETE</span>
+            <span className="text-sm font-black text-white">
+              Liquidated {bulkSellNotification.count} cards for +{bulkSellNotification.totalYen.toLocaleString()} ¥
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* ============================================================
           PHYSICAL PACK OPENING CEREMONY MODAL

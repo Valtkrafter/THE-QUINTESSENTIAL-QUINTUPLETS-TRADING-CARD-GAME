@@ -19,6 +19,10 @@ import {
   rollPackDrops,
   analyzeBinderPage,
   calculateAccruedIdleEarnings,
+  calculateCardSellValue,
+  calculateBulkSellValue,
+  calculateKioskPrice,
+  KIOSK_REROLL_STARDUST_COST,
   PACKS_CONFIG,
   CONSUMABLE_TOOLS,
   GRADE_TIER_CONFIG,
@@ -330,6 +334,211 @@ async function runTests() {
   // Claim idle revenue
   const claimed = useGameStore.getState().claimIdleRevenue();
   console.log(`✅ claimIdleRevenue action verified (claimed: ${claimed} ¥).`);
+
+  testSection('7. Stage 1: Direct Sell System, Bulk Liquidation & Singles Kiosk');
+
+  // 1. Valuation Resolver
+  const mockCardC: CardInstance = {
+    id: 'test_c_raw',
+    cardDefId: 'miku_c_01',
+    characterId: 'miku',
+    rarity: 'C',
+    finish: 'raw',
+    obtainedAt: Date.now(),
+  };
+  assert(calculateCardSellValue(mockCardC) === 15, 'C raw sell value = 15');
+
+  const mockCardUCHolo: CardInstance = {
+    id: 'test_uc_holo',
+    cardDefId: 'nino_uc_01',
+    characterId: 'nino',
+    rarity: 'UC',
+    finish: 'holo',
+    obtainedAt: Date.now(),
+  };
+  assert(calculateCardSellValue(mockCardUCHolo) === 90, 'UC holo sell value = 90 (50 * 1.8)');
+
+  const mockCardRSparkleGraded: CardInstance = {
+    id: 'test_r_sparkle_mint9',
+    cardDefId: 'ichika_r_01',
+    characterId: 'ichika',
+    rarity: 'R',
+    finish: 'sparkle',
+    obtainedAt: Date.now(),
+    grade: {
+      tier: 'MINT_9',
+      tierLabel: 'God-Tier',
+      numericGrade: 9,
+      isBlackLabel: false,
+      multiplier: 3.0,
+      subgrades: { centering: 9, surface: 9, corners: 9, edges: 9 },
+      gradedAt: Date.now(),
+    },
+  };
+  assert(
+    calculateCardSellValue(mockCardRSparkleGraded) === 2100,
+    'R sparkle Mint 9 sell value = 2100 (200 * 3.5 * 3.0)'
+  );
+
+  const mockCardSRRainbowGem10: CardInstance = {
+    id: 'test_sr_gem10',
+    cardDefId: 'yotsuba_sr_01',
+    characterId: 'yotsuba',
+    rarity: 'SR',
+    finish: 'rainbow',
+    obtainedAt: Date.now(),
+    grade: {
+      tier: 'GEM_MINT_10',
+      tierLabel: 'PEAK FICTION',
+      numericGrade: 10,
+      isBlackLabel: false,
+      multiplier: 12.0,
+      subgrades: { centering: 10, surface: 9.5, corners: 10, edges: 10 },
+      gradedAt: Date.now(),
+    },
+  };
+  assert(
+    calculateCardSellValue(mockCardSRRainbowGem10) === 75600,
+    'SR rainbow Gem Mint 10 sell value = 75600 (900 * 7.0 * 12.0)'
+  );
+
+  const mockCardMRSignedBlackLabel: CardInstance = {
+    id: 'test_mr_black_label',
+    cardDefId: 'miku_mr_01',
+    characterId: 'miku',
+    rarity: 'MR',
+    finish: 'signed',
+    obtainedAt: Date.now(),
+    grade: {
+      tier: 'BLACK_LABEL',
+      tierLabel: 'THE CHOSEN ONE',
+      numericGrade: 10,
+      isBlackLabel: true,
+      multiplier: 50.0,
+      subgrades: { centering: 10, surface: 10, corners: 10, edges: 10 },
+      gradedAt: Date.now(),
+    },
+  };
+  assert(
+    calculateCardSellValue(mockCardMRSignedBlackLabel) === 200000000,
+    'MR signed Black Label sell value = 200,000,000 (100000 * 40.0 * 50.0)'
+  );
+  console.log('✅ Valuation formula across rarities, finishes, and grade tiers verified.');
+
+  // 2. Single Card Sell & Showcase Slot Lock
+  useGameStore.setState((prev) => ({
+    inventory: [...prev.inventory, mockCardC],
+  }));
+
+  const initialYen = useGameStore.getState().yen;
+  const initialInvSize = useGameStore.getState().inventory.length;
+  const soldAmount = useGameStore.getState().sellCard(mockCardC.id);
+  assert(soldAmount === 15, 'Sold C card for 15 Yen');
+  assert(useGameStore.getState().yen === initialYen + 15, 'Yen balance credited correctly');
+  assert(useGameStore.getState().inventory.length === initialInvSize - 1, 'Card removed from inventory');
+  assert(!useGameStore.getState().inventory.some((c) => c.id === mockCardC.id), 'Card no longer in inventory');
+  console.log('✅ sellCard action verified with exact credit and removal.');
+
+  // Verify showcase slot guardrail (slotted card cannot be sold)
+  if (sisterCard) {
+    let errorCaught = false;
+    try {
+      useGameStore.getState().sellCard(sisterCard.id);
+    } catch {
+      errorCaught = true;
+    }
+    assert(errorCaught, 'Slotted binder card liquidation must throw error');
+    console.log('✅ Showcase slot lock validation verified (cannot liquidate slotted card).');
+  }
+
+  // 3. Bulk Liquidation
+  const bulkCards: CardInstance[] = [
+    {
+      id: 'bulk_c_1',
+      cardDefId: 'miku_c_01',
+      characterId: 'miku',
+      rarity: 'C',
+      finish: 'raw',
+      obtainedAt: Date.now(),
+    },
+    {
+      id: 'bulk_c_2',
+      cardDefId: 'nino_c_01',
+      characterId: 'nino',
+      rarity: 'C',
+      finish: 'raw',
+      obtainedAt: Date.now(),
+    },
+    {
+      id: 'bulk_uc_1',
+      cardDefId: 'ichika_uc_01',
+      characterId: 'ichika',
+      rarity: 'UC',
+      finish: 'raw',
+      obtainedAt: Date.now(),
+    },
+  ];
+  useGameStore.setState((prev) => ({
+    inventory: [...prev.inventory, ...bulkCards],
+  }));
+
+  const preBulkYen = useGameStore.getState().yen;
+  const preBulkInvCount = useGameStore.getState().inventory.length;
+  const expectedBulkYen = 15 + 15 + 50; // 80 Yen
+  const bulkResult = useGameStore.getState().sellBulkCards({ rarities: ['C', 'UC'], uncertifiedOnly: true });
+
+  assert(bulkResult.count >= 3, 'Bulk sold at least the 3 inserted cards');
+  assert(bulkResult.totalYen >= expectedBulkYen, 'Bulk sold total yen correct');
+  assert(useGameStore.getState().yen === preBulkYen + bulkResult.totalYen, 'Yen balance updated after bulk sell');
+  assert(useGameStore.getState().inventory.length === preBulkInvCount - bulkResult.count, 'Cards removed in atomic update');
+  console.log(`✅ sellBulkCards verified: Atomically liquidated ${bulkResult.count} cards for ${bulkResult.totalYen} ¥.`);
+
+  // 4. Singles Kiosk Pricing, Rotation & Purchase
+  assert(calculateKioskPrice('C') === Math.round(15 * 2.5), 'Kiosk C price is 2.5x base');
+  assert(calculateKioskPrice('MR') === Math.round(100000 * 2.5), 'Kiosk MR price is 2.5x base (250,000 ¥)');
+  console.log('✅ Singles Kiosk 2.5x pricing sink verified.');
+
+  // Initialize and test Kiosk rotation
+  useGameStore.getState().refreshKiosk(false);
+  const stock = useGameStore.getState().kioskStock;
+  assert(stock.length === 4, 'Kiosk stock has exactly 4 offerings');
+  for (const offering of stock) {
+    assert(offering.finish === 'raw', 'Kiosk offerings must be raw');
+    assert(offering.priceYen === calculateKioskPrice(offering.rarity), 'Kiosk offering price matches formula');
+    assert(!offering.isPurchased, 'New offering is not purchased');
+  }
+  console.log('✅ Kiosk stock generation verified with 4 raw cards.');
+
+  // Test Manual Reroll with 100 Stardust
+  useGameStore.setState({ stardust: 200 });
+  const preRerollStardust = useGameStore.getState().stardust;
+  useGameStore.getState().refreshKiosk(true);
+  assert(useGameStore.getState().stardust === preRerollStardust - KIOSK_REROLL_STARDUST_COST, '100 Stardust deducted for reroll');
+  assert(useGameStore.getState().kioskStock.length === 4, 'New kiosk stock generated');
+  console.log('✅ Kiosk manual reroll verified: 100 Stardust deducted and new stock rolled.');
+
+  // Test Kiosk Card Purchase
+  const targetOffering = useGameStore.getState().kioskStock[0];
+  useGameStore.setState({ yen: targetOffering.priceYen + 1000 });
+  const preBuyYen = useGameStore.getState().yen;
+  const preBuyInvLen = useGameStore.getState().inventory.length;
+
+  const purchasedCard = useGameStore.getState().buyKioskCard(targetOffering.id);
+  assert(purchasedCard.cardDefId === targetOffering.cardDefId, 'Purchased card definition matches');
+  assert(purchasedCard.finish === 'raw', 'Purchased card is raw');
+  assert(useGameStore.getState().yen === preBuyYen - targetOffering.priceYen, 'Yen deducted for kiosk purchase');
+  assert(useGameStore.getState().inventory.length === preBuyInvLen + 1, 'Card added to inventory');
+  assert(useGameStore.getState().kioskStock[0].isPurchased === true, 'Offering marked as purchased');
+
+  // Verify buying already purchased card throws error
+  let doubleBuyError = false;
+  try {
+    useGameStore.getState().buyKioskCard(targetOffering.id);
+  } catch {
+    doubleBuyError = true;
+  }
+  assert(doubleBuyError, 'Cannot buy already purchased kiosk offering');
+  console.log('✅ buyKioskCard verified: Inventory added, Yen deducted, and duplicate buy blocked.');
 
   testSection('🎉 ALL TESTS PASSED SUCCESSFULLY! 100% SPEC COMPLIANCE.');
 }

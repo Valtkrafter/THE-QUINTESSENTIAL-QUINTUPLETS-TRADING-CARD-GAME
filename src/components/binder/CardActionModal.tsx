@@ -14,6 +14,7 @@ import {
   calculateCardMarketValue,
   calculateRawCardValue,
   calculateDustYield,
+  calculateCardSellValue,
   CONSUMABLE_TOOLS,
   GRADE_TIER_CONFIG,
 } from '../../config/economy';
@@ -48,6 +49,7 @@ export interface CardActionModalProps {
   onClose: () => void;
   onCardUpdated?: (updatedCard: CardInstance) => void;
   onCardDusted?: (cardId: string) => void;
+  onCardSold?: (cardId: string, yenEarned: number) => void;
 }
 
 type ActiveActionTab = 'grade' | 'vaporize' | 'inspect' | 'dossier';
@@ -58,6 +60,7 @@ export const CardActionModal: React.FC<CardActionModalProps> = ({
   onClose,
   onCardUpdated,
   onCardDusted,
+  onCardSold,
 }) => {
   // Local active card state to immediately reflect mutations (e.g. grading)
   const [activeCard, setActiveCard] = useState<CardInstance | null>(initialCard);
@@ -72,6 +75,7 @@ export const CardActionModal: React.FC<CardActionModalProps> = ({
   const inventory = useGameStore((state) => state.inventory);
   const submitForGrading = useGameStore((state) => state.submitForGrading);
   const vaporizeCard = useGameStore((state) => state.vaporizeCard);
+  const sellCard = useGameStore((state) => state.sellCard);
   const buyTool = useGameStore((state) => state.buyTool);
 
   // Consumables selected for grading
@@ -86,6 +90,22 @@ export const CardActionModal: React.FC<CardActionModalProps> = ({
   const [confirmingVaporize, setConfirmingVaporize] = useState<boolean>(false);
   const [isVaporizing, setIsVaporizing] = useState<boolean>(false);
 
+  // Direct Sell System states
+  const [confirmingSell, setConfirmingSell] = useState<boolean>(false);
+  const [isSelling, setIsSelling] = useState<boolean>(false);
+  const [coinParticles, setCoinParticles] = useState<
+    Array<{
+      id: number;
+      x: number;
+      y: number;
+      targetX: number;
+      targetY: number;
+      scale: number;
+      delay: number;
+      rotation: number;
+    }>
+  >([]);
+
   // Synchronize when initialCard prop changes
   useEffect(() => {
     setActiveCard(initialCard);
@@ -94,6 +114,9 @@ export const CardActionModal: React.FC<CardActionModalProps> = ({
     setIsGrading(false);
     setLastGradeResult(null);
     setConfirmingVaporize(false);
+    setConfirmingSell(false);
+    setIsSelling(false);
+    setCoinParticles([]);
     setIsInspectMode(false);
     setActiveTab('grade');
   }, [initialCard]);
@@ -105,16 +128,18 @@ export const CardActionModal: React.FC<CardActionModalProps> = ({
       if (e.key === 'Escape') {
         if (isInspectMode) {
           setIsInspectMode(false);
+        } else if (confirmingSell) {
+          setConfirmingSell(false);
         } else if (confirmingVaporize) {
           setConfirmingVaporize(false);
-        } else if (!isGrading) {
+        } else if (!isGrading && !isSelling) {
           onClose();
         }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, isInspectMode, confirmingVaporize, isGrading, onClose]);
+  }, [isOpen, isInspectMode, confirmingVaporize, confirmingSell, isGrading, isSelling, onClose]);
 
   if (!isOpen || !activeCard) return null;
 
@@ -243,6 +268,69 @@ export const CardActionModal: React.FC<CardActionModalProps> = ({
       setIsVaporizing(false);
       setConfirmingVaporize(false);
     }
+  };
+
+  // Direct Sell System calculations & handlers
+  const sellValue = calculateCardSellValue(activeCard);
+  const isHighRarity =
+    activeCard.rarity === 'UR' ||
+    activeCard.rarity === 'SEC' ||
+    activeCard.rarity === 'MR' ||
+    (activeCard.grade !== undefined && activeCard.grade.numericGrade >= 9);
+
+  const isLockedOrSlotted = Boolean(
+    activeCard.isLocked ||
+      activeCard.slottedBinder ||
+      binder.slots.some((s) => s.cardInstanceId === activeCard.id)
+  );
+
+  const handleInitiateSell = () => {
+    if (isLockedOrSlotted || isSelling || isGrading) return;
+    if (isHighRarity) {
+      setConfirmingSell(true);
+      return;
+    }
+    handleExecuteSell();
+  };
+
+  const handleExecuteSell = async () => {
+    if (isLockedOrSlotted || isSelling) return;
+
+    setIsSelling(true);
+
+    // Disperse 15-20 golden coin particles flying upwards toward the HUD currency tracker
+    const particles = Array.from({ length: 18 }, (_, i) => ({
+      id: i,
+      x: (Math.random() - 0.5) * 80,
+      y: (Math.random() - 0.5) * 40,
+      targetX: 180 + (Math.random() - 0.5) * 140,
+      targetY: -350 - Math.random() * 160,
+      scale: 0.8 + Math.random() * 0.4,
+      delay: i * 0.02,
+      rotation: Math.random() * 720 - 360,
+    }));
+    setCoinParticles(particles);
+
+    // Procedural Web Audio metallic coin chime
+    soundEngine.playCoinPulseSound();
+
+    try {
+      const earned = sellCard(activeCard.id);
+      onCardSold?.(activeCard.id, earned);
+      onCardDusted?.(activeCard.id);
+    } catch (err) {
+      alert((err as Error).message);
+      setIsSelling(false);
+      setConfirmingSell(false);
+      setCoinParticles([]);
+      return;
+    }
+
+    await new Promise((r) => setTimeout(r, 750));
+    setIsSelling(false);
+    setConfirmingSell(false);
+    setCoinParticles([]);
+    onClose();
   };
 
   return (
@@ -394,6 +482,49 @@ export const CardActionModal: React.FC<CardActionModalProps> = ({
                     </div>
                   </div>
                 </div>
+              </div>
+
+              {/* Contextual Action Bar: Violet Vaporize (Stardust) [#8B5CF6] & Emerald Green Sell for ¥ [#10B981] */}
+              <div className="p-3.5 border-b border-white/10 bg-zinc-950/70 flex flex-wrap items-center gap-2.5">
+                {/* Violet Vaporize Button */}
+                <button
+                  onClick={() => {
+                    if (isSlabbed) return;
+                    setActiveTab('vaporize');
+                    setConfirmingVaporize(true);
+                  }}
+                  disabled={isSlabbed || isGrading || isSelling}
+                  className={`flex-1 min-w-[140px] py-2.5 px-3 rounded-xl font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition active:scale-[0.98] shadow-md ${
+                    isSlabbed
+                      ? 'bg-zinc-900/60 border border-white/5 text-zinc-600 cursor-not-allowed'
+                      : 'bg-[#8B5CF6] hover:bg-[#7C3AED] text-white shadow-[#8B5CF6]/25'
+                  }`}
+                  title={isSlabbed ? 'Graded slabs cannot be vaporized' : 'Convert into Stardust'}
+                >
+                  <Flame className="w-4 h-4" />
+                  <span>Vaporize ({finalDustYield} ★)</span>
+                </button>
+
+                {/* Emerald Green Sell Button */}
+                <button
+                  onClick={handleInitiateSell}
+                  disabled={isLockedOrSlotted || isGrading || isSelling}
+                  className={`flex-1 min-w-[150px] py-2.5 px-3 rounded-xl font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition active:scale-[0.98] shadow-md ${
+                    isLockedOrSlotted
+                      ? 'bg-zinc-900/60 border border-white/5 text-zinc-600 cursor-not-allowed'
+                      : 'bg-[#10B981] hover:bg-[#059669] text-zinc-950 shadow-[#10B981]/25'
+                  }`}
+                  title={
+                    isLockedOrSlotted
+                      ? 'Unslot card from showcase binder before liquidating'
+                      : `Liquidate card for ${sellValue.toLocaleString()} ¥`
+                  }
+                >
+                  <Coins className="w-4 h-4" />
+                  <span>
+                    {isLockedOrSlotted ? 'Showcase Locked' : `Sell for ${sellValue.toLocaleString()} ¥`}
+                  </span>
+                </button>
               </div>
 
               {/* Action Tabs Header */}
@@ -673,7 +804,7 @@ export const CardActionModal: React.FC<CardActionModalProps> = ({
 
                         <button
                           onClick={() => setConfirmingVaporize(true)}
-                          className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-red-600 via-rose-500 to-red-600 hover:brightness-110 text-white font-black text-sm uppercase tracking-widest transition active:scale-[0.98] shadow-lg shadow-red-600/20 flex items-center justify-center gap-2"
+                          className="w-full py-3.5 rounded-2xl bg-[#8B5CF6] hover:bg-[#7C3AED] text-white font-black text-sm uppercase tracking-widest transition active:scale-[0.98] shadow-lg shadow-[#8B5CF6]/25 flex items-center justify-center gap-2"
                         >
                           <Flame className="w-5 h-5" />
                           <span>VAPORIZE DUST</span>
@@ -743,6 +874,91 @@ export const CardActionModal: React.FC<CardActionModalProps> = ({
           )}
         </div>
       </div>
+
+      {/* ============================================================
+          HIGH-RARITY CAUTIONARY SHAKE DIALOG GUARDRAIL
+          ============================================================ */}
+      <AnimatePresence>
+        {confirmingSell && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fadeIn select-none"
+            onClick={() => setConfirmingSell(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{
+                scale: 1,
+                opacity: 1,
+                x: [-10, 10, -8, 8, -4, 4, 0],
+              }}
+              transition={{ duration: 0.42, ease: 'easeInOut' }}
+              className="w-full max-w-md p-6 rounded-3xl bg-[#140e14] border-2 border-red-500/70 shadow-[0_0_60px_rgba(239,68,68,0.4)] text-center space-y-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="w-14 h-14 rounded-2xl bg-red-500/20 border border-red-500/40 flex items-center justify-center text-red-400 mx-auto animate-pulse">
+                <AlertTriangle className="w-8 h-8" />
+              </div>
+
+              <div>
+                <h3 className="text-sm font-black uppercase tracking-wider text-red-400 font-mono">
+                  High-Rarity Guardrail
+                </h3>
+                <p className="text-xs text-zinc-200 mt-2 leading-relaxed">
+                  Warning: This card is extremely rare. Confirm liquidation for{' '}
+                  <span className="font-mono font-black text-amber-400 text-sm">
+                    {sellValue.toLocaleString()} ¥
+                  </span>
+                  ?
+                </p>
+              </div>
+
+              <div className="flex gap-3 justify-center pt-2 font-mono">
+                <button
+                  onClick={() => setConfirmingSell(false)}
+                  disabled={isSelling}
+                  className="px-5 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-bold transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleExecuteSell}
+                  disabled={isSelling}
+                  className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:brightness-110 text-zinc-950 text-xs font-black uppercase tracking-wider transition shadow-lg shadow-emerald-500/30 flex items-center gap-1.5"
+                >
+                  <Coins className="w-4 h-4" />
+                  <span>{isSelling ? 'Selling...' : 'Confirm Liquidation'}</span>
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ============================================================
+          GOLDEN COIN PARTICLE BURST ANIMATION
+          ============================================================ */}
+      {coinParticles.length > 0 && (
+        <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden flex items-center justify-center">
+          {coinParticles.map((p) => (
+            <motion.div
+              key={p.id}
+              initial={{ opacity: 1, x: p.x, y: p.y, scale: p.scale, rotate: 0 }}
+              animate={{
+                opacity: [1, 1, 0],
+                x: p.targetX,
+                y: p.targetY,
+                scale: [p.scale, p.scale * 1.3, 0.4],
+                rotate: p.rotation,
+              }}
+              transition={{ duration: 0.85, delay: p.delay, ease: 'easeOut' }}
+              className="absolute flex items-center justify-center text-amber-950 font-black font-mono text-xs rounded-full bg-gradient-to-tr from-amber-400 via-yellow-300 to-amber-200 shadow-[0_0_15px_rgba(245,158,11,0.9)] border border-yellow-200"
+              style={{ width: 22, height: 22 }}
+            >
+              ¥
+            </motion.div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

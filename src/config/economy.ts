@@ -22,8 +22,9 @@ import {
   Rarity,
   SisterId,
   SupportId,
+  KioskOffering,
 } from '../types/card';
-import { CARDS_BY_RARITY, CARD_MAP } from './cardsData';
+import { CARDS_BY_RARITY, CARD_MAP, CARDS_CATALOG } from './cardsData';
 
 // ==========================================
 // 1. BASE VALUES & MULTIPLIERS
@@ -329,6 +330,43 @@ export function calculateDustYield(card: CardInstance, hasMaruoSupport: boolean 
 }
 
 // ==========================================
+// 4B. DIRECT SELL SYSTEM & KIOSK PRICING
+// ==========================================
+
+export const KIOSK_ROTATION_INTERVAL_MS = 24 * 60 * 60 * 1000; // 24 hours (86,400,000 ms)
+export const KIOSK_REROLL_STARDUST_COST = 100;
+export const KIOSK_PRICE_MULTIPLIER = 2.5;
+
+/**
+ * Calculates exact liquidation sell value in Yen:
+ * Sell Value = baseValue(rarity) * multiplier(finish) * multiplier(grade)
+ * Ungraded raw card has a grade multiplier of 1.0x.
+ */
+export function calculateCardSellValue(card: CardInstance): number {
+  const base = RARITY_BASE_VALUES[card.rarity] ?? 15;
+  const finishMult = FINISH_MULTIPLIERS[card.finish] ?? 1.0;
+  const gradeMult = card.grade
+    ? (GRADE_TIER_CONFIG[card.grade.tier]?.multiplier ?? card.grade.multiplier ?? 1.0)
+    : 1.0;
+  return Math.round(base * finishMult * gradeMult);
+}
+
+/**
+ * Calculates total liquidation value for an array of card instances.
+ */
+export function calculateBulkSellValue(cards: CardInstance[]): number {
+  return cards.reduce((sum, card) => sum + calculateCardSellValue(card), 0);
+}
+
+/**
+ * Calculates Singles Kiosk purchase price in Yen (fixed at 2.5x base market value).
+ */
+export function calculateKioskPrice(rarity: Rarity): number {
+  const base = RARITY_BASE_VALUES[rarity] ?? 15;
+  return Math.round(base * KIOSK_PRICE_MULTIPLIER);
+}
+
+// ==========================================
 // 5. ROLL ALGORITHMS & RNG HELPERS
 // ==========================================
 
@@ -354,6 +392,38 @@ function randomFloat(): number {
 
 function randomIntBetween(min: number, max: number): number {
   return Math.floor(randomFloat() * (max - min + 1)) + min;
+}
+
+/**
+ * Generates 4 rotating raw card offerings for the Singles Kiosk.
+ * Each card is raw (1.0x finish) and priced at 2.5x base market value.
+ */
+export function generateKioskStock(): KioskOffering[] {
+  const shuffledCatalog = [...CARDS_CATALOG].sort(() => randomFloat() - 0.5);
+  const selectedDefs: CardDefinition[] = [];
+  const usedCardIds = new Set<string>();
+
+  for (const def of shuffledCatalog) {
+    if (!usedCardIds.has(def.id)) {
+      usedCardIds.add(def.id);
+      selectedDefs.push(def);
+      if (selectedDefs.length === 4) break;
+    }
+  }
+
+  // Safety fallback if catalog is somehow under 4 cards
+  while (selectedDefs.length < 4 && CARDS_CATALOG.length > 0) {
+    selectedDefs.push(CARDS_CATALOG[selectedDefs.length % CARDS_CATALOG.length]);
+  }
+
+  return selectedDefs.map((cardDef, index) => ({
+    id: `kiosk_slot_${index}_${generateUUID().slice(0, 8)}`,
+    cardDefId: cardDef.id,
+    rarity: cardDef.rarity,
+    finish: 'raw' as const,
+    priceYen: calculateKioskPrice(cardDef.rarity),
+    isPurchased: false,
+  }));
 }
 
 /**

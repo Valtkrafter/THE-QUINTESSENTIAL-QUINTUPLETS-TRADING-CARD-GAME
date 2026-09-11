@@ -663,6 +663,115 @@ class AudioEngine {
       // Audio fallback
     }
   }
+
+  /**
+   * Metallic coin chime / synthesizer coin pulse for card liquidations
+   */
+  public playCoinPulseSound(): void {
+    if (this.muted) return;
+    const ctx = this.getContext();
+    if (!ctx) return;
+
+    try {
+      const now = ctx.currentTime;
+
+      // Dual tuned metallic chime tones (B6 & E7)
+      const tones = [1975.53, 2637.02];
+      tones.forEach((freq, idx) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, now + idx * 0.025);
+        osc.frequency.exponentialRampToValueAtTime(freq * 1.02, now + idx * 0.025 + 0.35);
+
+        gain.gain.setValueAtTime(0.14, now + idx * 0.025);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.025 + 0.38);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now + idx * 0.025);
+        osc.stop(now + idx * 0.025 + 0.4);
+      });
+
+      // Metallic high-frequency clink transient
+      const transient = ctx.createOscillator();
+      const transGain = ctx.createGain();
+      transient.type = 'triangle';
+      transient.frequency.setValueAtTime(4186.01, now); // C8
+      transient.frequency.exponentialRampToValueAtTime(2093.0, now + 0.06);
+
+      transGain.gain.setValueAtTime(0.18, now);
+      transGain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+
+      transient.connect(transGain);
+      transGain.connect(ctx.destination);
+      transient.start(now);
+      transient.stop(now + 0.09);
+    } catch {
+      // Audio fallback
+    }
+  }
+
+  /**
+   * Cash register / Receipt print sound for Singles Kiosk transactions
+   */
+  public playReceiptSound(): void {
+    if (this.muted) return;
+    const ctx = this.getContext();
+    if (!ctx) return;
+
+    try {
+      const now = ctx.currentTime;
+
+      // Two rapid mechanical printer/shutter clicks
+      [0, 0.07].forEach((delay) => {
+        const bufferSize = Math.floor(ctx.sampleRate * 0.025);
+        const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] = Math.random() * 2 - 1;
+        }
+
+        const clickNoise = ctx.createBufferSource();
+        clickNoise.buffer = buffer;
+
+        const filter = ctx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(3600, now + delay);
+        filter.Q.setValueAtTime(4, now + delay);
+
+        const gain = ctx.createGain();
+        gain.gain.setValueAtTime(0.16, now + delay);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + delay + 0.03);
+
+        clickNoise.connect(filter);
+        filter.connect(gain);
+        gain.connect(ctx.destination);
+        clickNoise.start(now + delay);
+      });
+
+      // Harmonic confirmation ping
+      const pingNotes = [1046.5, 1567.98]; // C6 -> G6
+      pingNotes.forEach((freq, idx) => {
+        const pingOsc = ctx.createOscillator();
+        const pingGain = ctx.createGain();
+
+        pingOsc.type = 'sine';
+        pingOsc.frequency.setValueAtTime(freq, now + 0.14 + idx * 0.05);
+
+        pingGain.gain.setValueAtTime(0.1, now + 0.14 + idx * 0.05);
+        pingGain.gain.exponentialRampToValueAtTime(0.001, now + 0.14 + idx * 0.05 + 0.4);
+
+        pingOsc.connect(pingGain);
+        pingGain.connect(ctx.destination);
+        pingOsc.start(now + 0.14 + idx * 0.05);
+        pingOsc.stop(now + 0.14 + idx * 0.05 + 0.45);
+      });
+    } catch {
+      // Audio fallback
+    }
+  }
 }
 
 export const soundEngine = new AudioEngine();

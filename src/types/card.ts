@@ -164,3 +164,24 @@ export interface GradingResultInfo {
   usedTools: ConsumableToolId[];
   insuranceRerolled: boolean;
 }
+
+export interface KioskOffering {
+  id: string;
+  cardDefId: string;
+  rarity: Rarity;
+  finish: Finish;
+  priceYen: number;
+  isPurchased: boolean;
+}
+
+export interface BulkSellFilter {
+  rarities: Rarity[];
+  uncertifiedOnly: boolean;
+}
+
+export interface BulkSellResult {
+  count: number;
+  totalYen: number;
+  soldCards: CardInstance[];
+}
+
