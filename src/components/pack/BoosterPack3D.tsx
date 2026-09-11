@@ -4,11 +4,13 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { PackId } from '../../types/card';
 import { PACKS_CONFIG } from '../../config/economy';
-import { soundEngine } from '../../utils/audioEngine';
+import { soundEngine } from '../../utils/audio';
 import { useSmoothTilt } from '../../hooks/useSmoothTilt';
+import { TearMechanism } from './TearMechanism';
 
 export interface BoosterPack3DProps {
-  packId: PackId;
+  packId?: PackId;
+  tierId?: PackId;
   interactive?: boolean;
   isFloating?: boolean;
   className?: string;
@@ -17,6 +19,9 @@ export interface BoosterPack3DProps {
   tearProgress?: number; // 0 to 100
   disableTilt?: boolean;
   isPaused?: boolean;
+  onTearProgress?: (progress: number) => void;
+  onTearComplete?: () => void;
+  onDragStateChange?: (isDragging: boolean) => void;
   children?: React.ReactNode;
 }
 
@@ -152,6 +157,7 @@ export const PACK_THEMES: Record<PackId, PackThemeConfig> = {
 
 export const BoosterPack3D: React.FC<BoosterPack3DProps> = ({
   packId,
+  tierId,
   interactive = true,
   isFloating = true,
   className = '',
@@ -160,28 +166,51 @@ export const BoosterPack3D: React.FC<BoosterPack3DProps> = ({
   tearProgress = 0,
   disableTilt = false,
   isPaused = false,
+  onTearProgress,
+  onTearComplete,
+  onDragStateChange,
   children,
 }) => {
   const [artLoaded, setArtLoaded] = useState(true);
-  const theme = PACK_THEMES[packId] ?? PACK_THEMES.kiosk;
-  const config = PACKS_CONFIG[packId];
-  const isGodPack = packId === 'god_pack' || config?.isGodPack;
+  const [isTearing, setIsTearing] = useState(false);
+  const [localIsTorn, setLocalIsTorn] = useState(false);
+  const effectiveIsTorn = isTorn || localIsTorn;
+  const activePackId = packId ?? tierId ?? 'kiosk';
+  const theme = PACK_THEMES[activePackId] ?? PACK_THEMES.kiosk;
+  const config = PACKS_CONFIG[activePackId];
+  const isGodPack = activePackId === 'god_pack' || config?.isGodPack;
+
+  // Reset local state if pack resets
+  React.useEffect(() => {
+    if (!isTorn) {
+      setLocalIsTorn(false);
+      setIsTearing(false);
+    }
+  }, [isTorn]);
 
   // Universal smooth 3D tilt engine with pause support
   const {
+    tiltRef,
+    style,
     tiltStyle,
     glareStyle,
     isHovered,
-    containerProps,
+    handleMouseMove,
+    handleMouseLeave,
+    handleMouseEnter,
   } = useSmoothTilt({
     maxRotation: 8,
     perspective: 1000,
-    disabled: !interactive || disableTilt,
-    isPaused: isPaused,
-    onHoverChange: (hovered) => {
-      if (hovered && !disableTilt && !isPaused) soundEngine.playFoilRustle();
-    },
+    disabled: !interactive || disableTilt || effectiveIsTorn,
+    isPaused: isPaused || isTearing,
   });
+
+  const handleTearCompleteInternal = () => {
+    setLocalIsTorn(true);
+    setIsTearing(false);
+    onDragStateChange?.(false);
+    onTearComplete?.();
+  };
 
   // Clamped tear progress (0 to 100)
   const progressPct = Math.max(0, Math.min(100, tearProgress));
@@ -189,7 +218,7 @@ export const BoosterPack3D: React.FC<BoosterPack3DProps> = ({
   // Heat-Sealed Metallic Crimped Teeth Strip (Strictly 26px height)
   const renderCrimpedSeal = (isTop: boolean) => (
     <div
-      className={`h-[26px] w-full shrink-0 relative overflow-hidden flex items-center justify-center ${
+      className={`h-[26px] w-full shrink-0 relative overflow-hidden flex items-center justify-center pointer-events-none select-none ${
         isTop ? 'border-b border-white/20' : 'border-t border-white/20'
       }`}
       style={{
@@ -197,24 +226,29 @@ export const BoosterPack3D: React.FC<BoosterPack3DProps> = ({
       }}
     >
       {/* Embossed pressure ridges */}
-      <div className="absolute inset-0 opacity-30 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:6px_6px] pointer-events-none" />
+      <div className="absolute inset-0 opacity-30 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:6px_6px] pointer-events-none select-none" />
 
       {/* Euro-Hole Punch Cutout (Centered punch on top crimp) */}
       {isTop && (
-        <div className="w-9 h-2.5 rounded-full bg-black/90 border border-white/20 shadow-inner z-10 pointer-events-none" />
+        <div className="w-9 h-2.5 rounded-full bg-black/90 border border-white/20 shadow-inner z-10 pointer-events-none select-none" />
       )}
     </div>
   );
 
   return (
+    // LAYER 1: STATIC 2D EVENT BOUNDARY (DO NOT ADD 3D TRANSFORMS HERE)
     <div
-      className={`card-perspective-wrapper inline-block select-none relative before:absolute before:-inset-4 before:content-[''] cursor-pointer ${className}`}
+      className={`relative w-[320px] h-[520px] aspect-[320/520] select-none cursor-pointer ${className}`}
       onClick={onClick}
-      {...(disableTilt ? {} : containerProps)}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      onMouseEnter={handleMouseEnter}
     >
+      {/* LAYER 2: 3D ROTATING VISUAL PACK */}
       <motion.div
+        ref={tiltRef}
         style={{
-          ...(disableTilt ? {} : tiltStyle),
+          ...(disableTilt ? {} : style),
           boxShadow: `
             inset 14px 0 20px -8px rgba(0, 0, 0, 0.65),
             inset -14px 0 20px -8px rgba(0, 0, 0, 0.65),
@@ -223,64 +257,57 @@ export const BoosterPack3D: React.FC<BoosterPack3DProps> = ({
             }
           `,
         }}
-        className={`card-3d-root relative w-[320px] h-[520px] aspect-[320/520] rounded-3xl overflow-hidden flex flex-col justify-between ${
-          isFloating && !isHovered && !isTorn ? 'animate-bounce' : ''
-        } ${isHovered && !disableTilt && !isPaused ? 'is-interacting' : ''} ${theme.borderClass} border bg-[#09090f]`}
+        className={`w-full h-full relative rounded-3xl overflow-hidden flex flex-col justify-between pointer-events-none select-none ${
+          isHovered && !disableTilt && !isPaused && !isTearing ? 'is-interacting' : ''
+        } ${theme.borderClass} border bg-[#09090f]`}
       >
         {/* ============================================================
-            1. TOP DETACHABLE SECTION (Top Crimp 26px + Perforation Line)
-            Animates upward on tear breach (y: -80, rotate: -6, opacity: 0)
+            1. TOP METALLIC FOIL CRIMP (Strictly 26px)
+            Z-INDEX: z-40 | POINTER-EVENTS-NONE
+            Animates upward on tear breach (y: -90, rotate: -6, opacity: 0 over 320ms)
             ============================================================ */}
         <motion.div
-          className="z-30 shrink-0 select-none"
+          className="z-40 shrink-0 select-none bg-[#16161f] shadow-md pointer-events-none"
           animate={
-            isTorn
-              ? { y: -80, rotate: -6, opacity: 0 }
+            effectiveIsTorn
+              ? { y: -90, rotate: -6, opacity: 0 }
               : { y: 0, rotate: 0, opacity: 1 }
           }
-          transition={{ duration: 0.45, ease: 'easeOut' }}
+          transition={{ duration: 0.32, ease: 'easeOut' }}
         >
-          {/* Top 26px Crimp */}
-          <div className="bg-[#16161f] shadow-md">
-            {renderCrimpedSeal(true)}
-          </div>
-
-          {/* Upper Perforation Seam (~14% from pack top) */}
-          <div className="relative w-full">
-            <div className="h-6 w-full px-3 flex items-center justify-between border-b border-dashed border-white/30 bg-black/50 backdrop-blur-xs relative overflow-hidden">
-              {/* Dynamic Tear Beam Glow that widens as drag progresses */}
-              {progressPct > 0 && (
-                <div
-                  className="absolute left-0 top-0 bottom-0 bg-gradient-to-r from-amber-400 via-yellow-200 to-amber-400 shadow-[0_0_20px_#f59e0b] opacity-90 transition-all duration-75 pointer-events-none"
-                  style={{ width: `${progressPct}%` }}
-                />
-              )}
-
-              <div className="flex items-center gap-1.5 text-[9px] font-mono tracking-widest text-zinc-300 uppercase z-10">
-                <span className={`w-1.5 h-1.5 rounded-full ${progressPct > 0 ? 'bg-amber-300 animate-ping' : 'bg-amber-400'}`} />
-                <span>PERFORATION SEAM</span>
-              </div>
-
-              <span className="text-[10px] text-amber-300 font-bold tracking-widest font-mono z-10">
-                {isTorn ? '★ OPENED' : progressPct > 0 ? `${Math.round(progressPct)}%` : 'PULL TO TEAR ▶'}
-              </span>
-            </div>
-
-            {/* Direct Tear Tab Mount Location */}
-            {children}
-          </div>
+          {renderCrimpedSeal(true)}
         </motion.div>
 
         {/* ============================================================
-            2. PACK BODY: FOIL GRAPHICS, ARTWORK & PROGRAMMATIC FALLBACK
+            2. PERFORATION SEAM (VISUAL GUIDE)
+            Z-INDEX: z-30 | POINTER-EVENTS-NONE
+            ZERO-DELAY REMOVAL: Instantly unmounted when effectiveIsTorn is true
             ============================================================ */}
-        <div className="relative flex-1 p-5 flex flex-col justify-between overflow-hidden">
-          {/* Cover Artwork (Full-Bleed Object-Cover) */}
+        {!effectiveIsTorn && (
+          <div className="relative w-full z-30 pointer-events-none select-none">
+            <div className="h-6 w-full px-3 flex items-center justify-between border-b border-dashed border-white/30 bg-black/50 backdrop-blur-xs relative overflow-hidden pointer-events-none select-none">
+              <div className="flex items-center gap-1.5 text-[9px] font-mono tracking-widest text-zinc-300 uppercase z-10 pointer-events-none select-none">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                <span>PERFORATION SEAM</span>
+              </div>
+
+              <span className="text-[10px] text-amber-300 font-bold tracking-widest font-mono z-10 pointer-events-none select-none">
+                PULL TO TEAR ▶
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* ============================================================
+            3. PACK BODY: FOIL GRAPHICS, ARTWORK & PROGRAMMATIC FALLBACK
+            ============================================================ */}
+        <div className="relative flex-1 p-5 flex flex-col justify-between overflow-hidden pointer-events-none select-none">
+          {/* Base Foil / Card Artwork: z-10 */}
           {artLoaded && (
             <img
               src={theme.artFile}
               alt={theme.name}
-              className="absolute inset-0 w-full h-full object-cover select-none pointer-events-none z-0"
+              className="absolute inset-0 w-full h-full object-cover select-none pointer-events-none z-10"
               onError={() => setArtLoaded(false)}
             />
           )}
@@ -288,20 +315,16 @@ export const BoosterPack3D: React.FC<BoosterPack3DProps> = ({
           {/* Programmatic Fallback Background (when artwork is missing/fails) */}
           {!artLoaded && (
             <div
-              className="absolute inset-0 z-0"
+              className="absolute inset-0 select-none pointer-events-none z-10"
               style={{ background: theme.fallbackGradient }}
             />
           )}
 
-          {/* Darkening Scrim so typography & badges pop over artwork */}
-          <div className="absolute inset-0 bg-gradient-to-b from-black/65 via-black/25 to-black/80 pointer-events-none z-[1]" />
+          {/* Foil Shaders / Holographic Overlays: z-20 */}
+          <div className="absolute inset-0 bg-gradient-to-b from-black/65 via-black/25 to-black/80 pointer-events-none select-none z-20" />
 
-          {/* Cylindrical Pillow Depth Shading Highlight in Center */}
-          <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-48 bg-gradient-to-r from-transparent via-white/12 to-transparent pointer-events-none z-[2]" />
-
-          {/* Dynamic Specular Foil Reflection */}
           <div
-            className="absolute inset-0 opacity-40 pointer-events-none mix-blend-color-dodge z-[3]"
+            className="absolute inset-0 opacity-40 pointer-events-none mix-blend-color-dodge select-none z-20"
             style={{
               background: `linear-gradient(135deg, transparent 15%, ${theme.primaryColor} 45%, #ffffff 50%, ${theme.secondaryColor} 55%, transparent 85%)`,
               backgroundSize: '250% 250%',
@@ -309,17 +332,20 @@ export const BoosterPack3D: React.FC<BoosterPack3DProps> = ({
             }}
           />
 
-          {/* Micro-Holographic Foil Grid Pattern */}
           <div
-            className="absolute inset-0 opacity-15 pointer-events-none z-[3]"
+            className="absolute inset-0 opacity-15 pointer-events-none select-none z-20"
             style={{
               backgroundImage:
                 'repeating-linear-gradient(45deg, rgba(255,255,255,0.25) 0px, rgba(255,255,255,0.25) 1px, transparent 1px, transparent 7px)',
             }}
           />
 
-          {/* SET HEADER: Authentic Japanese Logo Typography & Foiled Set Badge */}
-          <div className="relative z-10 flex items-start justify-between">
+          {/* Pillow Shading Container & Edge Gradients: z-30 */}
+          <div className="pointer-events-none absolute inset-0 shadow-[inset_14px_0_20px_-8px_rgba(0,0,0,0.65),inset_-14px_0_20px_-8px_rgba(0,0,0,0.65)] select-none z-30" />
+          <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-48 bg-gradient-to-r from-transparent via-white/12 to-transparent pointer-events-none select-none z-30" />
+
+          {/* SET HEADER: Authentic Japanese Logo Typography & Foiled Set Badge (z-10) */}
+          <div className="relative z-10 flex items-start justify-between pointer-events-none select-none">
             <div>
               <span className="text-[10px] tracking-widest font-black uppercase text-amber-400 drop-shadow font-mono">
                 TQQ VAULT EXPANSE SET 01
@@ -330,7 +356,7 @@ export const BoosterPack3D: React.FC<BoosterPack3DProps> = ({
             </div>
 
             <span
-              className="px-2.5 py-0.5 rounded-full text-[10px] font-black tracking-wider uppercase border shadow-md font-mono backdrop-blur-xs"
+              className="px-2.5 py-0.5 rounded-full text-[10px] font-black tracking-wider uppercase border shadow-md font-mono backdrop-blur-xs select-none pointer-events-none"
               style={{
                 backgroundColor: `${theme.primaryColor}30`,
                 borderColor: theme.primaryColor,
@@ -341,11 +367,11 @@ export const BoosterPack3D: React.FC<BoosterPack3DProps> = ({
             </span>
           </div>
 
-          {/* CENTER ARTWORK / FALLBACK IDENTITY: Motif Emblem & Japanese Headers */}
-          <div className="relative z-10 flex flex-col items-center justify-center text-center my-auto">
+          {/* CENTER ARTWORK / FALLBACK IDENTITY: Motif Emblem & Japanese Headers (z-10) */}
+          <div className="relative z-10 flex flex-col items-center justify-center text-center my-auto pointer-events-none select-none">
             {/* If art file failed or not loaded, highlight the embossed emblem */}
             <div
-              className="w-20 h-20 sm:w-24 sm:h-24 rounded-full flex items-center justify-center mb-2 shadow-2xl border border-white/40 backdrop-blur-sm"
+              className="w-20 h-20 sm:w-24 sm:h-24 rounded-full flex items-center justify-center mb-2 shadow-2xl border border-white/40 backdrop-blur-sm pointer-events-none select-none"
               style={{
                 background: `radial-gradient(circle at 35% 35%, ${theme.primaryColor}99, #09090b)`,
                 boxShadow: `0 0 35px ${theme.accentGlow}`,
@@ -356,22 +382,22 @@ export const BoosterPack3D: React.FC<BoosterPack3DProps> = ({
               </span>
             </div>
 
-            <span className="text-xs font-serif tracking-widest text-zinc-200 mb-0.5 opacity-95 drop-shadow font-bold">
+            <span className="text-xs font-serif tracking-widest text-zinc-200 mb-0.5 opacity-95 drop-shadow font-bold select-none">
               {theme.japaneseTitle}
             </span>
 
-            <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white drop-shadow-md">
+            <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white drop-shadow-md select-none">
               {theme.name}
             </h2>
 
-            <p className="text-[11px] text-zinc-300 mt-1 max-w-[220px] font-medium leading-tight drop-shadow">
+            <p className="text-[11px] text-zinc-300 mt-1 max-w-[220px] font-medium leading-tight drop-shadow select-none">
               {theme.subtitle}
             </p>
           </div>
 
-          {/* FOOTER: Nakano Sister Icons & Card Count */}
-          <div className="relative z-10 pt-2 border-t border-white/25 flex items-center justify-between text-[10px] text-zinc-300">
-            <div className="flex items-center gap-1.5 text-sm">
+          {/* FOOTER: Nakano Sister Icons & Card Count (z-10) */}
+          <div className="relative z-10 pt-2 border-t border-white/25 flex items-center justify-between text-[10px] text-zinc-300 pointer-events-none select-none">
+            <div className="flex items-center gap-1.5 text-sm select-none">
               <span title="Ichika">💛</span>
               <span title="Nino">🦋</span>
               <span title="Miku">🎧</span>
@@ -379,27 +405,50 @@ export const BoosterPack3D: React.FC<BoosterPack3DProps> = ({
               <span title="Itsuki">⭐</span>
             </div>
 
-            <div className="font-mono text-[9px] uppercase tracking-wider text-amber-400 font-bold">
+            <div className="font-mono text-[9px] uppercase tracking-wider text-amber-400 font-bold select-none">
               {config?.slots ?? 5} CARDS PER PACK
             </div>
           </div>
         </div>
 
         {/* ============================================================
-            3. BOTTOM HEAT-SEALED CRIMP (Strictly 26px)
+            4. BOTTOM HEAT-SEALED CRIMP (Strictly 26px)
+            Z-INDEX: z-40 | POINTER-EVENTS-NONE
             ============================================================ */}
-        <div className="z-30 bg-[#16161f] shadow-md shrink-0">
+        <div className="z-40 bg-[#16161f] shadow-md shrink-0 pointer-events-none select-none">
           {renderCrimpedSeal(false)}
         </div>
 
-        {/* Specular Laminate Reflection Overlay */}
-        <motion.div className="card-specular-glare pointer-events-none z-20" style={glareStyle} />
+        {/* Specular Laminate Reflection Overlay (z-20) */}
+        <motion.div className="card-specular-glare pointer-events-none select-none z-20" style={glareStyle} />
 
-        {/* God Pack Divine Volumetric Rays */}
+        {/* God Pack Divine Volumetric Rays (z-20) */}
         {isGodPack && (
-          <div className="absolute inset-0 pointer-events-none mix-blend-screen opacity-55 bg-[radial-gradient(circle,rgba(255,215,0,0.85)_0%,transparent_70%)] animate-pulse z-20" />
+          <div className="absolute inset-0 pointer-events-none mix-blend-screen opacity-55 bg-[radial-gradient(circle,rgba(255,215,0,0.85)_0%,transparent_70%)] animate-pulse select-none z-20" />
         )}
       </motion.div>
+
+      {/* ============================================================
+          LAYER 3: FLAT 2D TEAR MECHANISM (IN STATIC SPACE, SIBLING TO 3D MOTION.DIV)
+          Z-INDEX: z-50 | Mounted only while pack is unopened
+          ============================================================ */}
+      {!effectiveIsTorn && interactive && onTearComplete && (
+        <TearMechanism
+          packWidth={320}
+          onTearStart={() => {
+            setIsTearing(true);
+            onDragStateChange?.(true);
+          }}
+          onTearEnd={() => {
+            setIsTearing(false);
+            onDragStateChange?.(false);
+          }}
+          onTearComplete={handleTearCompleteInternal}
+        />
+      )}
+
+      {/* Optional passed children */}
+      {!effectiveIsTorn && children}
     </div>
   );
 };

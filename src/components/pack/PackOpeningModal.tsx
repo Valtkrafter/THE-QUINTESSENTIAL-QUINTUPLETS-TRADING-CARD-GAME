@@ -1,14 +1,13 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { motion, AnimatePresence, useMotionValue, animate, PanInfo } from 'framer-motion';
+import { motion, PanInfo, useMotionValue, animate } from 'framer-motion';
 import { CardInstance, PackId, Rarity } from '../../types/card';
 import { PACKS_CONFIG, calculateCardMarketValue } from '../../config/economy';
 import { useGameStore } from '../../store/useGameStore';
 import { BoosterPack3D, PACK_THEMES } from './BoosterPack3D';
-import { TearMechanism } from './TearMechanism';
 import { CardRenderer, CHARACTER_THEMES, RARITY_BADGES } from '../card/CardRenderer';
-import { soundEngine } from '../../utils/audioEngine';
+import { soundEngine } from '../../utils/audio';
 import {
   Sparkles,
   Volume2,
@@ -17,7 +16,6 @@ import {
   RefreshCw,
   Trash2,
   CheckCircle2,
-  ChevronRight,
   Zap,
   ArrowRight,
 } from 'lucide-react';
@@ -43,7 +41,8 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [tearProgress, setTearProgress] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
-  const [isShaking, setIsShaking] = useState(false);
+  const [isTorn, setIsTorn] = useState(false);
+  const [screenShake, setScreenShake] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [dustedCardIds, setDustedCardIds] = useState<string[]>([]);
   const [dustToast, setDustToast] = useState<number | null>(null);
@@ -61,7 +60,7 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
   const packConfig = PACKS_CONFIG[packId];
   const theme = PACK_THEMES[packId] ?? PACK_THEMES.kiosk;
 
-  // Initialize and reset ceremony state
+  // Initialize and reset ceremony state; stop any running audio
   useEffect(() => {
     if (isOpen) {
       setStage('INSPECT');
@@ -70,15 +69,24 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
       setCurrentCardIndex(0);
       setTearProgress(0);
       setIsDragging(false);
-      setIsShaking(false);
+      setIsTorn(false);
+      setScreenShake(false);
       setIsDiscarding(false);
       topCardX.set(0);
       topCardRotate.set(0);
       setDustedCardIds([]);
       setDustToast(null);
-      setIsMuted(soundEngine.isMuted());
+    } else {
+      soundEngine.stopAll();
     }
   }, [isOpen, packId, topCardRotate, topCardX]);
+
+  // Clean up on component unmount
+  useEffect(() => {
+    return () => {
+      soundEngine.stopAll();
+    };
+  }, []);
 
   // Highest rarity in pulled cards to determine pack anticipation intensity
   const packPeakRarity = useMemo<Rarity>(() => {
@@ -93,11 +101,21 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
     return highest;
   }, [pulledCards]);
 
-  // Handle Tear Complete: triggers atomic store pull and begins suspense sequence
+  // Handle Tear Complete: triggers atomic store pull, screen impact, and begins anticipation
   const handleTearComplete = useCallback(() => {
     setIsDragging(false);
-    setIsShaking(true);
-    setStage('ANTICIPATING');
+    setIsTorn(true);
+
+    // Screen impact shake for 160ms
+    setScreenShake(true);
+    setTimeout(() => {
+      setScreenShake(false);
+    }, 160);
+
+    // Wait 350ms for the top crimp detachment animation ({ y: -90, rotate: -6, opacity: 0 })
+    setTimeout(() => {
+      setStage('ANTICIPATING');
+    }, 350);
 
     try {
       // Execute atomic pack opening in Zustand store
@@ -114,27 +132,23 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
         }
       }
 
-      // Play anticipation rumble based on rarity tier
-      if (result.isGodPack) {
-        soundEngine.playSparkleSound();
-        soundEngine.playRevealSound('MR', true);
-      } else if (highest === 'MR' || highest === 'SEC' || highest === 'UR') {
-        soundEngine.playAnticipationSound(highest);
-      } else if (highest === 'SR') {
-        soundEngine.playAnticipationSound('SR');
-      }
-
-      // Shake settles after 450ms
+      // Play anticipation audio cue safely once transitioning to anticipation
       setTimeout(() => {
-        setIsShaking(false);
-      }, 450);
+        if (result.isGodPack) {
+          soundEngine.play('godpack_fanfare', 0.85);
+        } else if (highest === 'MR' || highest === 'SEC' || highest === 'UR') {
+          soundEngine.play('sub_bass_pulse', 0.8);
+        } else if (highest === 'SR') {
+          soundEngine.play('reveal_rare', 0.7);
+        }
+      }, 350);
 
       // Transition into Peeling phase after suspense beat
       const anticipationDuration = result.isGodPack
-        ? 1200
+        ? 1300
         : (highest === 'MR' || highest === 'SEC' || highest === 'UR')
-        ? 950
-        : 650;
+        ? 1000
+        : 700;
 
       setTimeout(() => {
         setStage('PEELING');
@@ -142,32 +156,25 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
         topCardX.set(0);
         topCardRotate.set(0);
         setIsDiscarding(false);
-      }, anticipationDuration);
+      }, 350 + anticipationDuration);
     } catch (err) {
       console.error('Failed to open pack:', err);
-      setIsShaking(false);
+      setScreenShake(false);
       onClose();
     }
   }, [openPackStore, packId, onClose, topCardRotate, topCardX]);
-
-  // Fast-track instant open button
-  const handleInstantOpen = useCallback(() => {
-    setTearProgress(100);
-    soundEngine.playTearSound();
-    handleTearComplete();
-  }, [handleTearComplete]);
 
   // Discard the active top card with horizontal swoosh to the right
   const discardTopCard = useCallback(() => {
     if (isDiscarding) return;
     setIsDiscarding(true);
 
-    // Audio cue for card slide
-    soundEngine.playFoilRustle();
+    // Play card slide sound cleanly once
+    soundEngine.play('card_slide', 0.65);
 
-    // Swoosh animation to the right: x -> 550, rotate -> 14
-    animate(topCardX, 550, { duration: 0.22, ease: 'easeIn' });
-    animate(topCardRotate, 14, { duration: 0.22, ease: 'easeIn' });
+    // Swoosh animation to the right: x -> 600, rotate -> 16
+    animate(topCardX, 600, { duration: 0.22, ease: 'easeIn' });
+    animate(topCardRotate, 16, { duration: 0.22, ease: 'easeIn' });
 
     setTimeout(() => {
       topCardX.set(0);
@@ -177,7 +184,7 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
       const nextIndex = currentCardIndex + 1;
       if (nextIndex >= pulledCards.length) {
         setStage('SUMMARY');
-        soundEngine.playSparkleSound();
+        soundEngine.play('reveal_rare', 0.6);
       } else {
         setCurrentCardIndex(nextIndex);
         const nextCard = pulledCards[nextIndex];
@@ -188,7 +195,11 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
             nextCard.rarity === 'SEC' ||
             nextCard.rarity === 'MR')
         ) {
-          soundEngine.playAnticipationSound(nextCard.rarity);
+          if (nextCard.rarity === 'SR') {
+            soundEngine.play('reveal_rare', 0.6);
+          } else {
+            soundEngine.play('sub_bass_pulse', 0.65);
+          }
         }
       }
     }, 230);
@@ -219,10 +230,10 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
     [discardTopCard, isDiscarding, topCardRotate, topCardX]
   );
 
-  // Reveal all cards instantly (Skip to Summary)
+  // Skip All directly to Summary
   const handleRevealAll = useCallback(() => {
     setStage('SUMMARY');
-    soundEngine.playSparkleSound();
+    soundEngine.play('reveal_rare', 0.6);
   }, []);
 
   // Quick Dust non-rares (C & UC)
@@ -244,7 +255,7 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
 
     setDustedCardIds(newDustedIds);
     setDustToast(totalDustGained);
-    soundEngine.playSparkleSound();
+    soundEngine.play('reveal_rare', 0.5);
 
     setTimeout(() => {
       setDustToast(null);
@@ -273,11 +284,15 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/92 backdrop-blur-2xl select-none overflow-hidden animate-fadeIn">
-      {/* Dynamic Screen Shake on Tear / High Impact */}
-      <div
-        className={`w-full h-full flex flex-col items-center justify-between p-3 sm:p-5 transition-transform duration-100 ${
-          isShaking ? 'translate-x-1.5 -translate-y-1 scale-[1.015]' : ''
-        }`}
+      {/* Dynamic Screen Impact Shake on Tear Breach */}
+      <motion.div
+        animate={
+          screenShake
+            ? { x: [-3, 3, -2, 2, 0] }
+            : { x: 0 }
+        }
+        transition={{ duration: 0.16 }}
+        className="w-full h-full flex flex-col items-center justify-between p-3 sm:p-5"
       >
         {/* ============================================================
             CEREMONY TOP BAR: Player Balances, Pack Stage & Controls
@@ -316,8 +331,12 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
           <div className="flex items-center gap-2">
             <button
               onClick={() => {
-                const muted = soundEngine.toggleMute();
-                setIsMuted(muted);
+                if (isMuted) {
+                  setIsMuted(false);
+                } else {
+                  soundEngine.stopAll();
+                  setIsMuted(true);
+                }
               }}
               className="p-2 rounded-full bg-zinc-900 border border-white/10 text-zinc-400 hover:text-white hover:bg-zinc-800 transition shadow"
               title={isMuted ? 'Unmute Audio' : 'Mute Audio'}
@@ -326,7 +345,10 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
             </button>
 
             <button
-              onClick={onClose}
+              onClick={() => {
+                soundEngine.stopAll();
+                onClose();
+              }}
               className="p-2 rounded-full bg-zinc-900 border border-white/10 text-zinc-400 hover:text-white hover:bg-zinc-800 transition shadow"
               title="Close Pack Ceremony"
             >
@@ -336,11 +358,12 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
         </header>
 
         {/* ============================================================
-            STAGE 1: INSPECT & ISOLATED TEAR NOTCH GESTURE
+            STAGE 1: INSPECT & PINNED RELATIVE BOOSTER PACK
+            Tear notch pinned inside BoosterPack3D's local coordinate space
             ============================================================ */}
         {stage === 'INSPECT' && (
           <div className="flex-1 flex flex-col items-center justify-center max-w-sm w-full relative z-20 my-auto">
-            {/* 3D Floating Booster Pack with Mounted Tear Notch */}
+            {/* Pinned 3D Booster Pack with local TearMechanism */}
             <div className="relative">
               <BoosterPack3D
                 packId={packId}
@@ -349,30 +372,18 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
                 tearProgress={tearProgress}
                 disableTilt={false}
                 isPaused={isDragging}
-              >
-                {/* Isolated Tear Mechanism mounted on upper perforation seam */}
-                <TearMechanism
-                  packWidth={320}
-                  onTearProgress={(progress) => setTearProgress(progress)}
-                  onTearComplete={handleTearComplete}
-                  onDragStateChange={(dragging) => setIsDragging(dragging)}
-                  accentColor={theme.primaryColor}
-                />
-              </BoosterPack3D>
+                isTorn={isTorn}
+                onTearProgress={(progress) => setTearProgress(progress)}
+                onTearComplete={handleTearComplete}
+                onDragStateChange={(dragging) => setIsDragging(dragging)}
+              />
             </div>
 
-            {/* Gesture Instruction & Quick Rip Fallback */}
+            {/* Manual Drag Instruction */}
             <div className="mt-4 flex flex-col items-center gap-2 text-center">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-[11px] font-mono tracking-wide font-medium shadow-sm">
-                <span>⚡ Drag the yellow TEAR ▶ notch right across the foil</span>
+              <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-[11px] font-mono tracking-wide font-medium shadow-sm">
+                <span>⚡ Drag the yellow TEAR ▶ notch right across the foil to rip</span>
               </div>
-
-              <button
-                onClick={handleInstantOpen}
-                className="text-[11px] text-zinc-500 hover:text-zinc-300 underline font-mono transition"
-              >
-                Quick Rip / Instant Open
-              </button>
             </div>
           </div>
         )}
@@ -382,25 +393,25 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
             ============================================================ */}
         {stage === 'ANTICIPATING' && (
           <div className="flex-1 flex flex-col items-center justify-center relative z-20 my-auto text-center">
-            {/* God Pack Celestial Flare */}
+            {/* God Pack Celestial Flare & Golden Pulse */}
             {isGodPack && (
               <div className="fixed inset-0 pointer-events-none z-10 flex items-center justify-center overflow-hidden">
-                <div className="w-[800px] h-[800px] rounded-full bg-[radial-gradient(circle,rgba(255,215,0,0.6)_0%,transparent_70%)] animate-spin" />
-                <div className="absolute inset-0 bg-amber-500/20 backdrop-blur-xs animate-pulse" />
+                <div className="w-[850px] h-[850px] rounded-full bg-[radial-gradient(circle,rgba(255,215,0,0.65)_0%,transparent_70%)] animate-spin" />
+                <div className="absolute inset-0 bg-amber-500/25 backdrop-blur-xs animate-pulse" />
               </div>
             )}
 
-            {/* Ultra-Tier (MR / SEC / UR) Lightning Flash */}
+            {/* Ultra-Tier (MR / SEC / UR) Lightning Flash & Sub-Bass Pulse Dim */}
             {(packPeakRarity === 'MR' || packPeakRarity === 'SEC' || packPeakRarity === 'UR') && !isGodPack && (
-              <div className="fixed inset-0 pointer-events-none z-10 bg-black/80 flex items-center justify-center transition-all duration-300">
-                <div className="w-[360px] h-[520px] rounded-3xl border-2 border-amber-400 animate-pulse shadow-[0_0_80px_rgba(245,158,11,0.8)]" />
+              <div className="fixed inset-0 pointer-events-none z-10 bg-black/85 flex items-center justify-center transition-all duration-300">
+                <div className="w-[380px] h-[540px] rounded-3xl border-2 border-amber-400 animate-pulse shadow-[0_0_90px_rgba(245,158,11,0.85)]" />
               </div>
             )}
 
-            {/* Super-Tier (SR) Violet Aura */}
+            {/* Super-Tier (SR) Violet Pulse Aura */}
             {packPeakRarity === 'SR' && !isGodPack && (
-              <div className="fixed inset-0 pointer-events-none z-10 bg-purple-950/40 flex items-center justify-center transition-all duration-300">
-                <div className="w-[340px] h-[500px] rounded-3xl border border-purple-400 shadow-[0_0_60px_rgba(168,85,247,0.75)] animate-pulse" />
+              <div className="fixed inset-0 pointer-events-none z-10 bg-purple-950/45 flex items-center justify-center transition-all duration-300">
+                <div className="w-[360px] h-[520px] rounded-3xl border border-purple-400 shadow-[0_0_70px_rgba(168,85,247,0.8)] animate-pulse" />
               </div>
             )}
 
@@ -433,19 +444,19 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
         )}
 
         {/* ============================================================
-            STAGE 3: TIGHT CARD-STACK & RIGHT-SWIPE PEEL CEREMONY
+            STAGE 3: 360PX PRESENTATION CARD-STACK & RIGHT-SWIPE PEEL
             ============================================================ */}
         {stage === 'PEELING' && activeCard && (
-          <div className="flex-1 flex flex-col items-center justify-center relative z-20 my-auto w-full max-w-md">
+          <div className="flex-1 flex flex-col items-center justify-center relative z-20 my-auto w-full max-w-lg">
             
             {/* Card-Specific Anticipation Auras */}
             {cardAnticipationTell === 'ULTRA' && (
               <div className="fixed inset-0 pointer-events-none z-10 bg-black/75 flex items-center justify-center transition-all duration-300">
                 <div
-                  className="w-[330px] h-[480px] rounded-2xl border-2 animate-pulse"
+                  className="w-[370px] h-[516px] rounded-2xl border-2 animate-pulse"
                   style={{
                     borderColor: CHARACTER_THEMES[activeCard.characterId]?.accent ?? '#F59E0B',
-                    boxShadow: `0 0 70px ${CHARACTER_THEMES[activeCard.characterId]?.accent ?? '#F59E0B'}`,
+                    boxShadow: `0 0 75px ${CHARACTER_THEMES[activeCard.characterId]?.accent ?? '#F59E0B'}`,
                   }}
                 />
               </div>
@@ -453,32 +464,32 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
 
             {cardAnticipationTell === 'SUPER' && (
               <div className="fixed inset-0 pointer-events-none z-10 bg-purple-950/30 flex items-center justify-center transition-all duration-300">
-                <div className="w-[320px] h-[460px] rounded-2xl border border-purple-400 shadow-[0_0_40px_rgba(168,85,247,0.7)] animate-pulse" />
+                <div className="w-[365px] h-[510px] rounded-2xl border border-purple-400 shadow-[0_0_50px_rgba(168,85,247,0.7)] animate-pulse" />
               </div>
             )}
 
             {cardAnticipationTell === 'GOD_PACK' && (
               <div className="fixed inset-0 pointer-events-none z-10 flex items-center justify-center">
-                <div className="w-[600px] h-[600px] rounded-full bg-[radial-gradient(circle,rgba(255,215,0,0.45)_0%,transparent_70%)] animate-spin" />
+                <div className="w-[650px] h-[650px] rounded-full bg-[radial-gradient(circle,rgba(255,215,0,0.5)_0%,transparent_70%)] animate-spin" />
               </div>
             )}
 
-            {/* TIGHT PHYSICAL DECK STACK CONTAINER */}
+            {/* PRESENTATION CARD STACK CONTAINER (360px x 502px, max-h 65vh) */}
             <div className="relative z-20 flex flex-col items-center">
               
-              {/* Deck Stack Anchor (Viewport Center) */}
-              <div className="relative w-[280px] h-[392px] sm:w-[320px] sm:h-[448px]">
+              {/* Deck Stack Anchor (Presentation Aspect Ratio 63:88) */}
+              <div className="relative w-[360px] max-w-[90vw] max-h-[65vh] aspect-[63/88]">
                 {pulledCards.slice(currentCardIndex).map((card, offsetIdx) => {
                   const isTop = offsetIdx === 0;
-                  // Card Stack Geometry:
-                  // Vertical offset (Y): offsetIdx * 2px (strictly <= 2px per card)
+                  // Tight Deck Stack Limits:
+                  // Vertical offset (Y): offsetIdx * 2px (strictly <= 2px)
                   // Horizontal offset (X): offsetIdx * 1px
-                  // Scale factor: 1 - offsetIdx * 0.006
-                  // Elevation (Z): totalCards - offsetIdx
-                  // Edge shadow: shadow-[0_4px_10px_rgba(0,0,0,0.5)]
+                  // Scale decay: 1 - offsetIdx * 0.005
+                  // Elevation (Z): (totalCards - offsetIdx) * 10
+                  // Shadow: shadow-[0_8px_24px_rgba(0,0,0,0.7)]
                   const yOffset = offsetIdx * 2;
                   const xOffset = offsetIdx * 1;
-                  const scale = 1 - offsetIdx * 0.006;
+                  const scale = 1 - offsetIdx * 0.005;
                   const zElevation = (pulledCards.length - offsetIdx) * 10;
 
                   if (isTop) {
@@ -494,11 +505,11 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
                           zIndex: zElevation,
                         }}
                         onDragEnd={handleTopCardDragEnd}
-                        className="absolute inset-0 cursor-grab active:cursor-grabbing select-none rounded-2xl shadow-[0_4px_10px_rgba(0,0,0,0.5)] touch-none"
+                        className="absolute inset-0 cursor-grab active:cursor-grabbing select-none rounded-2xl shadow-[0_8px_24px_rgba(0,0,0,0.7)] touch-none w-full h-full flex items-center justify-center"
                       >
                         <CardRenderer
                           card={card}
-                          size="md"
+                          size="full"
                           interactive={false}
                           showMarketValue={true}
                         />
@@ -506,7 +517,7 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
                     );
                   }
 
-                  // Non-top cards stacked directly underneath
+                  // Backing cards stacked tightly underneath
                   return (
                     <div
                       key={card.id}
@@ -514,11 +525,11 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
                         transform: `translate3d(${xOffset}px, ${yOffset}px, 0px) scale(${scale})`,
                         zIndex: zElevation,
                       }}
-                      className="absolute inset-0 pointer-events-none rounded-2xl shadow-[0_4px_10px_rgba(0,0,0,0.5)] transition-transform duration-200"
+                      className="absolute inset-0 pointer-events-none rounded-2xl shadow-[0_8px_24px_rgba(0,0,0,0.7)] transition-transform duration-200 w-full h-full flex items-center justify-center"
                     >
                       <CardRenderer
                         card={card}
-                        size="md"
+                        size="full"
                         interactive={false}
                         showMarketValue={true}
                       />
@@ -547,7 +558,7 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
                 </div>
 
                 <span className="text-[11px] text-zinc-400 font-mono flex items-center gap-1">
-                  <span>👉 Swipe card to the right to peel and discard</span>
+                  <span>👉 Drag top card to the right to peel & discard</span>
                 </span>
               </div>
 
@@ -672,7 +683,10 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
 
               {/* Add All to Binder Confirmation Button */}
               <button
-                onClick={onClose}
+                onClick={() => {
+                  soundEngine.stopAll();
+                  onClose();
+                }}
                 className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs uppercase tracking-wider flex items-center gap-1.5 shadow-lg transition active:scale-95"
               >
                 <CheckCircle2 className="w-4 h-4" />
@@ -686,7 +700,7 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
         <footer className="w-full max-w-5xl text-center text-[10px] text-zinc-600 font-mono">
           TQQ VAULT • BOOSTER PACK CEREMONY ENGINE • STAGE 3
         </footer>
-      </div>
+      </motion.div>
     </div>
   );
 };

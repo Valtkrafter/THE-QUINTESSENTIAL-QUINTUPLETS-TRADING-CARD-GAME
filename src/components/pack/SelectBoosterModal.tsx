@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { PackId, Rarity, Finish } from '../../types/card';
 import {
   PACKS_CONFIG,
@@ -15,7 +16,6 @@ import {
   PackageOpen,
   X,
   Sparkles,
-  BarChart2,
   TrendingUp,
   ShieldCheck,
   Zap,
@@ -56,13 +56,298 @@ export const SelectBoosterModal: React.FC<SelectBoosterModalProps> = ({
   onSelectPack,
 }) => {
   const [oddsPackId, setOddsPackId] = useState<PackId | null>(null);
+  const [mounted, setMounted] = useState(false);
+
   const yen = useGameStore((state) => state.yen);
   const pityCounters = useGameStore((state) => state.pityCounters);
+
+  // Client-side hydration guard for React Portals
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Lock background body scroll while odds modal is open
+  useEffect(() => {
+    if (oddsPackId) {
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = originalOverflow;
+      };
+    }
+  }, [oddsPackId]);
 
   if (!isOpen) return null;
 
   const inspectedConfig = oddsPackId ? PACKS_CONFIG[oddsPackId] : null;
   const inspectedTheme = oddsPackId ? PACK_THEMES[oddsPackId] : null;
+
+  // Standalone Portal Content for Odds Modal
+  const renderOddsPortal = () => {
+    if (!mounted || !oddsPackId || !inspectedConfig || !inspectedTheme) return null;
+
+    return createPortal(
+      <div
+        className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-fadeIn select-none"
+        onClick={() => setOddsPackId(null)}
+      >
+        <div
+          className="w-full max-w-lg rounded-2xl bg-[#0e0e14] border border-white/10 shadow-2xl p-6 text-white relative max-h-[90vh] overflow-y-auto space-y-5"
+          style={{ backgroundColor: '#0e0e14', opacity: 1 }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Header */}
+          <div className="flex items-center justify-between border-b border-white/10 pb-3">
+            <div className="flex items-center gap-3">
+              <div
+                className="w-10 h-10 rounded-2xl flex items-center justify-center text-xl border border-white/20 shadow-inner"
+                style={{
+                  background: `radial-gradient(circle, ${inspectedTheme.primaryColor}66, #0c0c14)`,
+                }}
+              >
+                {inspectedTheme.motifIcon}
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-base font-black text-white">
+                    {inspectedTheme.name}
+                  </h3>
+                  <span
+                    className="px-2 py-0.5 rounded text-[10px] font-black uppercase font-mono border"
+                    style={{
+                      backgroundColor: `${inspectedTheme.primaryColor}20`,
+                      borderColor: inspectedTheme.primaryColor,
+                      color: inspectedTheme.primaryColor,
+                    }}
+                  >
+                    {inspectedTheme.badge}
+                  </span>
+                </div>
+                <p className="text-xs text-zinc-400 font-serif">
+                  {inspectedTheme.japaneseTitle} • Official Drop Probabilities
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setOddsPackId(null)}
+              className="p-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white border border-white/10 transition"
+              title="Close Odds"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Active Pity Progress Counters */}
+          <div className="p-3.5 rounded-2xl bg-zinc-900/80 border border-white/10 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5 text-xs font-black text-white uppercase tracking-wider">
+                <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                <span>Active Pity System Counters</span>
+              </div>
+              <span className="text-[10px] font-mono text-zinc-400">
+                Guaranteed High Tier Safety Net
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+              {/* SR Pity Counter */}
+              <div className="p-2.5 rounded-xl bg-black/40 border border-white/5 space-y-1.5">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-bold text-purple-300">Super Rare (SR) Pity</span>
+                  <span className="font-mono font-bold text-zinc-200">
+                    {pityCounters.packsWithoutSR} / 30
+                  </span>
+                </div>
+                <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-purple-500 to-indigo-400 rounded-full transition-all"
+                    style={{ width: `${Math.min(100, (pityCounters.packsWithoutSR / 30) * 100)}%` }}
+                  />
+                </div>
+                <p className="text-[9px] text-zinc-400">
+                  Guaranteed SR+ card within 30 paid booster openings without one.
+                </p>
+              </div>
+
+              {/* UR Pity Counter */}
+              <div className="p-2.5 rounded-xl bg-black/40 border border-white/5 space-y-1.5">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-bold text-amber-300">Ultra Rare (UR) Pity</span>
+                  <span className="font-mono font-bold text-zinc-200">
+                    {pityCounters.packsWithoutUR} / 100
+                  </span>
+                </div>
+                <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-amber-500 to-yellow-400 rounded-full transition-all"
+                    style={{ width: `${Math.min(100, (pityCounters.packsWithoutUR / 100) * 100)}%` }}
+                  />
+                </div>
+                <p className="text-[9px] text-zinc-400">
+                  Guaranteed UR+ card within 100 paid booster openings without one.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Guaranteed Rules / Tier Special Mechanics */}
+          <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs flex items-center gap-2">
+            <Zap className="w-4 h-4 text-amber-400 shrink-0" />
+            <div>
+              <strong className="uppercase font-mono">Guaranteed Rules: </strong>
+              {oddsPackId === 'braut_schicksal' && (
+                <span>No Commons or Uncommons! Guaranteed Rare (R) or higher in every slot.</span>
+              )}
+              {oddsPackId === 'klassenfahrt_kyoto' && (
+                <span>No Common cards in this pack. Minimum Uncommon (UC) in every slot.</span>
+              )}
+              {oddsPackId === 'god_pack' && (
+                <span>★ CELESTIAL GOD PACK: 100% Ultra, Secret, and Master Rares only!</span>
+              )}
+              {oddsPackId !== 'braut_schicksal' &&
+                oddsPackId !== 'klassenfahrt_kyoto' &&
+                oddsPackId !== 'god_pack' && (
+                  <span>
+                    {inspectedConfig.slots} cards per booster. Base odds configured per slot below.
+                  </span>
+                )}
+            </div>
+          </div>
+
+          {/* Base Rarity Probabilities Table */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-xs">
+              <span className="font-black uppercase tracking-wider text-white">
+                Base Rarity Probabilities (Per Slot)
+              </span>
+              <span className="text-[10px] font-mono text-zinc-400">
+                {inspectedConfig.slots} Slots Per Pack
+              </span>
+            </div>
+
+            <div className="space-y-1.5">
+              {RARITY_ORDER.map((rarity) => {
+                const rate = inspectedConfig.dropTable[rarity] ?? 0;
+                const badgeStyle = RARITY_BADGES[rarity] ?? RARITY_BADGES.C;
+                const isHighTier =
+                  rarity === 'SR' || rarity === 'UR' || rarity === 'SEC' || rarity === 'MR';
+
+                return (
+                  <div
+                    key={rarity}
+                    className="flex items-center justify-between p-2 rounded-xl bg-black/40 border border-white/5"
+                  >
+                    <div className="flex items-center gap-2.5 w-24">
+                      <span
+                        className={`px-2 py-0.5 rounded text-[10px] font-black border ${badgeStyle.bgClass} ${badgeStyle.textClass} ${badgeStyle.borderClass}`}
+                      >
+                        {rarity}
+                      </span>
+                      <span className="text-[10px] font-mono text-zinc-300 font-semibold">
+                        {RARITY_BASE_VALUES[rarity].toLocaleString()} ¥
+                      </span>
+                    </div>
+
+                    {/* Rate Bar */}
+                    <div className="flex-1 mx-3 h-2 bg-zinc-800 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all duration-500 ${
+                          isHighTier
+                            ? 'bg-gradient-to-r from-amber-400 to-yellow-300 shadow-[0_0_8px_rgba(245,158,11,0.8)]'
+                            : 'bg-zinc-500'
+                        }`}
+                        style={{ width: `${Math.min(100, rate)}%` }}
+                      />
+                    </div>
+
+                    {/* Exact Probability */}
+                    <span
+                      className={`font-mono text-xs font-bold w-16 text-right ${
+                        rate > 0
+                          ? isHighTier
+                            ? 'text-amber-400 font-black'
+                            : 'text-zinc-200'
+                          : 'text-zinc-600'
+                      }`}
+                    >
+                      {rate > 0 ? `${rate.toFixed(2)}%` : '0.00%'}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Surface Finish Multipliers */}
+          <div className="p-3 rounded-2xl bg-zinc-900/60 border border-white/10 space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5 text-xs font-black uppercase text-white">
+                <TrendingUp className="w-3.5 h-3.5 text-cyan-400" />
+                <span>Surface Finish Odds & Multipliers</span>
+              </div>
+              <span className="text-[10px] font-mono text-cyan-400 font-bold">
+                Up to 40× Value Boost
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {FINISH_ORDER.map((finish) => {
+                const chance = FINISH_CHANCES[finish];
+                const mult = FINISH_MULTIPLIERS[finish];
+                const finishLabel = FINISH_LABELS[finish];
+                const finishColorClass = FINISH_COLORS[finish] ?? 'text-zinc-300';
+
+                return (
+                  <div
+                    key={finish}
+                    className="p-2 rounded-xl bg-black/40 border border-white/5 flex flex-col justify-between text-[10px]"
+                  >
+                    <div className="flex items-center justify-between mb-0.5">
+                      <span className={`font-black uppercase tracking-wider ${finishColorClass}`}>
+                        {finishLabel}
+                      </span>
+                      <span className="font-mono text-amber-400 font-bold">{mult}×</span>
+                    </div>
+                    <div className="flex items-center justify-between text-zinc-400 font-mono text-[9px]">
+                      <span>Chance:</span>
+                      <span className="text-zinc-200">{chance}%</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Popover Footer Action */}
+          <div className="flex items-center justify-between pt-3 border-t border-white/10">
+            <button
+              onClick={() => setOddsPackId(null)}
+              className="px-5 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-xs uppercase tracking-wider transition"
+            >
+              Close
+            </button>
+
+            <button
+              onClick={() => {
+                const chosen = oddsPackId;
+                setOddsPackId(null);
+                onSelectPack(chosen);
+              }}
+              disabled={yen < inspectedConfig.costYen && inspectedConfig.costYen > 0}
+              className="px-6 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 disabled:opacity-40 disabled:pointer-events-none text-black font-black text-xs uppercase tracking-wider shadow-lg transition active:scale-95 flex items-center gap-1.5"
+            >
+              <span>Open This Pack</span>
+              <span className="font-mono text-[11px] opacity-85">
+                ({inspectedConfig.costYen > 0 ? `${inspectedConfig.costYen.toLocaleString()} ¥` : 'FREE'})
+              </span>
+            </button>
+          </div>
+        </div>
+      </div>,
+      document.body
+    );
+  };
 
   return (
     <div
@@ -238,267 +523,8 @@ export const SelectBoosterModal: React.FC<SelectBoosterModalProps> = ({
           })}
         </div>
 
-        {/* ============================================================
-            GLASSMORPHIC ODDS & DROP RATES MODAL POPOVER (Triggered by '?')
-            ============================================================ */}
-        {oddsPackId && inspectedConfig && inspectedTheme && (
-          <div
-            className="fixed inset-0 z-60 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-fadeIn"
-            onClick={() => setOddsPackId(null)}
-          >
-            <div
-              className="w-full max-w-2xl bg-[#0e101a] border border-white/15 rounded-3xl p-5 sm:p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* Header */}
-              <div className="flex items-center justify-between border-b border-white/10 pb-3">
-                <div className="flex items-center gap-3">
-                  <div
-                    className="w-10 h-10 rounded-2xl flex items-center justify-center text-xl border border-white/20 shadow-inner"
-                    style={{
-                      background: `radial-gradient(circle, ${inspectedTheme.primaryColor}66, #0c0c14)`,
-                    }}
-                  >
-                    {inspectedTheme.motifIcon}
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-base font-black text-white">
-                        {inspectedTheme.name}
-                      </h3>
-                      <span
-                        className="px-2 py-0.5 rounded text-[10px] font-black uppercase font-mono border"
-                        style={{
-                          backgroundColor: `${inspectedTheme.primaryColor}20`,
-                          borderColor: inspectedTheme.primaryColor,
-                          color: inspectedTheme.primaryColor,
-                        }}
-                      >
-                        {inspectedTheme.badge}
-                      </span>
-                    </div>
-                    <p className="text-xs text-zinc-400 font-serif">
-                      {inspectedTheme.japaneseTitle} • Official Drop Probabilities
-                    </p>
-                  </div>
-                </div>
-
-                <button
-                  onClick={() => setOddsPackId(null)}
-                  className="p-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white border border-white/10 transition"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              {/* Active Pity Progress Counters */}
-              <div className="p-3.5 rounded-2xl bg-zinc-900/80 border border-white/10 space-y-2.5">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5 text-xs font-black text-white uppercase tracking-wider">
-                    <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                    <span>Active Pity System Counters</span>
-                  </div>
-                  <span className="text-[10px] font-mono text-zinc-400">
-                    Guaranteed High Tier Safety Net
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
-                  {/* SR Pity Counter */}
-                  <div className="p-2.5 rounded-xl bg-black/40 border border-white/5 space-y-1.5">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="font-bold text-purple-300">Super Rare (SR) Pity</span>
-                      <span className="font-mono font-bold text-zinc-200">
-                        {pityCounters.packsWithoutSR} / 30
-                      </span>
-                    </div>
-                    <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-gradient-to-r from-purple-500 to-indigo-400 rounded-full transition-all"
-                        style={{ width: `${Math.min(100, (pityCounters.packsWithoutSR / 30) * 100)}%` }}
-                      />
-                    </div>
-                    <p className="text-[9px] text-zinc-400">
-                      Guaranteed SR+ card within 30 paid booster openings without one.
-                    </p>
-                  </div>
-
-                  {/* UR Pity Counter */}
-                  <div className="p-2.5 rounded-xl bg-black/40 border border-white/5 space-y-1.5">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="font-bold text-amber-300">Ultra Rare (UR) Pity</span>
-                      <span className="font-mono font-bold text-zinc-200">
-                        {pityCounters.packsWithoutUR} / 100
-                      </span>
-                    </div>
-                    <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-gradient-to-r from-amber-500 to-yellow-400 rounded-full transition-all"
-                        style={{ width: `${Math.min(100, (pityCounters.packsWithoutUR / 100) * 100)}%` }}
-                      />
-                    </div>
-                    <p className="text-[9px] text-zinc-400">
-                      Guaranteed UR+ card within 100 paid booster openings without one.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Guaranteed Rules / Tier Special Mechanics */}
-              <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs flex items-center gap-2">
-                <Zap className="w-4 h-4 text-amber-400 shrink-0" />
-                <div>
-                  <strong className="uppercase font-mono">Guaranteed Rules: </strong>
-                  {oddsPackId === 'braut_schicksal' && (
-                    <span>No Commons or Uncommons! Guaranteed Rare (R) or higher in every slot.</span>
-                  )}
-                  {oddsPackId === 'klassenfahrt_kyoto' && (
-                    <span>No Common cards in this pack. Minimum Uncommon (UC) in every slot.</span>
-                  )}
-                  {oddsPackId === 'god_pack' && (
-                    <span>★ CELESTIAL GOD PACK: 100% Ultra, Secret, and Master Rares only!</span>
-                  )}
-                  {oddsPackId !== 'braut_schicksal' &&
-                    oddsPackId !== 'klassenfahrt_kyoto' &&
-                    oddsPackId !== 'god_pack' && (
-                      <span>
-                        {inspectedConfig.slots} cards per booster. Base odds configured per slot below.
-                      </span>
-                    )}
-                </div>
-              </div>
-
-              {/* Base Rarity Probabilities Table */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="font-black uppercase tracking-wider text-white">
-                    Base Rarity Probabilities (Per Slot)
-                  </span>
-                  <span className="text-[10px] font-mono text-zinc-400">
-                    {inspectedConfig.slots} Slots Per Pack
-                  </span>
-                </div>
-
-                <div className="space-y-1.5">
-                  {RARITY_ORDER.map((rarity) => {
-                    const rate = inspectedConfig.dropTable[rarity] ?? 0;
-                    const badgeStyle = RARITY_BADGES[rarity] ?? RARITY_BADGES.C;
-                    const isHighTier =
-                      rarity === 'SR' || rarity === 'UR' || rarity === 'SEC' || rarity === 'MR';
-
-                    return (
-                      <div
-                        key={rarity}
-                        className="flex items-center justify-between p-2 rounded-xl bg-black/40 border border-white/5"
-                      >
-                        <div className="flex items-center gap-2.5 w-24">
-                          <span
-                            className={`px-2 py-0.5 rounded text-[10px] font-black border ${badgeStyle.bgClass} ${badgeStyle.textClass} ${badgeStyle.borderClass}`}
-                          >
-                            {rarity}
-                          </span>
-                          <span className="text-[10px] font-mono text-zinc-300 font-semibold">
-                            {RARITY_BASE_VALUES[rarity].toLocaleString()} ¥
-                          </span>
-                        </div>
-
-                        {/* Rate Bar */}
-                        <div className="flex-1 mx-3 h-2 bg-zinc-800 rounded-full overflow-hidden">
-                          <div
-                            className={`h-full rounded-full transition-all duration-500 ${
-                              isHighTier
-                                ? 'bg-gradient-to-r from-amber-400 to-yellow-300 shadow-[0_0_8px_rgba(245,158,11,0.8)]'
-                                : 'bg-zinc-500'
-                            }`}
-                            style={{ width: `${Math.min(100, rate)}%` }}
-                          />
-                        </div>
-
-                        {/* Exact Probability */}
-                        <span
-                          className={`font-mono text-xs font-bold w-16 text-right ${
-                            rate > 0
-                              ? isHighTier
-                                ? 'text-amber-400 font-black'
-                                : 'text-zinc-200'
-                              : 'text-zinc-600'
-                          }`}
-                        >
-                          {rate > 0 ? `${rate.toFixed(2)}%` : '0.00%'}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Surface Finish Multipliers */}
-              <div className="p-3 rounded-2xl bg-zinc-900/60 border border-white/10 space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5 text-xs font-black uppercase text-white">
-                    <TrendingUp className="w-3.5 h-3.5 text-cyan-400" />
-                    <span>Surface Finish Odds & Multipliers</span>
-                  </div>
-                  <span className="text-[10px] font-mono text-cyan-400 font-bold">
-                    Up to 40× Value Boost
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  {FINISH_ORDER.map((finish) => {
-                    const chance = FINISH_CHANCES[finish];
-                    const mult = FINISH_MULTIPLIERS[finish];
-                    const finishLabel = FINISH_LABELS[finish];
-                    const finishColorClass = FINISH_COLORS[finish] ?? 'text-zinc-300';
-
-                    return (
-                      <div
-                        key={finish}
-                        className="p-2 rounded-xl bg-black/40 border border-white/5 flex flex-col justify-between text-[10px]"
-                      >
-                        <div className="flex items-center justify-between mb-0.5">
-                          <span className={`font-black uppercase tracking-wider ${finishColorClass}`}>
-                            {finishLabel}
-                          </span>
-                          <span className="font-mono text-amber-400 font-bold">{mult}×</span>
-                        </div>
-                        <div className="flex items-center justify-between text-zinc-400 font-mono text-[9px]">
-                          <span>Chance:</span>
-                          <span className="text-zinc-200">{chance}%</span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Popover Footer Action */}
-              <div className="flex items-center justify-between pt-3 border-t border-white/10">
-                <button
-                  onClick={() => setOddsPackId(null)}
-                  className="px-5 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-xs uppercase tracking-wider transition"
-                >
-                  Close
-                </button>
-
-                <button
-                  onClick={() => {
-                    const chosen = oddsPackId;
-                    setOddsPackId(null);
-                    onSelectPack(chosen);
-                  }}
-                  disabled={yen < inspectedConfig.costYen && inspectedConfig.costYen > 0}
-                  className="px-6 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 disabled:opacity-40 disabled:pointer-events-none text-black font-black text-xs uppercase tracking-wider shadow-lg transition active:scale-95 flex items-center gap-1.5"
-                >
-                  <span>Open This Pack</span>
-                  <span className="font-mono text-[11px] opacity-85">
-                    ({inspectedConfig.costYen > 0 ? `${inspectedConfig.costYen.toLocaleString()} ¥` : 'FREE'})
-                  </span>
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+        {/* Portal-Mounted Odds Modal */}
+        {renderOddsPortal()}
       </div>
     </div>
   );

@@ -32,6 +32,8 @@ export interface UseSmoothTiltOptions {
 }
 
 export interface UseSmoothTiltReturn {
+  /** Optional DOM element reference for the tilt wrapper */
+  tiltRef: React.RefObject<HTMLDivElement | null>;
   /** Reactive physically-derived light state bundle for child propagation */
   light: CardLightState;
   /** Inertia-damped rotation along X axis (pitch) */
@@ -71,7 +73,7 @@ export interface UseSmoothTiltReturn {
   };
 }
 
-const DEFAULT_SPRING_CONFIG = { stiffness: 140, damping: 22, mass: 0.6 };
+const DEFAULT_SPRING_CONFIG = { damping: 45, stiffness: 120, mass: 1, restDelta: 0.001 };
 
 /**
  * Universal Buttery-Smooth 3D Tilt Hook & Derived Light Vector Engine
@@ -87,6 +89,17 @@ export function useSmoothTilt({
   onHoverChange,
 }: UseSmoothTiltOptions = {}): UseSmoothTiltReturn {
   const [isHovered, setIsHovered] = useState(false);
+  const tiltRef = React.useRef<HTMLDivElement | null>(null);
+
+  // Mutable ref for isPaused to allow silent pause without listener re-binding or state re-evaluation
+  const isPausedRef = React.useRef(isPaused);
+  useEffect(() => {
+    isPausedRef.current = isPaused;
+    if (isPaused) {
+      targetRotateX.set(0);
+      targetRotateY.set(0);
+    }
+  }, [isPaused]);
 
   // Raw target motion values
   const targetRotateX = useMotionValue(0);
@@ -164,7 +177,7 @@ export function useSmoothTilt({
   // Jitter-proof MouseMove coordinate math strictly using currentTarget
   const handleMouseMove = useCallback(
     (e: React.MouseEvent<HTMLElement>) => {
-      if (disabled || isPaused) return;
+      if (disabled || isPausedRef.current) return;
 
       const rect = e.currentTarget.getBoundingClientRect();
       const x = e.clientX - rect.left;
@@ -179,22 +192,22 @@ export function useSmoothTilt({
       targetRotateY.set(normX * maxRotation);
       targetHoverFactor.set(1);
     },
-    [disabled, isPaused, maxRotation, targetRotateX, targetRotateY, targetHoverFactor]
+    [disabled, maxRotation, targetRotateX, targetRotateY, targetHoverFactor]
   );
 
   const handleMouseEnter = useCallback(
     (_e?: React.MouseEvent<HTMLElement>) => {
-      if (disabled || isPaused) return;
+      if (disabled || isPausedRef.current) return;
       setIsHovered(true);
       targetHoverFactor.set(1);
       onHoverChange?.(true);
     },
-    [disabled, isPaused, targetHoverFactor, onHoverChange]
+    [disabled, targetHoverFactor, onHoverChange]
   );
 
   const handleMouseLeave = useCallback(
     (_e?: React.MouseEvent<HTMLElement>) => {
-      if (disabled || isPaused) return;
+      if (disabled || isPausedRef.current) return;
       setIsHovered(false);
       targetHoverFactor.set(0);
       onHoverChange?.(false);
@@ -203,7 +216,7 @@ export function useSmoothTilt({
       targetRotateX.set(0);
       targetRotateY.set(0);
     },
-    [disabled, isPaused, targetRotateX, targetRotateY, targetHoverFactor, onHoverChange]
+    [disabled, targetRotateX, targetRotateY, targetHoverFactor, onHoverChange]
   );
 
   // Bundled light values for seamless child component propagation
@@ -239,6 +252,7 @@ export function useSmoothTilt({
   };
 
   return {
+    tiltRef,
     light,
     rotateX,
     rotateY,
