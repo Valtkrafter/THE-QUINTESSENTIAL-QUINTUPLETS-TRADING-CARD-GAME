@@ -25,6 +25,8 @@ export interface UseSmoothTiltOptions {
   };
   /** When true, completely disables mouse tracking and resets tilt to 0 */
   disabled?: boolean;
+  /** When true, pauses mouse tracking and freezes current tilt in place without resetting to 0 */
+  isPaused?: boolean;
   /** Optional callback fired when hover state changes */
   onHoverChange?: (isHovered: boolean) => void;
 }
@@ -81,6 +83,7 @@ export function useSmoothTilt({
   perspective = 1000,
   springConfig = DEFAULT_SPRING_CONFIG,
   disabled = false,
+  isPaused = false,
   onHoverChange,
 }: UseSmoothTiltOptions = {}): UseSmoothTiltReturn {
   const [isHovered, setIsHovered] = useState(false);
@@ -161,7 +164,7 @@ export function useSmoothTilt({
   // Jitter-proof MouseMove coordinate math strictly using currentTarget
   const handleMouseMove = useCallback(
     (e: React.MouseEvent<HTMLElement>) => {
-      if (disabled) return;
+      if (disabled || isPaused) return;
 
       const rect = e.currentTarget.getBoundingClientRect();
       const x = e.clientX - rect.left;
@@ -176,22 +179,22 @@ export function useSmoothTilt({
       targetRotateY.set(normX * maxRotation);
       targetHoverFactor.set(1);
     },
-    [disabled, maxRotation, targetRotateX, targetRotateY, targetHoverFactor]
+    [disabled, isPaused, maxRotation, targetRotateX, targetRotateY, targetHoverFactor]
   );
 
   const handleMouseEnter = useCallback(
     (_e?: React.MouseEvent<HTMLElement>) => {
-      if (disabled) return;
+      if (disabled || isPaused) return;
       setIsHovered(true);
       targetHoverFactor.set(1);
       onHoverChange?.(true);
     },
-    [disabled, targetHoverFactor, onHoverChange]
+    [disabled, isPaused, targetHoverFactor, onHoverChange]
   );
 
   const handleMouseLeave = useCallback(
     (_e?: React.MouseEvent<HTMLElement>) => {
-      if (disabled) return;
+      if (disabled || isPaused) return;
       setIsHovered(false);
       targetHoverFactor.set(0);
       onHoverChange?.(false);
@@ -200,7 +203,7 @@ export function useSmoothTilt({
       targetRotateX.set(0);
       targetRotateY.set(0);
     },
-    [disabled, targetRotateX, targetRotateY, targetHoverFactor, onHoverChange]
+    [disabled, isPaused, targetRotateX, targetRotateY, targetHoverFactor, onHoverChange]
   );
 
   // Bundled light values for seamless child component propagation

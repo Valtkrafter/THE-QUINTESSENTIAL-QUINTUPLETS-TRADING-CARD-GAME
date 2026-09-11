@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useRef, useState, useCallback, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, useMotionValue, animate, PanInfo } from 'framer-motion';
 import { soundEngine } from '../../utils/audioEngine';
 
 export interface TearMechanismProps {
@@ -33,23 +33,24 @@ export const TearMechanism: React.FC<TearMechanismProps> = ({
   onDragStateChange,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const notchX = useMotionValue(0);
+  const [tearProgress, setTearProgress] = useState(0); // 0 to 1
   const [isDragging, setIsDragging] = useState(false);
-  const [progress, setProgress] = useState(0); // 0 to 100
   const [hasCompleted, setHasCompleted] = useState(false);
   const [sparks, setSparks] = useState<SparkParticle[]>([]);
   const lastRustleTick = useRef<number>(0);
 
-  // Maximum drag distance across the pack width
-  const maxDrag = Math.max(180, packWidth - 44);
+  // Maximum drag distance across the pack width (48px notch width)
+  const maxDrag = Math.max(160, packWidth - 48);
 
   // Spawn particle sparks along the tear notch
-  const spawnSparks = useCallback((originX: number, originY: number, count: number = 24) => {
+  const spawnSparks = useCallback((originX: number, originY: number, count: number = 18) => {
     const colors = ['#FCD34D', '#F59E0B', '#FFFFFF', '#EC4899', '#06B6D4', '#10B981'];
     const newSparks: SparkParticle[] = [];
 
     for (let i = 0; i < count; i++) {
       const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5);
-      const speed = Math.random() * 6 + 2;
+      const speed = Math.random() * 5 + 2;
       newSparks.push({
         id: Math.random(),
         x: originX,
@@ -62,7 +63,7 @@ export const TearMechanism: React.FC<TearMechanismProps> = ({
       });
     }
 
-    setSparks((prev) => [...prev.slice(-30), ...newSparks]);
+    setSparks((prev) => [...prev.slice(-25), ...newSparks]);
   }, []);
 
   // Animate particle sparks
@@ -76,7 +77,7 @@ export const TearMechanism: React.FC<TearMechanismProps> = ({
             x: s.x + s.vx,
             y: s.y + s.vy,
             vy: s.vy + 0.3,
-            alpha: s.alpha - 0.05,
+            alpha: s.alpha - 0.06,
           }))
           .filter((s) => s.alpha > 0)
       );
@@ -84,84 +85,98 @@ export const TearMechanism: React.FC<TearMechanismProps> = ({
     return () => clearInterval(interval);
   }, [sparks]);
 
-  // Handle pointer down drag start
-  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+  // Complete tear sequence trigger
+  const completeTearSequence = useCallback(() => {
+    if (hasCompleted) return;
+    setHasCompleted(true);
+    setIsDragging(false);
+    onDragStateChange?.(false);
+    setTearProgress(1);
+    onTearProgress?.(100);
+
+    // Snap notch to end
+    notchX.set(maxDrag);
+
+    // Audio & Haptics
+    soundEngine.playTearSound();
+    soundEngine.playSparkleSound();
+    spawnSparks(maxDrag, 16, 36);
+
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      navigator.vibrate([40, 30, 80]);
+    }
+
+    setTimeout(() => {
+      onTearComplete();
+    }, 320);
+  }, [hasCompleted, maxDrag, notchX, onDragStateChange, onTearComplete, onTearProgress, spawnSparks]);
+
+  // Reset notch back to beginning if release criteria wasn't met
+  const resetNotch = useCallback(() => {
+    animate(notchX, 0, {
+      type: 'spring',
+      stiffness: 280,
+      damping: 24,
+    });
+    setTearProgress(0);
+    onTearProgress?.(0);
+    setIsDragging(false);
+    onDragStateChange?.(false);
+  }, [notchX, onDragStateChange, onTearProgress]);
+
+  // Handle pointer down on the yellow notch
+  const handlePointerDown = (e: React.PointerEvent) => {
     if (disabled || hasCompleted) return;
     e.stopPropagation();
-    e.preventDefault();
-
     setIsDragging(true);
     onDragStateChange?.(true);
-    e.currentTarget.setPointerCapture(e.pointerId);
-
     soundEngine.playFoilRustle();
   };
 
-  // Handle pointer move during drag
-  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (!isDragging || disabled || hasCompleted || !containerRef.current) return;
-    e.stopPropagation();
+  // On drag motion handler
+  const handleDrag = (_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+    if (disabled || hasCompleted) return;
 
-    const rect = containerRef.current.getBoundingClientRect();
-    const currentX = e.clientX - rect.left;
-    const rawPct = (currentX / maxDrag) * 100;
-    const clamped = Math.max(0, Math.min(100, rawPct));
+    // Calculate container-relative progress accurately
+    let currentX = notchX.get();
+    if (containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      const relativeX = info.point.x - rect.left;
+      currentX = Math.max(0, Math.min(maxDrag, relativeX));
+    }
 
-    setProgress(clamped);
-    onTearProgress?.(clamped);
+    const progress = Math.min(1, Math.max(0, currentX / maxDrag));
+    setTearProgress(progress);
+    onTearProgress?.(progress * 100);
 
-    // Subtle audio ticks while ripping
+    // Sound effect ticks while ripping
     const now = Date.now();
-    if (now - lastRustleTick.current > 75) {
+    if (now - lastRustleTick.current > 70) {
       soundEngine.playFoilRustle();
       lastRustleTick.current = now;
     }
 
-    // Spawn sparks at the tear tip
-    if (Math.random() > 0.4) {
+    // Spark particles at the notch tip
+    if (Math.random() > 0.45) {
       spawnSparks(currentX, 16, 4);
     }
+  };
 
-    // Check completion threshold: >= 88%
-    if (clamped >= 88) {
-      setHasCompleted(true);
-      setIsDragging(false);
-      onDragStateChange?.(false);
-      setProgress(100);
-      onTearProgress?.(100);
+  // On drag end handler
+  const handleDragEnd = (_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+    if (disabled || hasCompleted) return;
 
-      // Explosive release triggers
-      soundEngine.playTearSound();
-      soundEngine.playSparkleSound();
-      spawnSparks(maxDrag, 16, 40);
+    const currentX = notchX.get();
+    const progress = Math.min(1, Math.max(0, currentX / maxDrag));
 
-      // Haptic pulse if supported
-      if (typeof navigator !== 'undefined' && navigator.vibrate) {
-        navigator.vibrate([40, 30, 80]);
-      }
-
-      setTimeout(() => {
-        onTearComplete();
-      }, 350);
+    if (progress >= 0.85 || info.velocity.x > 300) {
+      completeTearSequence();
+    } else {
+      resetNotch();
     }
   };
 
-  // Handle pointer release
-  const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (!isDragging || hasCompleted) return;
-    e.stopPropagation();
-
-    setIsDragging(false);
-    onDragStateChange?.(false);
-
-    // If released before 88%, snap back to 0
-    if (progress < 88) {
-      setProgress(0);
-      onTearProgress?.(0);
-    }
-  };
-
-  const currentPixelOffset = (progress / 100) * maxDrag;
+  const currentPixelOffset = tearProgress * maxDrag;
 
   return (
     <div
@@ -170,7 +185,7 @@ export const TearMechanism: React.FC<TearMechanismProps> = ({
       style={{ touchAction: 'none' }}
     >
       {/* Dynamic Laser Tear Breach Line behind the notch */}
-      {progress > 0 && (
+      {tearProgress > 0 && (
         <div
           className="absolute left-0 top-1/2 -translate-y-1/2 h-1.5 bg-gradient-to-r from-amber-400 via-yellow-200 to-amber-300 shadow-[0_0_15px_#f59e0b] rounded-l pointer-events-none transition-all duration-75"
           style={{ width: `${currentPixelOffset}px` }}
@@ -194,32 +209,27 @@ export const TearMechanism: React.FC<TearMechanismProps> = ({
         />
       ))}
 
-      {/* Direct-on-Pack Metallic Pull Notch */}
+      {/* Decoupled Framer Motion Drag Notch */}
       {!hasCompleted && (
-        <div
+        <motion.div
+          drag="x"
+          dragConstraints={{ left: 0, right: maxDrag }}
+          dragElastic={0.02}
+          dragMomentum={false}
+          style={{ x: notchX }}
           onPointerDown={handlePointerDown}
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerUp}
-          onPointerCancel={handlePointerUp}
-          className={`absolute top-0 flex items-center cursor-grab active:cursor-grabbing transition-transform ${
-            isDragging ? 'scale-110' : 'hover:scale-105'
-          }`}
-          style={{
-            transform: `translateX(${currentPixelOffset}px)`,
-          }}
+          onDrag={handleDrag}
+          onDragEnd={handleDragEnd}
+          className="absolute top-0.5 left-0 w-12 h-8 rounded-r bg-gradient-to-r from-[#fbbf24] to-[#fef08a] shadow-[0_0_12px_rgba(251,191,36,0.85)] cursor-grab active:cursor-grabbing z-50 flex items-center justify-center select-none"
         >
-          {/* Glowing Metallic Pull Notch Tab */}
-          <div className="h-8 w-11 rounded-r-lg bg-gradient-to-r from-amber-400 via-yellow-200 to-amber-400 border border-white/60 shadow-[0_0_15px_rgba(251,191,36,0.9)] flex items-center justify-center relative overflow-hidden group">
-            {/* Shimmer sweep */}
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 pointer-events-none" />
-            <span className="text-[9px] font-black tracking-tighter text-zinc-950 font-mono select-none">
-              TEAR ▶
-            </span>
-          </div>
+          {/* Shimmer sweep inside notch */}
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-full hover:translate-x-full transition-transform duration-700 pointer-events-none" />
 
-          {/* Left perforation anchor cut indicator */}
-          <div className="w-1.5 h-3 bg-amber-400/80 rounded-l-sm -ml-0.5" />
-        </div>
+          {/* Typography */}
+          <span className="text-[10px] font-black tracking-tight text-black select-none font-mono">
+            TEAR ▶
+          </span>
+        </motion.div>
       )}
     </div>
   );
