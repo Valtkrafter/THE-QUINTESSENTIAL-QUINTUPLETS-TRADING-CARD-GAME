@@ -10,12 +10,13 @@ import { useSmoothTilt } from '../../hooks/useSmoothTilt';
 export interface CardRendererProps {
   card: CardInstance | (CardDefinition & Partial<CardInstance>);
   interactive?: boolean;
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'sm' | 'md' | 'lg' | 'full';
   className?: string;
   onClick?: () => void;
   showMarketValue?: boolean;
   disableTilt?: boolean;
   externalLight?: CardLightState;
+  hideInternalFooter?: boolean;
 }
 
 // Character visual theme styling
@@ -192,6 +193,7 @@ export const CardRenderer: React.FC<CardRendererProps> = ({
   showMarketValue = true,
   disableTilt = false,
   externalLight,
+  hideInternalFooter = false,
 }) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
@@ -356,11 +358,12 @@ export const CardRenderer: React.FC<CardRendererProps> = ({
     sm: 'w-[190px]',
     md: 'w-[260px]',
     lg: 'w-[320px]',
+    full: 'w-full',
   }[size];
 
   return (
     <div
-      className={`card-perspective-wrapper inline-block select-none relative before:absolute before:-inset-4 before:content-[''] cursor-pointer ${className}`}
+      className={`card-perspective-wrapper ${size === 'full' ? 'w-full h-full flex items-center justify-center' : 'inline-block'} select-none relative before:absolute before:-inset-4 before:content-[''] cursor-pointer ${className}`}
       onClick={onClick}
       {...(disableTilt || externalLight ? {} : localTilt.containerProps)}
     >
@@ -397,24 +400,30 @@ export const CardRenderer: React.FC<CardRendererProps> = ({
         />
 
         {/* Outer Card Matte Border (z-20) */}
-        <div className="absolute inset-[3px] rounded-[10px] bg-gradient-to-b from-zinc-900 to-black p-2 flex flex-col justify-between overflow-hidden z-20">
-          {/* HEADER: Title & Rarity & Symbol (z-30) */}
+        <div className={`absolute inset-[3px] rounded-[10px] bg-gradient-to-b from-zinc-900 to-black ${hideInternalFooter ? 'p-1.5 pb-1' : 'p-2'} flex flex-col justify-between overflow-hidden z-20`}>
+          {/* HEADER: Title & Grade/Rarity & Symbol (z-30) */}
           <div className="relative flex items-center justify-between gap-1 pb-1 border-b border-zinc-800/80 z-30">
             <div className="flex items-center gap-1.5 min-w-0">
               <span className="text-xs" title={theme.name}>
                 {theme.symbol}
               </span>
-              <h3 className="font-bold tracking-tight truncate text-zinc-100 text-xs sm:text-sm drop-shadow">
+              <h3 className="font-bold tracking-tight truncate max-w-[120px] text-zinc-100 text-xs sm:text-sm drop-shadow">
                 {cardTitle}
               </h3>
             </div>
 
             <div className="flex items-center gap-1 shrink-0">
-              <span
-                className={`px-1.5 py-0.5 rounded text-[10px] font-extrabold border ${rarityBadge.bgClass} ${rarityBadge.textClass} ${rarityBadge.borderClass}`}
-              >
-                {rarityBadge.label}
-              </span>
+              {'grade' in card && card.grade ? (
+                <span className="bg-amber-500/20 border border-amber-500/40 text-amber-400 font-mono text-xs px-2 py-0.5 rounded font-bold">
+                  {card.grade.isBlackLabel ? '★ 10' : `GRADE ${card.grade.numericGrade}.0`}
+                </span>
+              ) : (
+                <span
+                  className={`text-xs font-bold px-2 py-0.5 rounded border ${rarityBadge.bgClass} ${rarityBadge.textClass} ${rarityBadge.borderClass}`}
+                >
+                  {rarityBadge.label}
+                </span>
+              )}
             </div>
           </div>
 
@@ -531,27 +540,29 @@ export const CardRenderer: React.FC<CardRendererProps> = ({
           </div>
 
           {/* FOOTER: Number, Finish, Market Value (z-30) */}
-          <div className="relative flex items-center justify-between text-[10px] text-zinc-400 pt-1 border-t border-zinc-800/80 z-30 font-mono">
-            <div className="flex items-center gap-1.5">
-              <span className="text-zinc-500">{cardNumber}</span>
-              <span
-                className="px-1 py-0.2 rounded text-[9px] font-semibold uppercase tracking-wider"
-                style={{
-                  color: theme.accent,
-                  backgroundColor: `${theme.accent}15`,
-                }}
-              >
-                {FINISH_LABELS[finish]}
-              </span>
-            </div>
-
-            {showMarketValue && (
-              <div className="font-bold text-amber-400 flex items-center gap-0.5">
-                <span>¥</span>
-                <span>{marketValue.toLocaleString()}</span>
+          {!hideInternalFooter && (
+            <div className="relative flex items-center justify-between text-[10px] text-zinc-400 pt-1 border-t border-zinc-800/80 z-30 font-mono">
+              <div className="flex items-center gap-1.5">
+                <span className="text-zinc-500">{cardNumber}</span>
+                <span
+                  className="px-1 py-0.2 rounded text-[9px] font-semibold uppercase tracking-wider"
+                  style={{
+                    color: theme.accent,
+                    backgroundColor: `${theme.accent}15`,
+                  }}
+                >
+                  {FINISH_LABELS[finish]}
+                </span>
               </div>
-            )}
-          </div>
+
+              {showMarketValue && (
+                <div className="font-bold text-amber-400 flex items-center gap-0.5">
+                  <span>¥</span>
+                  <span>{marketValue.toLocaleString()}</span>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* ============================================================

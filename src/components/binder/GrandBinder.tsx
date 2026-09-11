@@ -15,6 +15,7 @@ import {
 } from '../../config/economy';
 import { useGameStore } from '../../store/useGameStore';
 import { CardRenderer, CHARACTER_THEMES, RARITY_BADGES, FINISH_LABELS } from '../card/CardRenderer';
+import { BinderGrid } from './BinderGrid';
 import { CardActionModal } from './CardActionModal';
 import { PackOpeningModal } from '../pack/PackOpeningModal';
 import { PACK_THEMES } from '../pack/BoosterPack3D';
@@ -419,58 +420,7 @@ export const GrandBinder: React.FC = () => {
             )}
           </div>
         ) : (
-          /* Fluid Auto-Fill Grid (CSS Grid) */
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-6 pb-24 w-full auto-rows-max">
-            {filteredCards.map((card) => {
-              const marketVal = calculateCardMarketValue(card);
-              const isSlab = !!card.grade;
-
-              return (
-                <div
-                  key={card.id}
-                  onClick={() => handleCardClick(card)}
-                  className="aspect-[63/88] w-full h-full relative cursor-pointer group rounded-2xl transition-all duration-300 transform-gpu hover:-translate-y-1.5 hover:shadow-[0_15px_30px_rgba(0,0,0,0.8)]"
-                >
-                  {/* Card Artwork & Shader Container */}
-                  <div className="w-full h-full rounded-2xl overflow-hidden relative border border-white/10 group-hover:border-amber-400/50 transition">
-                    <CardRenderer
-                      card={card}
-                      interactive={false}
-                      disableTilt={true}
-                      showMarketValue={false}
-                      size="sm"
-                      className="w-full h-full !p-0 !m-0 !scale-100"
-                    />
-
-                    {/* Slab Top Badge Indicator if Graded */}
-                    {isSlab && (
-                      <div className="absolute top-2 left-2 right-2 z-30 px-2 py-1 rounded-lg bg-black/90 border border-amber-400/80 backdrop-blur shadow-lg flex items-center justify-between font-mono text-[10px]">
-                        <span className="font-black text-amber-300 truncate">
-                          {card.grade?.isBlackLabel ? '★ BLACK LABEL' : `GRADE ${card.grade?.numericGrade}.0`}
-                        </span>
-                        <span className="text-[9px] text-zinc-400 font-bold">
-                          {card.grade?.tierLabel.split(' ')[0]}
-                        </span>
-                      </div>
-                    )}
-
-                    {/* Bottom Value & Status Overlay */}
-                    <div className="absolute bottom-0 left-0 right-0 p-2.5 bg-gradient-to-t from-black via-black/80 to-transparent flex items-center justify-between z-30 font-mono text-[11px]">
-                      <div className="flex items-center gap-1 font-black text-amber-300 truncate">
-                        <span>{marketVal.toLocaleString()} ¥</span>
-                      </div>
-                      <span className={`text-[9px] px-1.5 py-0.2 rounded font-black border uppercase tracking-wider ${RARITY_BADGES[card.rarity]}`}>
-                        {card.rarity}
-                      </span>
-                    </div>
-
-                    {/* Hover Glow Rim */}
-                    <div className="absolute inset-0 rounded-2xl border-2 border-amber-400/0 group-hover:border-amber-400/80 pointer-events-none transition duration-300 z-40" />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+          <BinderGrid cards={filteredCards} onCardClick={handleCardClick} />
         )}
       </main>
 
