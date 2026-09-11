@@ -46,6 +46,7 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
   const [isMuted, setIsMuted] = useState(false);
   const [dustedCardIds, setDustedCardIds] = useState<string[]>([]);
   const [dustToast, setDustToast] = useState<number | null>(null);
+  const [packKey, setPackKey] = useState(0);
 
   // Top card swipe state
   const [isDiscarding, setIsDiscarding] = useState(false);
@@ -56,6 +57,7 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
   const stardust = useGameStore((state) => state.stardust);
   const openPackStore = useGameStore((state) => state.openPack);
   const dustCardStore = useGameStore((state) => state.dustCard);
+  const getCooldownRemaining = useGameStore((state) => state.getTestSheetCooldownRemaining);
 
   const packConfig = PACKS_CONFIG[packId];
   const theme = PACK_THEMES[packId] ?? PACK_THEMES.kiosk;
@@ -76,6 +78,7 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
       topCardRotate.set(0);
       setDustedCardIds([]);
       setDustToast(null);
+      setPackKey((prev) => prev + 1);
     } else {
       soundEngine.stopAll();
     }
@@ -101,7 +104,7 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
     return highest;
   }, [pulledCards]);
 
-  // Handle Tear Complete: triggers atomic store pull, screen impact, and begins anticipation
+  // Handle Tear Complete: triggers atomic store pull (if not pre-rolled), screen impact, and begins anticipation
   const handleTearComplete = useCallback(() => {
     setIsDragging(false);
     setIsTorn(true);
@@ -118,15 +121,22 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
     }, 350);
 
     try {
-      // Execute atomic pack opening in Zustand store
-      const result = openPackStore(packId);
-      setPulledCards(result.cards);
-      setIsGodPack(result.isGodPack);
+      // Option B: If cards were already pre-rolled, reuse them; otherwise execute openPackStore
+      let cards = pulledCards;
+      let godPack = isGodPack;
+
+      if (cards.length === 0) {
+        const result = openPackStore(packId);
+        cards = result.cards;
+        godPack = result.isGodPack;
+        setPulledCards(cards);
+        setIsGodPack(godPack);
+      }
 
       // Determine highest rarity for anticipation sound
       const hierarchy: Record<Rarity, number> = { C: 1, UC: 2, R: 3, SR: 4, UR: 5, SEC: 6, MR: 7 };
       let highest: Rarity = 'C';
-      for (const c of result.cards) {
+      for (const c of cards) {
         if (hierarchy[c.rarity] > hierarchy[highest]) {
           highest = c.rarity;
         }
@@ -134,7 +144,7 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
 
       // Play anticipation audio cue safely once transitioning to anticipation
       setTimeout(() => {
-        if (result.isGodPack) {
+        if (godPack) {
           soundEngine.play('godpack_fanfare', 0.85);
         } else if (highest === 'MR' || highest === 'SEC' || highest === 'UR') {
           soundEngine.play('sub_bass_pulse', 0.8);
@@ -144,7 +154,7 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
       }, 350);
 
       // Transition into Peeling phase after suspense beat
-      const anticipationDuration = result.isGodPack
+      const anticipationDuration = godPack
         ? 1300
         : (highest === 'MR' || highest === 'SEC' || highest === 'UR')
         ? 1000
@@ -162,7 +172,56 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
       setScreenShake(false);
       onClose();
     }
-  }, [openPackStore, packId, onClose, topCardRotate, topCardX]);
+  }, [isGodPack, onClose, openPackStore, packId, pulledCards, topCardRotate, topCardX]);
+
+  // Handle "Open Another": Option B ceremony reset engine with instant pre-roll
+  const handleOpenAnother = useCallback(() => {
+    const packCost = packConfig?.costYen ?? 0;
+    const cooldownRemaining = packConfig?.cooldownSeconds ? getCooldownRemaining() : 0;
+
+    // Guard: Currency & Cooldown validation
+    if (cooldownRemaining > 0 || (packCost > 0 && yen < packCost)) {
+      return;
+    }
+
+    try {
+      // 1. Terminate running audio
+      soundEngine.stopAll();
+
+      // 2. Pre-roll new card batch from store (Option B)
+      const result = openPackStore(packId);
+      setPulledCards(result.cards);
+      setIsGodPack(result.isGodPack);
+
+      // 3. Reset ceremony state machine to Frame 0
+      setIsTorn(false);
+      setTearProgress(0);
+      setIsDragging(false);
+      setCurrentCardIndex(0);
+      setIsDiscarding(false);
+      topCardX.set(0);
+      topCardRotate.set(0);
+      setDustedCardIds([]);
+      setDustToast(null);
+      setScreenShake(false);
+      setPackKey((prev) => prev + 1);
+      setStage('INSPECT');
+
+      // 4. Notify parent callback if provided
+      onOpenAnother?.(packId);
+    } catch (error) {
+      console.error('Failed to open another pack:', error);
+    }
+  }, [
+    getCooldownRemaining,
+    onOpenAnother,
+    openPackStore,
+    packConfig,
+    packId,
+    topCardRotate,
+    topCardX,
+    yen,
+  ]);
 
   // Discard the active top card with horizontal swoosh to the right
   const discardTopCard = useCallback(() => {
@@ -280,6 +339,12 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
     return pulledCards.reduce((acc, c) => acc + calculateCardMarketValue(c), 0);
   }, [pulledCards]);
 
+  const packCost = packConfig?.costYen ?? 0;
+  const cooldownRemaining = packConfig?.cooldownSeconds ? getCooldownRemaining() : 0;
+  const isCooldownActive = cooldownRemaining > 0;
+  const isInsufficientFunds = packCost > 0 && yen < packCost;
+  const canOpenAnother = !isCooldownActive && !isInsufficientFunds;
+
   if (!isOpen) return null;
 
   return (
@@ -296,39 +361,49 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
       >
         {/* ============================================================
             CEREMONY TOP BAR: Player Balances, Pack Stage & Controls
+            STRICT ABSOLUTE SCREEN CENTERING OF TITLE GROUP
             ============================================================ */}
-        <header className="w-full max-w-5xl flex items-center justify-between z-40">
-          {/* Player Currency Counters */}
-          <div className="flex items-center gap-2.5 bg-zinc-900/90 border border-white/10 px-3.5 py-1.5 rounded-full shadow-lg backdrop-blur">
-            <div className="flex items-center gap-1.5 text-xs font-black text-amber-400 font-mono">
-              <span className="text-[10px] text-amber-500 font-bold">¥</span>
+        <header className="relative flex h-16 w-full shrink-0 items-center justify-between px-4 sm:px-6 z-50">
+          {/* Left: Balances (Statically aligned to left) */}
+          <div className="flex items-center gap-3 sm:gap-4 z-10">
+            <div className="flex items-center gap-2 rounded-full border border-white/10 bg-black/40 px-3 py-1 text-xs font-mono text-amber-300 shadow-sm">
+              <span className="text-amber-500 font-bold">¥</span>
               <span>{yen.toLocaleString()}</span>
             </div>
-            <div className="w-px h-3 bg-zinc-700" />
-            <div className="flex items-center gap-1.5 text-xs font-black text-cyan-400 font-mono">
+            <div className="flex items-center gap-1.5 rounded-full border border-white/10 bg-black/40 px-3 py-1 text-xs font-mono text-cyan-300 shadow-sm">
               <Sparkles className="w-3 h-3 text-cyan-400" />
               <span>{stardust.toLocaleString()}</span>
             </div>
           </div>
 
-          {/* Pack Ceremonial Stage Title */}
-          <div className="text-center hidden sm:flex flex-col items-center">
-            <div className="flex items-center gap-1.5">
-              <span className="text-xs">{theme.motifIcon}</span>
-              <h2 className="text-xs font-black tracking-widest uppercase text-zinc-200">
-                {theme.name}
-              </h2>
+          {/* Center: Title Group - STRICT ABSOLUTE SCREEN CENTERING */}
+          <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center text-center max-w-[55vw]">
+            <div className="flex items-center gap-1.5 text-[11px] font-black tracking-widest text-amber-400 drop-shadow">
+              <span>★</span>
+              <span>{(theme.name || packConfig?.name || packId).toUpperCase()}</span>
+              <span>★</span>
             </div>
-            <span className="text-[10px] text-amber-400 font-mono tracking-wider font-semibold">
-              {stage === 'INSPECT' && 'DRAG YELLOW NOTCH RIGHT TO TEAR'}
-              {stage === 'ANTICIPATING' && (isGodPack ? '★ GOD PACK DESCENDING ★' : 'BREACHING FOIL SEAL...')}
-              {stage === 'PEELING' && `CARD ${currentCardIndex + 1} OF ${pulledCards.length} • SWIPE RIGHT TO PEEL`}
-              {stage === 'SUMMARY' && 'PACK OPENING COMPLETED'}
-            </span>
+
+            {stage === 'SUMMARY' ? (
+              <div className="mt-0.5 flex flex-col items-center">
+                <span className="rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2.5 py-0.5 text-[9px] font-bold tracking-wider text-emerald-400 uppercase">
+                  Opening Ceremony Complete
+                </span>
+                <h2 className="mt-0.5 text-sm sm:text-base font-black tracking-wide text-white drop-shadow-md">
+                  Pack Pull Summary
+                </h2>
+              </div>
+            ) : (
+              <span className="text-[10px] text-amber-400/90 font-mono tracking-wider font-semibold">
+                {stage === 'INSPECT' && 'DRAG YELLOW NOTCH RIGHT TO TEAR'}
+                {stage === 'ANTICIPATING' && (isGodPack ? '★ GOD PACK DESCENDING ★' : 'BREACHING FOIL SEAL...')}
+                {stage === 'PEELING' && `CARD ${currentCardIndex + 1} OF ${pulledCards.length} • SWIPE RIGHT TO PEEL`}
+              </span>
+            )}
           </div>
 
-          {/* Controls: Audio Mute & Close */}
-          <div className="flex items-center gap-2">
+          {/* Right: Controls (Statically aligned to right) */}
+          <div className="flex items-center gap-2 z-10">
             <button
               onClick={() => {
                 if (isMuted) {
@@ -338,7 +413,7 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
                   setIsMuted(true);
                 }
               }}
-              className="p-2 rounded-full bg-zinc-900 border border-white/10 text-zinc-400 hover:text-white hover:bg-zinc-800 transition shadow"
+              className="flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-black/40 text-zinc-300 hover:bg-white/10 hover:text-white transition shadow"
               title={isMuted ? 'Unmute Audio' : 'Mute Audio'}
             >
               {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
@@ -349,7 +424,7 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
                 soundEngine.stopAll();
                 onClose();
               }}
-              className="p-2 rounded-full bg-zinc-900 border border-white/10 text-zinc-400 hover:text-white hover:bg-zinc-800 transition shadow"
+              className="flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-black/40 text-zinc-300 hover:bg-white/10 hover:text-white transition shadow"
               title="Close Pack Ceremony"
             >
               <X className="w-4 h-4" />
@@ -366,6 +441,7 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
             {/* Pinned 3D Booster Pack with local TearMechanism */}
             <div className="relative">
               <BoosterPack3D
+                key={packKey}
                 packId={packId}
                 interactive={true}
                 isFloating={!isDragging}
@@ -448,7 +524,6 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
             ============================================================ */}
         {stage === 'PEELING' && activeCard && (
           <div className="flex-1 flex flex-col items-center justify-center relative z-20 my-auto w-full max-w-lg">
-            
             {/* Card-Specific Anticipation Auras */}
             {cardAnticipationTell === 'ULTRA' && (
               <div className="fixed inset-0 pointer-events-none z-10 bg-black/75 flex items-center justify-center transition-all duration-300">
@@ -476,17 +551,10 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
 
             {/* PRESENTATION CARD STACK CONTAINER (360px x 502px, max-h 65vh) */}
             <div className="relative z-20 flex flex-col items-center">
-              
               {/* Deck Stack Anchor (Presentation Aspect Ratio 63:88) */}
               <div className="relative w-[360px] max-w-[90vw] max-h-[65vh] aspect-[63/88]">
                 {pulledCards.slice(currentCardIndex).map((card, offsetIdx) => {
                   const isTop = offsetIdx === 0;
-                  // Tight Deck Stack Limits:
-                  // Vertical offset (Y): offsetIdx * 2px (strictly <= 2px)
-                  // Horizontal offset (X): offsetIdx * 1px
-                  // Scale decay: 1 - offsetIdx * 0.005
-                  // Elevation (Z): (totalCards - offsetIdx) * 10
-                  // Shadow: shadow-[0_8px_24px_rgba(0,0,0,0.7)]
                   const yOffset = offsetIdx * 2;
                   const xOffset = offsetIdx * 1;
                   const scale = 1 - offsetIdx * 0.005;
@@ -586,28 +654,19 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
             ============================================================ */}
         {stage === 'SUMMARY' && (
           <div className="flex-1 flex flex-col items-center justify-between w-full max-w-5xl my-auto z-20 py-2">
-            
-            {/* Header Pull Summary Banner */}
+            {/* Header Pull Summary Metrics Subtitle */}
             <div className="text-center mb-3">
-              <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 text-xs font-bold uppercase tracking-wider mb-2">
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                <span>Opening Ceremony Complete</span>
-                {isGodPack && <span className="text-amber-300 font-black">• GOD PACK!</span>}
-              </div>
-
-              <h2 className="text-xl sm:text-2xl font-black text-white">
-                Pack Pull Summary
-              </h2>
-
-              <p className="text-xs text-zinc-400 font-mono mt-1">
-                Highest Rarity: <span className="font-bold text-amber-400">{packPeakRarity}</span> • Total Market Value: <span className="font-bold text-amber-400">{totalPackMarketValue.toLocaleString()} ¥</span>
+              <p className="text-xs text-zinc-400 font-mono">
+                Highest Rarity: <span className="font-bold text-amber-400">{packPeakRarity}</span> • Total Market Value:{' '}
+                <span className="font-bold text-amber-400">{totalPackMarketValue.toLocaleString()} ¥</span>
+                {isGodPack && <span className="ml-2 text-amber-300 font-black">• GOD PACK!</span>}
               </p>
             </div>
 
             {/* Stardust Toast Notification */}
             {dustToast !== null && (
               <div className="mb-2 px-4 py-1.5 rounded-full bg-cyan-500/20 border border-cyan-400 text-cyan-300 text-xs font-bold font-mono animate-bounce flex items-center gap-1.5 shadow-lg">
-                <Sparkles className="w-3.5 h-3.5" />
+                <Sparkles className="w-3 h-3 text-cyan-400" />
                 <span>Dusted non-rares for +{dustToast} Stardust!</span>
               </div>
             )}
@@ -663,23 +722,30 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
                   pulledCards.every((c) => c.rarity !== 'C' && c.rarity !== 'UC') ||
                   dustedCardIds.length >= pulledCards.filter((c) => c.rarity === 'C' || c.rarity === 'UC').length
                 }
-                className="px-4 py-2.5 rounded-xl bg-cyan-950/60 border border-cyan-500/40 hover:bg-cyan-900/60 disabled:opacity-40 disabled:pointer-events-none text-cyan-300 font-bold text-xs uppercase tracking-wider flex items-center gap-1.5 transition"
+                className="px-4 py-2.5 rounded-xl bg-cyan-950/60 border border-cyan-500/40 hover:bg-cyan-900/60 disabled:opacity-40 disabled:pointer-events-none text-cyan-300 font-bold text-xs uppercase tracking-wider flex items-center gap-1.5 transition shadow"
               >
                 <Trash2 className="w-4 h-4" />
                 <span>Quick Dust Non-Rares (C/UC)</span>
               </button>
 
-              {/* Open Another */}
-              {onOpenAnother && (
-                <button
-                  onClick={() => onOpenAnother(packId)}
-                  disabled={yen < (packConfig?.costYen ?? 0)}
-                  className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 disabled:opacity-40 disabled:pointer-events-none text-black font-black text-xs uppercase tracking-wider flex items-center gap-1.5 shadow-lg transition"
-                >
-                  <RefreshCw className="w-4 h-4" />
-                  <span>Open Another ({packConfig?.costYen.toLocaleString()} ¥)</span>
-                </button>
-              )}
+              {/* Open Another Button */}
+              <button
+                onClick={handleOpenAnother}
+                disabled={!canOpenAnother}
+                title={
+                  isCooldownActive
+                    ? `On Cooldown (${cooldownRemaining}s remaining)`
+                    : isInsufficientFunds
+                    ? `Insufficient Funds (${packCost.toLocaleString()} ¥ required)`
+                    : undefined
+                }
+                className="flex items-center gap-2 rounded-xl bg-amber-500 px-6 py-2.5 font-bold text-black transition-all hover:bg-amber-400 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(245,158,11,0.3)] text-xs uppercase tracking-wider"
+              >
+                <RefreshCw className="w-4 h-4" />
+                <span>
+                  OPEN ANOTHER ({packCost === 0 ? 'FREE' : `${packCost.toLocaleString()} ¥`})
+                </span>
+              </button>
 
               {/* Add All to Binder Confirmation Button */}
               <button
