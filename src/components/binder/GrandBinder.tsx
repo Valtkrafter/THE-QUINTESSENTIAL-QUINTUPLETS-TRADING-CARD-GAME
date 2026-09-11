@@ -18,7 +18,7 @@ import { CardRenderer, CHARACTER_THEMES, RARITY_BADGES, FINISH_LABELS } from '..
 import { BinderGrid } from './BinderGrid';
 import { CardActionModal } from './CardActionModal';
 import { PackOpeningModal } from '../pack/PackOpeningModal';
-import { PACK_THEMES } from '../pack/BoosterPack3D';
+import { SelectBoosterModal } from '../pack/SelectBoosterModal';
 import { soundEngine } from '../../utils/audioEngine';
 import Link from 'next/link';
 import {
@@ -181,16 +181,6 @@ export const GrandBinder: React.FC = () => {
     soundEngine.playFoilRustle();
   };
 
-  const allPackIds: PackId[] = [
-    'test_sheet',
-    'kiosk',
-    'lernsession',
-    'sommerfeuerwerk',
-    'schulfest',
-    'klassenfahrt_kyoto',
-    'braut_schicksal',
-    'god_pack',
-  ];
 
   return (
     <div className="w-screen h-screen overflow-hidden bg-[#08080c] flex flex-col text-zinc-100 font-sans select-none">
@@ -442,81 +432,16 @@ export const GrandBinder: React.FC = () => {
       />
 
       {/* ============================================================
-          BOOSTER PACK SELECTION MODAL
+          BOOSTER PACK SELECTION MODAL & DROP RATES INSPECTOR
           ============================================================ */}
-      {showPackSelector && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4 animate-fadeIn"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setShowPackSelector(false);
-          }}
-        >
-          <div className="w-full max-w-4xl bg-[#0c0d14] border border-white/10 rounded-3xl p-6 shadow-2xl space-y-6">
-            <div className="flex items-center justify-between border-b border-white/10 pb-4">
-              <div className="flex items-center gap-2.5">
-                <PackageOpen className="w-5 h-5 text-amber-400" />
-                <div>
-                  <h3 className="text-base font-black text-white uppercase tracking-wider">
-                    Select Booster Pack
-                  </h3>
-                  <p className="text-xs text-zinc-400">
-                    Choose any of the 8 booster tiers to run the slow-peel opening ceremony.
-                  </p>
-                </div>
-              </div>
-
-              <button
-                onClick={() => setShowPackSelector(false)}
-                className="p-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white border border-white/10"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Packs Grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
-              {allPackIds.map((pId) => {
-                const config = PACKS_CONFIG[pId];
-                const theme = PACK_THEMES[pId];
-                const canAfford = yen >= config.costYen;
-
-                return (
-                  <div
-                    key={pId}
-                    className="p-3.5 rounded-2xl bg-zinc-900/70 border border-white/10 hover:border-amber-400/50 transition flex flex-col justify-between"
-                  >
-                    <div className="flex flex-col items-center text-center">
-                      <div className="w-12 h-12 rounded-2xl flex items-center justify-center bg-black/60 border border-white/10 text-2xl mb-2 shadow-inner">
-                        {theme.motifIcon}
-                      </div>
-                      <h4 className="font-black text-xs text-white truncate w-full">
-                        {config.name.split('-')[0]}
-                      </h4>
-                      <span className="text-[10px] text-amber-400 font-mono font-bold mt-0.5">
-                        {config.costYen > 0 ? `${config.costYen.toLocaleString()} ¥` : 'FREE REFRESH'}
-                      </span>
-                      <p className="text-[10px] text-zinc-400 line-clamp-2 mt-1">
-                        {config.description}
-                      </p>
-                    </div>
-
-                    <button
-                      onClick={() => {
-                        setShowPackSelector(false);
-                        setActivePackId(pId);
-                      }}
-                      disabled={!canAfford && config.costYen > 0}
-                      className="mt-3 w-full py-2 rounded-xl bg-amber-500 hover:bg-amber-400 disabled:opacity-40 disabled:pointer-events-none text-black font-black text-[11px] uppercase tracking-wider transition active:scale-95 shadow"
-                    >
-                      Open Pack
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      )}
+      <SelectBoosterModal
+        isOpen={showPackSelector}
+        onClose={() => setShowPackSelector(false)}
+        onSelectPack={(pId) => {
+          setShowPackSelector(false);
+          setActivePackId(pId);
+        }}
+      />
 
       {/* ============================================================
           PHYSICAL PACK OPENING CEREMONY MODAL

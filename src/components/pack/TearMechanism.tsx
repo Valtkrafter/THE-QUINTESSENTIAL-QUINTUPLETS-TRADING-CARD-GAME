@@ -1,14 +1,16 @@
 'use client';
 
 import React, { useRef, useState, useCallback, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { soundEngine } from '../../utils/audioEngine';
-import { Sparkles, ChevronRight } from 'lucide-react';
 
 export interface TearMechanismProps {
+  packWidth?: number; // width of pack in px (default 320)
   onTearProgress?: (progress: number) => void; // 0 to 100
   onTearComplete: () => void;
   accentColor?: string;
   disabled?: boolean;
+  onDragStateChange?: (isDragging: boolean) => void;
 }
 
 interface SparkParticle {
@@ -23,42 +25,47 @@ interface SparkParticle {
 }
 
 export const TearMechanism: React.FC<TearMechanismProps> = ({
+  packWidth = 320,
   onTearProgress,
   onTearComplete,
   accentColor = '#F59E0B',
   disabled = false,
+  onDragStateChange,
 }) => {
-  const trackRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [progress, setProgress] = useState(0); // 0 to 100
-  const [sparks, setSparks] = useState<SparkParticle[]>([]);
   const [hasCompleted, setHasCompleted] = useState(false);
-  const lastSoundTick = useRef<number>(0);
+  const [sparks, setSparks] = useState<SparkParticle[]>([]);
+  const lastRustleTick = useRef<number>(0);
 
-  // Spawn particle sparks at the tear point
-  const spawnSparks = useCallback((originX: number, originY: number, count: number = 35) => {
+  // Maximum drag distance across the pack width
+  const maxDrag = Math.max(180, packWidth - 44);
+
+  // Spawn particle sparks along the tear notch
+  const spawnSparks = useCallback((originX: number, originY: number, count: number = 24) => {
     const colors = ['#FCD34D', '#F59E0B', '#FFFFFF', '#EC4899', '#06B6D4', '#10B981'];
     const newSparks: SparkParticle[] = [];
 
     for (let i = 0; i < count; i++) {
       const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5);
-      const speed = Math.random() * 8 + 3;
+      const speed = Math.random() * 6 + 2;
       newSparks.push({
         id: Math.random(),
         x: originX,
         y: originY,
         vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed - 2,
-        size: Math.random() * 4 + 2,
+        vy: Math.sin(angle) * speed - 1.5,
+        size: Math.random() * 3 + 2,
         color: colors[Math.floor(Math.random() * colors.length)],
         alpha: 1,
       });
     }
 
-    setSparks(newSparks);
+    setSparks((prev) => [...prev.slice(-30), ...newSparks]);
   }, []);
 
-  // Animate sparks
+  // Animate particle sparks
   useEffect(() => {
     if (sparks.length === 0) return;
     const interval = setInterval(() => {
@@ -68,8 +75,8 @@ export const TearMechanism: React.FC<TearMechanismProps> = ({
             ...s,
             x: s.x + s.vx,
             y: s.y + s.vy,
-            vy: s.vy + 0.35, // gravity
-            alpha: s.alpha - 0.04,
+            vy: s.vy + 0.3,
+            alpha: s.alpha - 0.05,
           }))
           .filter((s) => s.alpha > 0)
       );
@@ -77,155 +84,143 @@ export const TearMechanism: React.FC<TearMechanismProps> = ({
     return () => clearInterval(interval);
   }, [sparks]);
 
-  const updateProgressFromEvent = useCallback(
-    (clientX: number) => {
-      if (!trackRef.current || hasCompleted || disabled) return;
-
-      const rect = trackRef.current.getBoundingClientRect();
-      const currentX = clientX - rect.left;
-      const rawPct = (currentX / rect.width) * 100;
-      const clamped = Math.max(0, Math.min(100, rawPct));
-
-      setProgress(clamped);
-      onTearProgress?.(clamped);
-
-      // Play subtle rustle ticks while dragging
-      const now = Date.now();
-      if (now - lastSoundTick.current > 70) {
-        soundEngine.playFoilRustle();
-        lastSoundTick.current = now;
-      }
-
-      // Check completion threshold (85% or more)
-      if (clamped >= 85) {
-        setHasCompleted(true);
-        setIsDragging(false);
-        setProgress(100);
-        onTearProgress?.(100);
-
-        // Sound triggers
-        soundEngine.playTearSound();
-        soundEngine.playSparkleSound();
-
-        // Spawn explosive particle burst
-        spawnSparks(rect.width * 0.85, rect.height / 2, 45);
-
-        // Haptic shake trigger
-        if (typeof navigator !== 'undefined' && navigator.vibrate) {
-          navigator.vibrate([40, 20, 60]);
-        }
-
-        setTimeout(() => {
-          onTearComplete();
-        }, 500);
-      }
-    },
-    [disabled, hasCompleted, onTearComplete, onTearProgress, spawnSparks]
-  );
-
+  // Handle pointer down drag start
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     if (disabled || hasCompleted) return;
+    e.stopPropagation();
+    e.preventDefault();
+
     setIsDragging(true);
+    onDragStateChange?.(true);
     e.currentTarget.setPointerCapture(e.pointerId);
-    updateProgressFromEvent(e.clientX);
+
+    soundEngine.playFoilRustle();
   };
 
+  // Handle pointer move during drag
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (!isDragging || disabled || hasCompleted) return;
-    updateProgressFromEvent(e.clientX);
+    if (!isDragging || disabled || hasCompleted || !containerRef.current) return;
+    e.stopPropagation();
+
+    const rect = containerRef.current.getBoundingClientRect();
+    const currentX = e.clientX - rect.left;
+    const rawPct = (currentX / maxDrag) * 100;
+    const clamped = Math.max(0, Math.min(100, rawPct));
+
+    setProgress(clamped);
+    onTearProgress?.(clamped);
+
+    // Subtle audio ticks while ripping
+    const now = Date.now();
+    if (now - lastRustleTick.current > 75) {
+      soundEngine.playFoilRustle();
+      lastRustleTick.current = now;
+    }
+
+    // Spawn sparks at the tear tip
+    if (Math.random() > 0.4) {
+      spawnSparks(currentX, 16, 4);
+    }
+
+    // Check completion threshold: >= 88%
+    if (clamped >= 88) {
+      setHasCompleted(true);
+      setIsDragging(false);
+      onDragStateChange?.(false);
+      setProgress(100);
+      onTearProgress?.(100);
+
+      // Explosive release triggers
+      soundEngine.playTearSound();
+      soundEngine.playSparkleSound();
+      spawnSparks(maxDrag, 16, 40);
+
+      // Haptic pulse if supported
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        navigator.vibrate([40, 30, 80]);
+      }
+
+      setTimeout(() => {
+        onTearComplete();
+      }, 350);
+    }
   };
 
-  const handlePointerUp = () => {
+  // Handle pointer release
+  const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
     if (!isDragging || hasCompleted) return;
-    setIsDragging(false);
+    e.stopPropagation();
 
-    // If released before 85%, snap back to 0
-    if (progress < 85) {
+    setIsDragging(false);
+    onDragStateChange?.(false);
+
+    // If released before 88%, snap back to 0
+    if (progress < 88) {
       setProgress(0);
       onTearProgress?.(0);
     }
   };
 
+  const currentPixelOffset = (progress / 100) * maxDrag;
+
   return (
-    <div className="relative w-full my-2 select-none">
-      {/* Tear Slider Track */}
-      <div
-        ref={trackRef}
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerCancel={handlePointerUp}
-        className={`relative w-full h-12 rounded-xl bg-zinc-950/90 border-2 ${
-          isDragging ? 'border-amber-400' : 'border-dashed border-white/30'
-        } flex items-center px-1 overflow-hidden cursor-grab active:cursor-grabbing backdrop-blur-md shadow-2xl transition-colors`}
-      >
-        {/* Serrated Foil Laser Perforation Line */}
+    <div
+      ref={containerRef}
+      className="absolute top-0 left-0 right-0 h-9 z-40 select-none pointer-events-auto"
+      style={{ touchAction: 'none' }}
+    >
+      {/* Dynamic Laser Tear Breach Line behind the notch */}
+      {progress > 0 && (
         <div
-          className="absolute inset-x-0 h-0.5 top-1/2 -translate-y-1/2 pointer-events-none opacity-40"
-          style={{
-            backgroundImage:
-              'repeating-linear-gradient(90deg, #fff 0px, #fff 4px, transparent 4px, transparent 8px)',
-          }}
+          className="absolute left-0 top-1/2 -translate-y-1/2 h-1.5 bg-gradient-to-r from-amber-400 via-yellow-200 to-amber-300 shadow-[0_0_15px_#f59e0b] rounded-l pointer-events-none transition-all duration-75"
+          style={{ width: `${currentPixelOffset}px` }}
         />
+      )}
 
-        {/* Torn Foil Gold Ribbon Fill */}
+      {/* Sparks Canvas / Particles */}
+      {sparks.map((s) => (
         <div
-          className="absolute top-0 bottom-0 left-0 transition-all duration-75 pointer-events-none"
+          key={s.id}
+          className="absolute pointer-events-none rounded-full shadow-[0_0_6px_currentColor]"
           style={{
-            width: `${progress}%`,
-            background: `linear-gradient(90deg, ${accentColor}33, ${accentColor}88)`,
-            borderRight: `2px solid ${accentColor}`,
-          }}
-        />
-
-        {/* Swipe Prompt Label */}
-        <div
-          className="absolute inset-0 flex items-center justify-center pointer-events-none transition-opacity duration-200"
-          style={{
-            opacity: progress > 15 ? 0 : 1,
-          }}
-        >
-          <span className="text-[11px] font-black uppercase tracking-widest text-zinc-300 drop-shadow flex items-center gap-1.5 animate-pulse">
-            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-            SWIPE RIGHT TO TEAR OPEN
-            <ChevronRight className="w-4 h-4 text-amber-400" />
-          </span>
-        </div>
-
-        {/* Glowing Tear Thumb / Pull Tab */}
-        <div
-          className={`relative z-20 h-10 w-12 rounded-lg flex items-center justify-center border shadow-xl transition-transform duration-75 ${
-            isDragging ? 'scale-105' : ''
-          }`}
-          style={{
-            left: `calc(${progress}% - ${progress * 0.48}px)`,
-            background: `linear-gradient(135deg, ${accentColor}, #d97706)`,
-            borderColor: '#FFFFFF',
-            boxShadow: `0 0 15px ${accentColor}88`,
-          }}
-        >
-          <span className="text-zinc-950 font-black text-sm tracking-tighter">
-            ✂️
-          </span>
-        </div>
-      </div>
-
-      {/* Particle Sparks Canvas / Overlay */}
-      {sparks.map((spark) => (
-        <div
-          key={spark.id}
-          className="absolute rounded-full pointer-events-none z-50 shadow-sm"
-          style={{
-            left: `${spark.x}px`,
-            top: `${spark.y}px`,
-            width: `${spark.size}px`,
-            height: `${spark.size}px`,
-            backgroundColor: spark.color,
-            opacity: spark.alpha,
-            boxShadow: `0 0 8px ${spark.color}`,
+            left: `${s.x}px`,
+            top: `${s.y}px`,
+            width: `${s.size}px`,
+            height: `${s.size}px`,
+            backgroundColor: s.color,
+            color: s.color,
+            opacity: s.alpha,
           }}
         />
       ))}
+
+      {/* Direct-on-Pack Metallic Pull Notch */}
+      {!hasCompleted && (
+        <div
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerUp}
+          className={`absolute top-0 flex items-center cursor-grab active:cursor-grabbing transition-transform ${
+            isDragging ? 'scale-110' : 'hover:scale-105'
+          }`}
+          style={{
+            transform: `translateX(${currentPixelOffset}px)`,
+          }}
+        >
+          {/* Glowing Metallic Pull Notch Tab */}
+          <div className="h-8 w-11 rounded-r-lg bg-gradient-to-r from-amber-400 via-yellow-200 to-amber-400 border border-white/60 shadow-[0_0_15px_rgba(251,191,36,0.9)] flex items-center justify-center relative overflow-hidden group">
+            {/* Shimmer sweep */}
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 pointer-events-none" />
+            <span className="text-[9px] font-black tracking-tighter text-zinc-950 font-mono select-none">
+              TEAR ▶
+            </span>
+          </div>
+
+          {/* Left perforation anchor cut indicator */}
+          <div className="w-1.5 h-3 bg-amber-400/80 rounded-l-sm -ml-0.5" />
+        </div>
+      )}
     </div>
   );
 };
