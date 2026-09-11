@@ -44,7 +44,7 @@
   - **God Pack:** Celestial golden spinning vortex flare and fanfare.
   - **Ultra-Tier (UR / SEC / MR):** Screen dimming with high-voltage lightning flashes and sub-bass rumble.
   - **Super-Tier (SR):** Violet pulse aura and chiming arpeggios.
-- **Presentation Deck Stack:** Presentation cards render at $360\text{px} \times 502\text{px}$ (63:88 aspect ratio) with tight $2\text{px}$ vertical stacking offsets and right-swipe discard gestures ($> 110\text{px}$).
+- **Deterministic Drag & Peel Architecture:** Presentation cards render at $360\text{px} \times 502\text{px}$ (63:88 aspect ratio) with tight $2\text{px}$ vertical stacking offsets. Dragging is bounded to `dragConstraints={{ left: 0, right: 600 }}` and `dragElastic={0.2}`. A peel is deterministically triggered when `offset.x > 120px` or `velocity.x > 400px/s`, immediately disengaging drag (`drag={false}`), smoothly animating the peeled card off-screen (`0.28s, easeIn`), and synchronizing summary transition only after card 5 completely unmounts.
 - **Instant Pre-Roll "Open Another" Reset:** Pre-rolls subsequent card batches directly on button click, eliminating micro-stutters upon tear breach and resetting the ceremony cleanly to Frame 0.
 
 ### 💎 2. Holographic Foil Shaders & Card Renderer
@@ -332,9 +332,9 @@ The Showcase allows you to:
 | :--- | :--- | :--- |
 | **3D Tilt Card / Pack** | Move cursor across element | Touch and drag across surface |
 | **Tear Booster Pack** | Click & drag yellow `TEAR ▶` notch to the right | Touch & swipe `TEAR ▶` notch past 85% |
-| **Peel Card from Deck** | Click & drag top card right ($> 110\text{px}$) | Swipe top card right to discard |
-| **Quick Discard Card** | Click `Peel Card` button | Tap `Peel Card` button |
-| **Skip Ceremony** | Click `Skip All` button | Tap `Skip All` button |
+| **Peel Card from Deck** | Drag top card right ($> 120\text{px}$ or $> 400\text{px/s}$) | Swipe top card right to peel & discard |
+| **Quick Discard / Summary** | Click `Peel Card` / `View Summary` button | Tap `Peel Card` / `View Summary` button |
+| **Skip Ceremony** | Click `Skip All` button (instant summary transition) | Tap `Skip All` button |
 | **Inspect Card** | Click on any card in binder grid | Tap on any card in binder grid |
 
 ---

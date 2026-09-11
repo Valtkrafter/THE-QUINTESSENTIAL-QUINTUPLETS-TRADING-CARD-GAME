@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { motion, PanInfo, useMotionValue, animate } from 'framer-motion';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { motion, AnimatePresence, PanInfo, useMotionValue, animate } from 'framer-motion';
 import { CardInstance, PackId, Rarity } from '../../types/card';
 import { PACKS_CONFIG, calculateCardMarketValue } from '../../config/economy';
 import { useGameStore } from '../../store/useGameStore';
@@ -48,10 +48,12 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
   const [dustToast, setDustToast] = useState<number | null>(null);
   const [packKey, setPackKey] = useState(0);
 
-  // Top card swipe state
-  const [isDiscarding, setIsDiscarding] = useState(false);
-  const topCardX = useMotionValue(0);
-  const topCardRotate = useMotionValue(0);
+  // Card peel gesture and exit state
+  const [isPeeling, setIsPeeling] = useState(false);
+  const isPeelingRef = useRef(false);
+  const cardX = useMotionValue(0);
+  const cardRotate = useMotionValue(0);
+  const cardOpacity = useMotionValue(1);
 
   const yen = useGameStore((state) => state.yen);
   const stardust = useGameStore((state) => state.stardust);
@@ -73,16 +75,23 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
       setIsDragging(false);
       setIsTorn(false);
       setScreenShake(false);
-      setIsDiscarding(false);
-      topCardX.set(0);
-      topCardRotate.set(0);
+      isPeelingRef.current = false;
+      setIsPeeling(false);
+      cardX.set(0);
+      cardRotate.set(0);
+      cardOpacity.set(1);
       setDustedCardIds([]);
       setDustToast(null);
       setPackKey((prev) => prev + 1);
     } else {
       soundEngine.stopAll();
+      isPeelingRef.current = false;
+      setIsPeeling(false);
+      cardX.set(0);
+      cardRotate.set(0);
+      cardOpacity.set(1);
     }
-  }, [isOpen, packId, topCardRotate, topCardX]);
+  }, [isOpen, packId, cardOpacity, cardRotate, cardX]);
 
   // Clean up on component unmount
   useEffect(() => {
@@ -163,16 +172,18 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
       setTimeout(() => {
         setStage('PEELING');
         setCurrentCardIndex(0);
-        topCardX.set(0);
-        topCardRotate.set(0);
-        setIsDiscarding(false);
+        cardX.set(0);
+        cardRotate.set(0);
+        cardOpacity.set(1);
+        isPeelingRef.current = false;
+        setIsPeeling(false);
       }, 350 + anticipationDuration);
     } catch (err) {
       console.error('Failed to open pack:', err);
       setScreenShake(false);
       onClose();
     }
-  }, [isGodPack, onClose, openPackStore, packId, pulledCards, topCardRotate, topCardX]);
+  }, [cardOpacity, cardRotate, cardX, isGodPack, onClose, openPackStore, packId, pulledCards]);
 
   // Handle "Open Another": Option B ceremony reset engine with instant pre-roll
   const handleOpenAnother = useCallback(() => {
@@ -198,9 +209,11 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
       setTearProgress(0);
       setIsDragging(false);
       setCurrentCardIndex(0);
-      setIsDiscarding(false);
-      topCardX.set(0);
-      topCardRotate.set(0);
+      isPeelingRef.current = false;
+      setIsPeeling(false);
+      cardX.set(0);
+      cardRotate.set(0);
+      cardOpacity.set(1);
       setDustedCardIds([]);
       setDustToast(null);
       setScreenShake(false);
@@ -213,87 +226,116 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
       console.error('Failed to open another pack:', error);
     }
   }, [
+    cardOpacity,
+    cardRotate,
+    cardX,
     getCooldownRemaining,
     onOpenAnother,
     openPackStore,
     packConfig,
     packId,
-    topCardRotate,
-    topCardX,
     yen,
   ]);
 
-  // Discard the active top card with horizontal swoosh to the right
-  const discardTopCard = useCallback(() => {
-    if (isDiscarding) return;
-    setIsDiscarding(true);
+  // Deterministic peel & discard executor (Stage 1 & Stage 2)
+  const executePeel = useCallback(() => {
+    if (isPeelingRef.current || stage !== 'PEELING') return;
+    if (currentCardIndex >= pulledCards.length) {
+      setStage('SUMMARY');
+      return;
+    }
+
+    isPeelingRef.current = true;
+    setIsPeeling(true);
 
     // Play card slide sound cleanly once
     soundEngine.play('card_slide', 0.65);
 
-    // Swoosh animation to the right: x -> 600, rotate -> 16
-    animate(topCardX, 600, { duration: 0.22, ease: 'easeIn' });
-    animate(topCardRotate, 16, { duration: 0.22, ease: 'easeIn' });
+    // Calculate exit boundary: completely off-screen
+    const exitX = typeof window !== 'undefined' ? Math.max(window.innerWidth + 200, 1000) : 1000;
 
-    setTimeout(() => {
-      topCardX.set(0);
-      topCardRotate.set(0);
-      setIsDiscarding(false);
+    let hasFinalized = false;
+    const finalize = () => {
+      if (hasFinalized) return;
+      hasFinalized = true;
+
+      // Force reset transform and opacity for next card layer
+      cardX.set(0);
+      cardRotate.set(0);
+      cardOpacity.set(1);
+      isPeelingRef.current = false;
+      setIsPeeling(false);
 
       const nextIndex = currentCardIndex + 1;
       if (nextIndex >= pulledCards.length) {
+        // Final card (5/5) completely peeled off-screen -> empty stage & transition to Summary
+        setCurrentCardIndex(nextIndex);
         setStage('SUMMARY');
         soundEngine.play('reveal_rare', 0.6);
       } else {
         setCurrentCardIndex(nextIndex);
         const nextCard = pulledCards[nextIndex];
-        if (
-          nextCard &&
-          (nextCard.rarity === 'SR' ||
-            nextCard.rarity === 'UR' ||
-            nextCard.rarity === 'SEC' ||
-            nextCard.rarity === 'MR')
-        ) {
+        if (nextCard) {
           if (nextCard.rarity === 'SR') {
             soundEngine.play('reveal_rare', 0.6);
-          } else {
+          } else if (
+            nextCard.rarity === 'UR' ||
+            nextCard.rarity === 'SEC' ||
+            nextCard.rarity === 'MR'
+          ) {
             soundEngine.play('sub_bass_pulse', 0.65);
           }
         }
       }
-    }, 230);
-  }, [currentCardIndex, isDiscarding, pulledCards, topCardRotate, topCardX]);
+    };
+
+    // Animate smoothly to exit coordinates (duration: 0.28s, easeIn)
+    const animX = animate(cardX, exitX, { duration: 0.28, ease: 'easeIn' });
+    const animRot = animate(cardRotate, 20, { duration: 0.28, ease: 'easeIn' });
+    const animOp = animate(cardOpacity, 0, { duration: 0.28, ease: 'easeIn' });
+
+    Promise.all([animX, animRot, animOp]).then(finalize).catch(finalize);
+
+    // Fail-safe timeout guard (ensures cleanup even if thread/visibility lags)
+    setTimeout(finalize, 350);
+  }, [cardOpacity, cardRotate, cardX, currentCardIndex, pulledCards, stage]);
 
   // Handle right-swipe drag end on the top card
   const handleTopCardDragEnd = useCallback(
     (_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
-      if (isDiscarding) return;
+      if (isPeelingRef.current) return;
 
-      // Discard threshold: dragged > 110px or velocity > 250px/s to the right
-      if (info.offset.x > 110 || info.velocity.x > 250) {
-        discardTopCard();
+      // Peel Trigger Condition: offset.x > 120px OR velocity.x > 400px/s
+      if (info.offset.x > 120 || info.velocity.x > 400) {
+        executePeel();
       } else {
-        // Spring back to (0, 0)
-        animate(topCardX, 0, {
+        // Snap back to (0, 0)
+        animate(cardX, 0, {
           type: 'spring',
-          stiffness: 200,
-          damping: 20,
+          stiffness: 300,
+          damping: 25,
         });
-        animate(topCardRotate, 0, {
+        animate(cardRotate, 0, {
           type: 'spring',
-          stiffness: 200,
-          damping: 20,
+          stiffness: 300,
+          damping: 25,
         });
       }
     },
-    [discardTopCard, isDiscarding, topCardRotate, topCardX]
+    [cardRotate, cardX, executePeel]
   );
 
-  // Skip All directly to Summary
+  // Skip All directly to Summary (Stage 3 Programmatic Fallback)
   const handleRevealAll = useCallback(() => {
+    isPeelingRef.current = false;
+    setIsPeeling(false);
+    cardX.set(0);
+    cardRotate.set(0);
+    cardOpacity.set(1);
+    setCurrentCardIndex(pulledCards.length);
     setStage('SUMMARY');
     soundEngine.play('reveal_rare', 0.6);
-  }, []);
+  }, [cardOpacity, cardRotate, cardX, pulledCards.length]);
 
   // Quick Dust non-rares (C & UC)
   const handleQuickDustNonRares = useCallback(() => {
@@ -432,335 +474,374 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
           </div>
         </header>
 
-        {/* ============================================================
-            STAGE 1: INSPECT & PINNED RELATIVE BOOSTER PACK
-            Tear notch pinned inside BoosterPack3D's local coordinate space
-            ============================================================ */}
-        {stage === 'INSPECT' && (
-          <div className="flex-1 flex flex-col items-center justify-center max-w-sm w-full relative z-20 my-auto">
-            {/* Pinned 3D Booster Pack with local TearMechanism */}
-            <div className="relative">
-              <BoosterPack3D
-                key={packKey}
-                packId={packId}
-                interactive={true}
-                isFloating={!isDragging}
-                tearProgress={tearProgress}
-                disableTilt={false}
-                isPaused={isDragging}
-                isTorn={isTorn}
-                onTearProgress={(progress) => setTearProgress(progress)}
-                onTearComplete={handleTearComplete}
-                onDragStateChange={(dragging) => setIsDragging(dragging)}
-              />
-            </div>
-
-            {/* Manual Drag Instruction */}
-            <div className="mt-4 flex flex-col items-center gap-2 text-center">
-              <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-[11px] font-mono tracking-wide font-medium shadow-sm">
-                <span>⚡ Drag the yellow TEAR ▶ notch right across the foil to rip</span>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ============================================================
-            STAGE 2: MULTI-TIER ANTICIPATION FX (TEAR BREACH)
-            ============================================================ */}
-        {stage === 'ANTICIPATING' && (
-          <div className="flex-1 flex flex-col items-center justify-center relative z-20 my-auto text-center">
-            {/* God Pack Celestial Flare & Golden Pulse */}
-            {isGodPack && (
-              <div className="fixed inset-0 pointer-events-none z-10 flex items-center justify-center overflow-hidden">
-                <div className="w-[850px] h-[850px] rounded-full bg-[radial-gradient(circle,rgba(255,215,0,0.65)_0%,transparent_70%)] animate-spin" />
-                <div className="absolute inset-0 bg-amber-500/25 backdrop-blur-xs animate-pulse" />
-              </div>
-            )}
-
-            {/* Ultra-Tier (MR / SEC / UR) Lightning Flash & Sub-Bass Pulse Dim */}
-            {(packPeakRarity === 'MR' || packPeakRarity === 'SEC' || packPeakRarity === 'UR') && !isGodPack && (
-              <div className="fixed inset-0 pointer-events-none z-10 bg-black/85 flex items-center justify-center transition-all duration-300">
-                <div className="w-[380px] h-[540px] rounded-3xl border-2 border-amber-400 animate-pulse shadow-[0_0_90px_rgba(245,158,11,0.85)]" />
-              </div>
-            )}
-
-            {/* Super-Tier (SR) Violet Pulse Aura */}
-            {packPeakRarity === 'SR' && !isGodPack && (
-              <div className="fixed inset-0 pointer-events-none z-10 bg-purple-950/45 flex items-center justify-center transition-all duration-300">
-                <div className="w-[360px] h-[520px] rounded-3xl border border-purple-400 shadow-[0_0_70px_rgba(168,85,247,0.8)] animate-pulse" />
-              </div>
-            )}
-
-            {/* Center Foil Burst Core */}
-            <div className="relative z-20 flex flex-col items-center">
-              <div
-                className="w-24 h-24 rounded-full flex items-center justify-center mb-4 border border-white/50 shadow-2xl relative"
-                style={{
-                  background: `radial-gradient(circle, ${theme.primaryColor} 0%, #0c0c14 75%)`,
-                  boxShadow: `0 0 60px ${theme.accentGlow}`,
-                }}
-              >
-                {isGodPack ? (
-                  <Sparkles className="w-12 h-12 text-yellow-200 animate-spin" />
-                ) : (
-                  <Zap className="w-12 h-12 text-white animate-bounce" />
-                )}
-              </div>
-
-              <h3 className="text-xl font-black text-amber-300 uppercase tracking-widest drop-shadow-lg">
-                {isGodPack ? '★ CELESTIAL GOD PACK ★' : 'Tearing Open Foil...'}
-              </h3>
-              <p className="text-xs text-zinc-400 font-mono mt-1">
-                {isGodPack
-                  ? 'All Ultra, Secret & Master Rares Guaranteed!'
-                  : 'Foil seal breached. Releasing cards into deck...'}
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* ============================================================
-            STAGE 3: 360PX PRESENTATION CARD-STACK & RIGHT-SWIPE PEEL
-            ============================================================ */}
-        {stage === 'PEELING' && activeCard && (
-          <div className="flex-1 flex flex-col items-center justify-center relative z-20 my-auto w-full max-w-lg">
-            {/* Card-Specific Anticipation Auras */}
-            {cardAnticipationTell === 'ULTRA' && (
-              <div className="fixed inset-0 pointer-events-none z-10 bg-black/75 flex items-center justify-center transition-all duration-300">
-                <div
-                  className="w-[370px] h-[516px] rounded-2xl border-2 animate-pulse"
-                  style={{
-                    borderColor: CHARACTER_THEMES[activeCard.characterId]?.accent ?? '#F59E0B',
-                    boxShadow: `0 0 75px ${CHARACTER_THEMES[activeCard.characterId]?.accent ?? '#F59E0B'}`,
-                  }}
+        <AnimatePresence mode="wait">
+          {/* ============================================================
+              STAGE 1: INSPECT & PINNED RELATIVE BOOSTER PACK
+              Tear notch pinned inside BoosterPack3D's local coordinate space
+              ============================================================ */}
+          {stage === 'INSPECT' && (
+            <motion.div
+              key="stage-inspect"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="flex-1 flex flex-col items-center justify-center max-w-sm w-full relative z-20 my-auto"
+            >
+              {/* Pinned 3D Booster Pack with local TearMechanism */}
+              <div className="relative">
+                <BoosterPack3D
+                  key={packKey}
+                  packId={packId}
+                  interactive={true}
+                  isFloating={!isDragging}
+                  tearProgress={tearProgress}
+                  disableTilt={false}
+                  isPaused={isDragging}
+                  isTorn={isTorn}
+                  onTearProgress={(progress) => setTearProgress(progress)}
+                  onTearComplete={handleTearComplete}
+                  onDragStateChange={(dragging) => setIsDragging(dragging)}
                 />
               </div>
-            )}
 
-            {cardAnticipationTell === 'SUPER' && (
-              <div className="fixed inset-0 pointer-events-none z-10 bg-purple-950/30 flex items-center justify-center transition-all duration-300">
-                <div className="w-[365px] h-[510px] rounded-2xl border border-purple-400 shadow-[0_0_50px_rgba(168,85,247,0.7)] animate-pulse" />
+              {/* Manual Drag Instruction */}
+              <div className="mt-4 flex flex-col items-center gap-2 text-center">
+                <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-[11px] font-mono tracking-wide font-medium shadow-sm">
+                  <span>⚡ Drag the yellow TEAR ▶ notch right across the foil to rip</span>
+                </div>
               </div>
-            )}
+            </motion.div>
+          )}
 
-            {cardAnticipationTell === 'GOD_PACK' && (
-              <div className="fixed inset-0 pointer-events-none z-10 flex items-center justify-center">
-                <div className="w-[650px] h-[650px] rounded-full bg-[radial-gradient(circle,rgba(255,215,0,0.5)_0%,transparent_70%)] animate-spin" />
+          {/* ============================================================
+              STAGE 2: MULTI-TIER ANTICIPATION FX (TEAR BREACH)
+              ============================================================ */}
+          {stage === 'ANTICIPATING' && (
+            <motion.div
+              key="stage-anticipating"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="flex-1 flex flex-col items-center justify-center relative z-20 my-auto text-center"
+            >
+              {/* God Pack Celestial Flare & Golden Pulse */}
+              {isGodPack && (
+                <div className="fixed inset-0 pointer-events-none z-10 flex items-center justify-center overflow-hidden">
+                  <div className="w-[850px] h-[850px] rounded-full bg-[radial-gradient(circle,rgba(255,215,0,0.65)_0%,transparent_70%)] animate-spin" />
+                  <div className="absolute inset-0 bg-amber-500/25 backdrop-blur-xs animate-pulse" />
+                </div>
+              )}
+
+              {/* Ultra-Tier (MR / SEC / UR) Lightning Flash & Sub-Bass Pulse Dim */}
+              {(packPeakRarity === 'MR' || packPeakRarity === 'SEC' || packPeakRarity === 'UR') && !isGodPack && (
+                <div className="fixed inset-0 pointer-events-none z-10 bg-black/85 flex items-center justify-center transition-all duration-300">
+                  <div className="w-[380px] h-[540px] rounded-3xl border-2 border-amber-400 animate-pulse shadow-[0_0_90px_rgba(245,158,11,0.85)]" />
+                </div>
+              )}
+
+              {/* Super-Tier (SR) Violet Pulse Aura */}
+              {packPeakRarity === 'SR' && !isGodPack && (
+                <div className="fixed inset-0 pointer-events-none z-10 bg-purple-950/45 flex items-center justify-center transition-all duration-300">
+                  <div className="w-[360px] h-[520px] rounded-3xl border border-purple-400 shadow-[0_0_70px_rgba(168,85,247,0.8)] animate-pulse" />
+                </div>
+              )}
+
+              {/* Center Foil Burst Core */}
+              <div className="relative z-20 flex flex-col items-center">
+                <div
+                  className="w-24 h-24 rounded-full flex items-center justify-center mb-4 border border-white/50 shadow-2xl relative"
+                  style={{
+                    background: `radial-gradient(circle, ${theme.primaryColor} 0%, #0c0c14 75%)`,
+                    boxShadow: `0 0 60px ${theme.accentGlow}`,
+                  }}
+                >
+                  {isGodPack ? (
+                    <Sparkles className="w-12 h-12 text-yellow-200 animate-spin" />
+                  ) : (
+                    <Zap className="w-12 h-12 text-white animate-bounce" />
+                  )}
+                </div>
+
+                <h3 className="text-xl font-black text-amber-300 uppercase tracking-widest drop-shadow-lg">
+                  {isGodPack ? '★ CELESTIAL GOD PACK ★' : 'Tearing Open Foil...'}
+                </h3>
+                <p className="text-xs text-zinc-400 font-mono mt-1">
+                  {isGodPack
+                    ? 'All Ultra, Secret & Master Rares Guaranteed!'
+                    : 'Foil seal breached. Releasing cards into deck...'}
+                </p>
               </div>
-            )}
+            </motion.div>
+          )}
 
-            {/* PRESENTATION CARD STACK CONTAINER (360px x 502px, max-h 65vh) */}
-            <div className="relative z-20 flex flex-col items-center">
-              {/* Deck Stack Anchor (Presentation Aspect Ratio 63:88) */}
-              <div className="relative w-[360px] max-w-[90vw] max-h-[65vh] aspect-[63/88]">
-                {pulledCards.slice(currentCardIndex).map((card, offsetIdx) => {
-                  const isTop = offsetIdx === 0;
-                  const yOffset = offsetIdx * 2;
-                  const xOffset = offsetIdx * 1;
-                  const scale = 1 - offsetIdx * 0.005;
-                  const zElevation = (pulledCards.length - offsetIdx) * 10;
+          {/* ============================================================
+              STAGE 3: 360PX PRESENTATION CARD-STACK & RIGHT-SWIPE PEEL
+              ============================================================ */}
+          {stage === 'PEELING' && currentCardIndex < pulledCards.length && activeCard && (
+            <motion.div
+              key="stage-peeling"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="flex-1 flex flex-col items-center justify-center relative z-20 my-auto w-full max-w-lg"
+            >
+              {/* Card-Specific Anticipation Auras */}
+              {cardAnticipationTell === 'ULTRA' && (
+                <div className="fixed inset-0 pointer-events-none z-10 bg-black/75 flex items-center justify-center transition-all duration-300">
+                  <div
+                    className="w-[370px] h-[516px] rounded-2xl border-2 animate-pulse"
+                    style={{
+                      borderColor: CHARACTER_THEMES[activeCard.characterId]?.accent ?? '#F59E0B',
+                      boxShadow: `0 0 75px ${CHARACTER_THEMES[activeCard.characterId]?.accent ?? '#F59E0B'}`,
+                    }}
+                  />
+                </div>
+              )}
 
-                  if (isTop) {
-                    return (
-                      <motion.div
-                        key={card.id}
-                        drag="x"
-                        dragConstraints={{ left: 0, right: 800 }}
-                        dragElastic={0.08}
-                        style={{
-                          x: topCardX,
-                          rotate: topCardRotate,
-                          zIndex: zElevation,
-                        }}
-                        onDragEnd={handleTopCardDragEnd}
-                        className="absolute inset-0 cursor-grab active:cursor-grabbing select-none rounded-2xl shadow-[0_8px_24px_rgba(0,0,0,0.7)] touch-none w-full h-full flex items-center justify-center"
-                      >
-                        <CardRenderer
-                          card={card}
-                          size="full"
-                          interactive={false}
-                          showMarketValue={true}
-                        />
-                      </motion.div>
-                    );
-                  }
+              {cardAnticipationTell === 'SUPER' && (
+                <div className="fixed inset-0 pointer-events-none z-10 bg-purple-950/30 flex items-center justify-center transition-all duration-300">
+                  <div className="w-[365px] h-[510px] rounded-2xl border border-purple-400 shadow-[0_0_50px_rgba(168,85,247,0.7)] animate-pulse" />
+                </div>
+              )}
 
-                  // Backing cards stacked tightly underneath
+              {cardAnticipationTell === 'GOD_PACK' && (
+                <div className="fixed inset-0 pointer-events-none z-10 flex items-center justify-center">
+                  <div className="w-[650px] h-[650px] rounded-full bg-[radial-gradient(circle,rgba(255,215,0,0.5)_0%,transparent_70%)] animate-spin" />
+                </div>
+              )}
+
+              {/* PRESENTATION CARD STACK CONTAINER (360px x 502px, max-h 65vh) */}
+              <div className="relative z-20 flex flex-col items-center">
+                {/* Deck Stack Anchor (Presentation Aspect Ratio 63:88) */}
+                <div className="relative w-[360px] max-w-[90vw] max-h-[65vh] aspect-[63/88]">
+                  {currentCardIndex < pulledCards.length &&
+                    pulledCards.slice(currentCardIndex).map((card, offsetIdx) => {
+                      const isTop = offsetIdx === 0;
+                      const yOffset = offsetIdx * 2;
+                      const xOffset = offsetIdx * 1;
+                      const scale = 1 - offsetIdx * 0.005;
+                      const zElevation = (pulledCards.length - offsetIdx) * 10;
+
+                      if (isTop) {
+                        return (
+                          <motion.div
+                            key={`${card.id}-${currentCardIndex}`}
+                            drag={!isPeeling ? 'x' : false}
+                            dragConstraints={{ left: 0, right: 600 }}
+                            dragElastic={0.2}
+                            style={{
+                              x: cardX,
+                              rotate: cardRotate,
+                              opacity: cardOpacity,
+                              zIndex: zElevation,
+                            }}
+                            onDrag={(_, info) => {
+                              if (isPeelingRef.current) return;
+                              cardRotate.set(Math.min(Math.max(info.offset.x * 0.035, -8), 20));
+                            }}
+                            onDragEnd={handleTopCardDragEnd}
+                            className={`absolute inset-0 select-none rounded-2xl shadow-[0_8px_24px_rgba(0,0,0,0.7)] touch-none w-full h-full flex items-center justify-center ${
+                              isPeeling ? 'pointer-events-none cursor-default' : 'cursor-grab active:cursor-grabbing'
+                            }`}
+                          >
+                            <CardRenderer
+                              card={card}
+                              size="full"
+                              interactive={false}
+                              showMarketValue={true}
+                            />
+                          </motion.div>
+                        );
+                      }
+
+                      // Backing cards stacked tightly underneath
+                      return (
+                        <div
+                          key={`backing-${card.id}-${currentCardIndex + offsetIdx}`}
+                          style={{
+                            transform: `translate3d(${xOffset}px, ${yOffset}px, 0px) scale(${scale})`,
+                            zIndex: zElevation,
+                          }}
+                          className="absolute inset-0 pointer-events-none rounded-2xl shadow-[0_8px_24px_rgba(0,0,0,0.7)] transition-transform duration-200 w-full h-full flex items-center justify-center"
+                        >
+                          <CardRenderer
+                            card={card}
+                            size="full"
+                            interactive={false}
+                            showMarketValue={true}
+                          />
+                        </div>
+                      );
+                    })}
+                </div>
+
+                {/* Peel Gesture Hint & Action Buttons */}
+                <div className="mt-6 flex flex-col items-center gap-3 z-30">
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={executePeel}
+                      disabled={isPeeling}
+                      className="px-6 py-2.5 rounded-full bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-black font-black text-xs uppercase tracking-wider flex items-center gap-2 shadow-lg transition active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
+                    >
+                      <span>{currentCardIndex < pulledCards.length - 1 ? 'Peel Card' : 'View Summary'}</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </button>
+
+                    <button
+                      onClick={handleRevealAll}
+                      className="px-4 py-2 rounded-full bg-zinc-900/80 border border-white/10 hover:bg-zinc-800 text-zinc-400 hover:text-white text-xs font-semibold transition"
+                    >
+                      Skip All
+                    </button>
+                  </div>
+
+                  <span className="text-[11px] text-zinc-400 font-mono flex items-center gap-1">
+                    <span>👉 Drag top card to the right to peel & discard</span>
+                  </span>
+                </div>
+
+                {/* Deck Stack Progression Pips */}
+                <div className="flex items-center gap-2 mt-3">
+                  {pulledCards.map((_, idx) => (
+                    <div
+                      key={idx}
+                      className={`h-1.5 rounded-full transition-all duration-300 ${
+                        idx === currentCardIndex
+                          ? 'w-7 bg-amber-400 shadow-[0_0_8px_rgba(245,158,11,0.8)]'
+                          : idx < currentCardIndex
+                          ? 'w-2 bg-zinc-600'
+                          : 'w-2 bg-zinc-800'
+                      }`}
+                    />
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* ============================================================
+              STAGE 4: SUMMARY GRID & QUICK-ACTION DUSTING HUB
+              ============================================================ */}
+          {stage === 'SUMMARY' && (
+            <motion.div
+              key="stage-summary"
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.25 }}
+              className="flex-1 flex flex-col items-center justify-between w-full max-w-5xl my-auto z-20 py-2"
+            >
+              {/* Header Pull Summary Metrics Subtitle */}
+              <div className="text-center mb-3">
+                <p className="text-xs text-zinc-400 font-mono">
+                  Highest Rarity: <span className="font-bold text-amber-400">{packPeakRarity}</span> • Total Market Value:{' '}
+                  <span className="font-bold text-amber-400">{totalPackMarketValue.toLocaleString()} ¥</span>
+                  {isGodPack && <span className="ml-2 text-amber-300 font-black">• GOD PACK!</span>}
+                </p>
+              </div>
+
+              {/* Stardust Toast Notification */}
+              {dustToast !== null && (
+                <div className="mb-2 px-4 py-1.5 rounded-full bg-cyan-500/20 border border-cyan-400 text-cyan-300 text-xs font-bold font-mono animate-bounce flex items-center gap-1.5 shadow-lg">
+                  <Sparkles className="w-3 h-3 text-cyan-400" />
+                  <span>Dusted non-rares for +{dustToast} Stardust!</span>
+                </div>
+              )}
+
+              {/* Responsive Results Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 my-auto w-full">
+                {pulledCards.map((card, index) => {
+                  const isDusted = dustedCardIds.includes(card.id);
+                  const rarityStyle = RARITY_BADGES[card.rarity] ?? RARITY_BADGES.C;
+
                   return (
                     <div
                       key={card.id}
-                      style={{
-                        transform: `translate3d(${xOffset}px, ${yOffset}px, 0px) scale(${scale})`,
-                        zIndex: zElevation,
-                      }}
-                      className="absolute inset-0 pointer-events-none rounded-2xl shadow-[0_8px_24px_rgba(0,0,0,0.7)] transition-transform duration-200 w-full h-full flex items-center justify-center"
+                      className={`flex flex-col items-center p-2 rounded-2xl bg-zinc-900/60 border border-white/10 relative transition-all ${
+                        isDusted ? 'opacity-40 grayscale' : 'hover:border-white/30'
+                      }`}
                     >
+                      {/* Slot Header */}
+                      <div className="w-full flex items-center justify-between text-[10px] mb-1.5 font-mono">
+                        <span className="text-zinc-500">#{index + 1}</span>
+                        <span
+                          className={`px-1.5 py-0.5 rounded font-black border ${rarityStyle.bgClass} ${rarityStyle.textClass} ${rarityStyle.borderClass}`}
+                        >
+                          {card.rarity}
+                        </span>
+                      </div>
+
                       <CardRenderer
                         card={card}
-                        size="full"
-                        interactive={false}
+                        size="sm"
+                        interactive={!isDusted}
                         showMarketValue={true}
                       />
+
+                      {isDusted && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/60 rounded-2xl pointer-events-none">
+                          <span className="px-2 py-1 rounded bg-zinc-900 text-cyan-400 font-mono text-xs font-black border border-cyan-500/50">
+                            DUSTED
+                          </span>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
               </div>
 
-              {/* Peel Gesture Hint & Action Buttons */}
-              <div className="mt-6 flex flex-col items-center gap-3 z-30">
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={discardTopCard}
-                    className="px-6 py-2.5 rounded-full bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-black font-black text-xs uppercase tracking-wider flex items-center gap-2 shadow-lg transition active:scale-95"
-                  >
-                    <span>{currentCardIndex < pulledCards.length - 1 ? 'Peel Card' : 'View Summary'}</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </button>
+              {/* Action Bar Footer */}
+              <div className="w-full max-w-2xl mt-4 pt-3 border-t border-white/10 flex flex-wrap items-center justify-center gap-3">
+                {/* Quick Dust Non-Rares */}
+                <button
+                  onClick={handleQuickDustNonRares}
+                  disabled={
+                    pulledCards.every((c) => c.rarity !== 'C' && c.rarity !== 'UC') ||
+                    dustedCardIds.length >= pulledCards.filter((c) => c.rarity === 'C' || c.rarity === 'UC').length
+                  }
+                  className="px-4 py-2.5 rounded-xl bg-cyan-950/60 border border-cyan-500/40 hover:bg-cyan-900/60 disabled:opacity-40 disabled:pointer-events-none text-cyan-300 font-bold text-xs uppercase tracking-wider flex items-center gap-1.5 transition shadow"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  <span>Quick Dust Non-Rares (C/UC)</span>
+                </button>
 
-                  <button
-                    onClick={handleRevealAll}
-                    className="px-4 py-2 rounded-full bg-zinc-900/80 border border-white/10 hover:bg-zinc-800 text-zinc-400 hover:text-white text-xs font-semibold transition"
-                  >
-                    Skip All
-                  </button>
-                </div>
+                {/* Open Another Button */}
+                <button
+                  onClick={handleOpenAnother}
+                  disabled={!canOpenAnother}
+                  title={
+                    isCooldownActive
+                      ? `On Cooldown (${cooldownRemaining}s remaining)`
+                      : isInsufficientFunds
+                      ? `Insufficient Funds (${packCost.toLocaleString()} ¥ required)`
+                      : undefined
+                  }
+                  className="flex items-center gap-2 rounded-xl bg-amber-500 px-6 py-2.5 font-bold text-black transition-all hover:bg-amber-400 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(245,158,11,0.3)] text-xs uppercase tracking-wider"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  <span>
+                    OPEN ANOTHER ({packCost === 0 ? 'FREE' : `${packCost.toLocaleString()} ¥`})
+                  </span>
+                </button>
 
-                <span className="text-[11px] text-zinc-400 font-mono flex items-center gap-1">
-                  <span>👉 Drag top card to the right to peel & discard</span>
-                </span>
+                {/* Add All to Binder Confirmation Button */}
+                <button
+                  onClick={() => {
+                    soundEngine.stopAll();
+                    onClose();
+                  }}
+                  className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs uppercase tracking-wider flex items-center gap-1.5 shadow-lg transition active:scale-95"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Add All to Binder</span>
+                </button>
               </div>
-
-              {/* Deck Stack Progression Pips */}
-              <div className="flex items-center gap-2 mt-3">
-                {pulledCards.map((_, idx) => (
-                  <div
-                    key={idx}
-                    className={`h-1.5 rounded-full transition-all duration-300 ${
-                      idx === currentCardIndex
-                        ? 'w-7 bg-amber-400 shadow-[0_0_8px_rgba(245,158,11,0.8)]'
-                        : idx < currentCardIndex
-                        ? 'w-2 bg-zinc-600'
-                        : 'w-2 bg-zinc-800'
-                    }`}
-                  />
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ============================================================
-            STAGE 4: SUMMARY GRID & QUICK-ACTION DUSTING HUB
-            ============================================================ */}
-        {stage === 'SUMMARY' && (
-          <div className="flex-1 flex flex-col items-center justify-between w-full max-w-5xl my-auto z-20 py-2">
-            {/* Header Pull Summary Metrics Subtitle */}
-            <div className="text-center mb-3">
-              <p className="text-xs text-zinc-400 font-mono">
-                Highest Rarity: <span className="font-bold text-amber-400">{packPeakRarity}</span> • Total Market Value:{' '}
-                <span className="font-bold text-amber-400">{totalPackMarketValue.toLocaleString()} ¥</span>
-                {isGodPack && <span className="ml-2 text-amber-300 font-black">• GOD PACK!</span>}
-              </p>
-            </div>
-
-            {/* Stardust Toast Notification */}
-            {dustToast !== null && (
-              <div className="mb-2 px-4 py-1.5 rounded-full bg-cyan-500/20 border border-cyan-400 text-cyan-300 text-xs font-bold font-mono animate-bounce flex items-center gap-1.5 shadow-lg">
-                <Sparkles className="w-3 h-3 text-cyan-400" />
-                <span>Dusted non-rares for +{dustToast} Stardust!</span>
-              </div>
-            )}
-
-            {/* Responsive Results Grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 my-auto w-full">
-              {pulledCards.map((card, index) => {
-                const isDusted = dustedCardIds.includes(card.id);
-                const rarityStyle = RARITY_BADGES[card.rarity] ?? RARITY_BADGES.C;
-
-                return (
-                  <div
-                    key={card.id}
-                    className={`flex flex-col items-center p-2 rounded-2xl bg-zinc-900/60 border border-white/10 relative transition-all ${
-                      isDusted ? 'opacity-40 grayscale' : 'hover:border-white/30'
-                    }`}
-                  >
-                    {/* Slot Header */}
-                    <div className="w-full flex items-center justify-between text-[10px] mb-1.5 font-mono">
-                      <span className="text-zinc-500">#{index + 1}</span>
-                      <span
-                        className={`px-1.5 py-0.5 rounded font-black border ${rarityStyle.bgClass} ${rarityStyle.textClass} ${rarityStyle.borderClass}`}
-                      >
-                        {card.rarity}
-                      </span>
-                    </div>
-
-                    <CardRenderer
-                      card={card}
-                      size="sm"
-                      interactive={!isDusted}
-                      showMarketValue={true}
-                    />
-
-                    {isDusted && (
-                      <div className="absolute inset-0 flex items-center justify-center bg-black/60 rounded-2xl pointer-events-none">
-                        <span className="px-2 py-1 rounded bg-zinc-900 text-cyan-400 font-mono text-xs font-black border border-cyan-500/50">
-                          DUSTED
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Action Bar Footer */}
-            <div className="w-full max-w-2xl mt-4 pt-3 border-t border-white/10 flex flex-wrap items-center justify-center gap-3">
-              {/* Quick Dust Non-Rares */}
-              <button
-                onClick={handleQuickDustNonRares}
-                disabled={
-                  pulledCards.every((c) => c.rarity !== 'C' && c.rarity !== 'UC') ||
-                  dustedCardIds.length >= pulledCards.filter((c) => c.rarity === 'C' || c.rarity === 'UC').length
-                }
-                className="px-4 py-2.5 rounded-xl bg-cyan-950/60 border border-cyan-500/40 hover:bg-cyan-900/60 disabled:opacity-40 disabled:pointer-events-none text-cyan-300 font-bold text-xs uppercase tracking-wider flex items-center gap-1.5 transition shadow"
-              >
-                <Trash2 className="w-4 h-4" />
-                <span>Quick Dust Non-Rares (C/UC)</span>
-              </button>
-
-              {/* Open Another Button */}
-              <button
-                onClick={handleOpenAnother}
-                disabled={!canOpenAnother}
-                title={
-                  isCooldownActive
-                    ? `On Cooldown (${cooldownRemaining}s remaining)`
-                    : isInsufficientFunds
-                    ? `Insufficient Funds (${packCost.toLocaleString()} ¥ required)`
-                    : undefined
-                }
-                className="flex items-center gap-2 rounded-xl bg-amber-500 px-6 py-2.5 font-bold text-black transition-all hover:bg-amber-400 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(245,158,11,0.3)] text-xs uppercase tracking-wider"
-              >
-                <RefreshCw className="w-4 h-4" />
-                <span>
-                  OPEN ANOTHER ({packCost === 0 ? 'FREE' : `${packCost.toLocaleString()} ¥`})
-                </span>
-              </button>
-
-              {/* Add All to Binder Confirmation Button */}
-              <button
-                onClick={() => {
-                  soundEngine.stopAll();
-                  onClose();
-                }}
-                className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs uppercase tracking-wider flex items-center gap-1.5 shadow-lg transition active:scale-95"
-              >
-                <CheckCircle2 className="w-4 h-4" />
-                <span>Add All to Binder</span>
-              </button>
-            </div>
-          </div>
-        )}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Footer info label */}
         <footer className="w-full max-w-5xl text-center text-[10px] text-zinc-600 font-mono">
