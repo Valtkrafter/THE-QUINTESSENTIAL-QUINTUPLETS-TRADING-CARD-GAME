@@ -152,9 +152,17 @@ export function syncDexWithInventory(
   currentDex: Record<string, CardDexEntry> | undefined,
   inventory: CardInstance[]
 ): Record<string, CardDexEntry> {
-  const updated: Record<string, CardDexEntry> = currentDex ? { ...currentDex } : createInitialCardDex();
+  const updated: Record<string, CardDexEntry> = {};
   for (const card of CARDS_CATALOG) {
-    if (!updated[card.id]) {
+    if (currentDex && currentDex[card.id]) {
+      updated[card.id] = {
+        ...currentDex[card.id],
+        cardNumber: card.cardNumber,
+        characterId: card.characterId,
+        characterRole: card.characterRole,
+        rarity: card.rarity,
+      };
+    } else {
       updated[card.id] = {
         cardDefId: card.id,
         cardNumber: card.cardNumber,
@@ -793,23 +801,8 @@ export const useGameStore = create<GameState>()(
       },
 
       claimIdleRevenue: (): number => {
-        const state = get();
-        const report = state.getBinderSynergyReport();
-
-        const now = Date.now();
-        const elapsedMinutes = (now - state.lastActiveTimestamp) / 60000;
-        const earnedYen = calculateAccruedIdleEarnings(report, elapsedMinutes, 24);
-
-        set({
-          yen: state.yen + earnedYen,
-          lastActiveTimestamp: now,
-          stats: {
-            ...state.stats,
-            totalYenEarned: state.stats.totalYenEarned + earnedYen,
-          },
-        });
-
-        return earnedYen;
+        // Legacy binder passive yield purged; 5-Slot Showcase is the sole source of truth:
+        return get().claimShowcaseRevenue();
       },
 
       refreshKiosk: (isManual: boolean = false): void => {

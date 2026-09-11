@@ -302,17 +302,17 @@ export const CardDex: React.FC = () => {
                     : 'bg-[#0c0c10] border-zinc-800/80 hover:border-zinc-700'
                 }`}
               >
-                {/* Inner Card Frame Aspect Ratio */}
-                <div className="relative w-full aspect-[63/88] rounded-xl overflow-hidden">
+                {/* Inner Card Frame Aspect Ratio: dynamic 82/130 for slabs, 63/88 for raw cards */}
+                <div className={`relative w-full ${previewCard.grade ? 'aspect-[82/130]' : 'aspect-[63/88]'} rounded-xl overflow-hidden flex items-center justify-center`}>
                   {isDiscovered ? (
                     /* Discovered: Full-Color Card with Highest Finish or Slab */
-                    <div className="w-full h-full relative">
+                    <div className="w-full h-full relative flex items-center justify-center">
                       {previewCard.grade ? (
                         <GradingSlab
                           card={previewCard}
                           interactive={false}
-                          size="sm"
-                          className="w-full h-full pointer-events-none"
+                          size="full"
+                          className="w-full h-full pointer-events-none !p-0 !m-0"
                           showMarketValue={false}
                         />
                       ) : (
@@ -428,20 +428,20 @@ export const CardDex: React.FC = () => {
 
               {/* Left Column: Interactive 3D Card Display */}
               <div className="w-full md:w-56 shrink-0 flex flex-col items-center">
-                <div className="w-full aspect-[63/88] rounded-2xl overflow-hidden shadow-2xl">
+                <div className={`w-full ${activeInspectedCardInstance?.grade ? 'aspect-[82/130]' : 'aspect-[63/88]'} rounded-2xl overflow-hidden shadow-2xl flex items-center justify-center`}>
                   {activeInspectedCardInstance ? (
                     activeInspectedCardInstance.grade ? (
                       <GradingSlab
                         card={activeInspectedCardInstance}
-                        size="md"
-                        className="w-full h-full"
+                        size="full"
+                        className="w-full h-full !p-0 !m-0"
                         showMarketValue={false}
                       />
                     ) : (
                       <CardRenderer
                         card={activeInspectedCardInstance}
                         size="full"
-                        className="w-full h-full"
+                        className="w-full h-full !p-0 !m-0"
                         showMarketValue={false}
                       />
                     )

@@ -25,9 +25,9 @@
 
 - **Physically Interactive 3D Booster Packs:** Real-time 3D gyro tilt with metallic crimp textures, Euro-hole punch, and a custom flat-plane pointer tear mechanism across foil perforations.
 - **Holographic Foil Shader Engine:** Dynamic angle-based light reflections, glitter sheens, prismatic rainbow gradients, gold etching, and voice actress signatures.
-- **BGS-Style Grading Slabs:** Subgrade inspection (Centering, Surface, Corners, Edges) with gold foil headers, acrylic frosted borders, and the elusive **Black Label (Quad 10)**.
-- **5-Slot Acrylic Showcase (Vitrine):** Semi-circular 3D acrylic pedestal stage with dynamic overhead character spotlights, live $\yen$ revenue ticker, and team synergy multipliers.
-- **50-Card Master Card-Dex:** Comprehensive completion catalog with undiscovered silhouette shaders, 100% golden holographic aura, and highest finish / grade tracking.
+- **BGS-Style Grading Slabs:** Subgrade inspection (Centering, Surface, Corners, Edges) with gold foil headers, acrylic frosted borders, authentic `82:130` BGS geometry, responsive container-query scaling, and the elusive **Black Label (Quad 10)**.
+- **5-Slot Acrylic Showcase (Vitrine):** Semi-circular 3D acrylic pedestal stage with dynamic overhead character spotlights, live $\yen$ revenue ticker, and team synergy multipliers. Serves as the **exclusive source of passive idle revenue** (legacy binder yields purged).
+- **42-Card Master Card-Dex:** Comprehensive completion catalog (35 Nakano Sisters + 7 unique Support artworks) with undiscovered silhouette shaders, 100% golden holographic aura, and highest finish / grade tracking.
 - **Grand Binder & Collection Hub:** Filterable and sortable card collection with bulk liquidation and individual card inspection.
 - **Pure Procedural Web Audio API Engine:** 100% synthesizer-driven procedural sound design. Zero external `.mp3` dependencies for lightning-fast, zero-latency, zero-bandwidth pack opening ceremonies.
 
@@ -63,6 +63,7 @@ Every card rendered through `CardRenderer.tsx` supports dynamic multi-layer foil
 
 ### 🛡️ 3. BGS-Style Acrylic Grading Slabs & Grading Lab
 Submit raw cards to the **Grading Station** to be certified in heavy acrylic slabs:
+- **Authentic BGS Geometry & Container Queries:** Built to exact $82\text{mm} \times 130\text{mm}$ aspect ratio (`aspect-[82/130]`) with CSS container queries (`container-type: inline-size`) and fluid typography (`clamp()`, `cqi`), ensuring proportional headers, subgrades, and uncompressed inner card wells (`aspect-[63/88]`) in both full-screen inspection and compact grid drawers.
 - **4 Numerical Subgrades:** Centering, Surface, Corners, and Edges (evaluated from 1.0 to 10.0).
 - **Certified Grade Tiers:**
   - `POOR_1_3` (Grade 1–3, $0.5\times$ multiplier)
@@ -127,11 +128,11 @@ Zero external `.mp3` or `.wav` files. All audio is synthesized procedurally in r
 - **`receipt_register`:** Dual mechanical cash register latch click followed by a high-frequency ($2489\text{Hz}$) purchase ping for market transactions.
 
 ### 📖 9. Master Card-Dex & Discovery Engine
-- **Master 50-Card Registry:** Complete catalog of cards `TQQ-001` through `TQQ-050` tracking global completion status across the entire collection.
+- **Master 42-Card Registry:** Complete catalog of cards `TQQ-001` through `TQQ-042` (35 Nakano Sisters: 5 sisters $\times$ 7 rarities + 7 unique Support cards: Fuutarou [3], Raiha [2], Maruo [1], Yusuke Takeda [1]) tracking global completion status across the entire collection.
 - **Silhouette Mystery Shader:** Undiscovered cards render as matte pitch-black silhouettes (`#0c0c10`) with animated smoky particle shimmers, frosted borders, padlock icons, and hidden identity codes.
 - **Highest Finish & Best BGS Grade Memory:** Discovered entries preserve the pinnacle state ever obtained across unboxings, kiosk buys, and grading certifications (even if the physical card is subsequently liquidated or dusted).
-- **Circular SVG Completion Tracker:** Dynamic progress ring visualizing exact collection percentage (`X / 50 Collected (Y%)`).
-- **100% Golden Holographic Shimmer Aura:** Attaining full 50/50 completion permanently bathes the Card-Dex header and border frame in an animated rainbow prismatic gold aura.
+- **Circular SVG Completion Tracker:** Dynamic progress ring visualizing exact collection percentage (`X / 42 Collected (Y%)`).
+- **100% Golden Holographic Shimmer Aura:** Attaining full 42/42 completion permanently bathes the Card-Dex header and border frame in an animated rainbow prismatic gold aura.
 - **Comprehensive Card Dossier Modal:** Detailed inspection modal featuring real-time 3D tilt, subgrade plate inspection, authenticated voice actress credentials, character quotes, and acquisition origins.
 
 ---
@@ -204,13 +205,16 @@ $$\text{Market Value} = \text{Base Value}(\text{Rarity}) \times \text{Multiplier
 ```
 tqqtcg/
 ├── public/
-│   ├── cards/                   # Master card illustration assets (50 high-res artworks)
+│   ├── cards/                   # Master card illustration assets (42 high-res artworks)
 │   │   ├── Ichika/
 │   │   ├── Nino/
 │   │   ├── Miku/
 │   │   ├── Yotsuba/
 │   │   ├── Itsuki/
-│   │   └── Support/
+│   │   ├── Futarou/
+│   │   ├── Raiha/
+│   │   ├── Maruo/
+│   │   └── Yusuke/
 │   └── packs/                   # High-resolution 3D booster foil pack wraps
 ├── rules.md                     # Strict development protocol & architectural standards
 ├── scripts/
@@ -229,7 +233,7 @@ tqqtcg/
 │   │   │   ├── CardRenderer.tsx     # Holographic foil shader engine & card frame
 │   │   │   └── GradingSlab.tsx      # Acrylic BGS-style grading slab with subgrade plates
 │   │   ├── catalog/
-│   │   │   └── CardDex.tsx          # 50-card master catalog with silhouettes & 100% gold shimmer
+│   │   │   └── CardDex.tsx          # 42-card master catalog with silhouettes & 100% gold shimmer
 │   │   ├── dusting/
 │   │   │   └── DustingWorkshop.tsx  # Card vaporization and Stardust exchange station
 │   │   ├── market/
@@ -245,7 +249,7 @@ tqqtcg/
 │   │       ├── GradingScannerFX.tsx # Particle laser scanner visualizer
 │   │       └── GradingStation.tsx   # Card submission hub & consumable tool equip
 │   ├── config/
-│   │   ├── cardsData.ts         # Catalog of 50 cards with metadata and quotes
+│   │   ├── cardsData.ts         # Catalog of 42 cards with metadata and quotes
 │   │   └── economy.ts           # Pricing matrices, valuation formulas, drop tables, pity, synergies
 │   ├── hooks/
 │   │   ├── useIdleRevenue.ts    # Background-safe idle yield calculator with 12h offline cap

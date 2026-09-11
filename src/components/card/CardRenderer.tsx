@@ -358,7 +358,7 @@ export const CardRenderer: React.FC<CardRendererProps> = ({
     sm: 'w-[190px]',
     md: 'w-[260px]',
     lg: 'w-[320px]',
-    full: 'w-full',
+    full: 'w-full h-full max-h-full max-w-full',
   }[size];
 
   return (

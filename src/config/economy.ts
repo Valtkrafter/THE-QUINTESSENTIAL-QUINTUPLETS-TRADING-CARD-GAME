@@ -864,9 +864,9 @@ export function analyzeBinderPage(
     synergyMultiplier *= 1.1;
   }
 
-  // Base yield = 0.02% of total calculated market value per minute (0.0002)
-  const baseYieldPerMinute = totalMarketValue * 0.0002;
-  const effectiveYieldPerMinute = baseYieldPerMinute * synergyMultiplier;
+  // PURGED: Binder passive yield is 0. The 5-Slot Showcase (Vitrine) is the ONLY source of passive idle yield.
+  const baseYieldPerMinute = 0;
+  const effectiveYieldPerMinute = 0;
 
   return {
     allFiveSisters,
@@ -875,22 +875,21 @@ export function analyzeBinderPage(
     supportCharacterId: supportCharId,
     synergyMultiplier,
     totalMarketValue,
-    baseYieldPerMinute,
-    effectiveYieldPerMinute,
+    baseYieldPerMinute: 0,
+    effectiveYieldPerMinute: 0,
   };
 }
 
 /**
  * Calculates accrued idle earnings given elapsed minutes and page configuration.
+ * Note: Legacy binder passive yield is purged; returns 0. Showcase handles 100% of idle revenue.
  */
 export function calculateAccruedIdleEarnings(
-  report: BinderSynergyReport,
-  elapsedMinutes: number,
-  maxOfflineHours: number = 24
+  _report: BinderSynergyReport,
+  _elapsedMinutes: number,
+  _maxOfflineHours: number = 24
 ): number {
-  const maxMinutes = maxOfflineHours * 60;
-  const effectiveMinutes = Math.min(Math.max(0, elapsedMinutes), maxMinutes);
-  return Math.floor(effectiveMinutes * report.effectiveYieldPerMinute);
+  return 0;
 }
 
 // ==========================================

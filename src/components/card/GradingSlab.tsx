@@ -10,7 +10,7 @@ import { useSmoothTilt } from '../../hooks/useSmoothTilt';
 export interface GradingSlabProps {
   card: CardInstance;
   interactive?: boolean;
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'sm' | 'md' | 'lg' | 'full';
   className?: string;
   onClick?: () => void;
   showMarketValue?: boolean;
@@ -58,11 +58,12 @@ export const GradingSlab: React.FC<GradingSlabProps> = ({
   const isBlackLabel = activeGrade.isBlackLabel || activeGrade.tier === 'BLACK_LABEL';
   const tier = activeGrade.tier;
 
-  // Scaled dimensions to fit around standard 63mm x 88mm card
+  // Scaled dimensions to fit around standard 63mm x 88mm card (authentic BGS slab ratio 82mm x 130mm)
   const slabSizeClasses = {
-    sm: 'w-[230px] p-2.5 rounded-2xl',
-    md: 'w-[325px] p-3.5 rounded-3xl',
-    lg: 'w-[400px] p-4.5 rounded-3xl',
+    sm: 'w-[230px] aspect-[82/130] p-2.5 rounded-2xl',
+    md: 'w-[325px] aspect-[82/130] p-3.5 rounded-3xl',
+    lg: 'w-[400px] aspect-[82/130] p-4.5 rounded-3xl',
+    full: 'w-full h-full max-h-full max-w-full aspect-[82/130] p-[3.5%] rounded-2xl sm:rounded-3xl',
   }[size];
 
   // Header Plate Styling per Grade Tier
@@ -110,11 +111,17 @@ export const GradingSlab: React.FC<GradingSlabProps> = ({
 
   const headerStyle = getHeaderStyle(tier);
   const certNumber = `CERT #${(activeGrade.gradedAt % 90000 + 10000)}`;
+  const isFull = size === 'full';
 
   return (
-    /* Outermost Container with Extended Hit Area Buffer to prevent mouse slipping off during 3D tilt */
+    /* Outermost Container with Container Query and conditional hit-area margins */
     <div
-      className={`card-perspective-wrapper inline-block select-none p-4 -m-4 sm:p-6 sm:-m-6 relative before:absolute before:-inset-4 before:content-[''] cursor-pointer ${className}`}
+      className={`card-perspective-wrapper select-none relative ${
+        isFull
+          ? 'w-full h-full flex items-center justify-center'
+          : 'inline-block p-4 -m-4 sm:p-6 sm:-m-6 before:absolute before:-inset-4 before:content-[\'\']'
+      } cursor-pointer ${className}`}
+      style={{ containerType: 'inline-size' }}
       onClick={onClick}
       {...containerProps}
     >
@@ -129,7 +136,7 @@ export const GradingSlab: React.FC<GradingSlabProps> = ({
         }}
         className={`relative ${slabSizeClasses} ${
           isBlackLabel ? 'slab-acrylic-black-label' : 'slab-acrylic-casing'
-        } flex flex-col items-center pointer-events-none`}
+        } flex flex-col items-center justify-between pointer-events-none overflow-hidden`}
       >
         {/* Physical Beveled Glass Reflection Rim */}
         <div className="slab-bevel-edge pointer-events-none" />
@@ -144,7 +151,7 @@ export const GradingSlab: React.FC<GradingSlabProps> = ({
             SLAB HEADER LABEL PLATE (pointer-events-none)
             ============================================================ */}
         <div
-          className={`w-full mb-3 rounded-lg border p-2.5 ${headerStyle.plateBg} ${headerStyle.plateBorder} relative overflow-hidden z-30 pointer-events-none`}
+          className={`w-full mb-[2.5%] shrink-0 rounded-lg border p-[3%] ${headerStyle.plateBg} ${headerStyle.plateBorder} relative overflow-hidden z-30 pointer-events-none`}
         >
           {/* Subtle Security Guilloche Watermark Pattern */}
           <div
@@ -156,23 +163,23 @@ export const GradingSlab: React.FC<GradingSlabProps> = ({
             }}
           />
 
-          <div className="relative z-10 flex items-start justify-between gap-2 pointer-events-none">
+          <div className="relative z-10 flex items-start justify-between gap-1.5 pointer-events-none">
             {/* Left: Metadata */}
             <div className="flex-1 min-w-0 pointer-events-none">
               <div className="flex items-center gap-1.5 leading-none mb-1">
-                <span className="text-[10px] tracking-widest font-black uppercase text-amber-500">
+                <span className="text-[clamp(8px,3cqi,11px)] tracking-widest font-black uppercase text-amber-500">
                   TQQ VAULT
                 </span>
-                <span className="text-[9px] px-1 py-0.2 rounded border bg-black/10 border-black/20 font-mono">
+                <span className="text-[clamp(7px,2.6cqi,10px)] px-1 py-0.2 rounded border bg-black/10 border-black/20 font-mono">
                   {certNumber}
                 </span>
               </div>
 
-              <h4 className="font-extrabold text-xs sm:text-sm truncate leading-tight drop-shadow-sm">
+              <h4 className="font-extrabold text-[clamp(10px,4cqi,15px)] truncate leading-tight drop-shadow-sm">
                 {cardDef.name}
               </h4>
 
-              <div className="flex items-center gap-1 text-[10px] mt-0.5 opacity-90 truncate">
+              <div className="flex items-center gap-1 text-[clamp(8px,3cqi,11px)] mt-0.5 opacity-90 truncate">
                 <span className="font-semibold">{cardDef.title}</span>
                 <span>•</span>
                 <span className="font-bold">{card.rarity}</span>
@@ -180,14 +187,14 @@ export const GradingSlab: React.FC<GradingSlabProps> = ({
             </div>
 
             {/* Right: Numeric Grade & Tier Badge */}
-            <div className="flex flex-col items-end justify-center shrink-0 min-w-[65px] text-right pl-2 border-l border-black/10 pointer-events-none">
-              <span className="text-[8px] font-bold uppercase tracking-wider opacity-80">
+            <div className="flex flex-col items-end justify-center shrink-0 min-w-[50px] text-right pl-1.5 border-l border-black/10 pointer-events-none">
+              <span className="text-[clamp(7px,2.5cqi,9px)] font-bold uppercase tracking-wider opacity-80">
                 {headerStyle.label}
               </span>
-              <div className={`text-2xl sm:text-3xl leading-none ${headerStyle.gradeText}`}>
+              <div className={`text-[clamp(16px,7.5cqi,30px)] leading-none ${headerStyle.gradeText}`}>
                 {activeGrade.numericGrade}.0
               </div>
-              <span className="text-[8px] font-semibold opacity-75">
+              <span className="text-[clamp(7px,2.5cqi,9px)] font-semibold opacity-75">
                 {activeGrade.tierLabel}
               </span>
             </div>
@@ -195,21 +202,21 @@ export const GradingSlab: React.FC<GradingSlabProps> = ({
 
           {/* Subgrades Bar for Black Label & Pristine 10 */}
           {(isBlackLabel || tier === 'GEM_MINT_10') && (
-            <div className="mt-2 pt-1.5 border-t border-black/15 flex items-center justify-between text-[9px] font-mono leading-none pointer-events-none">
+            <div className="mt-1.5 pt-1 border-t border-black/15 flex items-center justify-between text-[clamp(7px,2.6cqi,10px)] font-mono leading-none pointer-events-none">
               <div className="flex flex-col items-center">
-                <span className="opacity-70 text-[8px]">Centering</span>
+                <span className="opacity-70 text-[clamp(6px,2.2cqi,8px)]">Centering</span>
                 <span className="font-bold">{activeGrade.subgrades.centering.toFixed(1)}</span>
               </div>
               <div className="flex flex-col items-center">
-                <span className="opacity-70 text-[8px]">Surface</span>
+                <span className="opacity-70 text-[clamp(6px,2.2cqi,8px)]">Surface</span>
                 <span className="font-bold">{activeGrade.subgrades.surface.toFixed(1)}</span>
               </div>
               <div className="flex flex-col items-center">
-                <span className="opacity-70 text-[8px]">Corners</span>
+                <span className="opacity-70 text-[clamp(6px,2.2cqi,8px)]">Corners</span>
                 <span className="font-bold">{activeGrade.subgrades.corners.toFixed(1)}</span>
               </div>
               <div className="flex flex-col items-center">
-                <span className="opacity-70 text-[8px]">Edges</span>
+                <span className="opacity-70 text-[clamp(6px,2.2cqi,8px)]">Edges</span>
                 <span className="font-bold">{activeGrade.subgrades.edges.toFixed(1)}</span>
               </div>
             </div>
@@ -219,22 +226,24 @@ export const GradingSlab: React.FC<GradingSlabProps> = ({
         {/* ============================================================
             INNER RECESSED CARD WELL (disableTilt={true} + pointer-events-none)
             ============================================================ */}
-        <div className="w-full flex justify-center items-center rounded-xl slab-inner-well bg-black/60 p-1 relative z-20 overflow-hidden border border-white/10 pointer-events-none">
-          <div className="pointer-events-none">
+        <div className="w-full flex-1 min-h-0 flex items-center justify-center rounded-xl slab-inner-well bg-black/60 p-[1.5%] relative z-20 overflow-hidden border border-white/10 pointer-events-none">
+          <div className="w-full h-full flex items-center justify-center pointer-events-none">
             <CardRenderer
               card={card}
               interactive={false} // Outer slab alone handles 3D physics
               disableTilt={true}   // Strict single source of truth
               externalLight={light} // Propagates tilt light to inner card shaders
-              size={size}
+              size="full"
+              className="w-full h-full !p-0 !m-0"
               showMarketValue={showMarketValue}
+              hideInternalFooter={true}
             />
           </div>
         </div>
 
         {/* Bottom Bar: Acrylic Refraction Stamp & Multiplier */}
-        <div className="w-full mt-2.5 flex items-center justify-between text-[10px] text-zinc-400 px-1 z-30 font-mono pointer-events-none">
-          <span className="text-[9px] text-zinc-500 uppercase tracking-widest flex items-center gap-1">
+        <div className="w-full mt-[2%] shrink-0 flex items-center justify-between text-[clamp(7px,2.8cqi,10px)] text-zinc-400 px-1 z-30 font-mono pointer-events-none">
+          <span className="text-zinc-500 uppercase tracking-widest flex items-center gap-1">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
             Authenticated Vault Slab
           </span>

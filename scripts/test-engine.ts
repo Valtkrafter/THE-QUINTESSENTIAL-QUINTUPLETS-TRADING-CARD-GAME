@@ -51,7 +51,7 @@ function testSection(title: string): void {
 async function runTests() {
   testSection('1. Card Catalog & Metadata Integrity');
   console.log(`Total catalog entries: ${CARDS_CATALOG.length}`);
-  assert(CARDS_CATALOG.length >= 50, 'Catalog should contain at least 50 cards');
+  assert(CARDS_CATALOG.length === 42, 'Catalog must contain exactly 42 cards');
 
   // Verify CARDS_BY_RARITY has entries for every rarity
   const allRarities: Rarity[] = ['C', 'UC', 'R', 'SR', 'UR', 'SEC', 'MR'];
@@ -76,8 +76,8 @@ async function runTests() {
   }
   console.log('✅ All 5 Nakano sisters have complete card spreads from C through MR.');
 
-  // Verify support characters
-  const supportChars = ['fuutarou', 'raiha', 'maruo', 'isanari', 'takeda'] as const;
+  // Verify support characters (7 unique cards: Fuutarou [3], Raiha [2], Maruo [1], Takeda [1])
+  const supportChars = ['fuutarou', 'raiha', 'maruo', 'takeda'] as const;
   for (const s of supportChars) {
     const sCards = CARDS_BY_CHARACTER[s];
     assert(sCards.length > 0, `Support character ${s} has no registered cards`);
@@ -85,7 +85,11 @@ async function runTests() {
       assert(card.characterRole === 'support', `${card.name} must have characterRole = support`);
     }
   }
-  console.log('✅ All 5 support characters verified with correct roles.');
+  assert(CARDS_BY_CHARACTER.fuutarou.length === 3, 'Fuutarou must have 3 cards');
+  assert(CARDS_BY_CHARACTER.raiha.length === 2, 'Raiha must have 2 cards');
+  assert(CARDS_BY_CHARACTER.maruo.length === 1, 'Maruo must have 1 card');
+  assert(CARDS_BY_CHARACTER.takeda.length === 1, 'Takeda must have 1 card');
+  console.log('✅ All 4 support characters verified with 7 unique cards and correct roles.');
 
   testSection('2. Mathematical Formulas & Pricing Matrices');
   // Raw values
@@ -256,11 +260,10 @@ async function runTests() {
   assert(reportMono.synergyMultiplier === 1.25, 'Mono-waifu multiplier must be 1.25x (+25%)');
   console.log(`✅ Mono-Waifu synergy verified: Multiplier = ${reportMono.synergyMultiplier}x`);
 
-  // Offline earnings calculation (0.02% / min, 24h cap)
+  // Offline earnings calculation: Legacy binder passive yield is purged (0 Yen)
   const earnings60m = calculateAccruedIdleEarnings(reportMono, 60, 24);
-  const expected60m = Math.floor(60 * reportMono.effectiveYieldPerMinute);
-  assert(earnings60m === expected60m, '60 minutes earnings match exact formula');
-  console.log(`✅ Offline idle earnings verified: ${earnings60m} ¥ earned over 60 minutes.`);
+  assert(earnings60m === 0, 'Binder idle earnings purged (must be 0 Yen)');
+  console.log('✅ Binder idle earnings purged: 0 Yen accrued from binder (Showcase is sole source).');
 
   testSection('6. Zustand Store Full Lifecycle & Actions');
   const store = useGameStore.getState();
@@ -659,13 +662,13 @@ async function runTests() {
   assert(calculateShowcaseIdleEarnings(stackedReport, 1440, 12) === Math.floor(720 * ratePerMin), '24 hours capped at 12 hours (720 min)');
   console.log('✅ 12-Hour offline idle revenue accrual cap verified.');
 
-  // 6. Master Card-Dex 50-Card Registry & Discovery Engine
+  // 6. Master Card-Dex 42-Card Registry & Discovery Engine
   const initialDex = createInitialCardDex();
   const dexKeys = Object.keys(initialDex);
-  assert(dexKeys.length === 50, 'Master Card-Dex tracks all 50 cards');
+  assert(dexKeys.length === 42, 'Master Card-Dex tracks all 42 cards');
   assert(CARDS_CATALOG.every((c) => initialDex[c.id] !== undefined), 'Every card from catalog has an entry in Dex');
   assert(CARDS_CATALOG.every((c) => initialDex[c.id].cardNumber.startsWith('TQQ-')), 'All cards formatted as TQQ-XXX');
-  console.log('✅ Master Card-Dex 50-card catalog registry verified.');
+  console.log('✅ Master Card-Dex 42-card catalog registry verified.');
 
   // Test Discovery Mutation in Zustand Store
   const testDiscoveryCard: CardInstance = {

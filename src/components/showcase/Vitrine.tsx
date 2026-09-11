@@ -394,17 +394,17 @@ export const Vitrine: React.FC = () => {
                   {/* Pedestal Card Mount Slot */}
                   <div
                     onClick={() => setSelectedPedestalIndex(config.index)}
-                    className="group relative w-full aspect-[63/88] max-h-[300px] flex items-center justify-center cursor-pointer rounded-2xl transition-all duration-300 hover:scale-[1.03] z-20"
+                    className={`group relative w-full ${card?.grade ? 'aspect-[82/130]' : 'aspect-[63/88]'} max-h-[300px] flex items-center justify-center cursor-pointer rounded-2xl transition-all duration-300 hover:scale-[1.03] z-20`}
                   >
                     {card ? (
                       /* Socketed Card View (GradingSlab or CardRenderer) */
-                      <div className="w-full h-full relative rounded-xl overflow-hidden shadow-2xl transition-transform duration-300">
+                      <div className="w-full h-full relative rounded-xl overflow-hidden shadow-2xl transition-transform duration-300 flex items-center justify-center">
                         {card.grade ? (
                           <GradingSlab
                             card={card}
                             interactive={false}
-                            size="sm"
-                            className="w-full h-full pointer-events-none"
+                            size="full"
+                            className="w-full h-full pointer-events-none !p-0 !m-0"
                             showMarketValue={false}
                           />
                         ) : (
@@ -622,13 +622,13 @@ export const Vitrine: React.FC = () => {
                           }`}
                         >
                           {/* Card Preview Aspect Ratio */}
-                          <div className="w-full aspect-[63/88] relative rounded-xl overflow-hidden mb-2">
+                          <div className={`w-full ${card.grade ? 'aspect-[82/130]' : 'aspect-[63/88]'} relative rounded-xl overflow-hidden mb-2 flex items-center justify-center`}>
                             {card.grade ? (
                               <GradingSlab
                                 card={card}
                                 interactive={false}
-                                size="sm"
-                                className="w-full h-full pointer-events-none"
+                                size="full"
+                                className="w-full h-full pointer-events-none !p-0 !m-0"
                                 showMarketValue={false}
                               />
                             ) : (

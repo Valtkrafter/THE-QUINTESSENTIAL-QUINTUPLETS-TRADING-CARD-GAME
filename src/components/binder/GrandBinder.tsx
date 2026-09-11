@@ -9,7 +9,6 @@ import {
 } from '../../types/card';
 import {
   calculateCardMarketValue,
-  calculateAccruedIdleEarnings,
   calculateBulkSellValue,
   PACKS_CONFIG,
   RARITY_BASE_VALUES,
@@ -33,7 +32,6 @@ import {
   Search,
   Filter,
   ArrowUpDown,
-  TrendingUp,
   Award,
   Layers,
   ChevronDown,
@@ -59,9 +57,6 @@ export const GrandBinder: React.FC = () => {
   const inventory = useGameStore((state) => state.inventory);
   const binder = useGameStore((state) => state.binder);
   const cardDex = useGameStore((state) => state.cardDex);
-  const lastActive = useGameStore((state) => state.lastActiveTimestamp);
-  const getBinderSynergyReport = useGameStore((state) => state.getBinderSynergyReport);
-  const claimIdleRevenue = useGameStore((state) => state.claimIdleRevenue);
   const openPack = useGameStore((state) => state.openPack);
   const sellBulkCards = useGameStore((state) => state.sellBulkCards);
   const resetSave = useGameStore((state) => state.resetSave);
@@ -89,21 +84,6 @@ export const GrandBinder: React.FC = () => {
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
   const [activeSort, setActiveSort] = useState<SortType>('value_desc');
   const [searchQuery, setSearchQuery] = useState<string>('');
-
-  // Real-time idle accrued revenue ticker
-  const synergyReport = useMemo(() => getBinderSynergyReport(), [getBinderSynergyReport, binder, inventory]);
-  const [accruedYen, setAccruedYen] = useState<number>(0);
-
-  useEffect(() => {
-    const updateAccrued = () => {
-      const elapsedMinutes = (Date.now() - lastActive) / 60000;
-      const accrued = calculateAccruedIdleEarnings(synergyReport, elapsedMinutes, 24);
-      setAccruedYen(accrued);
-    };
-    updateAccrued();
-    const interval = setInterval(updateAccrued, 2000);
-    return () => clearInterval(interval);
-  }, [lastActive, synergyReport]);
 
   // Eligible cards for bulk liquidation (unlocked raw Commons & Uncommons)
   const slottedCardIds = useMemo(() => {
@@ -147,13 +127,6 @@ export const GrandBinder: React.FC = () => {
     } finally {
       setIsBulkSelling(false);
     }
-  };
-
-  // Claim idle revenue
-  const handleClaimIdle = () => {
-    const claimed = claimIdleRevenue();
-    setAccruedYen(0);
-    soundEngine.playRevealSound('SR');
   };
 
   // Pull starter pack if inventory is empty
@@ -268,28 +241,6 @@ export const GrandBinder: React.FC = () => {
             <span className="text-zinc-500 text-[10px] uppercase">Total Cards:</span>
             <span className="font-bold text-amber-300">{inventory.length}</span>
           </div>
-
-          {/* Real-time Idle Revenue Display & Claim */}
-          <div className="hidden lg:flex items-center gap-3 pl-3 border-l border-white/10 font-mono">
-            <div className="flex flex-col">
-              <span className="text-[9px] text-zinc-500 uppercase">Idle Revenue</span>
-              <span className="text-xs font-bold text-emerald-400 flex items-center gap-1">
-                <TrendingUp className="w-3 h-3" />
-                +{synergyReport.effectiveYieldPerMinute.toFixed(1)} ¥/min
-              </span>
-            </div>
-
-            {accruedYen > 0 && (
-              <button
-                onClick={handleClaimIdle}
-                className="px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-xs font-black flex items-center gap-1.5 transition active:scale-95 animate-pulse"
-                title="Claim accrued idle earnings"
-              >
-                <Coins className="w-3.5 h-3.5" />
-                <span>Claim {accruedYen.toLocaleString()} ¥</span>
-              </button>
-            )}
-          </div>
         </div>
 
         {/* Center: Primary View Tabs (Vitrine Showcase / Collection / Card-Dex) */}
@@ -325,7 +276,7 @@ export const GrandBinder: React.FC = () => {
             }`}
           >
             <span>📖</span>
-            <span>Card-Dex ({dexDiscoveredCount}/50)</span>
+            <span>Card-Dex ({dexDiscoveredCount}/42)</span>
           </button>
         </div>
 
