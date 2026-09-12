@@ -127,6 +127,17 @@ export const GrandBinder: React.FC = () => {
     return calculateBulkSellValue(bulkSellableCards);
   }, [bulkSellableCards]);
 
+  const clampedCompletedCards = useMemo(() => {
+    const now = Date.now();
+    return inventory.filter(
+      (c) =>
+        c.restoration &&
+        c.restoration.step === 'clamp' &&
+        c.restoration.clampingStartedAt &&
+        now - c.restoration.clampingStartedAt >= (c.restoration.clampingDurationMs ?? 86400000)
+    );
+  }, [inventory]);
+
   const handleExecuteBulkSell = () => {
     if (bulkSellableCards.length === 0 || isBulkSelling) return;
     setIsBulkSelling(true);
@@ -242,8 +253,27 @@ export const GrandBinder: React.FC = () => {
         {/* Left: Branding & Card Count */}
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-amber-500 to-yellow-300 flex items-center justify-center text-zinc-950 font-black text-base shadow-[0_0_15px_rgba(245,158,11,0.4)]">
+            <div
+              onClick={() => {
+                if (clampedCompletedCards.length > 0) {
+                  setRestorationCard(clampedCompletedCards[0]);
+                }
+              }}
+              className={`w-8 h-8 rounded-xl bg-gradient-to-tr from-amber-500 to-yellow-300 flex items-center justify-center text-zinc-950 font-black text-base shadow-[0_0_15px_rgba(245,158,11,0.4)] relative ${
+                clampedCompletedCards.length > 0 ? 'cursor-pointer hover:scale-105 transition-transform' : ''
+              }`}
+              title={
+                clampedCompletedCards.length > 0
+                  ? `⚡ ${clampedCompletedCards.length} Card(s) Finished 24h Clamp Flattening! Click to unclamp in lab.`
+                  : undefined
+              }
+            >
               5
+              {clampedCompletedCards.length > 0 && (
+                <span className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-zinc-950 flex items-center justify-center shadow-[0_0_10px_#10b981]">
+                  <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />
+                </span>
+              )}
             </div>
             <div>
               <h1 className="text-sm font-black tracking-wider text-white flex items-center gap-1.5 uppercase font-mono">
@@ -290,7 +320,7 @@ export const GrandBinder: React.FC = () => {
           </button>
           <button
             onClick={() => setActiveMainView('binder')}
-            className={`px-3.5 py-1.5 rounded-xl font-bold transition flex items-center gap-1.5 ${
+            className={`px-3.5 py-1.5 rounded-xl font-bold transition flex items-center gap-1.5 relative ${
               activeMainView === 'binder'
                 ? 'bg-amber-500 text-zinc-950 shadow-md font-black'
                 : 'text-zinc-400 hover:text-white hover:bg-white/5'
@@ -298,6 +328,9 @@ export const GrandBinder: React.FC = () => {
           >
             <span>🎴</span>
             <span>Collection ({inventory.length})</span>
+            {clampedCompletedCards.length > 0 && (
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_6px_#10b981]" />
+            )}
           </button>
           <button
             onClick={() => setActiveMainView('dex')}

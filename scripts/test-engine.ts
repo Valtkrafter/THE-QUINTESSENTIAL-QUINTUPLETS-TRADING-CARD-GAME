@@ -31,6 +31,8 @@ import {
   calculateShowcaseIdleEarnings,
   isFinishHigher,
   isGradeHigher,
+  calculateRegradeFee,
+  calculateQuickPressCost,
 } from '../src/config/economy';
 import { useGameStore, DEFAULT_SHOWCASE_SLOTS, createInitialCardDex, CURRENT_PATCH_VERSION } from '../src/store/useGameStore';
 import { APP_VERSION } from '../src/config/version';
@@ -1124,7 +1126,7 @@ async function runTests() {
   });
   specimen = useGameStore.getState().inventory.find((c) => c.id === slabToCrack.id);
   assert(specimen?.restoration?.step === 'clamp', 'Advanced to clamp step');
-  assert(specimen?.restoration?.checklist.allClean === true, 'allClean checklist checked');
+  assert(specimen?.restoration?.checklist?.allClean === true, 'allClean checklist checked');
 
   useGameStore.getState().advanceRestorationStep(slabToCrack.id, {
     step: 'polish',
@@ -1214,6 +1216,134 @@ async function runTests() {
   assert(finalCardInStore?.grade?.isRestored === true, 'Persisted slab has isRestored: true');
   assert(finalCardInStore?.isGradePrepCertified === false, 'isGradePrepCertified reset after slabbing');
   console.log('✅ Re-grading via store.gradeCard verified: issued certified restored slab with amber badge.');
+
+  // 7. Test startClamping & Lock Protections
+  const clampTestCard: CardInstance = {
+    id: 'clamp-test-card-01',
+    cardDefId: 'nakano_miku_mr_01',
+    characterId: 'miku',
+    rarity: 'MR',
+    finish: 'raw',
+    obtainedAt: Date.now(),
+    grade: {
+      tier: 'POOR_1_3',
+      tierLabel: 'Schulhof-Müll',
+      numericGrade: 2.0,
+      isBlackLabel: false,
+      multiplier: 0.15,
+      subgrades: { centering: 2.0, surface: 2.0, corners: 2.0, edges: 2.0 },
+      gradedAt: Date.now(),
+    },
+  };
+  useGameStore.setState((prev) => ({
+    yen: 50_000,
+    stardust: 1_000,
+    inventory: [...prev.inventory, clampTestCard],
+  }));
+
+  useGameStore.getState().startRestoration(clampTestCard.id);
+  useGameStore.getState().startClamping(clampTestCard.id);
+
+  let clampedCard = useGameStore.getState().inventory.find((c) => c.id === clampTestCard.id);
+  assert(clampedCard?.isLocked === true, 'Clamped card is locked');
+  assert(clampedCard?.restoration?.isClamped === true, 'isClamped is true');
+  assert(clampedCard?.restoration?.clampingDurationMs === 86400000, 'Clamping duration is 24 hours (86400000ms)');
+  assert(typeof clampedCard?.restoration?.clampingStartedAt === 'number', 'clampingStartedAt is set to timestamp');
+
+  // Verify liquidation & showcase protections while clamped
+  let sellErrorCaught = false;
+  try {
+    useGameStore.getState().sellCard(clampTestCard.id);
+  } catch {
+    sellErrorCaught = true;
+  }
+  assert(sellErrorCaught, 'Cannot sell clamped card');
+
+  let dustErrorCaught = false;
+  try {
+    useGameStore.getState().dustCard(clampTestCard.id);
+  } catch {
+    dustErrorCaught = true;
+  }
+  assert(dustErrorCaught, 'Cannot dust clamped card');
+
+  let showcaseErrorCaught = false;
+  try {
+    useGameStore.getState().slotShowcaseCard(0, clampTestCard.id);
+  } catch {
+    showcaseErrorCaught = true;
+  }
+  assert(showcaseErrorCaught, 'Cannot slot clamped card in showcase');
+  console.log('✅ startClamping verified: 24h timer initialized, card locked from selling, dusting, and showcase mounting.');
+
+  // 8. Test calculateQuickPressCost dynamic discount curve
+  const nowMs = Date.now();
+  const costAtStart = calculateQuickPressCost(nowMs, nowMs);
+  assert(costAtStart === 350, `Cost at 0h elapsed is 350 ★ (actual: ${costAtStart})`);
+
+  // After 18 hours elapsed (64,800,000 ms): 350 * (1 - 18/24) = 350 * 0.25 = 87.5 -> 88
+  const costAt18h = calculateQuickPressCost(nowMs - 18 * 3600 * 1000, nowMs);
+  assert(costAt18h === 88, `Cost at 18h elapsed is 88 ★ (actual: ${costAt18h})`);
+
+  // After 23.5 hours elapsed: drops to floor 50 ★
+  const costAt23_5h = calculateQuickPressCost(nowMs - 23.5 * 3600 * 1000, nowMs);
+  assert(costAt23_5h === 50, `Cost near completion reaches floor 50 ★ (actual: ${costAt23_5h})`);
+
+  // After 24 hours elapsed: floor 50 ★
+  const costAt24h = calculateQuickPressCost(nowMs - 24 * 3600 * 1000, nowMs);
+  assert(costAt24h === 50, `Cost at 24h elapsed is 50 ★ (actual: ${costAt24h})`);
+  console.log('✅ calculateQuickPressCost dynamic discount formula verified across 0h, 18h, and 24h.');
+
+  // 9. Test skipClampingWithDust
+  const preDustBalance = useGameStore.getState().stardust;
+  const skipCost = useGameStore.getState().calculateQuickPressCost(clampedCard!.restoration!.clampingStartedAt);
+  useGameStore.getState().skipClampingWithDust(clampTestCard.id);
+  const postDustBalance = useGameStore.getState().stardust;
+  assert(preDustBalance - postDustBalance === skipCost, 'Exact dynamic Stardust fee deducted atomically');
+
+  clampedCard = useGameStore.getState().inventory.find((c) => c.id === clampTestCard.id);
+  assert(clampedCard?.restoration?.step === 'polish', 'Advanced to polish step after Stardust skip');
+  assert(clampedCard?.restoration?.isClamped === false, 'isClamped set to false');
+  assert(clampedCard?.restoration?.clamped === true, 'clamped flag preserved');
+  console.log('✅ skipClampingWithDust verified: Stardust deducted and advanced to polish.');
+
+  // 10. Test submitForReGrading with paid fee and floor guarantee
+  // Advance to sleeve step
+  useGameStore.getState().advanceRestorationStep(clampTestCard.id, {
+    step: 'sleeve',
+    waxBuffed: true,
+    waxBuffProgress: 100,
+    dabbedSpots: [0, 1, 2, 3],
+  });
+
+  // Calculate expected 50% re-grading fee: 0.5 * (100,000 * 1.0) = 50,000 Yen
+  const expectedFee = calculateRegradeFee(clampedCard!);
+  assert(expectedFee === 50_000, `MR Raw card re-grade fee is 50,000 ¥ (actual: ${expectedFee})`);
+
+  // Test insufficient funds rejection
+  useGameStore.setState({ yen: 10_000 }); // only 10,000 ¥ (deficit: 40,000 ¥)
+  let regradeFeeRejection = false;
+  try {
+    useGameStore.getState().submitForReGrading(clampTestCard.id);
+  } catch (err) {
+    regradeFeeRejection = true;
+    assert((err as Error).message.includes('Insufficient Yen'), 'Throws descriptive insufficient funds error');
+  }
+  assert(regradeFeeRejection, 'Rejected re-grading when player cannot afford 50% certification fee');
+
+  // Test successful paid re-grading with sufficient funds
+  useGameStore.setState({ yen: 100_000 });
+  const regradeResult = useGameStore.getState().submitForReGrading(clampTestCard.id);
+  assert(useGameStore.getState().yen === 50_000, '50,000 ¥ deducted atomically (100k -> 50k)');
+  assert(regradeResult.gradingFeePaid === 50_000, 'Grading result records exact 50,000 ¥ fee paid');
+  assert(regradeResult.grade.numericGrade >= 7.0, 'Guaranteed minimum Grade 7.0 (Crisp)');
+  assert(regradeResult.grade.isRestored === true, 'Amber RE-CERTIFIED / RESTORED badge attached');
+
+  const finalCard = useGameStore.getState().inventory.find((c) => c.id === clampTestCard.id);
+  assert(finalCard?.grade !== undefined, 'Card is newly certified in slab');
+  assert(finalCard?.grade?.isRestored === true, 'Persisted slab has isRestored: true');
+  assert(finalCard?.restoration === undefined, 'Restoration session reset upon successful certification');
+  console.log('✅ submitForReGrading verified: 50% liquidity fee enforced, minimum Grade 7.0 floor applied, and restored slab awarded.');
 
   testSection('🎉 ALL TESTS PASSED SUCCESSFULLY! 100% SPEC COMPLIANCE.');
 }

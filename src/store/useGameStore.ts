@@ -24,6 +24,7 @@ import {
   ShowcaseSynergyReport,
   CardDexEntry,
   RestorationProgress,
+  RestorationChecklist,
 } from '../types/card';
 import { CARD_MAP, CARDS_CATALOG } from '../config/cardsData';
 import {
@@ -45,6 +46,9 @@ import {
   calculateShowcaseIdleEarnings,
   isFinishHigher,
   isGradeHigher,
+  calculateRegradeFee,
+  calculateQuickPressCost,
+  GRADE_TIER_CONFIG,
 } from '../config/economy';
 import { resolveActiveSupportBuff } from '../config/supportBuffs';
 import { APP_VERSION } from '../config/version';
@@ -130,6 +134,10 @@ export interface GameState {
   startRestoration: (cardId: string) => void;
   advanceRestorationStep: (cardId: string, stepResult: Partial<RestorationProgress>) => void;
   completeRestoration: (cardId: string) => void;
+  startClamping: (cardId: string) => void;
+  calculateQuickPressCost: (clampingStartedAt: number | null) => number;
+  skipClampingWithDust: (cardId: string) => void;
+  submitForReGrading: (cardId: string) => GradingResultInfo;
 }
 
 const DEFAULT_BINDER_SLOTS: BinderSlot[] = [
@@ -514,6 +522,10 @@ export const useGameStore = create<GameState>()(
           throw new Error('Graded cards cannot be dusted. Only raw cards can be converted to Stardust.');
         }
 
+        if (card.isLocked || card.restoration?.isClamped) {
+          throw new Error('This card is locked or currently clamped in the Restoration Lab and cannot be dusted.');
+        }
+
         // Showcase & Support Altar protection
         const isSlottedInShowcase = (state.showcaseSlots ?? []).some((s) => s.cardInstanceId === cardInstanceId);
         if (isSlottedInShowcase) {
@@ -597,8 +609,13 @@ export const useGameStore = create<GameState>()(
 
         const updatedInventory = state.inventory.filter((card) => {
           if (!idSet.has(card.id)) return true;
-          // Graded cards, showcase slotted cards, and Support Altar cards cannot be dusted
-          const isProtected = card.grade || slottedShowcaseIds.has(card.id) || state.supportSlot?.id === card.id;
+          // Graded cards, locked/clamped cards, showcase slotted cards, and Support Altar cards cannot be dusted
+          const isProtected =
+            card.grade ||
+            card.isLocked ||
+            card.restoration?.isClamped ||
+            slottedShowcaseIds.has(card.id) ||
+            state.supportSlot?.id === card.id;
           if (isProtected) return true;
 
           totalDustEarned += calculateDustYield(card, dustBonus);
@@ -639,8 +656,8 @@ export const useGameStore = create<GameState>()(
         }
 
         // Validates that the card is not locked in a showcase slot or support altar
-        if (card.isLocked) {
-          throw new Error('This card is locked and cannot be liquidated.');
+        if (card.isLocked || card.restoration?.isClamped) {
+          throw new Error('This card is locked or currently clamped in the Restoration Lab and cannot be liquidated.');
         }
         if (card.slottedBinder) {
           throw new Error('This card is currently slotted in your binder showcase. Unslot it before liquidating.');
@@ -700,6 +717,7 @@ export const useGameStore = create<GameState>()(
         for (const card of state.inventory) {
           const isLocked =
             card.isLocked ||
+            card.restoration?.isClamped ||
             card.slottedBinder !== undefined ||
             slottedBinderIds.has(card.id) ||
             slottedShowcaseIds.has(card.id) ||
@@ -1018,6 +1036,9 @@ export const useGameStore = create<GameState>()(
         if (!card) {
           throw new Error(`Card not found in inventory: ${cardInstanceId}`);
         }
+        if (card.isLocked || card.restoration?.isClamped) {
+          throw new Error('This card is locked or currently clamped in the Restoration Lab and cannot be mounted in the showcase.');
+        }
 
         // If card was already mounted in another showcase pedestal, unslot it there
         const updatedSlots = currentSlots.map((s) => {
@@ -1052,6 +1073,9 @@ export const useGameStore = create<GameState>()(
         const card = state.inventory.find((c) => c.id === cardInstanceId);
         if (!card) {
           throw new Error(`Card not found in inventory: ${cardInstanceId}`);
+        }
+        if (card.isLocked || card.restoration?.isClamped) {
+          throw new Error('This card is locked or currently clamped in the Restoration Lab and cannot be mounted on the Support Altar.');
         }
 
         const cardDef = CARD_MAP[card.cardDefId];
@@ -1167,21 +1191,41 @@ export const useGameStore = create<GameState>()(
           throw new Error(`Insufficient Yen for Slab Breaker tool fee. Required: ${toolFee} ¥, Available: ${state.yen} ¥`);
         }
 
-        const initialRestoration: RestorationProgress = card.restoration ?? {
-          step: 'crack',
-          crackedCleanly: false,
-          dustSpotsRemoved: 0,
-          clamped: false,
-          waxBuffed: false,
-          checklist: {
-            allClean: false,
-            polished: false,
-            waxed: false,
-            microScratchRemoval: false,
-            flattened: false,
-            gradePrepCertified: false,
-          },
-        };
+        const calculatedRegradeFee = calculateRegradeFee(card);
+
+        const initialRestoration: RestorationProgress = card.restoration
+          ? {
+              ...card.restoration,
+              clampingStartedAt: card.restoration.clampingStartedAt ?? null,
+              clampingDurationMs: card.restoration.clampingDurationMs ?? 86400000,
+              isClamped: card.restoration.isClamped ?? Boolean(card.restoration.clamped),
+              dabbedSpots: card.restoration.dabbedSpots ?? [],
+              waxBuffProgress: card.restoration.waxBuffProgress ?? 0,
+              isGradePrepCertified: card.restoration.isGradePrepCertified ?? Boolean(card.isGradePrepCertified),
+              regradeFeeYen: card.restoration.regradeFeeYen ?? calculatedRegradeFee,
+            }
+          : {
+              step: 'crack',
+              crackedCleanly: false,
+              dustSpotsRemoved: 0,
+              clampingStartedAt: null,
+              clampingDurationMs: 86400000,
+              isClamped: false,
+              dabbedSpots: [],
+              waxBuffProgress: 0,
+              isGradePrepCertified: false,
+              regradeFeeYen: calculatedRegradeFee,
+              clamped: false,
+              waxBuffed: false,
+              checklist: {
+                allClean: false,
+                polished: false,
+                waxed: false,
+                microScratchRemoval: false,
+                flattened: false,
+                gradePrepCertified: false,
+              },
+            };
 
         const updatedCard: CardInstance = {
           ...card,
@@ -1193,6 +1237,126 @@ export const useGameStore = create<GameState>()(
 
         set({
           yen: isNewRestoration ? state.yen - toolFee : state.yen,
+          inventory: updatedInventory,
+        });
+      },
+
+      startClamping: (cardId: string): void => {
+        const state = get();
+        const cardIndex = state.inventory.findIndex((c) => c.id === cardId);
+        if (cardIndex === -1) {
+          throw new Error(`Card not found: ${cardId}`);
+        }
+        const card = state.inventory[cardIndex];
+        const fee = card.restoration?.regradeFeeYen ?? calculateRegradeFee(card);
+
+        const currentRestoration: RestorationProgress = card.restoration ?? {
+          step: 'crack',
+          crackedCleanly: true,
+          dustSpotsRemoved: 4,
+          clampingStartedAt: null,
+          clampingDurationMs: 86400000,
+          isClamped: false,
+          dabbedSpots: [],
+          waxBuffProgress: 0,
+          isGradePrepCertified: false,
+          regradeFeeYen: fee,
+          clamped: false,
+          waxBuffed: false,
+          checklist: {
+            allClean: true,
+            polished: false,
+            waxed: false,
+            microScratchRemoval: false,
+            flattened: false,
+            gradePrepCertified: false,
+          },
+        };
+
+        const updatedRestoration: RestorationProgress = {
+          ...currentRestoration,
+          step: 'clamp',
+          clampingStartedAt: Date.now(),
+          clampingDurationMs: 86400000,
+          isClamped: true,
+          clamped: true,
+          checklist: {
+            ...(currentRestoration.checklist ?? {
+              allClean: true,
+              polished: false,
+              waxed: false,
+              microScratchRemoval: false,
+              flattened: false,
+              gradePrepCertified: false,
+            }),
+            flattened: false,
+          },
+        };
+
+        const updatedCard: CardInstance = {
+          ...card,
+          isLocked: true, // Card is clamped and cannot be sold, dusted, or slotted
+          restoration: updatedRestoration,
+        };
+
+        const updatedInventory = [...state.inventory];
+        updatedInventory[cardIndex] = updatedCard;
+
+        set({ inventory: updatedInventory });
+      },
+
+      calculateQuickPressCost: (clampingStartedAt: number | null): number => {
+        return calculateQuickPressCost(clampingStartedAt);
+      },
+
+      skipClampingWithDust: (cardId: string): void => {
+        const state = get();
+        const cardIndex = state.inventory.findIndex((c) => c.id === cardId);
+        if (cardIndex === -1) {
+          throw new Error(`Card not found: ${cardId}`);
+        }
+        const card = state.inventory[cardIndex];
+        if (!card.restoration) {
+          throw new Error('Restoration session not active for this card.');
+        }
+
+        const cost = calculateQuickPressCost(card.restoration.clampingStartedAt);
+        if (state.stardust < cost) {
+          throw new Error(
+            `Insufficient Stardust for Quick-Press skip. Required: ${cost} ★, Available: ${state.stardust} ★`
+          );
+        }
+
+        const updatedRestoration: RestorationProgress = {
+          ...card.restoration,
+          step: 'polish',
+          clampingStartedAt: Date.now() - 86400000,
+          isClamped: false,
+          clamped: true,
+          checklist: {
+            ...(card.restoration.checklist ?? {
+              allClean: true,
+              polished: false,
+              waxed: false,
+              microScratchRemoval: false,
+              flattened: false,
+              gradePrepCertified: false,
+            }),
+            flattened: true,
+          },
+        };
+
+        const updatedCard: CardInstance = {
+          ...card,
+          isLocked: false,
+          restoration: updatedRestoration,
+        };
+
+        const updatedInventory = [...state.inventory];
+        updatedInventory[cardIndex] = updatedCard;
+
+        set({
+          stardust: state.stardust - cost,
           inventory: updatedInventory,
         });
       },
@@ -1211,8 +1375,18 @@ export const useGameStore = create<GameState>()(
           throw new Error('Restoration session not active for this card.');
         }
 
-        const mergedChecklist = {
-          ...card.restoration.checklist,
+        const defaultChecklist: RestorationChecklist = {
+          allClean: false,
+          polished: false,
+          waxed: false,
+          microScratchRemoval: false,
+          flattened: false,
+          gradePrepCertified: false,
+        };
+
+        const mergedChecklist: RestorationChecklist = {
+          ...defaultChecklist,
+          ...(card.restoration.checklist ?? {}),
           ...(stepResult.checklist ?? {}),
         };
 
@@ -1243,8 +1417,16 @@ export const useGameStore = create<GameState>()(
 
         const updatedRestoration: RestorationProgress = {
           ...(card.restoration ?? {
+            step: 'crack',
             crackedCleanly: true,
             dustSpotsRemoved: 4,
+            clampingStartedAt: Date.now() - 86400000,
+            clampingDurationMs: 86400000,
+            isClamped: false,
+            dabbedSpots: [0, 1, 2, 3],
+            waxBuffProgress: 100,
+            isGradePrepCertified: true,
+            regradeFeeYen: calculateRegradeFee(card),
             clamped: true,
             waxBuffed: true,
             checklist: {
@@ -1257,6 +1439,8 @@ export const useGameStore = create<GameState>()(
             },
           }),
           step: 'completed',
+          isGradePrepCertified: true,
+          isClamped: false,
         };
 
         // Mark card raw, apply isGradePrepCertified: true, increment crackCount: 1
@@ -1264,6 +1448,7 @@ export const useGameStore = create<GameState>()(
           ...card,
           grade: undefined,
           isGradePrepCertified: true,
+          isLocked: false,
           crackCount: (card.crackCount ?? 0) + 1,
           restoration: updatedRestoration,
         };
@@ -1272,6 +1457,83 @@ export const useGameStore = create<GameState>()(
         updatedInventory[cardIndex] = updatedCard;
 
         set({ inventory: updatedInventory });
+      },
+
+      submitForReGrading: (cardId: string): GradingResultInfo => {
+        const state = get();
+        const cardIndex = state.inventory.findIndex((c) => c.id === cardId);
+        if (cardIndex === -1) {
+          throw new Error(`Card not found: ${cardId}`);
+        }
+        const card = state.inventory[cardIndex];
+
+        const regradeFee = calculateRegradeFee(card);
+        if (state.yen < regradeFee) {
+          throw new Error(
+            `Insufficient Yen to certify. Deficit: -¥ ${(regradeFee - state.yen).toLocaleString()}. The restored card will remain stored safely in its Semi-Rigid sleeve in your inventory until you can afford re-certification.`
+          );
+        }
+
+        // Prepare card with certification flag
+        const prepCard: CardInstance = {
+          ...card,
+          isGradePrepCertified: true,
+          crackCount: (card.crackCount ?? 0) + 1,
+        };
+
+        // Roll grading (guarantees >= Grade 7.0 and isRestored)
+        const { gradeResult, insuranceRerolled } = rollGrading(prepCard, [], 0);
+
+        if (gradeResult.numericGrade < 7) {
+          gradeResult.numericGrade = 7;
+          gradeResult.tier = 'CRISP_7_8';
+          gradeResult.tierLabel = GRADE_TIER_CONFIG.CRISP_7_8.tierLabel;
+          gradeResult.multiplier = GRADE_TIER_CONFIG.CRISP_7_8.multiplier;
+        }
+        gradeResult.isRestored = true;
+
+        const updatedCard: CardInstance = {
+          ...card,
+          grade: gradeResult,
+          isGradePrepCertified: false,
+          isLocked: false,
+          crackCount: (card.crackCount ?? 0) + 1,
+          restoration: undefined, // Reset restoration status
+        };
+
+        const updatedInventory = [...state.inventory];
+        updatedInventory[cardIndex] = updatedCard;
+
+        // Update Card-Dex bestGrade
+        const updatedDex = { ...(state.cardDex ?? createInitialCardDex()) };
+        const existingDexEntry = updatedDex[card.cardDefId];
+        if (existingDexEntry) {
+          if (isGradeHigher(gradeResult, existingDexEntry.bestGrade)) {
+            updatedDex[card.cardDefId] = {
+              ...existingDexEntry,
+              bestGrade: gradeResult,
+            };
+          }
+        }
+
+        set({
+          yen: state.yen - regradeFee,
+          inventory: updatedInventory,
+          cardDex: updatedDex,
+          stats: {
+            ...state.stats,
+            totalCardsGraded: state.stats.totalCardsGraded + 1,
+            blackLabelsPulled: state.stats.blackLabelsPulled + (gradeResult.isBlackLabel ? 1 : 0),
+          },
+        });
+
+        return {
+          card: updatedCard,
+          grade: gradeResult,
+          gradingFeePaid: regradeFee,
+          usedTools: [],
+          insuranceRerolled,
+        };
       },
 
       resetSave: (): void => {

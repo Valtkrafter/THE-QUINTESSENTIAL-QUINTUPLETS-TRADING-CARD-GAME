@@ -27,7 +27,7 @@
 - **Holographic Foil Shader Engine:** Dynamic angle-based light reflections, glitter sheens, prismatic rainbow gradients, gold etching, and voice actress signatures.
 - **BGS-Style Grading Slabs:** Subgrade inspection (Centering, Surface, Corners, Edges) with gold foil headers, acrylic frosted borders, authentic `82:130` BGS geometry, responsive container-query scaling, and the elusive **Black Label (Quad 10)**.
 - **5-Slot Acrylic Showcase (Vitrine):** Semi-circular 3D acrylic pedestal stage with dynamic overhead character spotlights, live $\yen$ revenue ticker, and team synergy multipliers. Serves as the **exclusive source of passive idle revenue** (legacy binder yields purged).
-- **Card Prep & Restoration Workbench & Crack-to-Regrade System:** Physical multi-stage workshop allowing collectors to crack open graded slabs, swab blemishes under a 50x digital SVBONY microscope, clamp-press warp flat with WORKPRO bar clamps, buff with restoration balm, and seal into semi-rigid card savers with handwritten checklists for guaranteed Grade 7+ re-certification and amber restored slab badges.
+- **Card Prep & Restoration Workbench & Crack-to-Regrade System:** Physical multi-stage workshop allowing collectors to crack open graded slabs, swab blemishes under a 50x digital SVBONY microscope, clamp-press warp flat in a persistent 24-hour WORKPRO clamp press (with dynamic Stardust skip curve), buff 3D viscous balm droplets with microfiber cloth, and seal into semi-rigid card savers for paid Grade 7+ re-certification with amber restored slab badges.
 - **42-Card Master Card-Dex:** Comprehensive completion catalog (35 Nakano Sisters + 7 unique Support artworks) with undiscovered silhouette shaders, 100% golden holographic aura, and highest finish / grade tracking.
 - **Grand Binder & Collection Hub:** Filterable and sortable card collection with bulk liquidation and individual card inspection.
 - **One-Time Patch Notes System:** Automatic one-time onboarding modal introducing major updates with on-demand header access.
@@ -85,10 +85,14 @@ Submit raw cards to the **Grading Station** to be certified in heavy acrylic sla
 Directly accessible from the card inspection modal (`CardActionModal.tsx`), collectors can physically crack open graded acrylic slabs and perform professional multi-stage restoration prior to re-submitting to the Vault:
 - **Stage 1: Acrylic Slab Depenetration & Crack:** Snip the 4 sonic-welded corner stress notches using wire pliers (triggering high-frequency shearing noise). Wedge a flat steel pry tool into the lateral weld seam and hold down tension until SVG fracture lines shoot across the top plate, popping the acrylic shell with acoustic shatter physics.
 - **Stage 2: SVBONY 50X LCD Digital Microscope:** High-tech split-view inspection station featuring an LCD monitor housing with scanlines, crosshair, and live digital OSD (`CAM 1 [50X MAG]`). Players manipulate a precision cotton swab tool to clean finger grease, adhesive, and dust specks across the front and reverse sides.
-- **Stage 3: 24-Hour Hard Press Station:** Sandwich cards between dual 12mm optical acrylic plates clamped with heavy-duty WORKPRO bar clamps. Players ratchet clamp triggers to dial in optimal 150 PSI pressure with mechanical ratchets and pneumatic air hiss, permanently eliminating cardstock curl and guaranteeing subgrades $\ge 8.5$ on Corners & Edges.
-- **Stage 4: Holographic Balm & Microfiber Buff:** Dab specialized yellow restoration balm onto holographic foil regions and buff in circular motions using a dark grey microfiber cloth. Progressively eliminates surface micro-scratches and culminates in an ultra-bright specular lens flare sweep (+1.5 Surface Subgrade boost, +15% Gem Mint 10 odds).
-- **Stage 5: Semi-Rigid Card Saver & Post-It Checklist:** Encapsulate the card into an archival Card Saver 1 holder with a slapped-on yellow Post-it note animated with procedural ballpoint pen scribbling.
-- **Guaranteed Grade 7+ Vault Re-Certification:** Re-submitting a Grade Prep Certified card locks the grading floor to Grade 7 (cannot roll Poor 1–3 or Used 4–6) and brands the newly issued slab with an authoritative amber `RE-CERTIFIED / RESTORED` certificate badge.
+- **Stage 3: Persistent 24-Hour Hard Press Station:** Sandwich cards between dual 12mm optical acrylic plates clamped with heavy-duty WORKPRO bar clamps. Features a persistent, offline/refresh-resilient 24-hour countdown timer (`clampingStartedAt`, `clampingDurationMs = 86,400,000`, live `HH:MM:SS` display). Clamped cards are locked against selling, dusting, and showcase mounting, while notification badges on the Vault logo and Collection tab alert collectors when pressing concludes. Players can dial in 150 PSI pressure with mechanical ratchets and pneumatic air hiss, or speed up the cure with a dynamic, time-discounted Stardust skip formula:
+  $$\text{Skip Cost} = \max\left(50,\ \left\lceil 350 \times \left(1 - \frac{\Delta t}{86{,}400{,}000}\right)\right\rceil\right)$$
+  (350 ★ fresh $\to$ 88 ★ at 18 hours $\to$ 50 ★ floor). Guarantees subgrades $\ge 8.5$ on Corners & Edges upon unclamping.
+- **Stage 4: 3D Viscous Balm Droplets & Microfiber Buff:** Features high-visibility 3D gel droplets with radial gradient lighting and specular white shine dots, targeted by high-contrast rotating dashed ring reticles with glowing amber crosshairs and drop shadows (flawlessly visible against light backgrounds like Miku's sweater or Itsuki's shirt). Dabbing dispenses localized matte wax smear films (`mix-blend-mode: screen opacity-75 backdrop-blur-[1px]`), followed by tactile microfiber cloth drag buffing (0% to 100%) and an ultra-bright chromatic lens flare sweep (+1.5 Surface Subgrade boost, +15% Gem Mint 10 odds).
+- **Stage 5: Semi-Rigid Card Saver & Post-It Checklist:** Encapsulate the card into an archival Card Saver 1 holder with a slapped-on yellow Post-it note animated with procedural ballpoint pen scribbling, certifying the card for grading lab submission.
+- **Paid 50% Vault Re-Certification & Guaranteed Grade 7+ Floor:** To safeguard the economy against infinite-money exploits, re-submitting a Grade Prep Certified card requires a strict 50% certification fee:
+  $$\text{Re-Grade Fee} = \text{round}\Big(0.5 \times \text{Base Value}(\text{Rarity}) \times \text{Multiplier}(\text{Finish})\Big)$$
+  Includes a live liquidity check with clear deficit warnings (`⚠️ Insufficient Yen to certify. Deficit: -¥...`) and a secondary `Save & Return to Vault` button that preserves the card's certified prep status in the inventory until funds are available. Re-grading guarantees a Grade 7.0 (Crisp) minimum floor and stamps the newly issued slab with an authoritative amber `RE-CERTIFIED / RESTORED` certificate badge.
 - **Strict 3-Tier Pinned Viewport Architecture:** Outer workbench modal dialog and all 5 individual restoration steps (`CrackStep`, `MicroscopeStep`, `ClampPressStep`, `PolishStep`, `SleeveStep`) adhere to a strict 3-tier Flexbox layout (`max-h-[92vh] flex flex-col`, static `flex-shrink-0` header, flexible scaled workbench with `flex-1 min-h-0 overflow-y-auto` and auto-proportional card/stage containers, and a strictly pinned action footer with `flex-shrink-0` and `pb-6` padding). Completely eliminates button clipping against bottom rounded corners and ensures flawless usability across all screen aspect ratios.
 
 ### 🏛️ 5. 5-Slot Acrylic Showcase (Vitrine) & Support Altar
@@ -274,6 +278,18 @@ $$\text{Market Value} = \text{Base Value}(\text{Rarity}) \times \text{Multiplier
 - **Offline Accrual Cap:** Strictly capped at 12 hours ($720\text{ minutes}$ / $43{,}200\text{ seconds}$).
 - **Tab Throttling Safeguard:** Live time-delta calculation based on absolute wall-clock epoch timestamps prevents idle loss in throttled browser background tabs.
 
+### 6. Card Prep & Restoration Workbench Formulas
+- **Paid Re-Grading Certification Fee (Anti-Infinite-Money Sink):**
+  $$\text{Re-Grade Fee} = \text{round}\Big(0.5 \times \text{Base Value}(\text{Rarity}) \times \text{Multiplier}(\text{Finish})\Big)$$
+  Re-grading cracked cards requires paying an authentic 50% fee based on raw market valuation to eliminate infinite-money grading loops.
+- **24-Hour WORKPRO Clamp Press Quick Skip Curve:**
+  $$\text{Quick Press Cost} = \max\left(50,\ \left\lceil 350 \times \left(1 - \frac{\Delta t}{86{,}400{,}000}\right)\right\rceil\right)$$
+  - Fresh clamp ($t = 0\text{h}$): $350\ ★$ Stardust.
+  - Midpoint ($t = 12\text{h}$): $175\ ★$ Stardust.
+  - Three-quarters ($t = 18\text{h}$): $88\ ★$ Stardust.
+  - Minimum floor ($t \ge 24\text{h}$ or near-completion): $50\ ★$ Stardust (free manual unclamp once $t \ge 24\text{h}$).
+- **Restoration Certification Floor:** Guaranteed Grade $\ge 7.0$ (Crisp) minimum upon re-grading, with amber `RE-CERTIFIED / RESTORED` slab badge.
+
 ---
 
 ## 🏗️ Project Architecture
@@ -396,10 +412,10 @@ tqqtcg/
 
 ## 🧪 Verification & Testing
 
-The repository contains an automated Monte Carlo test suite (`scripts/test-engine.ts`) across 10 complete sections that run 10,000 iterations to verify drop distributions, pity thresholds, grading probabilities, showcase synergies, Support Altar buff scaling, and store mutations.
+The repository contains an automated Monte Carlo test suite (`scripts/test-engine.ts`) across 11 complete sections that run 10,000 iterations to verify drop distributions, pity thresholds, grading probabilities, showcase synergies, Support Altar buff scaling, persistent 24h clamping & skip cost curve, and paid re-grading certifications.
 
 ```bash
-# Run the complete test suite (Sections 1 through 10)
+# Run the complete test suite (Sections 1 through 11)
 npm test
 
 # Run strict TypeScript type verification (0 errors)

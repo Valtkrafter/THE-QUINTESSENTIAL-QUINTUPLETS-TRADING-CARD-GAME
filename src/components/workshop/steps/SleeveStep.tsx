@@ -6,7 +6,12 @@ import { CardInstance } from '../../../types/card';
 import { CardRenderer } from '../../card/CardRenderer';
 import { soundEngine } from '../../../utils/audioEngine';
 import { useGameStore } from '../../../store/useGameStore';
-import { Award, Check, Sparkles, ShieldCheck, ArrowRight } from 'lucide-react';
+import {
+  RARITY_BASE_VALUES,
+  FINISH_MULTIPLIERS,
+  calculateRegradeFee,
+} from '../../../config/economy';
+import { Award, ShieldCheck, ArrowRight, AlertTriangle, Save } from 'lucide-react';
 
 interface SleeveStepProps {
   card: CardInstance;
@@ -23,9 +28,22 @@ const CHECKLIST_ITEMS = [
 ];
 
 export const SleeveStep: React.FC<SleeveStepProps> = ({ card, onFinish }) => {
+  const yen = useGameStore((state) => state.yen);
+  const inventory = useGameStore((state) => state.inventory);
+  const submitForReGrading = useGameStore((state) => state.submitForReGrading);
   const completeRestoration = useGameStore((state) => state.completeRestoration);
 
-  // Animation phases: 'sliding_in' -> 'postit_slap' -> 'writing_checklist' -> 'ready'
+  // Derive latest card instance
+  const activeCard = inventory.find((c) => c.id === card.id) ?? card;
+
+  // Valuation and Fee calculations
+  const baseValue = RARITY_BASE_VALUES[activeCard.rarity] ?? 15;
+  const finishMultiplier = FINISH_MULTIPLIERS[activeCard.finish] ?? 1.0;
+  const regradeFee = calculateRegradeFee(activeCard);
+  const canAfford = yen >= regradeFee;
+  const deficit = Math.max(0, regradeFee - yen);
+
+  // Animation phases: 'sliding_in' -> 'postit_slap' -> 'writing' -> 'ready'
   const [phase, setPhase] = useState<'sliding_in' | 'postit_slap' | 'writing' | 'ready'>('sliding_in');
   const [visibleLinesCount, setVisibleLinesCount] = useState<number>(0);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
@@ -36,7 +54,7 @@ export const SleeveStep: React.FC<SleeveStepProps> = ({ card, onFinish }) => {
     const timer1 = setTimeout(() => {
       soundEngine.playFoilRustle();
       setPhase('postit_slap');
-    }, 700);
+    }, 600);
 
     return () => clearTimeout(timer1);
   }, []);
@@ -46,7 +64,7 @@ export const SleeveStep: React.FC<SleeveStepProps> = ({ card, onFinish }) => {
       const timer2 = setTimeout(() => {
         soundEngine.playFoilRustle();
         setPhase('writing');
-      }, 500);
+      }, 450);
       return () => clearTimeout(timer2);
     }
   }, [phase]);
@@ -65,25 +83,37 @@ export const SleeveStep: React.FC<SleeveStepProps> = ({ card, onFinish }) => {
           setTimeout(() => {
             soundEngine.playCleanChime();
             setPhase('ready');
-          }, 350);
+          }, 300);
         }
-      }, 340);
+      }, 300);
 
       return () => clearInterval(interval);
     }
   }, [phase]);
 
+  // Submit for paid re-grading with guaranteed Grade >= 7.0 and amber badge
   const handleSubmitReGrading = () => {
-    if (isSubmitting) return;
+    if (isSubmitting || !canAfford) return;
     setIsSubmitting(true);
 
     try {
-      completeRestoration(card.id);
+      submitForReGrading(activeCard.id);
       soundEngine.playCleanChime();
       onFinish();
     } catch (err) {
       alert((err as Error).message);
       setIsSubmitting(false);
+    }
+  };
+
+  // Secondary option: Save to inventory as Grade Prep Certified without immediate re-grade
+  const handleSaveAndReturn = () => {
+    try {
+      completeRestoration(activeCard.id);
+      soundEngine.playFoilRustle();
+      onFinish();
+    } catch (err) {
+      alert((err as Error).message);
     }
   };
 
@@ -104,11 +134,11 @@ export const SleeveStep: React.FC<SleeveStepProps> = ({ card, onFinish }) => {
       </header>
 
       {/* 2. INTERACTIVE WORKBENCH AREA (Flexible & Scaled with min-h-0) */}
-      <main className="flex-1 min-h-0 w-full overflow-y-auto flex items-center justify-center p-2 sm:p-4 my-auto">
+      <main className="flex-1 min-h-0 w-full overflow-y-auto flex flex-col items-center justify-center p-2 sm:p-4 my-auto gap-3">
         {/* Semi-Rigid Outer Holder Shell */}
-        <div className="relative max-h-[340px] sm:max-h-[380px] md:max-h-[420px] aspect-[63/95] w-auto h-full rounded-xl border-2 border-cyan-400/40 bg-gradient-to-b from-cyan-950/20 via-white/5 to-black/40 shadow-2xl backdrop-blur-sm p-2.5 sm:p-3 pt-5 sm:pt-6 flex flex-col items-center justify-end overflow-hidden my-auto">
+        <div className="relative max-h-[280px] sm:max-h-[320px] md:max-h-[360px] aspect-[63/95] w-auto h-full rounded-xl border-2 border-cyan-400/40 bg-gradient-to-b from-cyan-950/20 via-white/5 to-black/40 shadow-2xl backdrop-blur-sm p-2 sm:p-3 pt-5 sm:pt-6 flex flex-col items-center justify-end overflow-hidden flex-shrink-0">
           {/* Card Saver Lip Flap */}
-          <div className="absolute top-0 inset-x-0 h-5 border-b border-cyan-400/30 bg-white/10 flex items-center justify-center">
+          <div className="absolute top-0 inset-x-0 h-5 border-b border-cyan-400/30 bg-white/10 flex items-center justify-center pointer-events-none">
             <span className="text-[8px] font-mono text-cyan-300/80 font-bold uppercase tracking-widest">
               CARD SAVER 1 • ARCHIVAL GRADE
             </span>
@@ -123,7 +153,7 @@ export const SleeveStep: React.FC<SleeveStepProps> = ({ card, onFinish }) => {
               className="w-full h-full"
             >
               <CardRenderer
-                card={card}
+                card={activeCard}
                 size="full"
                 interactive={false}
                 showMarketValue={false}
@@ -140,20 +170,20 @@ export const SleeveStep: React.FC<SleeveStepProps> = ({ card, onFinish }) => {
                 initial={{ scale: 1.4, rotate: -15, opacity: 0 }}
                 animate={{ scale: 1, rotate: -4, opacity: 1 }}
                 transition={{ type: 'spring', stiffness: 260, damping: 18 }}
-                className="absolute top-8 sm:top-10 left-3 sm:left-6 z-40 w-44 sm:w-52 p-3 sm:p-3.5 rounded-lg bg-[#fef08a] text-zinc-900 font-sans shadow-2xl border border-yellow-300"
+                className="absolute top-8 sm:top-10 left-2 sm:left-4 z-40 w-44 sm:w-48 p-2.5 sm:p-3 rounded-lg bg-[#fef08a] text-zinc-900 font-sans shadow-2xl border border-yellow-300 pointer-events-none"
                 style={{
                   boxShadow: '0 15px 25px -5px rgba(0,0,0,0.5), 0 0 10px rgba(254,240,138,0.3)',
                 }}
               >
-                {/* Subtle Post-it Fold Corner */}
-                <div className="absolute top-0 right-0 w-3.5 h-3.5 sm:w-4 sm:h-4 bg-yellow-400/60 border-l border-b border-yellow-500/40 rounded-bl" />
+                {/* Post-it Fold Corner */}
+                <div className="absolute top-0 right-0 w-3.5 h-3.5 bg-yellow-400/60 border-l border-b border-yellow-500/40 rounded-bl" />
 
-                <div className="text-[9px] sm:text-[10px] font-mono font-black text-zinc-800 uppercase tracking-wider mb-1 sm:mb-1.5 pb-1 border-b border-zinc-800/20">
+                <div className="text-[9px] font-mono font-black text-zinc-800 uppercase tracking-wider mb-1 pb-1 border-b border-zinc-800/20">
                   TQQ RESTORATION LOG
                 </div>
 
                 {/* Animated Checklist Items */}
-                <div className="space-y-0.5 sm:space-y-1 font-mono text-[9px] sm:text-[10px]">
+                <div className="space-y-0.5 font-mono text-[9px]">
                   {CHECKLIST_ITEMS.map((item, idx) => {
                     const isVisible = idx < visibleLinesCount;
                     return (
@@ -175,6 +205,40 @@ export const SleeveStep: React.FC<SleeveStepProps> = ({ card, onFinish }) => {
             )}
           </AnimatePresence>
         </div>
+
+        {/* Dynamic Cost Breakdown Card */}
+        {phase === 'ready' && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="w-full max-w-md bg-zinc-950/90 border border-white/10 rounded-2xl p-3 font-mono text-xs shadow-xl flex-shrink-0"
+          >
+            <div className="flex items-center justify-between pb-2 border-b border-white/10">
+              <span className="text-[10px] text-zinc-400 uppercase tracking-wider">Restoration Cost Breakdown</span>
+              <span className="text-amber-400 font-bold text-[10px]">Floor: Min Grade 7.0 (Crisp)</span>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 text-center">
+              <div className="p-1.5 rounded-lg bg-white/5 border border-white/5">
+                <span className="text-[9px] text-zinc-400 block">Base Value</span>
+                <span className="font-bold text-white">¥ {baseValue.toLocaleString()}</span>
+              </div>
+              <div className="p-1.5 rounded-lg bg-white/5 border border-white/5">
+                <span className="text-[9px] text-zinc-400 block">Finish Multiplier</span>
+                <span className="font-bold text-amber-300">x{finishMultiplier.toFixed(1)}</span>
+              </div>
+              <div className="p-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                <span className="text-[9px] text-amber-300 block">Re-Cert Fee (50%)</span>
+                <span className="font-bold text-amber-400">¥ {regradeFee.toLocaleString()}</span>
+              </div>
+              <div className="p-1.5 rounded-lg bg-white/5 border border-white/5">
+                <span className="text-[9px] text-zinc-400 block">Your Balance</span>
+                <span className={`font-bold ${canAfford ? 'text-emerald-400' : 'text-red-400'}`}>
+                  ¥ {yen.toLocaleString()}
+                </span>
+              </div>
+            </div>
+          </motion.div>
+        )}
       </main>
 
       {/* 3. BOTTOM ACTION BAR (Strictly Pinned & Protected) */}
@@ -186,20 +250,47 @@ export const SleeveStep: React.FC<SleeveStepProps> = ({ card, onFinish }) => {
               animate={{ opacity: 1, scale: 1 }}
               className="w-full flex flex-col items-center gap-2"
             >
-              <div className="w-full p-2.5 rounded-xl bg-amber-500/15 border border-amber-500/40 text-amber-300 text-xs font-mono text-center">
-                ✨ Floor Locked: <strong>Min Grade 7.0</strong> • Subgrade Boosts Applied
-              </div>
-
+              {/* Primary Paid Re-Grading Button */}
               <button
                 type="button"
                 onClick={handleSubmitReGrading}
-                disabled={isSubmitting}
-                className="w-full py-4 rounded-2xl bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 hover:from-amber-400 hover:to-yellow-300 text-zinc-950 font-black text-sm uppercase tracking-widest shadow-[0_0_30px_rgba(245,158,11,0.4)] active:scale-98 transition flex items-center justify-center gap-2 cursor-pointer"
+                disabled={!canAfford || isSubmitting}
+                className={`w-full py-3.5 rounded-2xl font-bold text-xs uppercase tracking-widest transition active:scale-98 flex items-center justify-center gap-2 shadow-lg ${
+                  canAfford
+                    ? 'bg-gradient-to-r from-[#f59e0b] to-[#d97706] hover:brightness-110 text-black shadow-amber-500/25 cursor-pointer font-black'
+                    : 'bg-[#1c1e24] text-zinc-500 cursor-not-allowed border border-red-500/30'
+                }`}
               >
-                <Award className="w-5 h-5 text-black" />
-                <span>SUBMIT FOR RE-GRADING (THE VAULT)</span>
-                <ArrowRight className="w-4 h-4 text-black" />
+                <Award className={`w-4 h-4 ${canAfford ? 'text-black' : 'text-zinc-500'}`} />
+                <span>
+                  {isSubmitting
+                    ? 'CERTIFYING IN VAULT...'
+                    : `SUBMIT FOR RE-GRADING (THE VAULT) • ¥ ${regradeFee.toLocaleString()}`}
+                </span>
+                {canAfford && <ArrowRight className="w-4 h-4 text-black" />}
               </button>
+
+              {/* Insufficient Funds Warning & Deficit */}
+              {!canAfford && (
+                <div className="w-full flex flex-col gap-2 p-2.5 rounded-xl bg-red-950/40 border border-red-500/30 text-red-300 font-mono text-[10px]">
+                  <div className="flex items-start gap-1.5">
+                    <AlertTriangle className="w-3.5 h-3.5 text-red-400 flex-shrink-0 mt-0.5" />
+                    <span>
+                      ⚠️ Insufficient Yen to certify. Deficit: <strong>-¥ {deficit.toLocaleString()}</strong>. The restored card will remain stored safely in its Semi-Rigid sleeve in your inventory until you can afford re-certification.
+                    </span>
+                  </div>
+
+                  {/* Secondary Button: Save & Return to Vault */}
+                  <button
+                    type="button"
+                    onClick={handleSaveAndReturn}
+                    className="w-full py-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-200 border border-white/10 font-bold text-[11px] flex items-center justify-center gap-1.5 transition active:scale-95 cursor-pointer"
+                  >
+                    <Save className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Save &amp; Return to Vault</span>
+                  </button>
+                </div>
+              )}
             </motion.div>
           ) : (
             <div className="text-xs font-mono text-zinc-400 flex items-center gap-2 py-2">

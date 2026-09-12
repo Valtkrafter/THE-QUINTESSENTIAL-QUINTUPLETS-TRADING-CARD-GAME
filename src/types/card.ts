@@ -64,9 +64,19 @@ export interface RestorationProgress {
   step: 'crack' | 'microscope' | 'clamp' | 'polish' | 'sleeve' | 'completed';
   crackedCleanly: boolean;
   dustSpotsRemoved: number; // target: 4
-  clamped: boolean;
-  waxBuffed: boolean;
-  checklist: RestorationChecklist;
+  // Clamping state & timers
+  clampingStartedAt: number | null; // Unix timestamp in ms
+  clampingDurationMs: number;       // Fixed to 86400000 (24 hours)
+  isClamped: boolean;
+  // Polishing & Waxing state
+  dabbedSpots: number[];            // Array of dabbed spot indices (0..3)
+  waxBuffProgress: number;          // 0 to 100%
+  // Sleeve & Re-grade state
+  isGradePrepCertified: boolean;
+  regradeFeeYen: number;            // 50% of raw card market value
+  checklist?: RestorationChecklist;
+  clamped?: boolean;
+  waxBuffed?: boolean;
 }
 
 export interface CardDefinition {

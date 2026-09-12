@@ -388,6 +388,31 @@ export function calculateKioskPrice(rarity: Rarity, discountFraction: number = 0
   return Math.max(1, Math.round(price));
 }
 
+/**
+ * Calculates exact re-grade fee in Yen (50% of raw card market value):
+ * regradeFee = 0.5 * (baseValue * finishMultiplier)
+ */
+export function calculateRegradeFee(card: CardInstance): number {
+  const base = RARITY_BASE_VALUES[card.rarity] ?? 15;
+  const finishMult = FINISH_MULTIPLIERS[card.finish] ?? 1.0;
+  return Math.round(0.5 * (base * finishMult));
+}
+
+/**
+ * Calculates dynamic Stardust skip fee for the 24-hour clamp press:
+ * Base skip fee: 350 Stardust (★)
+ * Formula: Cost = max(50, ceil(350 * (1 - deltaT / 86,400,000)))
+ */
+export function calculateQuickPressCost(clampingStartedAt: number | null, nowMs: number = Date.now()): number {
+  if (clampingStartedAt === null) {
+    return 350;
+  }
+  const deltaT = Math.max(0, nowMs - clampingStartedAt);
+  const remainingFraction = Math.max(0, 1 - deltaT / 86400000);
+  return Math.max(50, Math.ceil(350 * remainingFraction));
+}
+
+
 // ==========================================
 // 5. ROLL ALGORITHMS & RNG HELPERS
 // ==========================================

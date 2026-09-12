@@ -283,6 +283,7 @@ export const CardActionModal: React.FC<CardActionModalProps> = ({
 
   const isLockedOrSlotted = Boolean(
     activeCard.isLocked ||
+      activeCard.restoration?.isClamped ||
       activeCard.slottedBinder ||
       binder.slots.some((s) => s.cardInstanceId === activeCard.id)
   );
@@ -532,14 +533,20 @@ export const CardActionModal: React.FC<CardActionModalProps> = ({
                       : 'bg-[#10B981] hover:bg-[#059669] text-zinc-950 shadow-[#10B981]/25'
                   }`}
                   title={
-                    isLockedOrSlotted
+                    activeCard.restoration?.isClamped
+                      ? 'Card is clamped in the 24-hour press; unclamp before liquidating'
+                      : isLockedOrSlotted
                       ? 'Unslot card from showcase binder before liquidating'
                       : `Liquidate card for ${sellValue.toLocaleString()} ¥`
                   }
                 >
                   <Coins className="w-4 h-4" />
                   <span>
-                    {isLockedOrSlotted ? 'Showcase Locked' : `Sell for ${sellValue.toLocaleString()} ¥`}
+                    {activeCard.restoration?.isClamped
+                      ? 'Lab Clamped'
+                      : isLockedOrSlotted
+                      ? 'Showcase Locked'
+                      : `Sell for ${sellValue.toLocaleString()} ¥`}
                   </span>
                 </button>
               </div>
@@ -683,6 +690,36 @@ export const CardActionModal: React.FC<CardActionModalProps> = ({
                     ) : (
                       /* Raw Card Grading Controls */
                       <div className="space-y-4">
+                        {activeCard.restoration && activeCard.restoration.step !== 'completed' && (
+                          <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex flex-col gap-2">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-mono font-bold text-amber-400 uppercase">
+                                🔬 Restoration Session In Progress
+                              </span>
+                              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold uppercase">
+                                Step: {activeCard.restoration.step}
+                              </span>
+                            </div>
+                            {activeCard.restoration.isClamped && activeCard.restoration.clampingStartedAt && (
+                              <p className="text-xs font-mono text-zinc-300">
+                                {Date.now() - activeCard.restoration.clampingStartedAt < (activeCard.restoration.clampingDurationMs ?? 86400000)
+                                  ? `24h Clamp Press Active. Clamping cardstock flat at 150 PSI.`
+                                  : `150 PSI Clamp Rest Complete! Ready to unclamp and polish.`}
+                              </p>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                onClose();
+                                onOpenRestoration?.(activeCard);
+                              }}
+                              className="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-black font-black text-xs uppercase tracking-wider transition active:scale-95 shadow-md flex items-center justify-center gap-2 cursor-pointer"
+                            >
+                              <Wrench className="w-3.5 h-3.5 text-black" />
+                              <span>Resume Restoration Lab ▶</span>
+                            </button>
+                          </div>
+                        )}
                         <div className="flex items-center justify-between p-3.5 rounded-2xl bg-zinc-900 border border-white/10">
                           <div>
                             <span className="text-[10px] uppercase font-mono text-zinc-400">Grading Fee</span>
@@ -796,6 +833,14 @@ export const CardActionModal: React.FC<CardActionModalProps> = ({
                         <h4 className="font-bold text-sm text-white">Graded Cards Cannot Be Vaporized</h4>
                         <p className="text-xs text-zinc-400 max-w-sm mx-auto">
                           Once encapsulated in an acrylic slab, cards are permanently certified and protected from recycling.
+                        </p>
+                      </div>
+                    ) : activeCard.isLocked || activeCard.restoration?.isClamped ? (
+                      <div className="p-5 rounded-2xl bg-zinc-900/60 border border-white/10 text-center space-y-3">
+                        <AlertTriangle className="w-8 h-8 text-amber-400 mx-auto" />
+                        <h4 className="font-bold text-sm text-white">Card Locked in Restoration Lab</h4>
+                        <p className="text-xs text-zinc-400 max-w-sm mx-auto">
+                          This card is currently clamped in the 24-hour press or locked in active restoration. Complete or unclamp it before recycling.
                         </p>
                       </div>
                     ) : confirmingVaporize ? (
