@@ -8,6 +8,9 @@ import { useGameStore } from '../../store/useGameStore';
 import { CardRenderer, CHARACTER_THEMES, RARITY_BADGES, FINISH_LABELS } from '../card/CardRenderer';
 import { GradingSlab } from '../card/GradingSlab';
 import { soundEngine } from '../../utils/audioEngine';
+import { DexMicroProgress } from './DexMicroProgress';
+import { DexFilterTabs, DexFilterTab } from './DexFilterTabs';
+import { DexSearchBar } from './DexSearchBar';
 import {
   Lock,
   Sparkles,
@@ -25,7 +28,10 @@ import {
   PackageOpen,
 } from 'lucide-react';
 
-type DexFilterTab = 'all' | 'ichika' | 'nino' | 'miku' | 'yotsuba' | 'itsuki' | 'support';
+export { DexMicroProgress } from './DexMicroProgress';
+export { DexFilterTabs } from './DexFilterTabs';
+export { DexSearchBar } from './DexSearchBar';
+export type { DexFilterTab } from './DexFilterTabs';
 
 export const CardDex: React.FC = () => {
   const inventory = useGameStore((state) => state.inventory);
@@ -33,6 +39,7 @@ export const CardDex: React.FC = () => {
 
   const [activeTab, setActiveTab] = useState<DexFilterTab>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [slabsOnly, setSlabsOnly] = useState<boolean>(false);
   const [selectedCardDef, setSelectedCardDef] = useState<CardDefinition | null>(null);
 
   // Count current copies of each card definition currently in inventory
@@ -44,15 +51,15 @@ export const CardDex: React.FC = () => {
     return map;
   }, [inventory]);
 
-  // Total collection metrics
-  const totalCardsCount = CARDS_CATALOG.length; // Exactly 50 cards
+  // Total collection metrics (42 cards total: 35 Nakano Sisters + 7 Support Mentors)
+  const totalCardsCount = CARDS_CATALOG.length;
   const discoveredCount = useMemo(() => {
     if (!cardDex) return 0;
     return Object.values(cardDex).filter((entry) => entry.discovered).length;
   }, [cardDex]);
 
-  const completionPercentage = Math.round((discoveredCount / totalCardsCount) * 100);
-  const isComplete100 = discoveredCount >= totalCardsCount;
+  const completionPercentage = totalCardsCount > 0 ? Math.round((discoveredCount / totalCardsCount) * 100) : 0;
+  const isComplete100 = discoveredCount >= totalCardsCount && totalCardsCount > 0;
 
   // Filtered card list
   const filteredCatalog = useMemo(() => {
@@ -65,6 +72,11 @@ export const CardDex: React.FC = () => {
       list = list.filter((c) => !['ichika', 'nino', 'miku', 'yotsuba', 'itsuki'].includes(c.characterId));
     }
 
+    // Filter by Slabs Only
+    if (slabsOnly) {
+      list = list.filter((c) => Boolean(cardDex?.[c.id]?.bestGrade));
+    }
+
     // Filter by Search Query
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
@@ -74,15 +86,16 @@ export const CardDex: React.FC = () => {
           c.name.toLowerCase().includes(q) ||
           c.title.toLowerCase().includes(q) ||
           c.characterId.toLowerCase().includes(q) ||
-          c.rarity.toLowerCase().includes(q)
+          c.rarity.toLowerCase().includes(q) ||
+          (c.loreQuote && c.loreQuote.toLowerCase().includes(q))
       );
     }
 
-    // Strictly sort by Card Number (TQQ-001 to TQQ-050)
+    // Strictly sort by Card Number (TQQ-001 to TQQ-042)
     list.sort((a, b) => a.cardNumber.localeCompare(b.cardNumber));
 
     return list;
-  }, [activeTab, searchQuery]);
+  }, [activeTab, searchQuery, slabsOnly, cardDex]);
 
   // Tab counts for badge display
   const tabCounts = useMemo(() => {
@@ -109,11 +122,6 @@ export const CardDex: React.FC = () => {
 
     return counts;
   }, [cardDex, totalCardsCount, discoveredCount]);
-
-  // Circular progress math
-  const ringRadius = 34;
-  const ringCircumference = 2 * Math.PI * ringRadius;
-  const ringOffset = ringCircumference - (completionPercentage / 100) * ringCircumference;
 
   // Synthesize CardInstance for inspection preview if discovered
   const activeInspectedCardInstance: CardInstance | null = useMemo(() => {
@@ -149,257 +157,212 @@ export const CardDex: React.FC = () => {
       )}
 
       {/* ============================================================
-          TOP HEADER & COMPLETION PROGRESS RING
+          UNIFIED VIEWPORT & SCROLL CONTAINER WITH STICKY HIGH-DENSITY TOOLBAR
+          Reclaims ~75px of vertical space, elevating the card grid.
           ============================================================ */}
-      <div className="shrink-0 w-full px-6 py-4 border-b border-white/10 bg-[#0c0c12]/95 backdrop-blur-md z-20 flex flex-col md:flex-row items-center justify-between gap-4 shadow-xl">
-        {/* Left: Card-Dex Title & Circular Ring Tracker */}
-        <div className="flex items-center gap-5 w-full md:w-auto justify-between md:justify-start">
-          <div className="flex items-center gap-3.5">
-            {/* SVG Progress Ring */}
-            <div className="relative w-16 h-16 flex items-center justify-center">
-              <svg className="w-16 h-16 transform -rotate-90">
-                <circle
-                  cx="32"
-                  cy="32"
-                  r={ringRadius}
-                  stroke="currentColor"
-                  strokeWidth="5"
-                  className="text-zinc-800"
-                  fill="transparent"
-                />
-                <circle
-                  cx="32"
-                  cy="32"
-                  r={ringRadius}
-                  stroke="currentColor"
-                  strokeWidth="5"
-                  className={isComplete100 ? 'text-amber-400' : 'text-cyan-400'}
-                  fill="transparent"
-                  strokeDasharray={ringCircumference}
-                  strokeDashoffset={ringOffset}
-                  strokeLinecap="round"
-                  style={{ transition: 'stroke-dashoffset 0.8s ease-in-out' }}
-                />
-              </svg>
-              <div className="absolute flex flex-col items-center justify-center font-mono">
-                <span className="text-xs font-black text-white">{completionPercentage}%</span>
-              </div>
-            </div>
+      <main className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-6 pt-2 pb-20">
+        {/* UNIFIED CARD-DEX TOOLBAR */}
+        <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 py-2 flex flex-col md:flex-row items-center justify-between gap-3 bg-black/60 border border-white/10 rounded-2xl backdrop-blur-md mb-4 sticky top-0 z-20 shadow-xl shadow-black/40">
+          {/* Left Flank: Micro Progress Ring + Sister Filter Tabs */}
+          <div className="flex items-center gap-2.5 sm:gap-3 w-full md:w-auto overflow-x-auto no-scrollbar py-0.5">
+            <DexMicroProgress collected={discoveredCount} total={totalCardsCount} />
+            <DexFilterTabs activeTab={activeTab} counts={tabCounts} onSelect={setActiveTab} />
+          </div>
 
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-sm font-black tracking-wider text-white uppercase font-mono">
-                  Master Card-Dex
-                </h2>
-                {isComplete100 ? (
-                  <span className="px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-500 to-yellow-300 text-zinc-950 text-[10px] font-black font-mono shadow-[0_0_12px_rgba(245,158,11,0.6)] flex items-center gap-1">
-                    <Crown className="w-3 h-3" />
-                    <span>MASTER 100%</span>
-                  </span>
-                ) : (
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-mono">
-                    CATALOG
-                  </span>
-                )}
-              </div>
-              <div className="text-xs font-mono text-zinc-400 mt-0.5 flex items-center gap-1.5">
-                <span>Total Collected:</span>
-                <span className="font-bold text-amber-300">
-                  {discoveredCount} / {totalCardsCount} Artworks
-                </span>
-              </div>
+          {/* Right Flank (White Box Area): Quick Search Bar + Rarity / Slab Filter & Live Count */}
+          <div className="flex items-center gap-2 w-full md:w-auto justify-end flex-wrap sm:flex-nowrap">
+            <DexSearchBar value={searchQuery} onChange={setSearchQuery} />
+
+            {/* Slabs Only / Show All Toggle Button */}
+            <button
+              onClick={() => {
+                setSlabsOnly((prev) => !prev);
+                soundEngine.playFoilRustle();
+              }}
+              className={`px-3 py-1.5 rounded-xl font-mono text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 border ${
+                slabsOnly
+                  ? 'bg-amber-500 text-black border-amber-400 shadow-md'
+                  : 'bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white border-white/10'
+              }`}
+              title={slabsOnly ? 'Showing Slabs Only (Click to show all)' : 'Filter: Show Slabs Only'}
+            >
+              <Shield className={`w-3.5 h-3.5 ${slabsOnly ? 'text-black' : 'text-zinc-400'}`} />
+              <span className="hidden sm:inline">{slabsOnly ? 'Slabs Only' : 'All Cards'}</span>
+              <span className="sm:hidden">{slabsOnly ? 'Slabs' : 'All'}</span>
+            </button>
+
+            {/* Total Count Badge in Glowing Monospace Font */}
+            <div
+              className="px-2.5 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-mono font-bold shadow-[0_0_12px_rgba(245,158,11,0.2)] flex items-center gap-1.5 shrink-0"
+              title={`Master Card-Dex: ${discoveredCount} / ${totalCardsCount} Artworks Collected (${completionPercentage}%)`}
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+              <span>{discoveredCount}/{totalCardsCount}</span>
             </div>
           </div>
         </div>
 
-        {/* Center/Right: Search Bar */}
-        <div className="relative w-full md:w-72 shrink-0">
-          <Search className="w-4 h-4 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search serial, sister, quote..."
-            className="w-full pl-9 pr-8 py-2 rounded-xl bg-zinc-900 border border-white/10 text-xs text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-amber-400/60 font-mono"
-          />
-          {searchQuery && (
+        {/* ============================================================
+            42-CARD MASTER GRID (TQQ-001 TO TQQ-042)
+            Elevated with immediate vertical clearance showing 2+ rows.
+            ============================================================ */}
+        {filteredCatalog.length === 0 ? (
+          <div className="w-full max-w-md mx-auto py-16 flex flex-col items-center justify-center text-center font-mono">
+            <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-zinc-500 mb-4">
+              <HelpCircle className="w-7 h-7" />
+            </div>
+            <h3 className="text-base font-bold text-white mb-1">No Matching Cards Found</h3>
+            <p className="text-xs text-zinc-400 mb-5 max-w-xs">
+              No artworks match your active search query or filter criteria.
+            </p>
             <button
-              onClick={() => setSearchQuery('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white"
+              onClick={() => {
+                setSearchQuery('');
+                setActiveTab('all');
+                setSlabsOnly(false);
+                soundEngine.playFoilRustle();
+              }}
+              className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold text-xs transition active:scale-95 shadow-md"
             >
-              <X className="w-3.5 h-3.5" />
+              Reset Filters
             </button>
-          )}
-        </div>
-      </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5 max-w-7xl mx-auto">
+            {filteredCatalog.map((cardDef) => {
+              const dexEntry = cardDex?.[cardDef.id];
+              const isDiscovered = Boolean(dexEntry?.discovered);
+              const ownedInInventory = inventoryCountMap[cardDef.id] || 0;
+              const theme = CHARACTER_THEMES[cardDef.characterId] ?? CHARACTER_THEMES.miku;
 
-      {/* ============================================================
-          FILTER TABS SUBHEADER BAR
-          ============================================================ */}
-      <div className="h-12 shrink-0 border-b border-white/5 px-6 flex items-center gap-2 overflow-x-auto no-scrollbar bg-zinc-950/40">
-        {(['all', 'ichika', 'nino', 'miku', 'yotsuba', 'itsuki', 'support'] as const).map((tab) => {
-          const count = tabCounts[tab];
-          const isSelected = activeTab === tab;
-          const theme = tab !== 'all' && tab !== 'support' ? CHARACTER_THEMES[tab as CharacterId] : null;
+              // Construct preview instance if discovered
+              const previewCard: CardInstance = {
+                id: `dex_grid_${cardDef.id}`,
+                cardDefId: cardDef.id,
+                characterId: cardDef.characterId,
+                rarity: cardDef.rarity,
+                finish: dexEntry?.highestFinish ?? 'raw',
+                obtainedAt: dexEntry?.discoveredAt ?? Date.now(),
+                grade: dexEntry?.bestGrade,
+                imageUrl: cardDef.imageUrl,
+                name: cardDef.name,
+                title: cardDef.title,
+                cardNumber: cardDef.cardNumber,
+                forceFit: cardDef.forceFit,
+              };
 
-          return (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`px-3 py-1.5 rounded-xl font-mono text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap capitalize ${
-                isSelected
-                  ? 'bg-amber-500 text-zinc-950 shadow'
-                  : 'bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white'
-              }`}
-            >
-              {theme && <span>{theme.symbol}</span>}
-              <span>{tab}</span>
-              <span className={`text-[10px] px-1.5 py-0.2 rounded font-normal ${isSelected ? 'bg-black/20 text-zinc-950 font-bold' : 'bg-white/10 text-zinc-400'}`}>
-                {count.discovered}/{count.total}
-              </span>
-            </button>
-          );
-        })}
-      </div>
-
-      {/* ============================================================
-          50-CARD MASTER GRID
-          ============================================================ */}
-      <main className="flex-1 min-h-0 overflow-y-auto p-6">
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5 pb-20">
-          {filteredCatalog.map((cardDef) => {
-            const dexEntry = cardDex?.[cardDef.id];
-            const isDiscovered = Boolean(dexEntry?.discovered);
-            const ownedInInventory = inventoryCountMap[cardDef.id] || 0;
-            const theme = CHARACTER_THEMES[cardDef.characterId] ?? CHARACTER_THEMES.miku;
-
-            // Construct preview instance if discovered
-            const previewCard: CardInstance = {
-              id: `dex_grid_${cardDef.id}`,
-              cardDefId: cardDef.id,
-              characterId: cardDef.characterId,
-              rarity: cardDef.rarity,
-              finish: dexEntry?.highestFinish ?? 'raw',
-              obtainedAt: dexEntry?.discoveredAt ?? Date.now(),
-              grade: dexEntry?.bestGrade,
-              imageUrl: cardDef.imageUrl,
-              name: cardDef.name,
-              title: cardDef.title,
-              cardNumber: cardDef.cardNumber,
-              forceFit: cardDef.forceFit,
-            };
-
-            return (
-              <div
-                key={cardDef.id}
-                onClick={() => {
-                  setSelectedCardDef(cardDef);
-                  soundEngine.playFoilRustle();
-                }}
-                className={`group relative flex flex-col items-center justify-between p-3 rounded-2xl border transition-all duration-300 transform-gpu hover:-translate-y-1.5 hover:shadow-2xl cursor-pointer select-none ${
-                  isDiscovered
-                    ? 'bg-zinc-900/70 border-white/10 hover:border-amber-400/60'
-                    : 'bg-[#0c0c10] border-zinc-800/80 hover:border-zinc-700'
-                }`}
-              >
-                {/* Inner Card Frame Aspect Ratio: dynamic 82/130 for slabs, 63/88 for raw cards */}
-                <div className={`relative w-full ${previewCard.grade ? 'aspect-[82/130]' : 'aspect-[63/88]'} rounded-xl overflow-hidden flex items-center justify-center`}>
-                  {isDiscovered ? (
-                    /* Discovered: Full-Color Card with Highest Finish or Slab */
-                    <div className="w-full h-full relative flex items-center justify-center">
-                      {previewCard.grade ? (
-                        <GradingSlab
-                          card={previewCard}
-                          interactive={false}
-                          size="full"
-                          className="w-full h-full pointer-events-none !p-0 !m-0"
-                          showMarketValue={false}
-                        />
-                      ) : (
-                        <CardRenderer
-                          card={previewCard}
-                          interactive={false}
-                          size="full"
-                          className="w-full h-full pointer-events-none !p-0 !m-0"
-                          showMarketValue={false}
-                          hideInternalFooter={true}
-                        />
-                      )}
-
-                      {/* Discovered Hover Glow Rim */}
-                      <div className="absolute inset-0 rounded-xl border-2 border-amber-400/0 group-hover:border-amber-400/80 pointer-events-none transition duration-300 z-40" />
-                    </div>
-                  ) : (
-                    /* Undiscovered: Matte Pitch-Black Silhouette with Smoky Particle Shimmer */
-                    <div className="w-full h-full bg-[#0c0c10] flex flex-col items-center justify-center relative overflow-hidden">
-                      {/* Dark silhouette of artwork */}
-                      {cardDef.imageUrl && (
-                        <img
-                          src={cardDef.imageUrl}
-                          alt="Silhouette"
-                          className="absolute inset-0 w-full h-full object-cover filter brightness-0 contrast-200 opacity-20 pointer-events-none"
-                        />
-                      )}
-
-                      {/* Smoky Particle Shimmer Overlay */}
-                      <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-transparent opacity-40 animate-pulse pointer-events-none" />
-
-                      {/* Padlock Icon & Mystery Code */}
-                      <div className="relative z-10 flex flex-col items-center gap-2">
-                        <div className="w-10 h-10 rounded-2xl bg-zinc-900/90 border border-zinc-700 flex items-center justify-center text-zinc-500 group-hover:text-zinc-300 shadow-md">
-                          <Lock className="w-5 h-5" />
-                        </div>
-                        <span className="text-[10px] font-mono tracking-widest text-zinc-500 uppercase font-black">
-                          {cardDef.cardNumber}
-                        </span>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Owned Count Badge (Top-Right) */}
-                  {isDiscovered && ownedInInventory > 0 && (
-                    <div className="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-zinc-950/85 border border-white/20 text-amber-300 font-mono text-[10px] font-bold z-30 shadow">
-                      x{ownedInInventory}
-                    </div>
-                  )}
-                </div>
-
-                {/* Card Footer Metadata Bar */}
-                <div className="mt-2.5 w-full flex items-center justify-between px-1 text-xs font-mono">
-                  {/* Left: Serial Number & Character */}
-                  <div className="flex flex-col">
-                    <span className="text-[11px] font-black text-white truncate max-w-[90px]">
-                      {isDiscovered ? cardDef.cardNumber : '???'}
-                    </span>
-                    <span className="text-[9px] text-zinc-400 truncate max-w-[90px]">
-                      {isDiscovered ? cardDef.name.split(' ')[0] : 'Locked'}
-                    </span>
-                  </div>
-
-                  {/* Right: Badges (Best Finish & Grade) */}
-                  <div className="flex items-center gap-1">
+              return (
+                <div
+                  key={cardDef.id}
+                  onClick={() => {
+                    setSelectedCardDef(cardDef);
+                    soundEngine.playFoilRustle();
+                  }}
+                  className={`group relative flex flex-col items-center justify-between p-3 rounded-2xl border transition-all duration-300 transform-gpu hover:-translate-y-1.5 hover:shadow-2xl cursor-pointer select-none ${
+                    isDiscovered
+                      ? 'bg-zinc-900/70 border-white/10 hover:border-amber-400/60'
+                      : 'bg-[#0c0c10] border-zinc-800/80 hover:border-zinc-700'
+                  }`}
+                >
+                  {/* Inner Card Frame Aspect Ratio: dynamic 82/130 for slabs, 63/88 for raw cards */}
+                  <div className={`relative w-full ${previewCard.grade ? 'aspect-[82/130]' : 'aspect-[63/88]'} rounded-xl overflow-hidden flex items-center justify-center`}>
                     {isDiscovered ? (
-                      <>
-                        {dexEntry?.bestGrade && (
-                          <span className="px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 text-[9px] font-black">
-                            {dexEntry.bestGrade.isBlackLabel ? 'QUAD 10' : `G${dexEntry.bestGrade.numericGrade}`}
-                          </span>
+                      /* Discovered: Full-Color Card with Highest Finish or Slab */
+                      <div className="w-full h-full relative flex items-center justify-center">
+                        {previewCard.grade ? (
+                          <GradingSlab
+                            card={previewCard}
+                            interactive={false}
+                            size="full"
+                            className="w-full h-full pointer-events-none !p-0 !m-0"
+                            showMarketValue={false}
+                          />
+                        ) : (
+                          <CardRenderer
+                            card={previewCard}
+                            interactive={false}
+                            size="full"
+                            className="w-full h-full pointer-events-none !p-0 !m-0"
+                            showMarketValue={false}
+                            hideInternalFooter={true}
+                          />
                         )}
-                        <span className="px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-300 border border-white/10 text-[9px] font-bold">
-                          {cardDef.rarity}
-                        </span>
-                      </>
+
+                        {/* Discovered Hover Glow Rim */}
+                        <div className="absolute inset-0 rounded-xl border-2 border-amber-400/0 group-hover:border-amber-400/80 pointer-events-none transition duration-300 z-40" />
+                      </div>
                     ) : (
-                      <span className="px-1.5 py-0.5 rounded bg-zinc-900 text-zinc-600 border border-zinc-800 text-[9px]">
-                        LOCKED
-                      </span>
+                      /* Undiscovered: Matte Pitch-Black Silhouette with Smoky Particle Shimmer */
+                      <div className="w-full h-full bg-[#0c0c10] flex flex-col items-center justify-center relative overflow-hidden">
+                        {/* Dark silhouette of artwork */}
+                        {cardDef.imageUrl && (
+                          <img
+                            src={cardDef.imageUrl}
+                            alt="Silhouette"
+                            className="absolute inset-0 w-full h-full object-cover filter brightness-0 contrast-200 opacity-20 pointer-events-none"
+                          />
+                        )}
+
+                        {/* Smoky Particle Shimmer Overlay */}
+                        <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-transparent opacity-40 animate-pulse pointer-events-none" />
+
+                        {/* Padlock Icon & Mystery Code */}
+                        <div className="relative z-10 flex flex-col items-center gap-2">
+                          <div className="w-10 h-10 rounded-2xl bg-zinc-900/90 border border-zinc-700 flex items-center justify-center text-zinc-500 group-hover:text-zinc-300 shadow-md">
+                            <Lock className="w-5 h-5" />
+                          </div>
+                          <span className="text-[10px] font-mono tracking-widest text-zinc-500 uppercase font-black">
+                            {cardDef.cardNumber}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Owned Count Badge (Top-Right) */}
+                    {isDiscovered && ownedInInventory > 0 && (
+                      <div className="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-zinc-950/85 border border-white/20 text-amber-300 font-mono text-[10px] font-bold z-30 shadow">
+                        x{ownedInInventory}
+                      </div>
                     )}
                   </div>
+
+                  {/* Card Footer Metadata Bar */}
+                  <div className="mt-2.5 w-full flex items-center justify-between px-1 text-xs font-mono">
+                    {/* Left: Serial Number & Character */}
+                    <div className="flex flex-col">
+                      <span className="text-[11px] font-black text-white truncate max-w-[90px]">
+                        {isDiscovered ? cardDef.cardNumber : '???'}
+                      </span>
+                      <span className="text-[9px] text-zinc-400 truncate max-w-[90px]">
+                        {isDiscovered ? cardDef.name.split(' ')[0] : 'Locked'}
+                      </span>
+                    </div>
+
+                    {/* Right: Badges (Best Finish & Grade) */}
+                    <div className="flex items-center gap-1">
+                      {isDiscovered ? (
+                        <>
+                          {dexEntry?.bestGrade && (
+                            <span className="px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 text-[9px] font-black">
+                              {dexEntry.bestGrade.isBlackLabel ? 'QUAD 10' : `G${dexEntry.bestGrade.numericGrade}`}
+                            </span>
+                          )}
+                          <span className="px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-300 border border-white/10 text-[9px] font-bold">
+                            {cardDef.rarity}
+                          </span>
+                        </>
+                      ) : (
+                        <span className="px-1.5 py-0.5 rounded bg-zinc-900 text-zinc-600 border border-zinc-800 text-[9px]">
+                          LOCKED
+                        </span>
+                      )}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </main>
 
       {/* ============================================================

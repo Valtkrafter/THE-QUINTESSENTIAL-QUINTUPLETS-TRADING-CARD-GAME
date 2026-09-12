@@ -160,9 +160,12 @@ Zero external `.mp3` or `.wav` files. All audio is synthesized procedurally in r
 
 ### 📖 9. Master Card-Dex & Discovery Engine
 - **Master 42-Card Registry:** Complete catalog of cards `TQQ-001` through `TQQ-042` (35 Nakano Sisters: 5 sisters $\times$ 7 rarities + 7 unique Support cards: Fuutarou [3], Raiha [2], Maruo [1], Yusuke Takeda [1]) tracking global completion status across the entire collection.
+- **Unified Single-Bar Controls & Viewport Clearance:** Dissolved the redundant dual-row upper header bar into a single, high-density toolbar (`CardDex.tsx`, `DexMicroProgress.tsx`, `DexFilterTabs.tsx`, `DexSearchBar.tsx`). Reclaims $\sim 75\text{px}$ of vertical screen real estate, displaying 2+ complete card rows above the fold on desktop viewports.
+- **Micro Progress Ring (`DexMicroProgress`):** Streamlined SVG micro-ring with centered completion percentage, golden master completion crown, and dynamic collection status tooltip (`X of 42 Artworks Collected`).
+- **High-Density Sister Filter Tabs (`DexFilterTabs`):** Character-badged filter pills with signature color dots and discovery ratios (`ALL`, `Ichika`, `Nino`, `Miku`, `Yotsuba`, `Itsuki`, `Support`).
+- **Integrated Real-Time Search & Slabs-Only Toggle (`DexSearchBar`):** Quick-filter search bar matching card serials, names, titles, and quotes in real-time, paired with a one-click `Slabs Only` toggle and glowing monospace collection count badge.
 - **Silhouette Mystery Shader:** Undiscovered cards render as matte pitch-black silhouettes (`#0c0c10`) with animated smoky particle shimmers, frosted borders, padlock icons, and hidden identity codes.
 - **Highest Finish & Best BGS Grade Memory:** Discovered entries preserve the pinnacle state ever obtained across unboxings, kiosk buys, and grading certifications (even if the physical card is subsequently liquidated or dusted).
-- **Circular SVG Completion Tracker:** Dynamic progress ring visualizing exact collection percentage (`X / 42 Collected (Y%)`).
 - **100% Golden Holographic Shimmer Aura:** Attaining full 42/42 completion permanently bathes the Card-Dex header and border frame in an animated rainbow prismatic gold aura.
 - **Comprehensive Card Dossier Modal:** Detailed inspection modal featuring real-time 3D tilt, subgrade plate inspection, authenticated voice actress credentials, character quotes, and acquisition origins.
 
@@ -280,7 +283,10 @@ tqqtcg/
 │   │   │   ├── CardRenderer.tsx     # Holographic foil shader engine & card frame
 │   │   │   └── GradingSlab.tsx      # Acrylic BGS-style grading slab with subgrade plates
 │   │   ├── catalog/
-│   │   │   └── CardDex.tsx          # 42-card master catalog with silhouettes & 100% gold shimmer
+│   │   │   ├── CardDex.tsx          # 42-card master catalog with unified single toolbar & silhouettes
+│   │   │   ├── DexFilterTabs.tsx    # High-density sister filter tabs with character badges
+│   │   │   ├── DexMicroProgress.tsx # Streamlined micro SVG completion progress ring
+│   │   │   └── DexSearchBar.tsx     # Integrated real-time search bar for serial, name, and quote
 │   │   ├── dusting/
 │   │   │   └── DustingWorkshop.tsx  # Card vaporization and Stardust exchange station
 │   │   ├── layout/
