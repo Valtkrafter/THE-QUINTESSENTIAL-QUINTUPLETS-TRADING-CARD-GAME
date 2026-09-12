@@ -128,10 +128,10 @@ export const GradingSlab: React.FC<GradingSlabProps> = ({
   // Scaled dimensions to fit around standard 63mm x 88mm card (authentic BGS slab ratio 82mm x 130mm, or dynamic uniform padding in showcaseMode)
   const slabSizeClasses = showcaseMode
     ? {
-        sm: 'w-[190px] max-w-full p-2',
-        md: 'w-full max-w-[280px] p-2',
-        lg: 'w-full max-w-[340px] p-2',
-        full: 'w-full p-2',
+        sm: 'w-[190px] max-w-full aspect-[63/88] p-1.5',
+        md: 'w-full max-w-[280px] aspect-[63/88] p-1.5',
+        lg: 'w-full max-w-[340px] aspect-[63/88] p-2',
+        full: 'w-full h-full max-h-full max-w-full aspect-[63/88] p-1.5 sm:p-2',
       }[size]
     : {
         sm: 'w-[230px] max-w-full max-h-full aspect-[82/130] p-2.5 rounded-2xl',
@@ -318,13 +318,13 @@ export const GradingSlab: React.FC<GradingSlabProps> = ({
         <div
           className={`w-full ${
             showcaseMode
-              ? '!rounded-lg overflow-hidden shadow-[inset_0_1px_3px_rgba(0,0,0,0.6)] border border-white/10 p-0'
+              ? 'h-full !rounded-lg overflow-hidden shadow-[inset_0_1px_3px_rgba(0,0,0,0.6)] border border-white/10 p-0'
               : 'flex-1 min-h-0 rounded-xl slab-inner-well bg-black/60 p-[1.5%] border border-white/10'
           } relative z-20 flex items-center justify-center pointer-events-none`}
         >
           <div
             className={`w-full ${
-              showcaseMode ? 'aspect-[63/88] !rounded-lg overflow-hidden' : 'h-full'
+              showcaseMode ? 'h-full aspect-[63/88] !rounded-lg overflow-hidden' : 'h-full'
             } flex items-center justify-center pointer-events-none`}
           >
             <CardRenderer

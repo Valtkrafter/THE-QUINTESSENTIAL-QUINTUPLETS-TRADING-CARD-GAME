@@ -1,4 +1,4 @@
-export const APP_VERSION = '2.1.0'; // Increment with each task
+export const APP_VERSION = '2.1.1'; // Increment with each task
 
 export interface PatchNote {
   version: string;
@@ -11,16 +11,15 @@ export interface PatchNote {
 // ALWAYS overwrite this object with ONLY the latest release
 export const CURRENT_PATCH_NOTE: PatchNote = {
   version: APP_VERSION,
-  title: 'Restoration Workbench & Crack-to-Regrade',
+  title: 'Card-Dex Full-Art Display Polish',
   date: new Date().toISOString().split('T')[0],
   highlights: [
-    'Enter the physical Restoration Lab to crack slabs, clean flaws under a 50x microscope, and clamp-press cards flat.',
-    'Buff holographic foil with restoration wax and sleeve cards in semi-rigid savers with an animated inspection checklist.',
-    'Re-grade restored cards at the Vault with a locked Grade 7+ floor, subgrade buffs, and an amber RE-CERTIFIED badge.',
+    'Graded cards in the Card-Dex catalog now feature full-art illustrations matching the showcase vitrine.',
+    'All cards in the catalog grid now have unified height and proportions.',
   ],
   fixes: [
-    'Fixed graded slabs locking cards permanently—now you can crack and restore low grades for a second chance at Gem Mint.',
-    'Optimized tactile workshop audio effects with ultra-low latency procedural Web Audio synthesis.',
+    'Removed oversized grading headers that squished character portraits in the Card-Dex.',
+    'Unified grade badges into a single sleek indicator in the top-right corner.',
   ],
 };
 

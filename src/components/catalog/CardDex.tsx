@@ -264,8 +264,8 @@ export const CardDex: React.FC = () => {
                       : 'bg-[#0c0c10] border-zinc-800/80 hover:border-zinc-700'
                   }`}
                 >
-                  {/* Inner Card Frame Aspect Ratio: dynamic 82/130 for slabs, 63/88 for raw cards */}
-                  <div className={`relative w-full ${previewCard.grade ? 'aspect-[82/130]' : 'aspect-[63/88]'} rounded-xl overflow-hidden flex items-center justify-center`}>
+                  {/* Inner Card Frame Aspect Ratio: UNIFIED aspect-[63/88] for all cards */}
+                  <div className="relative w-full aspect-[63/88] rounded-xl overflow-hidden flex items-center justify-center">
                     {isDiscovered ? (
                       /* Discovered: Full-Color Card with Highest Finish or Slab */
                       <div className="w-full h-full relative flex items-center justify-center">
@@ -276,6 +276,7 @@ export const CardDex: React.FC = () => {
                             size="full"
                             className="w-full h-full pointer-events-none !p-0 !m-0"
                             showMarketValue={false}
+                            showcaseMode={true}
                           />
                         ) : (
                           <CardRenderer
@@ -318,9 +319,9 @@ export const CardDex: React.FC = () => {
                       </div>
                     )}
 
-                    {/* Owned Count Badge (Top-Right) */}
+                    {/* Owned Count Badge (Top-Left to avoid colliding with top-right grade badge) */}
                     {isDiscovered && ownedInInventory > 0 && (
-                      <div className="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-zinc-950/85 border border-white/20 text-amber-300 font-mono text-[10px] font-bold z-30 shadow">
+                      <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-zinc-950/85 border border-white/20 text-amber-300 font-mono text-[10px] font-bold z-30 shadow">
                         x{ownedInInventory}
                       </div>
                     )}

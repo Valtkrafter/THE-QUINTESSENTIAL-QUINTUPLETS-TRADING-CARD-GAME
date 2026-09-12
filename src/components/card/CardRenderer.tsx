@@ -189,31 +189,31 @@ export const getAuthoritativeGradeBadgeStyle = (grade: GradeResult) => {
   const isBlackLabel = grade.isBlackLabel || grade.tier === 'BLACK_LABEL';
   if (isBlackLabel) {
     return {
-      className: 'bg-black text-amber-400 border border-amber-500 shadow-[0_0_12px_rgba(245,158,11,0.6)]',
-      label: '★ 10',
+      className: 'bg-black text-amber-400 border border-amber-500 text-[10px] font-black px-1.5 py-0.5 rounded-md shadow-[0_0_12px_rgba(245,158,11,0.6)]',
+      label: 'GRADE 10.0',
     };
   }
   if (grade.tier === 'GEM_MINT_10' || grade.numericGrade === 10) {
     return {
-      className: 'bg-amber-950/90 text-amber-300 border border-amber-400/60 shadow-[0_0_10px_rgba(245,158,11,0.4)]',
+      className: 'bg-amber-950/90 text-amber-300 border border-amber-400/60 text-[10px] font-extrabold px-1.5 py-0.5 rounded-md shadow-[0_0_10px_rgba(245,158,11,0.4)]',
       label: 'GRADE 10.0',
     };
   }
   if (grade.tier === 'MINT_9' || grade.numericGrade === 9) {
     return {
-      className: 'bg-cyan-950/90 text-cyan-300 border border-cyan-500/50 shadow-[0_0_8px_rgba(6,182,212,0.3)]',
+      className: 'bg-cyan-950/90 text-cyan-300 border border-cyan-500/50 text-[10px] font-bold px-1.5 py-0.5 rounded-md shadow-[0_0_8px_rgba(6,182,212,0.3)]',
       label: 'GRADE 9.0',
     };
   }
   if (grade.tier === 'CRISP_7_8' || grade.numericGrade >= 7) {
     return {
-      className: 'bg-slate-800/90 text-slate-200 border border-slate-600',
+      className: 'bg-slate-800/90 text-slate-200 border border-slate-600 text-[10px] font-bold px-1.5 py-0.5 rounded-md',
       label: `GRADE ${grade.numericGrade}.0`,
     };
   }
   // Grade 1–6
   return {
-    className: 'bg-zinc-800/90 text-zinc-300 border border-zinc-700',
+    className: 'bg-zinc-800/90 text-zinc-300 border border-zinc-700 text-[10px] font-bold px-1.5 py-0.5 rounded-md',
     label: `GRADE ${grade.numericGrade}.0`,
   };
 };
@@ -464,9 +464,13 @@ export const CardRenderer: React.FC<CardRendererProps> = ({
                 {theme.symbol}
               </span>
               <h3
-                className={`font-bold tracking-tight truncate max-w-[55%] text-zinc-100 ${
-                  isThumbnail ? 'text-[10px]' : 'text-xs sm:text-sm'
-                } drop-shadow`}
+                className={
+                  showcaseMode
+                    ? 'text-xs font-semibold text-white/90 truncate max-w-[60%]'
+                    : `font-bold tracking-tight truncate max-w-[55%] text-zinc-100 ${
+                        isThumbnail ? 'text-[10px]' : 'text-xs sm:text-sm'
+                      } drop-shadow`
+                }
               >
                 {cardTitle}
               </h3>
@@ -474,7 +478,7 @@ export const CardRenderer: React.FC<CardRendererProps> = ({
 
             <div className="flex items-center gap-1 shrink-0">
               {gradeBadge && !isThumbnail ? (
-                <span className={`font-mono text-[10px] sm:text-xs px-2 py-0.5 rounded font-bold ${gradeBadge.className}`}>
+                <span className={`font-mono shrink-0 ${gradeBadge.className}`}>
                   {gradeBadge.label}
                 </span>
               ) : (
@@ -579,8 +583,8 @@ export const CardRenderer: React.FC<CardRendererProps> = ({
             {/* LORE QUOTE OVERLAY (z-30) */}
             {cardLoreQuote && !isThumbnail && (
               <div className="absolute bottom-2 inset-x-2 rounded-md border border-white/10 text-center z-30 shadow-lg pointer-events-none select-none overflow-hidden">
-                <div className="absolute inset-0 bg-black/60 backdrop-blur-xs backdrop-blur-sm pointer-events-none select-none" />
-                <p className="relative z-10 text-[10px] sm:text-[11px] text-white/80 line-clamp-2 leading-tight px-2 py-1 crisp-render">
+                <div className="absolute inset-0 bg-black/60 backdrop-blur-xs pointer-events-none select-none" />
+                <p className="relative z-10 text-[9px] sm:text-[10px] text-white/80 line-clamp-2 leading-tight px-2 py-1 crisp-render">
                   &ldquo;{cardLoreQuote}&rdquo;
                 </p>
               </div>
