@@ -16,6 +16,7 @@ export interface GradingSlabProps {
   showMarketValue?: boolean;
   mockGrade?: GradeResult; // Useful for previewing slabs in showcase
   showcaseMode?: boolean;
+  thumbnail?: boolean;
 }
 
 export const GradingSlab: React.FC<GradingSlabProps> = ({
@@ -27,6 +28,7 @@ export const GradingSlab: React.FC<GradingSlabProps> = ({
   showMarketValue = true,
   mockGrade,
   showcaseMode = false,
+  thumbnail = false,
 }) => {
   const activeGrade: GradeResult | undefined = card.grade ?? mockGrade;
 
@@ -39,7 +41,7 @@ export const GradingSlab: React.FC<GradingSlabProps> = ({
   } = useSmoothTilt({
     maxRotation: 12,
     perspective: 1200,
-    disabled: !interactive || !activeGrade,
+    disabled: !interactive || !activeGrade || thumbnail,
   });
 
   // If card is raw and no mockGrade provided, render standard raw card
@@ -47,14 +49,75 @@ export const GradingSlab: React.FC<GradingSlabProps> = ({
     return (
       <CardRenderer
         card={card}
-        interactive={interactive}
-        size={size}
+        interactive={interactive && !thumbnail}
+        size={thumbnail ? 'full' : size}
         className={className}
         onClick={onClick}
-        showMarketValue={showMarketValue && !showcaseMode}
-        hideInternalFooter={showcaseMode}
+        showMarketValue={showMarketValue && !showcaseMode && !thumbnail}
+        hideInternalFooter={showcaseMode || thumbnail}
         showcaseMode={showcaseMode}
+        thumbnail={thumbnail}
       />
+    );
+  }
+
+  // Compact thumbnail mode for list drawers and small preview containers
+  if (thumbnail) {
+    const isBlackLabel = activeGrade.isBlackLabel || activeGrade.tier === 'BLACK_LABEL';
+    const tier = activeGrade.tier;
+    const num = activeGrade.numericGrade;
+
+    // Micro Grade Pill per specification:
+    // Grade 1–6: bg-zinc-800/95 text-zinc-300 border border-zinc-700 text-[8px] px-1 py-0.2 rounded
+    // Grade 7–8: bg-slate-800/95 text-slate-200 border border-slate-600 text-[8px] px-1 py-0.2 rounded
+    // Grade 9: bg-cyan-950/95 text-cyan-300 border border-cyan-500 text-[8px] px-1 py-0.2 rounded shadow-[0_0_6px_rgba(6,182,212,0.5)]
+    // Grade 10 / Black Label: bg-amber-950/95 text-amber-300 border border-amber-400 text-[8px] px-1 py-0.2 rounded shadow-[0_0_8px_rgba(245,158,11,0.6)]
+    let microBadgeClass = 'bg-zinc-800/95 text-zinc-300 border border-zinc-700 text-[8px] px-1 py-0.2 rounded';
+    let microLabel = `Gr. ${num}`;
+
+    if (isBlackLabel) {
+      microBadgeClass = 'bg-amber-950/95 text-amber-300 border border-amber-400 text-[8px] px-1 py-0.2 rounded shadow-[0_0_8px_rgba(245,158,11,0.6)]';
+      microLabel = 'BL 10';
+    } else if (tier === 'GEM_MINT_10' || num === 10) {
+      microBadgeClass = 'bg-amber-950/95 text-amber-300 border border-amber-400 text-[8px] px-1 py-0.2 rounded shadow-[0_0_8px_rgba(245,158,11,0.6)]';
+      microLabel = 'Gr. 10';
+    } else if (tier === 'MINT_9' || num === 9) {
+      microBadgeClass = 'bg-cyan-950/95 text-cyan-300 border border-cyan-500 text-[8px] px-1 py-0.2 rounded shadow-[0_0_6px_rgba(6,182,212,0.5)]';
+      microLabel = 'Gr. 9';
+    } else if (tier === 'CRISP_7_8' || num >= 7) {
+      microBadgeClass = 'bg-slate-800/95 text-slate-200 border border-slate-600 text-[8px] px-1 py-0.2 rounded';
+      microLabel = `Gr. ${num}`;
+    }
+
+    return (
+      <div
+        className={`relative w-full h-full select-none rounded-lg p-0.5 border border-white/20 bg-white/5 flex items-center justify-center overflow-hidden ${
+          isBlackLabel ? 'border-amber-400/40 bg-amber-950/10' : ''
+        } ${interactive && onClick ? 'cursor-pointer' : 'pointer-events-none'} ${className}`}
+        onClick={onClick}
+      >
+        {/* Inner Card Artwork spanning 100% width and 100% height */}
+        <div className="w-full h-full relative rounded-[6px] overflow-hidden flex items-center justify-center pointer-events-none">
+          <CardRenderer
+            card={card}
+            interactive={false}
+            disableTilt={true}
+            size="full"
+            className="w-full h-full !p-0 !m-0 rounded-[6px] overflow-hidden"
+            showMarketValue={false}
+            hideInternalFooter={true}
+            showcaseMode={true}
+            thumbnail={true}
+          />
+        </div>
+
+        {/* Sleek Micro Grade Pill in Top-Right Corner */}
+        <div className="absolute top-1 right-1 z-30 pointer-events-none font-mono font-bold tracking-tight">
+          <span className={microBadgeClass}>
+            {microLabel}
+          </span>
+        </div>
+      </div>
     );
   }
 

@@ -18,6 +18,7 @@ export interface CardRendererProps {
   externalLight?: CardLightState;
   hideInternalFooter?: boolean;
   showcaseMode?: boolean;
+  thumbnail?: boolean;
 }
 
 // Character visual theme styling
@@ -230,8 +231,12 @@ export const CardRenderer: React.FC<CardRendererProps> = ({
   externalLight,
   hideInternalFooter = false,
   showcaseMode = false,
+  thumbnail = false,
 }) => {
-  const shouldHideFooter = hideInternalFooter || showcaseMode;
+  const isThumbnail = Boolean(thumbnail);
+  const shouldHideFooter = hideInternalFooter || showcaseMode || isThumbnail;
+  const effectiveInteractive = interactive && !isThumbnail;
+  const effectiveDisableTilt = disableTilt || isThumbnail;
   const cardRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
   const [hasImageError, setHasImageError] = useState(false);
@@ -372,7 +377,7 @@ export const CardRenderer: React.FC<CardRendererProps> = ({
   const localTilt = useSmoothTilt({
     maxRotation: 16,
     perspective: 1200,
-    disabled: !interactive || disableTilt || Boolean(externalLight),
+    disabled: !effectiveInteractive || effectiveDisableTilt || Boolean(externalLight),
   });
 
   // Conditional Light Source Resolution:
@@ -393,23 +398,25 @@ export const CardRenderer: React.FC<CardRendererProps> = ({
   };
 
   // Dimensions based on standard 63mm x 88mm ratio
-  const sizeClasses = {
-    sm: 'w-[190px] max-w-full max-h-full',
-    md: 'w-[260px] max-w-full max-h-full',
-    lg: 'w-[320px] max-w-full max-h-full',
-    full: 'w-full h-full max-h-full max-w-full',
-  }[size];
+  const sizeClasses = isThumbnail || size === 'full'
+    ? 'w-full h-full max-h-full max-w-full'
+    : {
+        sm: 'w-[190px] max-w-full max-h-full',
+        md: 'w-[260px] max-w-full max-h-full',
+        lg: 'w-[320px] max-w-full max-h-full',
+        full: 'w-full h-full max-h-full max-w-full',
+      }[size];
 
   return (
     <div
-      className={`card-perspective-wrapper ${size === 'full' ? 'w-full h-full flex items-center justify-center' : 'inline-block'} select-none relative before:absolute before:-inset-4 before:content-[''] ${interactive ? 'cursor-pointer' : 'pointer-events-none'} ${className}`}
+      className={`card-perspective-wrapper ${size === 'full' || isThumbnail ? 'w-full h-full flex items-center justify-center' : 'inline-block'} select-none relative ${isThumbnail ? '' : "before:absolute before:-inset-4 before:content-['']"} ${effectiveInteractive ? 'cursor-pointer' : 'pointer-events-none'} ${className}`}
       onClick={onClick}
-      {...(disableTilt || externalLight || !interactive ? {} : localTilt.containerProps)}
+      {...(effectiveDisableTilt || externalLight || !effectiveInteractive ? {} : localTilt.containerProps)}
     >
       <motion.div
         ref={cardRef}
         style={{
-          ...(disableTilt || !interactive ? {} : localTilt.tiltStyle),
+          ...(effectiveDisableTilt || !effectiveInteractive ? {} : localTilt.tiltStyle),
           '--light-x': resolvedLight.lightX,
           '--light-y': resolvedLight.lightY,
           '--foil-angle': resolvedLight.foilAngle,
@@ -419,14 +426,16 @@ export const CardRenderer: React.FC<CardRendererProps> = ({
           '--glare-opacity': resolvedLight.sheenOpacity,
           backfaceVisibility: 'visible',
           WebkitBackfaceVisibility: 'visible',
-          boxShadow: localTilt.isHovered && !disableTilt && interactive
+          boxShadow: isThumbnail
+            ? 'none'
+            : localTilt.isHovered && !effectiveDisableTilt && effectiveInteractive
             ? `0 20px 40px -10px rgba(0, 0, 0, 0.8), 0 0 25px ${theme.glowColor}`
             : '0 10px 25px -5px rgba(0, 0, 0, 0.6), 0 0 10px rgba(0, 0, 0, 0.4)',
         } as any}
         className={`card-3d-root relative ${sizeClasses} aspect-[63/88] rounded-lg overflow-hidden ${
-          disableTilt || !interactive ? 'pointer-events-none' : 'cursor-pointer'
+          effectiveDisableTilt || !effectiveInteractive ? 'pointer-events-none' : 'cursor-pointer'
         } bg-zinc-950 border border-zinc-800 ${
-          localTilt.isHovered && !disableTilt && interactive ? 'is-interacting' : ''
+          localTilt.isHovered && !effectiveDisableTilt && effectiveInteractive ? 'is-interacting' : ''
         }`}
       >
         {/* Ambient Character Rim Glow (z-10) */}
@@ -439,26 +448,40 @@ export const CardRenderer: React.FC<CardRendererProps> = ({
         />
 
         {/* Outer Card Matte Border (z-20) */}
-        <div className={`absolute inset-[3px] rounded-[6px] bg-gradient-to-b from-zinc-900 to-black ${shouldHideFooter ? 'p-1.5 pb-1' : 'p-2'} flex flex-col justify-between overflow-hidden z-20`}>
+        <div
+          className={`absolute ${
+            isThumbnail ? 'inset-[2px] rounded-[5px] p-1 pb-0.5' : `inset-[3px] rounded-[6px] ${shouldHideFooter ? 'p-1.5 pb-1' : 'p-2'}`
+          } bg-gradient-to-b from-zinc-900 to-black flex flex-col justify-between overflow-hidden z-20`}
+        >
           {/* HEADER: Title & Grade/Rarity & Symbol (z-30) */}
-          <div className="relative flex items-center justify-between gap-1 pb-1 border-b border-zinc-800/80 z-30 crisp-render">
-            <div className="flex items-center gap-1.5 min-w-0 flex-1">
-              <span className="text-xs shrink-0" title={theme.name}>
+          <div
+            className={`relative flex items-center justify-between gap-1 ${
+              isThumbnail ? 'pb-0.5' : 'pb-1'
+            } border-b border-zinc-800/80 z-30 crisp-render`}
+          >
+            <div className="flex items-center gap-1 min-w-0 flex-1">
+              <span className={`${isThumbnail ? 'text-[10px]' : 'text-xs'} shrink-0`} title={theme.name}>
                 {theme.symbol}
               </span>
-              <h3 className="font-bold tracking-tight truncate max-w-[55%] text-zinc-100 text-xs sm:text-sm drop-shadow">
+              <h3
+                className={`font-bold tracking-tight truncate max-w-[55%] text-zinc-100 ${
+                  isThumbnail ? 'text-[10px]' : 'text-xs sm:text-sm'
+                } drop-shadow`}
+              >
                 {cardTitle}
               </h3>
             </div>
 
             <div className="flex items-center gap-1 shrink-0">
-              {gradeBadge ? (
+              {gradeBadge && !isThumbnail ? (
                 <span className={`font-mono text-[10px] sm:text-xs px-2 py-0.5 rounded font-bold ${gradeBadge.className}`}>
                   {gradeBadge.label}
                 </span>
               ) : (
                 <span
-                  className={`text-xs font-bold px-2 py-0.5 rounded border ${rarityBadge.bgClass} ${rarityBadge.textClass} ${rarityBadge.borderClass}`}
+                  className={`${
+                    isThumbnail ? 'text-[9px] px-1 py-0.2' : 'text-xs px-2 py-0.5'
+                  } font-bold rounded border ${rarityBadge.bgClass} ${rarityBadge.textClass} ${rarityBadge.borderClass}`}
                 >
                   {rarityBadge.label}
                 </span>
@@ -467,7 +490,11 @@ export const CardRenderer: React.FC<CardRendererProps> = ({
           </div>
 
           {/* MAIN ARTWORK FRAME (z-10) */}
-          <div className="relative flex-1 w-full my-1 rounded-md overflow-hidden border border-zinc-700/60 bg-[#0d0d12] z-10 flex flex-col justify-between items-center group">
+          <div
+            className={`relative flex-1 w-full ${
+              isThumbnail ? 'my-0.5' : 'my-1'
+            } rounded-md overflow-hidden border border-zinc-700/60 bg-[#0d0d12] z-10 flex flex-col justify-between items-center group`}
+          >
             {/* BASE ARTWORK & FALLBACK LAYER (z-0) */}
             <div className="absolute inset-0 w-full h-full overflow-hidden rounded-md bg-[#0d0d12] z-0">
               {/* Thematic Character Backdrop Gradient */}
@@ -550,7 +577,7 @@ export const CardRenderer: React.FC<CardRendererProps> = ({
             )}
 
             {/* LORE QUOTE OVERLAY (z-30) */}
-            {cardLoreQuote && (
+            {cardLoreQuote && !isThumbnail && (
               <div className="absolute bottom-2 inset-x-2 rounded-md border border-white/10 text-center z-30 shadow-lg pointer-events-none select-none overflow-hidden">
                 <div className="absolute inset-0 bg-black/60 backdrop-blur-xs backdrop-blur-sm pointer-events-none select-none" />
                 <p className="relative z-10 text-[10px] sm:text-[11px] text-white/80 line-clamp-2 leading-tight px-2 py-1 crisp-render">

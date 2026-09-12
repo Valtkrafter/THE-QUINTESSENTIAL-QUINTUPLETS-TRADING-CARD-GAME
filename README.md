@@ -78,9 +78,13 @@ Submit raw cards to the **Grading Station** to be certified in heavy acrylic sla
   - **Microfiber Cloth:** Eliminates Poor grades 1–3.
   - **Centering Laser:** Doubles the chance of rolling a Gem Mint 10 Centering subgrade.
   - **Vault Insurance:** Guarantees a free automatic re-roll if a card scores below Grade 7.
+- **Compact Thumbnail Mode (`thumbnail?: boolean`):** High-density list and drawer mode stripping bulky BGS headers, subgrade grids, and heavy outer padding down to a sleek hair-thin acrylic rim (`p-0.5`, `border border-white/20 rounded-lg`). The inner card illustration spans 100% width and height matching raw cards 1:1, complemented by a tier-styled micro grade pill in the top-right corner (Slate for 7–8, Cyan glow for 9, Golden Amber for 10/Black Label).
 
-### 🏛️ 4. 5-Slot Acrylic Showcase (Vitrine) & Idle Revenue Engine
-- **Semi-Circular 3D Acrylic Stage:** 5 vertical acrylic pedestals arranged along a curved perspective stage (`perspective: 1200px`) against deep Obsidian dark (`#08080a`) with frosted bases, reflection planes, and metallic edge brackets. Expanded stage geometry (`max-w-7xl h-[560px] md:h-[600px] lg:h-[640px]`) accommodates high-impact card presentation.
+- **Dissolved Secondary Horizontal Bar & Genshin/WuWa Flank HUD Architecture:** Replaced the rigid ~80px full-width top status bar with two sleek glassmorphic HUD modules flanking the central Support Altar in the upper negative space:
+  - **Left Flank (`VitrineResonancePanel.tsx`):** Displays total vault valuation with amber-gold gradient typography, real-time socket count, and the 3 core resonance synergies (Quintuplet Harmony, Mono-Waifu Obsession, Vault Excellence) with active glowing LED status orbs, live multiplier amplification indicators, and detailed tooltips.
+  - **Right Flank (`VitrineHarvestConsole.tsx`):** Command module with real-time idle yield rate meter (`+X ¥/min`, `(Y ¥/s)`), animated 4-band audio-frequency streaming visualizer, recessed uncollected revenue pool counter (`12h Cap` indicator), and a tactile Genshin/WuWa Burst-style golden `CLAIM REVENUE` button with floating coin particles and procedural Web Audio chimes.
+- **Recovered Vertical Clearance & Pedestal Elevation:** Purged vertical compression, granting the lower row of 5 sister pedestals generous breathing margins (`mt-6 md:mt-8 mb-8 pb-10`), elevating pedestal bases and valuation footers comfortably above the viewport boundary on standard 1080p and laptop screens without unnecessary scrollbars.
+- **Semi-Circular 3D Acrylic Stage:** 5 vertical acrylic pedestals arranged along a curved perspective stage (`perspective: 1200px`) against deep Obsidian dark (`#08080a`) with frosted bases, reflection planes, and metallic edge brackets. Calibrated stage geometry (`max-w-7xl h-[460px] md:h-[500px] lg:h-[520px]`) accommodates high-impact card presentation without clipping.
 - **Showcase Full-Art Expansion (`showcaseMode`):** Slotted graded slabs automatically engage `showcaseMode={true}`, suppressing the bulky BGS header, subgrade matrix, and multiplier banner to expand the inner card well to >92% of slab height. Certified grades are rendered via a single authoritative header grade badge in the top-right corner (eliminating duplicate badge collisions) with tier-specific styling:
   - *Grade 1–6:* Dark slate glass with zinc border (`bg-zinc-800/90 text-zinc-300 border-zinc-700`).
   - *Grade 7–8:* Silver frosted glass with steel border (`bg-slate-800/90 text-slate-200 border-slate-600`).
@@ -124,7 +128,7 @@ Submit raw cards to the **Grading Station** to be certified in heavy acrylic sla
 - **Grade 9 & 10 Certified Slab Scaling (+20%):** Slotting a certified Mint 9, Gem Mint 10, or Black Label slab into the Support Altar automatically triggers a $+20\%$ scaling multiplier across all numeric effect values (e.g. Fuutarou UR scales to $2.40\times$ yield & $+120\%$ Harmony; Maruo SEC scales to $+90\%$ dust, $30\%$ Kiosk sale, and $+24\%$ sister valuation).
 - **Zero-Clipping Intrinsic Aspect-Ratio Architecture:** The Support Altar card container is decoupled from fixed pixel heights (`w-48 md:w-52 aspect-[63/88] flex-shrink-0 my-2 overflow-visible`), ensuring both raw cards and full acrylic slabs render at authentic geometry without vertical squishing. The full-card hover controls (`Swap` / `Unmount`) are strictly bounded to the card frame, while character lore quotes float with bottom cushion (`bottom-2 inset-x-2 line-clamp-2`) without bleeding past card boundaries or overlapping active buff banners.
 - **Altar Liquidation & Vaporization Immunity:** Slotted support cards are completely immune to accidental liquidation, individual dusting, or batch liquidation.
-- **Dedicated Support Drawer:** Integrated slide-over modal drawer filtering strictly to Support characters with real-time name, title, and buff description search, BGS slab filters, and one-click socketing.
+- **Dedicated Support Drawer (`SupportDrawer.tsx`):** Integrated slide-over modal drawer filtering strictly to Support characters with real-time name, title, and buff description search, BGS slab filters, and one-click socketing. Features a unified thumbnail frame (`w-14 sm:w-16 aspect-[63/88] rounded-lg overflow-hidden bg-black/40`) establishing strict 1:1 dimension parity between raw cards and certified graded slabs, tier-styled grade metadata badges (`Gr. 7 (CRISP_7_8)`), and locked button alignments.
 
 ### 💰 5. Direct Sell System & Bulk Liquidation
 - **Instant Liquid Sales:** Liquidate raw, holo, or graded cards directly for instant $\yen$ currency from the unified `CardActionModal`.
@@ -286,10 +290,12 @@ tqqtcg/
 │   │   │   ├── SelectBoosterModal.tsx # Portal-mounted pack kiosk with live drop odds & kiosk tab
 │   │   │   └── TearMechanism.tsx    # Direct HTML5 window pointer tear engine
 │   │   ├── showcase/
-│   │   │   ├── SocketDrawer.tsx     # Full-art pedestal selection drawer with 3-col grid & status badges
-│   │   │   ├── SupportAltar.tsx     # Floating tutor dais with downward ambient light cone & Grade 9/10 scaling
-│   │   │   ├── SupportDrawer.tsx    # Slide-over socketing drawer with search, filters & active buff preview
-│   │   │   └── Vitrine.tsx          # 5-slot acrylic pedestal stage with dynamic spotlights & idle claim
+│   │   │   ├── SocketDrawer.tsx          # Full-art pedestal selection drawer with 3-col grid & status badges
+│   │   │   ├── SupportAltar.tsx          # Floating tutor dais with downward ambient light cone & Grade 9/10 scaling
+│   │   │   ├── SupportDrawer.tsx         # Slide-over socketing drawer with search, filters & active buff preview
+│   │   │   ├── Vitrine.tsx               # 5-slot acrylic pedestal stage with flank HUD & dynamic spotlights
+│   │   │   ├── VitrineHarvestConsole.tsx # Right flank HUD: yield streaming visualizer & tactile claim button
+│   │   │   └── VitrineResonancePanel.tsx # Left flank HUD: vault valuation & 3-way synergy resonance matrix
 │   │   └── vault/
 │   │       ├── GradingScannerFX.tsx # Particle laser scanner visualizer
 │   │       └── GradingStation.tsx   # Card submission hub & consumable tool equip

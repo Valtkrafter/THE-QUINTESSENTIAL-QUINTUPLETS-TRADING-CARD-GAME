@@ -289,33 +289,11 @@ export const SupportDrawer: React.FC<SupportDrawerProps> = ({ isOpen, onClose })
                       }`}
                     >
                       {/* Left: Card Thumbnail Preview */}
-                      <div className="w-24 shrink-0 aspect-[63/88] rounded-xl overflow-hidden shadow-lg relative bg-black/60 flex items-center justify-center">
+                      <div className="relative w-14 sm:w-16 aspect-[63/88] flex-shrink-0 rounded-lg overflow-hidden bg-black/40">
                         {card.grade ? (
-                          <GradingSlab
-                            card={card}
-                            interactive={false}
-                            size="full"
-                            className="w-full !p-0 !m-0"
-                            showMarketValue={false}
-                            showcaseMode={true}
-                          />
+                          <GradingSlab card={card} className="w-full h-full" thumbnail={true} />
                         ) : (
-                          <CardRenderer
-                            card={card}
-                            interactive={false}
-                            disableTilt={true}
-                            size="full"
-                            className="w-full !p-0 !m-0"
-                            showMarketValue={false}
-                            hideInternalFooter={true}
-                          />
-                        )}
-
-                        {/* Grade 9/10 Glow Badge */}
-                        {isGradeScaled && (
-                          <div className="absolute top-1 right-1 px-1 py-0.5 rounded bg-amber-500/90 text-zinc-950 text-[9px] font-black font-mono shadow-md z-30">
-                            +20%
-                          </div>
+                          <CardRenderer card={card} className="w-full h-full" thumbnail={true} />
                         )}
                       </div>
 
@@ -324,14 +302,24 @@ export const SupportDrawer: React.FC<SupportDrawerProps> = ({ isOpen, onClose })
                         <div>
                           {/* Card Name & Badges */}
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-sm font-black font-mono text-white truncate">
+                            <span className="font-bold text-sm text-white truncate">
                               {card.name || 'Support Card'}
                             </span>
                             <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-white/10 text-zinc-300 font-bold uppercase">
                               {card.rarity}
                             </span>
                             {card.grade && (
-                              <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-cyan-950 text-cyan-300 border border-cyan-500/40 font-bold">
+                              <span
+                                className={`text-[10px] font-mono px-1.5 py-0.2 rounded font-bold border ${
+                                  card.grade.isBlackLabel || card.grade.numericGrade === 10
+                                    ? 'bg-amber-950 text-amber-300 border-amber-400/60 shadow-[0_0_8px_rgba(245,158,11,0.4)]'
+                                    : card.grade.numericGrade === 9
+                                    ? 'bg-cyan-950 text-cyan-300 border-cyan-500/50 shadow-[0_0_6px_rgba(6,182,212,0.3)]'
+                                    : card.grade.numericGrade >= 7
+                                    ? 'bg-slate-800 text-slate-200 border-slate-600'
+                                    : 'bg-zinc-800 text-zinc-300 border-zinc-700'
+                                }`}
+                              >
                                 Gr. {card.grade.numericGrade} ({card.grade.tier})
                               </span>
                             )}
@@ -348,7 +336,7 @@ export const SupportDrawer: React.FC<SupportDrawerProps> = ({ isOpen, onClose })
                                 <Zap className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                                 <span className="truncate">{buff.badgeLabel}</span>
                               </div>
-                              <p className="text-[11px] text-zinc-400 leading-tight">
+                              <p className="text-xs text-amber-300/90 leading-snug">
                                 {buff.description}
                               </p>
                               {isGradeScaled && (
@@ -362,23 +350,25 @@ export const SupportDrawer: React.FC<SupportDrawerProps> = ({ isOpen, onClose })
                         </div>
 
                         {/* Action Buttons */}
-                        <div className="flex items-center justify-between mt-3 pt-2 border-t border-white/5">
-                          <span className="text-xs font-mono text-zinc-400">
+                        <div className="flex items-center justify-between mt-3 pt-2 border-t border-white/5 gap-2">
+                          <span className="text-xs text-zinc-400 font-mono">
                             Valuation: <span className="text-white font-semibold">¥{calculateCardMarketValue(card).toLocaleString()}</span>
                           </span>
 
                           {isCurrentlySlotted ? (
                             <button
+                              type="button"
                               onClick={handleUnmount}
-                              className="px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-red-500/20 text-zinc-300 hover:text-red-300 border border-white/10 hover:border-red-500/30 text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-1.5"
+                              className="shrink-0 px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-red-500/20 text-zinc-300 hover:text-red-300 border border-white/10 hover:border-red-500/30 text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-1.5"
                             >
                               <UserCheck className="w-3.5 h-3.5 text-amber-400" />
                               <span>Active (Unmount)</span>
                             </button>
                           ) : (
                             <button
+                              type="button"
                               onClick={() => handleSocketCard(card)}
-                              className="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 text-xs font-mono font-black transition-all shadow-md hover:shadow-amber-500/20 active:scale-95 cursor-pointer flex items-center gap-1.5"
+                              className="shrink-0 px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 text-xs font-mono font-black transition-all shadow-md hover:shadow-amber-500/20 active:scale-95 cursor-pointer flex items-center gap-1.5"
                             >
                               <span>Socket Tutor</span>
                               <ArrowUpRight className="w-3.5 h-3.5" />

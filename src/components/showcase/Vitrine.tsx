@@ -1,36 +1,19 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { CardInstance, CharacterId, Rarity, SisterId } from '../../types/card';
+import { CardInstance, CharacterId } from '../../types/card';
 import { useGameStore } from '../../store/useGameStore';
 import { useIdleRevenue } from '../../hooks/useIdleRevenue';
-import { calculateCardMarketValue, FINISH_MULTIPLIERS, GRADE_TIER_CONFIG } from '../../config/economy';
+import { calculateCardMarketValue } from '../../config/economy';
 import { GradingSlab } from '../card/GradingSlab';
-import { CardRenderer, CHARACTER_THEMES } from '../card/CardRenderer';
+import { CardRenderer } from '../card/CardRenderer';
 import { SupportAltar } from './SupportAltar';
 import { SupportDrawer } from './SupportDrawer';
 import { SocketDrawer } from './SocketDrawer';
+import { VitrineResonancePanel } from './VitrineResonancePanel';
+import { VitrineHarvestConsole } from './VitrineHarvestConsole';
 import { soundEngine } from '../../utils/audioEngine';
-import {
-  Coins,
-  Sparkles,
-  Award,
-  TrendingUp,
-  Plus,
-  X,
-  Search,
-  Check,
-  Zap,
-  Shield,
-  Layers,
-  Flame,
-  Info,
-  ChevronRight,
-  RefreshCw,
-  Clock,
-  RotateCcw,
-} from 'lucide-react';
+import { Plus } from 'lucide-react';
 
 // Signature spotlight colors per sister and support
 export const SPOTLIGHT_COLORS: Record<string, { hex: string; rgb: string; glow: string }> = {
@@ -64,7 +47,6 @@ export const Vitrine: React.FC = () => {
     yieldPerSecond,
     synergyReport,
     isMaxOfflineReached,
-    offlineHoursAccrued,
     claimRevenue,
   } = useIdleRevenue();
 
@@ -74,11 +56,8 @@ export const Vitrine: React.FC = () => {
   // Support Altar Drawer State
   const [isSupportDrawerOpen, setIsSupportDrawerOpen] = useState<boolean>(false);
 
-  // Claim celebration particles
+  // Claim celebration animation state
   const [isClaiming, setIsClaiming] = useState<boolean>(false);
-  const [claimParticles, setClaimParticles] = useState<
-    Array<{ id: number; x: number; y: number; scale: number }>
-  >([]);
 
   // Map of slotted cards for fast resolution
   const inventoryMap = useMemo(() => {
@@ -110,202 +89,19 @@ export const Vitrine: React.FC = () => {
     if (accruedYen <= 0 || isClaiming) return;
     setIsClaiming(true);
 
-    // Generate celebratory golden particles
-    const particles = Array.from({ length: 16 }, (_, i) => ({
-      id: i,
-      x: (Math.random() - 0.5) * 260,
-      y: (Math.random() - 0.5) * 160 - 40,
-      scale: 0.6 + Math.random() * 0.8,
-    }));
-    setClaimParticles(particles);
-
-    const claimed = claimRevenue();
+    claimRevenue();
 
     setTimeout(() => {
       setIsClaiming(false);
-      setClaimParticles([]);
-    }, 1800);
+    }, 1600);
   };
 
   return (
     <div className="relative w-full h-full bg-[#08080a] text-zinc-100 flex flex-col select-none overflow-hidden font-sans">
       {/* ============================================================
-          TOP NEON REVENUE TICKER & SYNERGY STATUS BAR
+          MAIN 3D SEMI-CIRCULAR VITRINE STAGE & FLANK HUD
           ============================================================ */}
-      <div className="shrink-0 w-full px-6 py-4 border-b border-white/10 relative z-20 shadow-xl overflow-hidden">
-        {/* Isolated blurred background */}
-        <div className="absolute inset-0 bg-[#0c0c12]/90 backdrop-blur-md pointer-events-none select-none" />
-        <div className="relative z-10 w-full flex flex-col md:flex-row items-center justify-between gap-4">
-        {/* Left: Vault Stats & Live Revenue */}
-        <div className="flex items-center gap-5 w-full md:w-auto justify-between md:justify-start">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-500 to-yellow-300 flex items-center justify-center text-zinc-950 font-black text-lg shadow-[0_0_20px_rgba(245,158,11,0.5)] crisp-render">
-              5
-            </div>
-            <div className="crisp-render">
-              <h2 className="text-sm font-black tracking-wider text-white uppercase font-mono flex items-center gap-2">
-                <span>The Acrylic Showcase</span>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 font-mono">
-                  VITRINE
-                </span>
-              </h2>
-              <div className="flex items-center gap-2 text-xs font-mono text-zinc-400 mt-0.5">
-                <span>Vault Valuation:</span>
-                <span className="font-bold text-amber-300">
-                  ¥ {synergyReport.totalMarketValue.toLocaleString()}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div className="h-8 w-px bg-white/10 hidden sm:block" />
-
-          {/* Real-Time Idle Yield Stats */}
-          <div className="flex flex-col font-mono">
-            <div className="flex items-center gap-1.5 text-[11px] text-zinc-400">
-              <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Idle Yield Rate</span>
-            </div>
-            <div className="text-sm font-black text-emerald-400 flex items-center gap-1">
-              <span>+{synergyReport.effectiveYieldPerMinute.toFixed(1)} ¥/min</span>
-              <span className="text-[10px] text-zinc-500 font-normal">
-                ({synergyReport.effectiveYieldPerSecond.toFixed(2)}/s)
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Center: Active Synergy Badges */}
-        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
-          {/* 1. Quintuplet Harmony Badge (+50%) */}
-          <div
-            className={`px-3 py-1.5 rounded-xl border text-xs font-mono font-bold flex items-center gap-1.5 transition-all duration-300 whitespace-nowrap ${
-              synergyReport.quintupletHarmony
-                ? 'bg-amber-500/20 border-amber-400/80 text-amber-300 shadow-[0_0_15px_rgba(245,158,11,0.3)] animate-pulse'
-                : 'bg-white/5 border-white/10 text-zinc-500'
-            }`}
-            title="Socket all 5 sisters (Ichika, Nino, Miku, Yotsuba, Itsuki) for +50% Yield"
-          >
-            <span>🌸</span>
-            <span>Quintuplet Harmony</span>
-            <span className="text-[10px] font-black px-1.5 py-0.2 rounded bg-black/40">
-              +50%
-            </span>
-          </div>
-
-          {/* 2. Mono-Waifu Obsession Badge (+30%) */}
-          <div
-            className={`px-3 py-1.5 rounded-xl border text-xs font-mono font-bold flex items-center gap-1.5 transition-all duration-300 whitespace-nowrap ${
-              synergyReport.monoWaifu
-                ? 'bg-pink-500/20 border-pink-400/80 text-pink-300 shadow-[0_0_15px_rgba(236,72,153,0.3)] animate-pulse'
-                : 'bg-white/5 border-white/10 text-zinc-500'
-            }`}
-            title="Socket 5 copies of the same sister for +30% Yield"
-          >
-            <span>💖</span>
-            <span>Mono-Waifu</span>
-            <span className="text-[10px] font-black px-1.5 py-0.2 rounded bg-black/40">
-              +30%
-            </span>
-          </div>
-
-          {/* 3. Vault Excellence Badge (+100%) */}
-          <div
-            className={`px-3 py-1.5 rounded-xl border text-xs font-mono font-bold flex items-center gap-1.5 transition-all duration-300 whitespace-nowrap ${
-              synergyReport.vaultExcellence
-                ? 'bg-cyan-500/20 border-cyan-400/80 text-cyan-300 shadow-[0_0_15px_rgba(6,182,212,0.3)] animate-pulse'
-                : 'bg-white/5 border-white/10 text-zinc-500'
-            }`}
-            title="Socket 5 certified acrylic Slabs with Grade >= 9 for +100% Yield"
-          >
-            <span>💎</span>
-            <span>Vault Excellence</span>
-            <span className="text-[10px] font-black px-1.5 py-0.2 rounded bg-black/40">
-              +100%
-            </span>
-          </div>
-
-          {/* 4. Active Support Buff Badge */}
-          {synergyReport.activeSupportBuff ? (
-            <div
-              onClick={() => setIsSupportDrawerOpen(true)}
-              className="px-3 py-1.5 rounded-xl border border-amber-500/60 bg-amber-500/20 text-amber-300 shadow-[0_0_15px_rgba(245,158,11,0.3)] text-xs font-mono font-bold flex items-center gap-1.5 transition-all duration-300 whitespace-nowrap cursor-pointer hover:bg-amber-500/30 animate-pulse"
-              title={synergyReport.activeSupportBuff.description}
-            >
-              <Zap className="w-3.5 h-3.5 text-amber-400" />
-              <span>{synergyReport.activeSupportBuff.badgeLabel}</span>
-            </div>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setIsSupportDrawerOpen(true)}
-              className="px-2.5 py-1.5 rounded-xl border border-dashed border-amber-500/30 bg-amber-500/5 text-amber-400/80 hover:bg-amber-500/10 hover:border-amber-400/60 text-xs font-mono font-medium flex items-center gap-1.5 transition-all duration-200 whitespace-nowrap cursor-pointer"
-            >
-              <Plus className="w-3.5 h-3.5 text-amber-400" />
-              <span>Socket Tutor</span>
-            </button>
-          )}
-        </div>
-
-        {/* Right: Pulsating Neon Revenue Counter & Claim Button */}
-        <div className="relative flex items-center gap-3 w-full md:w-auto justify-end">
-          <div className="flex flex-col items-end font-mono">
-            <span className="text-[10px] text-zinc-400 uppercase tracking-wider flex items-center gap-1">
-              <Clock className="w-3 h-3 text-amber-400" />
-              <span>Uncollected Vault Revenue</span>
-              {isMaxOfflineReached && (
-                <span className="text-[9px] text-amber-400 font-bold">(12h Cap)</span>
-              )}
-            </span>
-            <span className="text-lg font-black text-amber-400 tracking-tight">
-              {accruedYen.toLocaleString()} ¥
-            </span>
-          </div>
-
-          <button
-            onClick={handleClaimRevenue}
-            disabled={accruedYen <= 0 || isClaiming}
-            className={`relative px-5 py-2.5 rounded-2xl font-mono font-black text-xs uppercase tracking-wider transition-all duration-300 shadow-lg flex items-center gap-2 overflow-hidden ${
-              accruedYen > 0
-                ? 'bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 text-zinc-950 hover:brightness-110 shadow-amber-500/30 active:scale-95 cursor-pointer animate-pulse'
-                : 'bg-zinc-800/80 text-zinc-500 border border-white/5 cursor-not-allowed opacity-60'
-            }`}
-          >
-            <Coins className="w-4 h-4 text-zinc-950" />
-            <span>Claim Revenue</span>
-
-            {/* Golden sweep effect */}
-            {accruedYen > 0 && (
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -skew-x-12 animate-shimmer pointer-events-none" />
-            )}
-          </button>
-
-          {/* Floating Coin Particles FX on Claim */}
-          {claimParticles.map((p) => (
-            <motion.div
-              key={p.id}
-              initial={{ opacity: 1, x: 0, y: 0, scale: p.scale }}
-              animate={{
-                opacity: 0,
-                x: p.x,
-                y: p.y - 60,
-                scale: p.scale * 1.3,
-              }}
-              transition={{ duration: 1.2, ease: 'easeOut' }}
-              className="absolute right-12 top-2 pointer-events-none z-50 text-amber-300 font-black font-mono flex items-center gap-1 text-sm shadow-md"
-            >
-              <Coins className="w-4 h-4 text-yellow-300" />
-              <span>+{Math.round(accruedYen / claimParticles.length || 10)}</span>
-            </motion.div>
-          ))}
-        </div>
-      </div>
-    </div>
-
-      {/* ============================================================
-          MAIN 3D SEMI-CIRCULAR VITRINE STAGE
-          ============================================================ */}
-      <div className="relative flex-1 w-full flex flex-col items-center justify-start pt-4 sm:pt-6 p-4 sm:p-8 overflow-y-auto overflow-x-hidden pointer-events-none">
+      <div className="relative flex-1 w-full flex flex-col items-center justify-start pt-2 sm:pt-4 px-4 sm:px-8 pb-10 overflow-y-auto overflow-x-hidden pointer-events-none">
         {/* Atmospheric background spotlights & ceiling rig */}
         <div className="absolute top-0 inset-x-0 h-24 bg-gradient-to-b from-black/80 via-zinc-950/40 to-transparent pointer-events-none select-none z-10" />
 
@@ -313,14 +109,32 @@ export const Vitrine: React.FC = () => {
         <div className="absolute bottom-0 inset-x-0 h-64 bg-gradient-to-t from-black via-[#0c0c12] to-transparent pointer-events-none select-none" />
         <div className="absolute bottom-10 inset-x-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent pointer-events-none select-none" />
 
-        {/* Elevated Support Altar / Tutor Dais in Upper Stage Zone */}
-        <div className="relative z-30 mb-2 md:mb-4 pointer-events-auto overflow-visible">
+        {/* ============================================================
+            UPPER STAGE ZONE: LEFT FLANK | SUPPORT ALTAR | RIGHT FLANK
+            ============================================================ */}
+        <div className="w-full max-w-7xl mx-auto px-4 pt-2 pb-2 sm:pb-4 flex flex-col lg:flex-row items-center justify-between gap-6 relative z-30 pointer-events-auto">
+          {/* Left Flank Panel: Vault Valuation & Resonance Synergies */}
+          <VitrineResonancePanel synergyReport={synergyReport} />
+
+          {/* Central Support Altar / Tutor Dais */}
           <SupportAltar onOpenDrawer={() => setIsSupportDrawerOpen(true)} />
+
+          {/* Right Flank Panel: Yield Generator & Harvest Console */}
+          <VitrineHarvestConsole
+            accruedYen={accruedYen}
+            yieldPerMinute={yieldPerMinute}
+            yieldPerSecond={yieldPerSecond}
+            isMaxOfflineReached={isMaxOfflineReached}
+            onClaim={handleClaimRevenue}
+            isClaiming={isClaiming}
+          />
         </div>
 
-        {/* 3D Semi-Circular Container */}
+        {/* ============================================================
+            LOWER STAGE ZONE: 3D SEMI-CIRCULAR 5 SISTER PEDESTALS
+            ============================================================ */}
         <div
-          className="relative w-full max-w-7xl h-[520px] md:h-[560px] lg:h-[600px] flex items-center justify-center pointer-events-none select-none"
+          className="relative w-full max-w-7xl h-[460px] md:h-[500px] lg:h-[520px] mt-6 md:mt-8 mb-8 pb-10 flex items-center justify-center pointer-events-none select-none"
           style={{
             perspective: 1200,
             perspectiveOrigin: '50% 40%',
@@ -331,8 +145,16 @@ export const Vitrine: React.FC = () => {
             {PEDESTAL_CONFIGS.map((config) => {
               const slot = showcaseSlots[config.index];
               const card = slottedCards[config.index];
-              const characterId = card?.characterId || (config.index < 5 ? (['ichika', 'nino', 'miku', 'yotsuba', 'itsuki'][config.index] as CharacterId) : 'support');
-              const themeColorKey = card ? (card.characterId in SPOTLIGHT_COLORS ? card.characterId : 'support') : 'empty';
+              const characterId =
+                card?.characterId ||
+                (config.index < 5
+                  ? (['ichika', 'nino', 'miku', 'yotsuba', 'itsuki'][config.index] as CharacterId)
+                  : 'support');
+              const themeColorKey = card
+                ? card.characterId in SPOTLIGHT_COLORS
+                  ? card.characterId
+                  : 'support'
+                : 'empty';
               const spotlight = SPOTLIGHT_COLORS[themeColorKey] ?? SPOTLIGHT_COLORS.empty;
 
               return (
@@ -490,7 +312,17 @@ export const Vitrine: React.FC = () => {
                       <span className="text-[10px] font-mono text-zinc-400 mt-0.5 pointer-events-none select-none">
                         {card ? (
                           <span className="text-amber-300 font-semibold">
-                            +{((60 + calculateCardMarketValue(card) * (1.0 + (synergyReport.activeSupportBuff?.effects.sisterMarketValueMultiplier ?? 0)) * 0.0002) * synergyReport.synergyMultiplier).toFixed(1)} ¥/min
+                            +
+                            {(
+                              (60 +
+                                calculateCardMarketValue(card) *
+                                  (1.0 +
+                                    (synergyReport.activeSupportBuff?.effects
+                                      .sisterMarketValueMultiplier ?? 0)) *
+                                  0.0002) *
+                              synergyReport.synergyMultiplier
+                            ).toFixed(1)}{' '}
+                            ¥/min
                           </span>
                         ) : (
                           <span className="text-zinc-500">Vacant</span>
