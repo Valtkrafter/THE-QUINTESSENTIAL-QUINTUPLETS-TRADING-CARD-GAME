@@ -2,7 +2,7 @@
 
 import React, { useRef, useState, useCallback, useMemo, useEffect } from 'react';
 import { motion, useTransform, MotionStyle } from 'framer-motion';
-import { CardDefinition, CardInstance, CardLightState, CharacterId, Finish, Rarity } from '../../types/card';
+import { CardDefinition, CardInstance, CardLightState, CharacterId, Finish, GradeResult, Rarity } from '../../types/card';
 import { CARD_MAP, getCardDef } from '../../config/cardsData';
 import { calculateCardMarketValue } from '../../config/economy';
 import { useSmoothTilt } from '../../hooks/useSmoothTilt';
@@ -182,6 +182,40 @@ export const FINISH_LABELS: Record<Finish, string> = {
   signed: 'VOICE ACTOR STAMP',
 };
 
+// Single authoritative grade badge style resolver
+export const getAuthoritativeGradeBadgeStyle = (grade: GradeResult) => {
+  const isBlackLabel = grade.isBlackLabel || grade.tier === 'BLACK_LABEL';
+  if (isBlackLabel) {
+    return {
+      className: 'bg-black text-amber-400 border border-amber-500 shadow-[0_0_12px_rgba(245,158,11,0.6)]',
+      label: '★ 10',
+    };
+  }
+  if (grade.tier === 'GEM_MINT_10' || grade.numericGrade === 10) {
+    return {
+      className: 'bg-amber-950/90 text-amber-300 border border-amber-400/60 shadow-[0_0_10px_rgba(245,158,11,0.4)]',
+      label: 'GRADE 10.0',
+    };
+  }
+  if (grade.tier === 'MINT_9' || grade.numericGrade === 9) {
+    return {
+      className: 'bg-cyan-950/90 text-cyan-300 border border-cyan-500/50 shadow-[0_0_8px_rgba(6,182,212,0.3)]',
+      label: 'GRADE 9.0',
+    };
+  }
+  if (grade.tier === 'CRISP_7_8' || grade.numericGrade >= 7) {
+    return {
+      className: 'bg-slate-800/90 text-slate-200 border border-slate-600',
+      label: `GRADE ${grade.numericGrade}.0`,
+    };
+  }
+  // Grade 1–6
+  return {
+    className: 'bg-zinc-800/90 text-zinc-300 border border-zinc-700',
+    label: `GRADE ${grade.numericGrade}.0`,
+  };
+};
+
 export type ImageFitStatus = 'loading' | 'perfect' | 'tall' | 'wide' | 'error';
 
 export const CardRenderer: React.FC<CardRendererProps> = ({
@@ -229,6 +263,8 @@ export const CardRenderer: React.FC<CardRendererProps> = ({
   const finish: Finish = card.finish ?? 'raw';
   const theme = CHARACTER_THEMES[characterId] ?? CHARACTER_THEMES.miku;
   const rarityBadge = RARITY_BADGES[rarity] ?? RARITY_BADGES.C;
+  const activeGrade: GradeResult | undefined = 'grade' in card ? card.grade : undefined;
+  const gradeBadge = activeGrade ? getAuthoritativeGradeBadgeStyle(activeGrade) : null;
   const marketValue = calculateCardMarketValue(
     'finish' in card ? (card as CardInstance) : { ...cardDef, finish, obtainedAt: 0, cardDefId: cardDef.id }
   );
@@ -384,7 +420,7 @@ export const CardRenderer: React.FC<CardRendererProps> = ({
             ? `0 20px 40px -10px rgba(0, 0, 0, 0.8), 0 0 25px ${theme.glowColor}`
             : '0 10px 25px -5px rgba(0, 0, 0, 0.6), 0 0 10px rgba(0, 0, 0, 0.4)',
         } as any}
-        className={`card-3d-root relative ${sizeClasses} aspect-[63/88] rounded-xl overflow-hidden ${
+        className={`card-3d-root relative ${sizeClasses} aspect-[63/88] rounded-lg overflow-hidden ${
           disableTilt || !interactive ? 'pointer-events-none' : 'cursor-pointer'
         } bg-zinc-950 border border-zinc-800 ${
           localTilt.isHovered && !disableTilt && interactive ? 'is-interacting' : ''
@@ -392,7 +428,7 @@ export const CardRenderer: React.FC<CardRendererProps> = ({
       >
         {/* Ambient Character Rim Glow (z-10) */}
         <div
-          className="absolute inset-0 rounded-xl pointer-events-none select-none transition-opacity duration-300 z-10"
+          className="absolute inset-0 rounded-lg pointer-events-none select-none transition-opacity duration-300 z-10"
           style={{
             boxShadow: `inset 0 0 16px ${theme.accent}33, inset 0 0 1px ${theme.accent}88`,
             border: `1.5px solid ${theme.accent}55`,
@@ -400,22 +436,22 @@ export const CardRenderer: React.FC<CardRendererProps> = ({
         />
 
         {/* Outer Card Matte Border (z-20) */}
-        <div className={`absolute inset-[3px] rounded-[10px] bg-gradient-to-b from-zinc-900 to-black ${hideInternalFooter ? 'p-1.5 pb-1' : 'p-2'} flex flex-col justify-between overflow-hidden z-20`}>
+        <div className={`absolute inset-[3px] rounded-[6px] bg-gradient-to-b from-zinc-900 to-black ${hideInternalFooter ? 'p-1.5 pb-1' : 'p-2'} flex flex-col justify-between overflow-hidden z-20`}>
           {/* HEADER: Title & Grade/Rarity & Symbol (z-30) */}
           <div className="relative flex items-center justify-between gap-1 pb-1 border-b border-zinc-800/80 z-30 crisp-render">
-            <div className="flex items-center gap-1.5 min-w-0">
-              <span className="text-xs" title={theme.name}>
+            <div className="flex items-center gap-1.5 min-w-0 flex-1">
+              <span className="text-xs shrink-0" title={theme.name}>
                 {theme.symbol}
               </span>
-              <h3 className="font-bold tracking-tight truncate max-w-[120px] text-zinc-100 text-xs sm:text-sm drop-shadow">
+              <h3 className="font-bold tracking-tight truncate max-w-[55%] text-zinc-100 text-xs sm:text-sm drop-shadow">
                 {cardTitle}
               </h3>
             </div>
 
             <div className="flex items-center gap-1 shrink-0">
-              {'grade' in card && card.grade ? (
-                <span className="bg-amber-500/20 border border-amber-500/40 text-amber-400 font-mono text-xs px-2 py-0.5 rounded font-bold">
-                  {card.grade.isBlackLabel ? '★ 10' : `GRADE ${card.grade.numericGrade}.0`}
+              {gradeBadge ? (
+                <span className={`font-mono text-[10px] sm:text-xs px-2 py-0.5 rounded font-bold ${gradeBadge.className}`}>
+                  {gradeBadge.label}
                 </span>
               ) : (
                 <span
@@ -428,9 +464,9 @@ export const CardRenderer: React.FC<CardRendererProps> = ({
           </div>
 
           {/* MAIN ARTWORK FRAME (z-10) */}
-          <div className="relative flex-1 w-full my-1 rounded-lg overflow-hidden border border-zinc-700/60 bg-[#0d0d12] z-10 flex flex-col justify-between items-center group">
+          <div className="relative flex-1 w-full my-1 rounded-md overflow-hidden border border-zinc-700/60 bg-[#0d0d12] z-10 flex flex-col justify-between items-center group">
             {/* BASE ARTWORK & FALLBACK LAYER (z-0) */}
-            <div className="absolute inset-0 w-full h-full overflow-hidden rounded-lg bg-[#0d0d12] z-0">
+            <div className="absolute inset-0 w-full h-full overflow-hidden rounded-md bg-[#0d0d12] z-0">
               {/* Thematic Character Backdrop Gradient */}
               <div
                 className={`absolute inset-0 bg-gradient-to-b ${theme.bgGradient} opacity-60 pointer-events-none`}
@@ -454,24 +490,10 @@ export const CardRenderer: React.FC<CardRendererProps> = ({
                     alt={cardName}
                     onLoad={handleImageLoad}
                     onError={handleImageError}
-                    className={`w-full h-full select-none pointer-events-none transition-all duration-300 ${
-                      fitStatus === 'tall'
-                        ? 'object-cover object-top'
-                        : 'object-cover object-center'
-                    } ${fitStatus === 'loading' ? 'opacity-90' : 'opacity-100'}`}
+                    className={`w-full h-full select-none pointer-events-none transition-all duration-300 object-cover object-top ${fitStatus === 'loading' ? 'opacity-90' : 'opacity-100'}`}
                     loading="eager"
                     decoding="async"
                   />
-
-                  {/* When fitStatus === 'tall': Soft transition gradient only at the very bottom edge */}
-                  {fitStatus === 'tall' && (
-                    <div className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-[#111116] to-transparent opacity-80" />
-                  )}
-
-                  {/* When fitStatus === 'wide': Subtle side-vignette shadows only */}
-                  {fitStatus === 'wide' && (
-                    <div className="pointer-events-none absolute inset-0 shadow-[inset_16px_0_20px_-8px_rgba(0,0,0,0.8),inset_-16px_0_20px_-8px_rgba(0,0,0,0.8)] opacity-70" />
-                  )}
                 </div>
               ) : (
                 /* Visual Error Fallback State */
@@ -524,14 +546,9 @@ export const CardRenderer: React.FC<CardRendererProps> = ({
               <div className="finish-gold-etched-relief absolute inset-0 pointer-events-none select-none z-20" />
             )}
 
-            {/* Top gradient shadow on art to preserve header contrast only when not perfect */}
-            {fitStatus !== 'perfect' && (
-              <div className="absolute top-0 inset-x-0 h-8 bg-gradient-to-b from-black/60 to-transparent pointer-events-none select-none z-25" />
-            )}
-
             {/* LORE QUOTE OVERLAY (z-30) */}
             {cardLoreQuote && (
-              <div className="relative mt-auto w-full p-1.5 rounded-b-lg border-t border-zinc-800/80 text-center z-30 shadow-lg pointer-events-none select-none overflow-hidden">
+              <div className="relative mt-auto w-full p-1.5 rounded-b-md border-t border-zinc-800/80 text-center z-30 shadow-lg pointer-events-none select-none overflow-hidden">
                 <div className="absolute inset-0 bg-black/80 backdrop-blur-md pointer-events-none select-none" />
                 <p className="relative z-10 text-[10px] sm:text-[11px] italic text-zinc-200 line-clamp-2 leading-tight crisp-render">
                   &ldquo;{cardLoreQuote}&rdquo;

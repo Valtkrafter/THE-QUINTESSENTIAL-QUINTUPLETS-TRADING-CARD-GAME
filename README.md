@@ -81,12 +81,15 @@ Submit raw cards to the **Grading Station** to be certified in heavy acrylic sla
 
 ### 🏛️ 4. 5-Slot Acrylic Showcase (Vitrine) & Idle Revenue Engine
 - **Semi-Circular 3D Acrylic Stage:** 5 vertical acrylic pedestals arranged along a curved perspective stage (`perspective: 1200px`) against deep Obsidian dark (`#08080a`) with frosted bases, reflection planes, and metallic edge brackets. Expanded stage geometry (`max-w-7xl h-[560px] md:h-[600px] lg:h-[640px]`) accommodates high-impact card presentation.
-- **Showcase Full-Art Expansion (`showcaseMode`):** Slotted graded slabs automatically engage `showcaseMode={true}`, suppressing the bulky BGS header, subgrade matrix, and multiplier banner to expand the inner card well to >92% of slab height. Certified grades are rendered via a sleek floating glass pill badge in the top-right corner with tier-specific styling:
-  - *Grade 1–8:* Translucent frosted glass with silver border (`#E2E8F0`).
-  - *Grade 9:* Emerald frosted glass (`#34D399`) with subtle mint glow.
-  - *Grade 10:* Golden amber glass (`#FBBF24`) with gold sheen.
-  - *Black Label (Quad 10):* Obsidian black glass (`#0A0A0E`) with gold border (`#D4AF37`) and pulsing gold halo.
-- **Subpixel Text & 1:1 Crisp Rendering:** Purged GPU rasterization blur caused by fractional CSS `scale(...)` and 3D perspective downsampling. Pedestals render at 1:1 pixel fidelity with responsive card heights (`h-[340px]` to `[420px]`, `aspect-[63/88]`). Text elements are strictly isolated from `backdrop-filter: blur(...)` using decoupled background sibling layers and reinforced with `.crisp-render` hardware composition (`translateZ(0)`, `backface-visibility: hidden`).
+- **Showcase Full-Art Expansion (`showcaseMode`):** Slotted graded slabs automatically engage `showcaseMode={true}`, suppressing the bulky BGS header, subgrade matrix, and multiplier banner to expand the inner card well to >92% of slab height. Certified grades are rendered via a single authoritative header grade badge in the top-right corner (eliminating duplicate badge collisions) with tier-specific styling:
+  - *Grade 1–6:* Dark slate glass with zinc border (`bg-zinc-800/90 text-zinc-300 border-zinc-700`).
+  - *Grade 7–8:* Silver frosted glass with steel border (`bg-slate-800/90 text-slate-200 border-slate-600`).
+  - *Grade 9:* Deep cyan glass (`bg-cyan-950/90 text-cyan-300 border-cyan-500/50`) with cyan aura.
+  - *Grade 10:* Golden amber glass (`bg-amber-950/90 text-amber-300 border-amber-400/60`) with golden halo.
+  - *Black Label (Quad 10):* Obsidian black glass (`bg-black text-amber-400 border-amber-500`) with gold starlight halo.
+- **Concentric Slab-to-Card Geometry & Authentic 63:88 Ratio:** Outer acrylic frame features `rounded-2xl` ($16\text{px}$) with uniform $8\text{px}$ transparent bezel padding (`p-2`, `border-white/15`, `ring-1 ring-inset ring-white/10`). The inner recessed card well mathematically follows the concentric curvature ($R_{\text{inner}} = R_{\text{outer}} - \text{Padding} = 16\text{px} - 8\text{px} = 8\text{px}$ / `rounded-lg`) with embedded depth shadow (`shadow-[inset_0_1px_3px_rgba(0,0,0,0.6)]`), permanently locking cards to their authentic $63:88$ ratio without vertical squashing or letterboxing.
+- **Showcase Pedestal Alignment & Sizing:** Pedestals are calibrated to a uniform width of $220\text{px}$ with height derived dynamically from the $63:88$ card ratio, aligning cards flush above their frosted acrylic bases (`h-14 mt-3`) with equal vertical breathing room.
+- **Subpixel Text & 1:1 Crisp Rendering:** Purged GPU rasterization blur caused by fractional CSS `scale(...)` and 3D perspective downsampling. Pedestals render at 1:1 pixel fidelity. Text elements are strictly isolated from `backdrop-filter: blur(...)` using decoupled background sibling layers and reinforced with `.crisp-render` hardware composition (`translateZ(0)`, `backface-visibility: hidden`). All character artwork uses `object-cover object-top` without residual dark overlay gradients.
 - **Dynamic Character Overhead Spotlights:** Conical top-down light shafts (`h-[480px]`) casting authentic illumination matched to signature character colors:
   - **Ichika:** Warm Amber (`#F59E0B`) 💛
   - **Nino:** Vivid Magenta (`#EC4899`) 🦋

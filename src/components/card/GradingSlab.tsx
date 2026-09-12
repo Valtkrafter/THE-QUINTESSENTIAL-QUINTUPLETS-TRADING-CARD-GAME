@@ -60,13 +60,13 @@ export const GradingSlab: React.FC<GradingSlabProps> = ({
   const isBlackLabel = activeGrade.isBlackLabel || activeGrade.tier === 'BLACK_LABEL';
   const tier = activeGrade.tier;
 
-  // Scaled dimensions to fit around standard 63mm x 88mm card (authentic BGS slab ratio 82mm x 130mm, or full-art 63mm x 88mm in showcaseMode)
+  // Scaled dimensions to fit around standard 63mm x 88mm card (authentic BGS slab ratio 82mm x 130mm, or dynamic uniform padding in showcaseMode)
   const slabSizeClasses = showcaseMode
     ? {
-        sm: 'w-[190px] max-w-full max-h-full aspect-[63/88] p-2 rounded-2xl',
-        md: 'w-full max-w-[280px] max-h-full aspect-[63/88] p-2.5 rounded-2xl sm:rounded-3xl',
-        lg: 'w-full max-w-[340px] max-h-full aspect-[63/88] p-3 rounded-3xl',
-        full: 'w-full h-full max-h-full max-w-full aspect-[63/88] p-2 sm:p-2.5 rounded-2xl sm:rounded-3xl',
+        sm: 'w-[190px] max-w-full p-2',
+        md: 'w-full max-w-[280px] p-2',
+        lg: 'w-full max-w-[340px] p-2',
+        full: 'w-full p-2',
       }[size]
     : {
         sm: 'w-[230px] max-w-full max-h-full aspect-[82/130] p-2.5 rounded-2xl',
@@ -118,42 +118,7 @@ export const GradingSlab: React.FC<GradingSlabProps> = ({
     };
   };
 
-  // Floating Grade Pill Styling for Showcase Mode
-  const getShowcasePillStyle = () => {
-    if (isBlackLabel || tier === 'BLACK_LABEL') {
-      return {
-        borderClass: 'border border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.7)]',
-        bgClass: 'bg-black',
-        textClass: 'text-amber-400 font-black',
-        label: '★ 10.0',
-      };
-    }
-    if (tier === 'GEM_MINT_10') {
-      return {
-        borderClass: 'border border-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.5)]',
-        bgClass: 'bg-amber-950/80',
-        textClass: 'text-amber-300 font-extrabold',
-        label: 'GRADE 10.0',
-      };
-    }
-    if (tier === 'MINT_9') {
-      return {
-        borderClass: 'border border-cyan-400 shadow-[0_0_10px_rgba(6,182,212,0.4)]',
-        bgClass: 'bg-cyan-950/80',
-        textClass: 'text-cyan-300 font-bold',
-        label: 'GRADE 9.0',
-      };
-    }
-    return {
-      borderClass: 'border border-white/20',
-      bgClass: 'bg-black/70',
-      textClass: 'text-white font-bold',
-      label: `GRADE ${activeGrade.numericGrade}.0`,
-    };
-  };
-
   const headerStyle = getHeaderStyle(tier);
-  const showcasePill = getShowcasePillStyle();
   const certNumber = `CERT #${(activeGrade.gradedAt % 90000 + 10000)}`;
   const isFull = size === 'full';
 
@@ -180,16 +145,24 @@ export const GradingSlab: React.FC<GradingSlabProps> = ({
         }}
         className={`relative ${slabSizeClasses} ${
           isBlackLabel ? 'slab-acrylic-black-label' : 'slab-acrylic-casing'
-        } flex flex-col items-center justify-between pointer-events-none overflow-hidden`}
+        } ${
+          showcaseMode
+            ? '!rounded-2xl border border-white/15 ring-1 ring-inset ring-white/10'
+            : ''
+        } flex flex-col items-center justify-center pointer-events-none overflow-hidden`}
       >
-        {/* Physical Beveled Glass Reflection Rim */}
-        <div className="slab-bevel-edge pointer-events-none" />
+        {/* Physical Beveled Glass Reflection Rim (Standard Mode Only) */}
+        {!showcaseMode && <div className="slab-bevel-edge pointer-events-none" />}
 
-        {/* 4 Sonic-Welded Corner Rivets */}
-        <div className="absolute top-2 left-2 w-2 h-2 rounded-full bg-white/30 border border-white/40 shadow-inner pointer-events-none" />
-        <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-white/30 border border-white/40 shadow-inner pointer-events-none" />
-        <div className="absolute bottom-2 left-2 w-2 h-2 rounded-full bg-white/30 border border-white/40 shadow-inner pointer-events-none" />
-        <div className="absolute bottom-2 right-2 w-2 h-2 rounded-full bg-white/30 border border-white/40 shadow-inner pointer-events-none" />
+        {/* 4 Sonic-Welded Corner Rivets (Standard Mode Only) */}
+        {!showcaseMode && (
+          <>
+            <div className="absolute top-2 left-2 w-2 h-2 rounded-full bg-white/30 border border-white/40 shadow-inner pointer-events-none" />
+            <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-white/30 border border-white/40 shadow-inner pointer-events-none" />
+            <div className="absolute bottom-2 left-2 w-2 h-2 rounded-full bg-white/30 border border-white/40 shadow-inner pointer-events-none" />
+            <div className="absolute bottom-2 right-2 w-2 h-2 rounded-full bg-white/30 border border-white/40 shadow-inner pointer-events-none" />
+          </>
+        )}
 
         {/* ============================================================
             SLAB HEADER LABEL PLATE (Standard Full BGS Mode Only)
@@ -269,28 +242,28 @@ export const GradingSlab: React.FC<GradingSlabProps> = ({
           </div>
         )}
 
-        {/* Showcase Mode: Minimalist Floating Grade Pill (Top-Right) */}
-        {showcaseMode && (
-          <div className={`absolute top-2.5 right-2.5 z-30 pointer-events-none select-none rounded-full overflow-hidden px-2.5 py-0.5 text-xs font-mono crisp-render ${showcasePill.borderClass}`}>
-            <div className={`absolute inset-0 ${showcasePill.bgClass} backdrop-blur-md pointer-events-none`} />
-            <span className={`relative z-10 ${showcasePill.textClass} leading-none tracking-wider font-bold`}>
-              {showcasePill.label}
-            </span>
-          </div>
-        )}
-
         {/* ============================================================
             INNER RECESSED CARD WELL (Full-Art in showcaseMode)
             ============================================================ */}
-        <div className={`w-full flex-1 min-h-0 flex items-center justify-center rounded-xl slab-inner-well bg-black/60 ${showcaseMode ? 'p-0 h-full' : 'p-[1.5%]'} relative z-20 overflow-hidden border border-white/10 pointer-events-none`}>
-          <div className="w-full h-full flex items-center justify-center pointer-events-none">
+        <div
+          className={`w-full ${
+            showcaseMode
+              ? '!rounded-lg overflow-hidden shadow-[inset_0_1px_3px_rgba(0,0,0,0.6)] border border-white/10 p-0'
+              : 'flex-1 min-h-0 rounded-xl slab-inner-well bg-black/60 p-[1.5%] border border-white/10'
+          } relative z-20 flex items-center justify-center pointer-events-none`}
+        >
+          <div
+            className={`w-full ${
+              showcaseMode ? 'aspect-[63/88] !rounded-lg overflow-hidden' : 'h-full'
+            } flex items-center justify-center pointer-events-none`}
+          >
             <CardRenderer
               card={card}
               interactive={false} // Outer slab alone handles 3D physics
               disableTilt={true}   // Strict single source of truth
               externalLight={light} // Propagates tilt light to inner card shaders
               size="full"
-              className="w-full h-full !p-0 !m-0"
+              className="w-full h-full !p-0 !m-0 !rounded-lg overflow-hidden"
               showMarketValue={showMarketValue && !showcaseMode}
               hideInternalFooter={true}
             />

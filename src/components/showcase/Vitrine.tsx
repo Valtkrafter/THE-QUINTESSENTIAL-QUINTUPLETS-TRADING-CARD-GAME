@@ -371,7 +371,7 @@ export const Vitrine: React.FC = () => {
               return (
                 <div
                   key={config.index}
-                  className="relative flex flex-col items-center justify-end h-full w-full max-w-[260px] transition-transform duration-500 pointer-events-none select-none"
+                  className="relative flex flex-col items-center justify-end h-full w-[220px] max-w-full transition-transform duration-500 pointer-events-none select-none"
                   style={{
                     transform: `rotateY(${config.rotateY}deg) translateZ(${config.translateZ}px) translateX(${config.translateX}px)`,
                     transformStyle: 'flat',
@@ -397,20 +397,20 @@ export const Vitrine: React.FC = () => {
 
                   {/* Pedestal Card Mount Slot */}
                   <div
-                    className="relative w-full aspect-[63/88] h-[340px] sm:h-[360px] md:h-[390px] lg:h-[420px] max-h-[440px] max-w-[280px] flex items-center justify-center rounded-2xl transition-all duration-300 z-20 pointer-events-auto"
+                    className="relative w-[220px] max-w-full flex items-center justify-center transition-all duration-300 z-20 pointer-events-auto"
                     style={{
                       transform: 'translateZ(20px)',
                     }}
                   >
                     {card ? (
                       /* Socketed Card View (GradingSlab or CardRenderer) */
-                      <div className="relative group w-full h-full rounded-xl overflow-hidden shadow-2xl flex items-center justify-center pointer-events-auto">
+                      <div className="relative group w-full rounded-2xl overflow-hidden shadow-2xl flex items-center justify-center pointer-events-auto">
                         {card.grade ? (
                           <GradingSlab
                             card={card}
                             interactive={false}
                             size="full"
-                            className="w-full h-full pointer-events-none select-none !p-0 !m-0"
+                            className="w-full pointer-events-none select-none !p-0 !m-0"
                             showMarketValue={false}
                             showcaseMode={true}
                           />
@@ -420,7 +420,7 @@ export const Vitrine: React.FC = () => {
                             interactive={false}
                             disableTilt={true}
                             size="full"
-                            className="w-full h-full pointer-events-none select-none !p-0 !m-0"
+                            className="w-full pointer-events-none select-none !p-0 !m-0"
                             showMarketValue={false}
                             hideInternalFooter={true}
                           />
@@ -428,7 +428,7 @@ export const Vitrine: React.FC = () => {
 
                         {/* Pedestal Glass Edge Glow */}
                         <div
-                          className="absolute inset-0 rounded-xl border-2 pointer-events-none select-none transition-colors duration-700 z-20"
+                          className="absolute inset-0 rounded-2xl border-2 pointer-events-none select-none transition-colors duration-700 z-20"
                           style={{
                             borderColor: spotlight.hex,
                             boxShadow: `0 0 20px ${spotlight.glow}`,
@@ -436,9 +436,9 @@ export const Vitrine: React.FC = () => {
                         />
 
                         {/* Interactive Hover Overlay Anchor */}
-                        <div className="absolute inset-0 z-30 pointer-events-auto w-full h-full rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col items-center justify-center gap-2 p-3 select-none overflow-hidden">
+                        <div className="absolute inset-0 z-30 pointer-events-auto w-full h-full rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col items-center justify-center gap-2 p-3 select-none overflow-hidden">
                           {/* Isolated backdrop blur layer */}
-                          <div className="absolute inset-0 bg-black/75 backdrop-blur-sm rounded-xl pointer-events-none" />
+                          <div className="absolute inset-0 bg-black/75 backdrop-blur-sm rounded-2xl pointer-events-none" />
 
                           <div className="relative z-10 flex flex-col items-center justify-center gap-2 w-full crisp-render">
                             <span className="text-amber-400 font-bold text-sm tracking-wide text-center leading-tight font-mono">
@@ -477,7 +477,7 @@ export const Vitrine: React.FC = () => {
                       /* Empty Pedestal Slot Placeholder */
                       <div
                         onClick={() => setSelectedPedestalIndex(config.index)}
-                        className="relative w-full h-full rounded-2xl border-2 border-dashed border-white/20 hover:border-amber-400/70 overflow-hidden flex flex-col items-center justify-center gap-3 p-4 transition-all duration-300 hover:shadow-[0_0_25px_rgba(245,158,11,0.2)] cursor-pointer pointer-events-auto group"
+                        className="relative w-full aspect-[63/88] rounded-2xl border-2 border-dashed border-white/20 hover:border-amber-400/70 overflow-hidden flex flex-col items-center justify-center gap-3 p-4 transition-all duration-300 hover:shadow-[0_0_25px_rgba(245,158,11,0.2)] cursor-pointer pointer-events-auto group"
                       >
                         {/* Isolated backdrop blur layer */}
                         <div className="absolute inset-0 bg-white/5 group-hover:bg-white/10 backdrop-blur-sm pointer-events-none transition-colors duration-300" />
@@ -500,7 +500,7 @@ export const Vitrine: React.FC = () => {
                   </div>
 
                   {/* Acrylic Pedestal Base Block */}
-                  <div className="relative w-full h-16 mt-3 rounded-2xl border border-white/20 shadow-2xl flex flex-col items-center justify-center z-10 overflow-hidden pointer-events-none select-none">
+                  <div className="relative w-[220px] max-w-full h-14 mt-3 rounded-2xl border border-white/20 shadow-2xl flex flex-col items-center justify-center z-10 overflow-hidden pointer-events-none select-none">
                     {/* Isolated backdrop blur layer */}
                     <div className="absolute inset-0 bg-gradient-to-b from-white/15 via-white/5 to-white/0 backdrop-blur-md pointer-events-none select-none" />
 
