@@ -194,18 +194,70 @@ export interface ShowcaseSlot {
   cardInstanceId: string | null;
 }
 
+export interface ShowcaseState {
+  slots: ShowcaseSlot[];
+  supportSlot: CardInstance | null;
+}
+
+// ==========================================
+// STAGE 5: SUPPORT ALTAR & DYNAMIC BUFFS
+// ==========================================
+
+export interface SupportBuffEffect {
+  yieldMultiplier?: number; // Fuutarou: 1.25, 1.50, 2.00
+  harmonyBonusBoost?: number; // Fuutarou UR: amplifies Harmony from +50% to +100% (+0.50 -> +1.00)
+  questThresholdReduction?: number; // Fuutarou R: 0.20 (20%)
+  gradingFeeDiscount?: number; // Raiha UC: 0.15, Raiha SR: 0.30
+  finishUpgradeChanceBonus?: number; // Raiha UC: +10% (0.10)
+  grade10BlackLabelBonus?: number; // Raiha SR: +3% flat chance (0.03)
+  dustBonus?: number; // Maruo SEC: +75% stardust (0.75)
+  kioskDiscount?: number; // Maruo SEC: 25% discount (0.25)
+  sisterMarketValueMultiplier?: number; // Maruo SEC: +20% market valuation (0.20)
+  cooldownReductionSeconds?: number; // Takeda: cuts cooldown from 4h to 2h (cuts 7200s)
+  teamIqBonus?: number; // Takeda: +15% Team IQ (0.15)
+}
+
+export interface SupportBuffConfig {
+  cardDefId: string;
+  supportCode: string; // e.g. "TQQ-SUP-01"
+  characterId: SupportId;
+  name: string;
+  title: string;
+  rarity: Rarity;
+  description: string;
+  badgeLabel: string;
+  effects: SupportBuffEffect;
+}
+
+export interface ResolvedSupportBuff {
+  cardDefId: string;
+  supportCode: string;
+  characterId: SupportId;
+  name: string;
+  title: string;
+  rarity: Rarity;
+  isGradeScaled: boolean; // true if Grade 9, 10, or Black Label (+20% numeric boost)
+  gradeScaleMultiplier: number; // 1.20 if graded 9/10, else 1.0
+  badgeLabel: string;
+  description: string;
+  effects: Required<SupportBuffEffect>;
+}
+
 export interface ShowcaseSynergyReport {
-  quintupletHarmony: boolean; // Ichika, Nino, Miku, Yotsuba, Itsuki all slotted (+50%)
+  quintupletHarmony: boolean; // Ichika, Nino, Miku, Yotsuba, Itsuki all slotted (+50%, or amplified by Fuutarou UR)
   monoWaifu: boolean; // 5 copies of the same sister (+30%)
   monoWaifuSisterId: SisterId | null;
   vaultExcellence: boolean; // All 5 cards are Slabs with Grade >= 9 (+100%)
-  synergyMultiplier: number; // Combined multiplier (base 1.0 + bonuses)
-  totalMarketValue: number; // Total market valuation in Yen across slotted cards
+  baseSynergiesMultiplier: number; // Base synergy multiplier from 5 pedestals (1.0 + harmony + mono + excellence)
+  supportMultiplier: number; // Multiplier from slotted Support card (e.g. 1.25x, 1.50x, 2.00x, 2.40x)
+  synergyMultiplier: number; // Combined multiplier (baseSynergiesMultiplier * supportMultiplier)
+  totalMarketValue: number; // Total market valuation in Yen across slotted cards (including Maruo boost if active)
   baseFloorPerMinute: number; // Guaranteed base floor: 60 Yen/min (1 Yen/sec) per slotted card
   marketBonusPerMinute: number; // Sum of (Market Value * 0.0002)
-  effectiveYieldPerMinute: number; // Sum(60 + Market Value * 0.0002) * synergyMultiplier
+  effectiveYieldPerMinute: number; // (baseFloorPerMinute + marketBonusPerMinute) * synergyMultiplier
   effectiveYieldPerSecond: number; // effectiveYieldPerMinute / 60
   slottedCount: number; // 0 to 5
+  activeSupportBuff: ResolvedSupportBuff | null;
 }
 
 export interface CardDexEntry {

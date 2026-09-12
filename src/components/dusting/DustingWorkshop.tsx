@@ -3,6 +3,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { CardInstance, ConsumableToolId } from '../../types/card';
 import { calculateDustYield, calculateRawCardValue, CONSUMABLE_TOOLS } from '../../config/economy';
+import { resolveActiveSupportBuff } from '../../config/supportBuffs';
 import { useGameStore } from '../../store/useGameStore';
 import { CardRenderer } from '../card/CardRenderer';
 import { soundEngine } from '../../utils/audioEngine';
@@ -29,9 +30,26 @@ export const DustingWorkshop: React.FC<DustingWorkshopProps> = ({ onGoToGrading 
   const stardust = useGameStore((state) => state.stardust);
   const inventory = useGameStore((state) => state.inventory);
   const binder = useGameStore((state) => state.binder);
+  const supportSlot = useGameStore((state) => state.supportSlot);
   const tools = useGameStore((state) => state.tools);
   const dustCards = useGameStore((state) => state.dustCards);
   const buyTool = useGameStore((state) => state.buyTool);
+
+  // Active Support Altar buff resolution
+  const activeSupportBuff = useMemo(() => {
+    return resolveActiveSupportBuff(supportSlot);
+  }, [supportSlot]);
+
+  // Support perk bonus (from Support Altar or legacy binder slot 5)
+  const dustBonus = useMemo(() => {
+    if (activeSupportBuff && activeSupportBuff.effects.dustBonus > 0) {
+      return activeSupportBuff.effects.dustBonus;
+    }
+    const legacySlot = binder.slots.find((s) => s.slotIndex === 5);
+    if (!legacySlot?.cardInstanceId) return 0;
+    const card = inventory.find((c) => c.id === legacySlot.cardInstanceId);
+    return card?.characterId === 'maruo' ? 0.2 : 0;
+  }, [activeSupportBuff, binder, inventory]);
 
   // Filter for un-graded (raw) cards in inventory (graded slabs cannot be recycled)
   const rawCards = useMemo(() => {
@@ -66,24 +84,16 @@ export const DustingWorkshop: React.FC<DustingWorkshopProps> = ({ onGoToGrading 
     return () => clearTimeout(timer);
   }, [stardust, displayDust]);
 
-  // Support perk check (Maruo gives +20% bonus dust yield)
-  const hasMaruoSupport = useMemo(() => {
-    const supportSlot = binder.slots.find((s) => s.slotIndex === 5);
-    if (!supportSlot?.cardInstanceId) return false;
-    const card = inventory.find((c) => c.id === supportSlot.cardInstanceId);
-    return card?.characterId === 'maruo';
-  }, [binder, inventory]);
-
   // Real-time calculation of total Stardust to gain from selected cards
   const estimatedDustYield = useMemo(() => {
     let total = 0;
     for (const card of rawCards) {
       if (selectedIds.has(card.id)) {
-        total += calculateDustYield(card, hasMaruoSupport);
+        total += calculateDustYield(card, dustBonus);
       }
     }
     return total;
-  }, [rawCards, selectedIds, hasMaruoSupport]);
+  }, [rawCards, selectedIds, dustBonus]);
 
   // Toggle individual card selection
   const toggleSelectCard = (id: string) => {
@@ -163,6 +173,16 @@ export const DustingWorkshop: React.FC<DustingWorkshopProps> = ({ onGoToGrading 
           <p className="text-zinc-400 text-xs sm:text-sm mt-1">
             Vaporize spare raw cards to harvest pure Stardust (20% of raw market value). Use Stardust to purchase grading tools.
           </p>
+
+          {/* Active Support Altar Maruo Buff Banner */}
+          {dustBonus > 0 && (
+            <div className="mt-3 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center gap-2 text-xs font-mono text-amber-300 max-w-xl">
+              <Zap className="w-4 h-4 text-amber-400 shrink-0" />
+              <span>
+                {activeSupportBuff?.badgeLabel || `ACTIVE BUFF: +${(dustBonus * 100).toFixed(0)}% STARDUST YIELD`}
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Animated Stardust Balance Ticker */}
@@ -245,7 +265,7 @@ export const DustingWorkshop: React.FC<DustingWorkshopProps> = ({ onGoToGrading 
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 max-h-[520px] overflow-y-auto p-1 scrollbar-thin scrollbar-thumb-zinc-700">
               {rawCards.map((card) => {
                 const isSelected = selectedIds.has(card.id);
-                const dustYield = calculateDustYield(card, hasMaruoSupport);
+                const dustYield = calculateDustYield(card, dustBonus);
                 const rawVal = calculateRawCardValue(card.rarity, card.finish);
 
                 return (
@@ -315,9 +335,9 @@ export const DustingWorkshop: React.FC<DustingWorkshopProps> = ({ onGoToGrading 
               <div className="flex flex-col font-mono">
                 <span className="text-[10px] uppercase text-zinc-400 flex items-center gap-1">
                   <span>Stardust Gained</span>
-                  {hasMaruoSupport && (
-                    <span className="text-[9px] text-yellow-400 font-bold px-1 rounded bg-yellow-950 border border-yellow-500/40">
-                      +20% Maruo
+                  {dustBonus > 0 && (
+                    <span className="text-[9px] text-yellow-400 font-bold px-1 rounded bg-yellow-950 border border-yellow-500/40 font-mono animate-pulse">
+                      +{(dustBonus * 100).toFixed(0)}% Tutor Buff
                     </span>
                   )}
                 </span>

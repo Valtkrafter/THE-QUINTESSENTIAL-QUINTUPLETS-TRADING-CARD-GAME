@@ -32,6 +32,7 @@ const MAX_OFFLINE_MS = MAX_OFFLINE_HOURS * 60 * 60 * 1000; // 43,200,000 ms
  */
 export function useIdleRevenue(): UseIdleRevenueReturn {
   const showcaseSlots = useGameStore((state) => state.showcaseSlots);
+  const supportSlot = useGameStore((state) => state.supportSlot);
   const inventory = useGameStore((state) => state.inventory);
   const lastClaimedTimestamp = useGameStore((state) => state.showcaseLastClaimedTimestamp);
   const getShowcaseSynergyReport = useGameStore((state) => state.getShowcaseSynergyReport);
@@ -40,7 +41,7 @@ export function useIdleRevenue(): UseIdleRevenueReturn {
   // Memoize active showcase synergy report
   const synergyReport = useMemo(() => {
     return getShowcaseSynergyReport();
-  }, [getShowcaseSynergyReport, showcaseSlots, inventory]);
+  }, [getShowcaseSynergyReport, showcaseSlots, supportSlot, inventory]);
 
   const yieldPerMinute = synergyReport.effectiveYieldPerMinute;
   const yieldPerSecond = synergyReport.effectiveYieldPerSecond;

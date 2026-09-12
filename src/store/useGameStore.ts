@@ -32,6 +32,7 @@ import {
   calculateCardSellValue,
   calculateDustYield,
   calculateGradingFee,
+  calculateKioskPrice,
   CONSUMABLE_TOOLS,
   generateKioskStock,
   KIOSK_REROLL_STARDUST_COST,
@@ -44,6 +45,7 @@ import {
   isFinishHigher,
   isGradeHigher,
 } from '../config/economy';
+import { resolveActiveSupportBuff } from '../config/supportBuffs';
 
 export const CURRENT_PATCH_VERSION = 'v0.2.0';
 
@@ -65,8 +67,9 @@ export interface GameState {
   inventory: CardInstance[];
   binder: BinderPage;
 
-  // STAGE 2: 5-Slot Acrylic Showcase (Vitrine) & Master Card-Dex
+  // STAGE 2 & STAGE 5: 5-Slot Acrylic Showcase (Vitrine), Support Altar & Master Card-Dex
   showcaseSlots: ShowcaseSlot[];
+  supportSlot: CardInstance | null;
   cardDex: Record<string, CardDexEntry>;
   showcaseLastClaimedTimestamp: number;
 
@@ -113,8 +116,9 @@ export interface GameState {
   resetSave: () => void;
   markPatchNotesSeen: (version?: string) => void;
 
-  // STAGE 2 Actions
+  // STAGE 2 & STAGE 5 Actions
   slotShowcaseCard: (slotIndex: number, cardInstanceId: string | null) => void;
+  slotSupportCard: (cardInstanceId: string | null) => void;
   claimShowcaseRevenue: () => number;
   getShowcaseSynergyReport: () => ShowcaseSynergyReport;
   recordCardDiscovery: (card: CardInstance) => void;
@@ -218,6 +222,7 @@ const INITIAL_STATE = {
     slots: DEFAULT_BINDER_SLOTS,
   } as BinderPage,
   showcaseSlots: DEFAULT_SHOWCASE_SLOTS,
+  supportSlot: null as CardInstance | null,
   cardDex: createInitialCardDex(),
   showcaseLastClaimedTimestamp: Date.now(),
   tools: {
@@ -260,22 +265,29 @@ export const useGameStore = create<GameState>()(
       },
 
       getTestSheetCooldownRemaining: (): number => {
-        const { packCooldowns, binder, inventory } = get();
+        const { packCooldowns, binder, inventory, supportSlot } = get();
         const lastOpened = packCooldowns.test_sheet;
         if (!lastOpened) return 0;
 
         const baseCooldown = PACKS_CONFIG.test_sheet.cooldownSeconds ?? 14400;
 
-        // Check Takeda support (-50% cooldown)
-        const cardMap = new Map<string, CardInstance>();
-        for (const card of inventory) {
-          cardMap.set(card.id, card);
+        // Check Support Altar Takeda buff first
+        const activeBuff = resolveActiveSupportBuff(supportSlot);
+        let effectiveCooldown = baseCooldown;
+
+        if (activeBuff?.effects.cooldownReductionSeconds) {
+          effectiveCooldown = Math.max(0, baseCooldown - activeBuff.effects.cooldownReductionSeconds);
+        } else {
+          // Fallback legacy binder check
+          const cardMap = new Map<string, CardInstance>();
+          for (const card of inventory) {
+            cardMap.set(card.id, card);
+          }
+          const report = analyzeBinderPage(binder, cardMap);
+          if (report.supportCharacterId === 'takeda') {
+            effectiveCooldown = Math.round(baseCooldown * 0.5);
+          }
         }
-        const report = analyzeBinderPage(binder, cardMap);
-        const effectiveCooldown =
-          report.supportCharacterId === 'takeda'
-            ? Math.round(baseCooldown * 0.5)
-            : baseCooldown;
 
         const elapsedSeconds = (Date.now() - lastOpened) / 1000;
         return Math.max(0, Math.ceil(effectiveCooldown - elapsedSeconds));
@@ -303,8 +315,10 @@ export const useGameStore = create<GameState>()(
           );
         }
 
-        // 3. Roll drops
-        const rollResult = rollPackDrops(packId, state.pityCounters);
+        // 3. Roll drops (with Raiha UC finish upgrade chance bonus if active)
+        const activeBuff = resolveActiveSupportBuff(state.supportSlot);
+        const finishUpgradeBonus = activeBuff?.effects.finishUpgradeChanceBonus ?? 0;
+        const rollResult = rollPackDrops(packId, state.pityCounters, finishUpgradeBonus);
 
         // 4. Update state
         const newCooldowns = { ...state.packCooldowns };
@@ -399,15 +413,24 @@ export const useGameStore = create<GameState>()(
           }
         }
 
-        // Check Raiha support discount (-15%)
-        const cardMap = new Map<string, CardInstance>();
-        for (const c of state.inventory) {
-          cardMap.set(c.id, c);
-        }
-        const report = analyzeBinderPage(state.binder, cardMap);
-        const hasRaiha = report.supportCharacterId === 'raiha';
+        // Check Support Altar Raiha discount & Grade 10 / Black Label bonus
+        const activeBuff = resolveActiveSupportBuff(state.supportSlot);
+        let feeDiscount = activeBuff?.effects.gradingFeeDiscount ?? 0;
+        const grade10Bonus = activeBuff?.effects.grade10BlackLabelBonus ?? 0;
 
-        const fee = calculateGradingFee(card, hasRaiha);
+        if (feeDiscount === 0) {
+          // Fallback legacy binder check
+          const cardMap = new Map<string, CardInstance>();
+          for (const c of state.inventory) {
+            cardMap.set(c.id, c);
+          }
+          const report = analyzeBinderPage(state.binder, cardMap);
+          if (report.supportCharacterId === 'raiha') {
+            feeDiscount = 0.15;
+          }
+        }
+
+        const fee = calculateGradingFee(card, feeDiscount);
         if (state.yen < fee) {
           throw new Error(`Insufficient Yen for grading fee. Required: ${fee} ¥, Available: ${state.yen} ¥`);
         }
@@ -417,8 +440,8 @@ export const useGameStore = create<GameState>()(
           toolCounts[toolId] = Math.max(0, (toolCounts[toolId] ?? 0) - 1);
         }
 
-        // Execute grading roll
-        const { gradeResult, insuranceRerolled } = rollGrading(card, toolsToUse);
+        // Execute grading roll (with Raiha SR bonus if active)
+        const { gradeResult, insuranceRerolled } = rollGrading(card, toolsToUse, grade10Bonus);
 
         // Update card instance
         const updatedCard: CardInstance = {
@@ -483,21 +506,31 @@ export const useGameStore = create<GameState>()(
           throw new Error('Graded cards cannot be dusted. Only raw cards can be converted to Stardust.');
         }
 
-        // Showcase protection
+        // Showcase & Support Altar protection
         const isSlottedInShowcase = (state.showcaseSlots ?? []).some((s) => s.cardInstanceId === cardInstanceId);
         if (isSlottedInShowcase) {
           throw new Error('This card is currently mounted in your 5-slot Acrylic Showcase! Unmount it before dusting.');
         }
-
-        // Check Maruo support bonus (+20%)
-        const cardMap = new Map<string, CardInstance>();
-        for (const c of state.inventory) {
-          cardMap.set(c.id, c);
+        if (state.supportSlot?.id === cardInstanceId) {
+          throw new Error('This card is currently mounted on your Support Altar! Unmount it before dusting.');
         }
-        const report = analyzeBinderPage(state.binder, cardMap);
-        const hasMaruo = report.supportCharacterId === 'maruo';
 
-        const dustEarned = calculateDustYield(card, hasMaruo);
+        // Check Support Altar Maruo bonus (+75%, or +90% with slab)
+        const activeBuff = resolveActiveSupportBuff(state.supportSlot);
+        let dustBonus = activeBuff?.effects.dustBonus ?? 0;
+        if (dustBonus === 0) {
+          // Fallback legacy binder check
+          const cardMap = new Map<string, CardInstance>();
+          for (const c of state.inventory) {
+            cardMap.set(c.id, c);
+          }
+          const report = analyzeBinderPage(state.binder, cardMap);
+          if (report.supportCharacterId === 'maruo') {
+            dustBonus = 0.2;
+          }
+        }
+
+        const dustEarned = calculateDustYield(card, dustBonus);
 
         // Unslot from binder if currently slotted
         let updatedBinder = state.binder;
@@ -532,13 +565,19 @@ export const useGameStore = create<GameState>()(
         const state = get();
         const idSet = new Set(cardInstanceIds);
 
-        // Check Maruo support bonus (+20%)
-        const cardMap = new Map<string, CardInstance>();
-        for (const c of state.inventory) {
-          cardMap.set(c.id, c);
+        // Check Support Altar Maruo bonus
+        const activeBuff = resolveActiveSupportBuff(state.supportSlot);
+        let dustBonus = activeBuff?.effects.dustBonus ?? 0;
+        if (dustBonus === 0) {
+          const cardMap = new Map<string, CardInstance>();
+          for (const c of state.inventory) {
+            cardMap.set(c.id, c);
+          }
+          const report = analyzeBinderPage(state.binder, cardMap);
+          if (report.supportCharacterId === 'maruo') {
+            dustBonus = 0.2;
+          }
         }
-        const report = analyzeBinderPage(state.binder, cardMap);
-        const hasMaruo = report.supportCharacterId === 'maruo';
 
         const slottedShowcaseIds = new Set<string>();
         for (const s of (state.showcaseSlots ?? [])) {
@@ -550,10 +589,11 @@ export const useGameStore = create<GameState>()(
 
         const updatedInventory = state.inventory.filter((card) => {
           if (!idSet.has(card.id)) return true;
-          // Graded cards and showcase slotted cards cannot be dusted
-          if (card.grade || slottedShowcaseIds.has(card.id)) return true;
+          // Graded cards, showcase slotted cards, and Support Altar cards cannot be dusted
+          const isProtected = card.grade || slottedShowcaseIds.has(card.id) || state.supportSlot?.id === card.id;
+          if (isProtected) return true;
 
-          totalDustEarned += calculateDustYield(card, hasMaruo);
+          totalDustEarned += calculateDustYield(card, dustBonus);
           if (card.slottedBinder) {
             unslottedBinderIds.add(card.id);
           }
@@ -590,7 +630,7 @@ export const useGameStore = create<GameState>()(
           throw new Error(`Card not found in inventory: ${cardInstanceId}`);
         }
 
-        // Validates that the card is not locked in a showcase slot
+        // Validates that the card is not locked in a showcase slot or support altar
         if (card.isLocked) {
           throw new Error('This card is locked and cannot be liquidated.');
         }
@@ -604,6 +644,9 @@ export const useGameStore = create<GameState>()(
         const isSlottedInShowcase = (state.showcaseSlots ?? []).some((s) => s.cardInstanceId === cardInstanceId);
         if (isSlottedInShowcase) {
           throw new Error('This card is currently mounted in your 5-slot Acrylic Showcase! Unmount it before liquidating.');
+        }
+        if (state.supportSlot?.id === cardInstanceId) {
+          throw new Error('This card is currently mounted on your Support Altar! Unmount it before liquidating.');
         }
 
         // Computes exact sell value: baseValue * finishMultiplier * gradeMultiplier
@@ -647,7 +690,12 @@ export const useGameStore = create<GameState>()(
         const retainedCards: CardInstance[] = [];
 
         for (const card of state.inventory) {
-          const isLocked = card.isLocked || card.slottedBinder !== undefined || slottedBinderIds.has(card.id) || slottedShowcaseIds.has(card.id);
+          const isLocked =
+            card.isLocked ||
+            card.slottedBinder !== undefined ||
+            slottedBinderIds.has(card.id) ||
+            slottedShowcaseIds.has(card.id) ||
+            state.supportSlot?.id === card.id;
           const matchesRarity = targetRarities.has(card.rarity);
           const matchesCertification = filter.uncertifiedOnly ? !card.grade : true;
 
@@ -851,9 +899,14 @@ export const useGameStore = create<GameState>()(
           throw new Error("This card has already been purchased from today's kiosk stock.");
         }
 
-        if (state.yen < offering.priceYen) {
+        // Calculate effective price taking into account Maruo's Kiosk discount
+        const activeBuff = resolveActiveSupportBuff(state.supportSlot);
+        const kioskDiscount = activeBuff?.effects.kioskDiscount ?? 0;
+        const effectivePrice = calculateKioskPrice(offering.rarity, kioskDiscount);
+
+        if (state.yen < effectivePrice) {
           throw new Error(
-            `Insufficient Yen. Required: ${offering.priceYen.toLocaleString()} ¥, Available: ${state.yen.toLocaleString()} ¥`
+            `Insufficient Yen. Required: ${effectivePrice.toLocaleString()} ¥, Available: ${state.yen.toLocaleString()} ¥`
           );
         }
 
@@ -908,7 +961,7 @@ export const useGameStore = create<GameState>()(
         };
 
         set({
-          yen: state.yen - offering.priceYen,
+          yen: state.yen - effectivePrice,
           inventory: [...state.inventory, newCard],
           kioskStock: updatedStock,
           cardDex: updatedDex,
@@ -966,7 +1019,45 @@ export const useGameStore = create<GameState>()(
           return s;
         });
 
-        set({ showcaseSlots: updatedSlots });
+        // If this card was mounted on the Support Altar, unslot it from the altar
+        const updatedSupportSlot = state.supportSlot?.id === cardInstanceId ? null : state.supportSlot;
+
+        set({
+          showcaseSlots: updatedSlots,
+          supportSlot: updatedSupportSlot,
+        });
+      },
+
+      slotSupportCard: (cardInstanceId: string | null): void => {
+        const state = get();
+
+        // Case 1: Unslotting
+        if (cardInstanceId === null) {
+          set({ supportSlot: null });
+          return;
+        }
+
+        // Case 2: Slotting card from inventory
+        const card = state.inventory.find((c) => c.id === cardInstanceId);
+        if (!card) {
+          throw new Error(`Card not found in inventory: ${cardInstanceId}`);
+        }
+
+        const cardDef = CARD_MAP[card.cardDefId];
+        if (!cardDef || cardDef.characterRole !== 'support') {
+          throw new Error(`Only Support character cards can be mounted on the Support Altar.`);
+        }
+
+        // If card was already mounted in a showcase pedestal, unmount it there
+        const currentShowcaseSlots = state.showcaseSlots ?? DEFAULT_SHOWCASE_SLOTS;
+        const updatedShowcaseSlots = currentShowcaseSlots.map((s) =>
+          s.cardInstanceId === cardInstanceId ? { ...s, cardInstanceId: null } : s
+        );
+
+        set({
+          supportSlot: card,
+          showcaseSlots: updatedShowcaseSlots,
+        });
       },
 
       claimShowcaseRevenue: (): number => {
@@ -991,12 +1082,12 @@ export const useGameStore = create<GameState>()(
       },
 
       getShowcaseSynergyReport: (): ShowcaseSynergyReport => {
-        const { showcaseSlots, inventory } = get();
+        const { showcaseSlots, inventory, supportSlot } = get();
         const cardMap = new Map<string, CardInstance>();
         for (const card of inventory) {
           cardMap.set(card.id, card);
         }
-        return analyzeShowcaseSlots(showcaseSlots ?? DEFAULT_SHOWCASE_SLOTS, cardMap);
+        return analyzeShowcaseSlots(showcaseSlots ?? DEFAULT_SHOWCASE_SLOTS, cardMap, supportSlot);
       },
 
       recordCardDiscovery: (card: CardInstance): void => {
@@ -1056,6 +1147,7 @@ export const useGameStore = create<GameState>()(
           kioskLastRefreshed: Date.now(),
           cardDex: createInitialCardDex(),
           showcaseSlots: DEFAULT_SHOWCASE_SLOTS,
+          supportSlot: null,
         });
       },
     }),
@@ -1068,6 +1160,12 @@ export const useGameStore = create<GameState>()(
           }
           if (!state.showcaseSlots || state.showcaseSlots.length !== 5) {
             state.showcaseSlots = DEFAULT_SHOWCASE_SLOTS;
+          }
+          if (state.supportSlot) {
+            const currentInInv = (state.inventory || []).find((c) => c.id === state.supportSlot?.id);
+            state.supportSlot = currentInInv ?? null;
+          } else {
+            state.supportSlot = null;
           }
           if (!state.cardDex) {
             state.cardDex = syncDexWithInventory(createInitialCardDex(), state.inventory || []);

@@ -111,6 +111,20 @@ Submit raw cards to the **Grading Station** to be certified in heavy acrylic sla
 - **Live Revenue Ticker & Particle Claim:** Real-time ticking counter with glowing neon indicators, active synergy chips, and a golden "Claim Vault Revenue" action firing coin bursts and synthesizer pulses.
 - **Interactive Socketing Drawer:** Modal drawer with real-time collection search, character filters, and instant mount/unmount operations.
 
+### 🏛️ 5. Support Altar & Dynamic Buff Engine (Tutor Dais)
+- **Elevated Floating Tutor Dais:** An illuminated floating pedestal centered horizontally above the 5-slot acrylic vitrine stage with slate-gold trim (`border-amber-500/30`, `shadow-[0_0_25px_rgba(245,158,11,0.15)]`) and a downward-projecting ambient light cone softly illuminating the lower sister stations.
+- **Master Support Registry & Account-Wide Economy Buffs:** Slotted mentors actively alter account-wide economy calculations, grading odds, and showcase yield:
+  - **Fuutarou Uesugi (C):** Diligent drills granting a flat $1.25\times$ showcase yield multiplier.
+  - **Fuutarou Uesugi (R):** Determined tutoring granting $1.50\times$ showcase yield and $-20\%$ quest threshold reduction.
+  - **Fuutarou Uesugi (UR):** The fated groom granting $2.00\times$ showcase yield and amplifies **Quintuplet Harmony** synergy from $+50\%$ to $+100\%$ ($+1.0$).
+  - **Raiha Uesugi (UC):** Lucky charm granting flat $15\%$ discount on all Grading Station certification fees and $+10\%$ finish upgrade luck on booster pulls.
+  - **Raiha Uesugi (SR):** Festival sunshine granting $30\%$ discount on all grading fees and flat $+3\%$ bonus chance to roll Gem Mint 10 or Black Label slabs.
+  - **Maruo Nakano (SEC):** Stern patriarch granting $+75\%$ Stardust from card dusting, $25\%$ discount in the Daily Singles Kiosk, and $+20\%$ market valuation for all 5 slotted sisters.
+  - **Yusuke Takeda (R):** Aspiring rival cutting the Test-Sheet pack cooldown in half (from $4\text{h}$ down to $2\text{h}$) and granting $+15\%$ Team IQ.
+- **Grade 9 & 10 Certified Slab Scaling (+20%):** Slotting a certified Mint 9, Gem Mint 10, or Black Label slab into the Support Altar automatically triggers a $+20\%$ scaling multiplier across all numeric effect values (e.g. Fuutarou UR scales to $2.40\times$ yield & $+120\%$ Harmony; Maruo SEC scales to $+90\%$ dust, $30\%$ Kiosk sale, and $+24\%$ sister valuation).
+- **Altar Liquidation & Vaporization Immunity:** Slotted support cards are completely immune to accidental liquidation, individual dusting, or batch liquidation.
+- **Dedicated Support Drawer:** Integrated slide-over modal drawer filtering strictly to Support characters with real-time name, title, and buff description search, BGS slab filters, and one-click socketing.
+
 ### 💰 5. Direct Sell System & Bulk Liquidation
 - **Instant Liquid Sales:** Liquidate raw, holo, or graded cards directly for instant $\yen$ currency from the unified `CardActionModal`.
 - **Dynamic Particle FX & Audio:** Features 18 golden coin particles exploding outward and arcing towards the HUD currency counter accompanied by procedural metallic coin chime audio.
@@ -203,16 +217,23 @@ $$\text{Market Value} = \text{Base Value}(\text{Rarity}) \times \text{Multiplier
 | **Braut des Schicksals** | $25{,}000\ \yen$ | $5$ | **No Commons or Uncommons.** Guaranteed Rare (R) or higher in every slot. |
 | **Celestial God Pack** | $100{,}000\ \yen$ | $5$ | **★ 100% Ultra, Secret, and Master Rares only!** |
 
-### 5. Showcase Idle Revenue & Synergies
-- **Yield Calculation:**
-  $$\text{Slot Yield/Min} = 60\ \yen + (\text{Market Value} \times 0.0002)$$
-  $$\text{Total Yield/Min} = \left(\sum_{i=1}^{5} \text{Slot Yield/Min}_i\right) \times (1.0 + \sum \text{Synergy Bonuses})$$
-- **Base Yield Guarantee:** $1\ \yen/\text{sec}$ ($60\ \yen/\text{min}$) guaranteed per card slot.
-- **Synergy Multipliers:**
-  - **Quintuplet Harmony:** $+50\%$ ($+0.5$) when all 5 slots contain Ichika, Nino, Miku, Yotsuba, and Itsuki.
+### 5. Showcase Idle Revenue & Support Altar Engine
+- **Master Dynamic Yield Formula:**
+  $$\text{Slot Yield/Min}_i = 60\ \yen + \Big(\text{Market Value}_i \times (1.0 + \text{SisterMarketMultiplier}) \times 0.0002\Big)$$
+  $$\text{Total Yield/Min} = \left(\sum_{i=1}^{5} \text{Slot Yield/Min}_i\right) \times \text{BaseSynergies} \times \text{SupportMultiplier}$$
+- **Guaranteed Base Floor:** $1\ \yen/\text{sec}$ ($60\ \yen/\text{min}$) guaranteed per card slot.
+- **Showcase Base Synergies (Additive):**
+  - **Quintuplet Harmony:** $+50\%$ ($+0.5$, amplified to $+100\%$ / $+1.0$ by Fuutarou UR, or $+120\%$ / $+1.2$ by Grade 10 Fuutarou UR) when all 5 slots contain Ichika, Nino, Miku, Yotsuba, and Itsuki.
   - **Mono-Waifu Obsession:** $+30\%$ ($+0.3$) when all 5 slots contain the same sister.
   - **Vault Excellence:** $+100\%$ ($+1.0$) when all 5 slotted cards are Grade $\ge 9$ BGS Slabs (Mint 9, Gem Mint 10, or Black Label).
-  - *Additively stacked (e.g. Harmony $+50\%$ + Excellence $+100\% \implies 2.5\times$ total multiplier).*
+  - *Base Synergies stack additively onto $1.0$ (e.g. Harmony $+50\%$ + Excellence $+100\% \implies 2.5\times$ base synergy).*
+- **Support Altar Multipliers (Multiplicative on Showcase Total):**
+  - Fuutarou C: $1.25\times$ yield multiplier ($1.50\times$ if Grade 9/10 slab).
+  - Fuutarou R: $1.50\times$ yield multiplier ($1.80\times$ if Grade 9/10 slab).
+  - Fuutarou UR: $2.00\times$ yield multiplier ($2.40\times$ if Grade 9/10 slab).
+  - Combined peak multiplier: $(\text{Base Harmony } 1.0 + 1.2 + 1.0) \times 2.40 = 3.20 \times 2.40 = 7.68\times$ yield!
+- **Sister Market Value Multiplier:**
+  - Maruo SEC slotted in Support Altar injects $+20\%$ ($+24\%$ if Grade 9/10 slab) directly into the market valuation of all 5 slotted sisters.
 - **Offline Accrual Cap:** Strictly capped at 12 hours ($720\text{ minutes}$ / $43{,}200\text{ seconds}$).
 - **Tab Throttling Safeguard:** Live time-delta calculation based on absolute wall-clock epoch timestamps prevents idle loss in throttled browser background tabs.
 
@@ -264,13 +285,16 @@ tqqtcg/
 │   │   │   ├── SelectBoosterModal.tsx # Portal-mounted pack kiosk with live drop odds & kiosk tab
 │   │   │   └── TearMechanism.tsx    # Direct HTML5 window pointer tear engine
 │   │   ├── showcase/
+│   │   │   ├── SupportAltar.tsx     # Floating tutor dais with downward ambient light cone & Grade 9/10 scaling
+│   │   │   ├── SupportDrawer.tsx    # Slide-over socketing drawer with search, filters & active buff preview
 │   │   │   └── Vitrine.tsx          # 5-slot acrylic pedestal stage with dynamic spotlights & idle claim
 │   │   └── vault/
 │   │       ├── GradingScannerFX.tsx # Particle laser scanner visualizer
 │   │       └── GradingStation.tsx   # Card submission hub & consumable tool equip
 │   ├── config/
 │   │   ├── cardsData.ts         # Catalog of 42 cards with metadata and quotes
-│   │   └── economy.ts           # Pricing matrices, valuation formulas, drop tables, pity, synergies
+│   │   ├── economy.ts           # Pricing matrices, valuation formulas, drop tables, pity, synergies
+│   │   └── supportBuffs.ts      # Support buff dictionary, Grade 9/10 scaling, & active buff resolver
 │   ├── hooks/
 │   │   ├── useIdleRevenue.ts    # Background-safe idle yield calculator with 12h offline cap
 │   │   └── useSmoothTilt.ts     # Overdamped 3D spring tilt hook with dynamic lighting
@@ -320,10 +344,10 @@ tqqtcg/
 
 ## 🧪 Verification & Testing
 
-The repository contains an automated Monte Carlo test suite (`scripts/test-engine.ts`) that runs 10,000 iterations to verify drop distributions, pity thresholds, grading probabilities, and store mutations.
+The repository contains an automated Monte Carlo test suite (`scripts/test-engine.ts`) across 10 complete sections that run 10,000 iterations to verify drop distributions, pity thresholds, grading probabilities, showcase synergies, Support Altar buff scaling, and store mutations.
 
 ```bash
-# Run the complete test suite
+# Run the complete test suite (Sections 1 through 10)
 npm test
 
 # Run strict TypeScript type verification (0 errors)

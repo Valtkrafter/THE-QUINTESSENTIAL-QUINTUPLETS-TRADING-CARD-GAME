@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { CardInstance, KioskOffering } from '../../types/card';
 import { CARD_MAP } from '../../config/cardsData';
 import { KIOSK_REROLL_STARDUST_COST, KIOSK_ROTATION_INTERVAL_MS } from '../../config/economy';
+import { resolveActiveSupportBuff } from '../../config/supportBuffs';
 import { useGameStore } from '../../store/useGameStore';
 import { CardRenderer, CHARACTER_THEMES, RARITY_BADGES, FINISH_LABELS } from '../card/CardRenderer';
 import { soundEngine } from '../../utils/audioEngine';
@@ -19,6 +20,7 @@ import {
   ShoppingBag,
   ArrowRight,
   AlertCircle,
+  Zap,
 } from 'lucide-react';
 
 export interface SinglesMarketProps {
@@ -28,11 +30,18 @@ export interface SinglesMarketProps {
 export const SinglesMarket: React.FC<SinglesMarketProps> = ({ onCardPurchased }) => {
   const yen = useGameStore((state) => state.yen);
   const stardust = useGameStore((state) => state.stardust);
+  const supportSlot = useGameStore((state) => state.supportSlot);
   const kioskStock = useGameStore((state) => state.kioskStock);
   const kioskLastRefreshed = useGameStore((state) => state.kioskLastRefreshed);
   const refreshKiosk = useGameStore((state) => state.refreshKiosk);
   const buyKioskCard = useGameStore((state) => state.buyKioskCard);
   const checkAndRotateKiosk = useGameStore((state) => state.checkAndRotateKiosk);
+
+  // Active Support Altar buff
+  const activeSupportBuff = useMemo(() => {
+    return resolveActiveSupportBuff(supportSlot);
+  }, [supportSlot]);
+  const kioskDiscount = activeSupportBuff?.effects.kioskDiscount ?? 0;
 
   // Time ticker state
   const [now, setNow] = useState<number>(Date.now());
@@ -127,6 +136,12 @@ export const SinglesMarket: React.FC<SinglesMarketProps> = ({ onCardPurchased })
             <p className="text-xs text-zinc-400 mt-0.5">
               Direct anime card liquidation exchange. Guaranteed raw cards replenished every 24 hours.
             </p>
+            {kioskDiscount > 0 && (
+              <div className="mt-2 p-2 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center gap-2 text-xs font-mono text-amber-300">
+                <Zap className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                <span>{activeSupportBuff?.badgeLabel || `ACTIVE BUFF: ${(kioskDiscount * 100).toFixed(0)}% KIOSK DISCOUNT`}</span>
+              </div>
+            )}
           </div>
         </div>
 

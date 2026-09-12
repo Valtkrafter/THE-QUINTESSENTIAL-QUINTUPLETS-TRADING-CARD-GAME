@@ -3,6 +3,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { CardInstance, ConsumableToolId, GradeTier, GradingResultInfo } from '../../types/card';
 import { calculateGradingFee, calculateRawCardValue, CONSUMABLE_TOOLS } from '../../config/economy';
+import { resolveActiveSupportBuff } from '../../config/supportBuffs';
 import { useGameStore } from '../../store/useGameStore';
 import { CardRenderer } from '../card/CardRenderer';
 import { GradingSlab } from '../card/GradingSlab';
@@ -35,9 +36,15 @@ export const GradingStation: React.FC<GradingStationProps> = ({
   const yen = useGameStore((state) => state.yen);
   const inventory = useGameStore((state) => state.inventory);
   const binder = useGameStore((state) => state.binder);
+  const supportSlot = useGameStore((state) => state.supportSlot);
   const tools = useGameStore((state) => state.tools);
   const gradeCard = useGameStore((state) => state.gradeCard);
   const openPack = useGameStore((state) => state.openPack);
+
+  // Active Support Altar buff resolution
+  const activeSupportBuff = useMemo(() => {
+    return resolveActiveSupportBuff(supportSlot);
+  }, [supportSlot]);
 
   // Filter for un-graded (raw) cards in player's inventory
   const rawCards = useMemo(() => {
@@ -68,24 +75,27 @@ export const GradingStation: React.FC<GradingStationProps> = ({
     return rawCards.find((c) => c.id === selectedCardId) ?? null;
   }, [rawCards, selectedCardId]);
 
-  // Support character check (Raiha gives 15% grading fee discount)
-  const hasRaihaSupport = useMemo(() => {
-    const supportSlot = binder.slots.find((s) => s.slotIndex === 5);
-    if (!supportSlot?.cardInstanceId) return false;
-    const card = inventory.find((c) => c.id === supportSlot.cardInstanceId);
-    return card?.characterId === 'raiha';
-  }, [binder, inventory]);
+  // Support character discount (from Support Altar or legacy binder slot 5)
+  const gradingDiscount = useMemo(() => {
+    if (activeSupportBuff && activeSupportBuff.effects.gradingFeeDiscount > 0) {
+      return activeSupportBuff.effects.gradingFeeDiscount;
+    }
+    const legacySlot = binder.slots.find((s) => s.slotIndex === 5);
+    if (!legacySlot?.cardInstanceId) return 0;
+    const card = inventory.find((c) => c.id === legacySlot.cardInstanceId);
+    return card?.characterId === 'raiha' ? 0.15 : 0;
+  }, [activeSupportBuff, binder, inventory]);
 
   // Calculate grading fee
   const gradingFee = useMemo(() => {
     if (!selectedCard) return 0;
-    return calculateGradingFee(selectedCard, hasRaihaSupport);
-  }, [selectedCard, hasRaihaSupport]);
+    return calculateGradingFee(selectedCard, gradingDiscount);
+  }, [selectedCard, gradingDiscount]);
 
   const canAfford = yen >= gradingFee;
   const deficit = gradingFee - yen;
 
-  // Calculate dynamic probabilities based on equipped tool
+  // Calculate dynamic probabilities based on equipped tool and Support Altar buffs
   const dynamicProbabilities = useMemo(() => {
     let poor = 12.0;
     let used = 30.0;
@@ -120,6 +130,22 @@ export const GradingStation: React.FC<GradingStationProps> = ({
       }
     }
 
+    // 3. Support Altar: Grade 10 / Black Label bonus (Raiha SR: +3% or +3.6% if Grade 9/10)
+    const extraGrade10 = activeSupportBuff?.effects.grade10BlackLabelBonus ?? 0;
+    if (extraGrade10 > 0) {
+      const bonusPct = extraGrade10 * 100;
+      gem10 += Number((bonusPct * 0.9).toFixed(2));
+      blackLabel += Number((bonusPct * 0.1).toFixed(2));
+      const lowerSum = poor + used + crisp + mint;
+      if (lowerSum > bonusPct) {
+        const ratio = (lowerSum - bonusPct) / lowerSum;
+        poor *= ratio;
+        used *= ratio;
+        crisp *= ratio;
+        mint *= ratio;
+      }
+    }
+
     return {
       poor: Number(poor.toFixed(1)),
       used: Number(used.toFixed(1)),
@@ -128,7 +154,7 @@ export const GradingStation: React.FC<GradingStationProps> = ({
       gem10: Number(gem10.toFixed(1)),
       blackLabel: Number(blackLabel.toFixed(1)),
     };
-  }, [equippedTool]);
+  }, [equippedTool, activeSupportBuff]);
 
   // Handle Tool Socketing Toggle
   const toggleTool = (toolId: ConsumableToolId) => {
@@ -631,6 +657,11 @@ export const GradingStation: React.FC<GradingStationProps> = ({
                       +5%
                     </span>
                   )}
+                  {activeSupportBuff?.effects.grade10BlackLabelBonus ? (
+                    <span className="text-[9px] font-bold text-amber-300 px-1 rounded bg-amber-950 border border-amber-500/40 animate-pulse">
+                      +{(activeSupportBuff.effects.grade10BlackLabelBonus * 100).toFixed(1)}% Altar
+                    </span>
+                  ) : null}
                   <span className="font-black text-yellow-300">{dynamicProbabilities.gem10}%</span>
                 </div>
               </div>
@@ -648,12 +679,20 @@ export const GradingStation: React.FC<GradingStationProps> = ({
 
           {/* 4. COST DISPLAY & SUBMISSION ACTION */}
           <div className="p-5 rounded-2xl bg-zinc-900/60 border border-zinc-800 flex flex-col gap-3">
+            {/* Active Tutor Altar Banner */}
+            {activeSupportBuff && (activeSupportBuff.effects.gradingFeeDiscount > 0 || activeSupportBuff.effects.grade10BlackLabelBonus > 0) && (
+              <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center gap-2 text-xs font-mono text-amber-300">
+                <Zap className="w-4 h-4 text-amber-400 shrink-0" />
+                <span className="truncate">{activeSupportBuff.badgeLabel}</span>
+              </div>
+            )}
+
             <div className="flex items-center justify-between">
               <span className="text-xs text-zinc-400 uppercase font-mono">Grading Fee (50% Raw)</span>
               <div className="flex items-center gap-1.5 font-mono">
-                {hasRaihaSupport && (
-                  <span className="text-[10px] text-pink-300 px-1.5 rounded bg-pink-950 border border-pink-500/40">
-                    -15% Raiha
+                {gradingDiscount > 0 && (
+                  <span className="text-[10px] text-pink-300 px-1.5 rounded bg-pink-950 border border-pink-500/40 font-bold animate-pulse">
+                    -{(gradingDiscount * 100).toFixed(0)}% Tutor Buff
                   </span>
                 )}
                 <span className="text-base font-black text-amber-300">{gradingFee.toLocaleString()} ¥</span>

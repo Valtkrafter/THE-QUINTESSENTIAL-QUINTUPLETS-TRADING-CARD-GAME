@@ -27,6 +27,7 @@ import {
   ShowcaseSynergyReport,
 } from '../types/card';
 import { CARDS_BY_RARITY, CARD_MAP, CARDS_CATALOG } from './cardsData';
+import { resolveActiveSupportBuff } from './supportBuffs';
 
 // ==========================================
 // 1. BASE VALUES & MULTIPLIERS
@@ -311,23 +312,41 @@ export function calculateCardMarketValue(card: CardInstance): number {
 
 /**
  * Calculates grading fee (exactly 50% of raw card value).
- * If Raiha is active in Support Slot 6, applies a -15% global discount (fee * 0.85).
+ * Accepts boolean hasRaihaSupport (legacy: 15% discount) or explicit numeric discount fraction (e.g. 0.15, 0.30, 0.36).
  */
-export function calculateGradingFee(card: CardInstance, hasRaihaSupport: boolean = false): number {
+export function calculateGradingFee(
+  card: CardInstance,
+  supportOrDiscount: boolean | number = false
+): number {
   const rawValue = calculateRawCardValue(card.rarity, card.finish);
   const baseFee = rawValue * 0.5;
-  const finalFee = hasRaihaSupport ? baseFee * 0.85 : baseFee;
+  const discount =
+    typeof supportOrDiscount === 'number'
+      ? supportOrDiscount
+      : supportOrDiscount
+      ? 0.15
+      : 0;
+  const finalFee = baseFee * (1.0 - discount);
   return Math.max(1, Math.round(finalFee));
 }
 
 /**
  * Calculates Stardust yield from dusting a raw card (exactly 20% of raw value).
- * If Maruo is active in Support Slot 6, applies a +20% bonus dust yield.
+ * Accepts boolean hasMaruoSupport (legacy: +20% bonus) or explicit numeric bonus fraction (e.g. 0.75, 0.90).
  */
-export function calculateDustYield(card: CardInstance, hasMaruoSupport: boolean = false): number {
+export function calculateDustYield(
+  card: CardInstance,
+  supportOrBonus: boolean | number = false
+): number {
   const rawValue = calculateRawCardValue(card.rarity, card.finish);
   const baseDust = Math.floor(rawValue * 0.2);
-  const finalDust = hasMaruoSupport ? Math.floor(baseDust * 1.2) : baseDust;
+  const bonus =
+    typeof supportOrBonus === 'number'
+      ? supportOrBonus
+    : supportOrBonus
+    ? 0.20
+    : 0;
+  const finalDust = Math.floor(baseDust * (1.0 + bonus));
   return Math.max(1, finalDust);
 }
 
@@ -361,11 +380,12 @@ export function calculateBulkSellValue(cards: CardInstance[]): number {
 }
 
 /**
- * Calculates Singles Kiosk purchase price in Yen (fixed at 2.5x base market value).
+ * Calculates Singles Kiosk purchase price in Yen (fixed at 2.5x base market value, with optional support discount).
  */
-export function calculateKioskPrice(rarity: Rarity): number {
+export function calculateKioskPrice(rarity: Rarity, discountFraction: number = 0): number {
   const base = RARITY_BASE_VALUES[rarity] ?? 15;
-  return Math.round(base * KIOSK_PRICE_MULTIPLIER);
+  const price = base * KIOSK_PRICE_MULTIPLIER * (1.0 - Math.min(0.9, Math.max(0, discountFraction)));
+  return Math.max(1, Math.round(price));
 }
 
 // ==========================================
@@ -430,10 +450,35 @@ export function generateKioskStock(): KioskOffering[] {
 
 /**
  * Rolls a card surface finish based on standard finish drop chances.
+ * Optional extraUpgradeChance shifts weight from raw into upgraded foil finishes (Raiha UC support buff).
  */
-export function rollFinish(): Finish {
+export function rollFinish(extraUpgradeChance: number = 0): Finish {
   const roll = randomFloat() * 100.0;
   let cumulative = 0.0;
+
+  if (extraUpgradeChance > 0) {
+    const shift = Math.min(30, extraUpgradeChance * 100);
+    const rawChance = Math.max(10, FINISH_CHANCES.raw - shift);
+    const scaleFactor = (100.0 - rawChance) / (100.0 - FINISH_CHANCES.raw);
+
+    const adjustedChances: Record<Finish, number> = {
+      signed: FINISH_CHANCES.signed * scaleFactor,
+      gold_etched: FINISH_CHANCES.gold_etched * scaleFactor,
+      rainbow: FINISH_CHANCES.rainbow * scaleFactor,
+      sparkle: FINISH_CHANCES.sparkle * scaleFactor,
+      holo: FINISH_CHANCES.holo * scaleFactor,
+      raw: rawChance,
+    };
+
+    const finishes: Finish[] = ['signed', 'gold_etched', 'rainbow', 'sparkle', 'holo', 'raw'];
+    for (const finish of finishes) {
+      cumulative += adjustedChances[finish];
+      if (roll < cumulative) {
+        return finish;
+      }
+    }
+    return 'raw';
+  }
 
   const finishes: Finish[] = ['signed', 'gold_etched', 'rainbow', 'sparkle', 'holo', 'raw'];
   for (const finish of finishes) {
@@ -519,7 +564,8 @@ export function rollPityRarity(dropTable: DropTable, targetPity: 'SR' | 'UR'): R
  */
 export function rollPackDrops(
   packId: PackId,
-  pityCounters: PityCounters
+  pityCounters: PityCounters,
+  finishUpgradeBonus: number = 0
 ): {
   cards: CardInstance[];
   isGodPack: boolean;
@@ -584,7 +630,7 @@ export function rollPackDrops(
     }
 
     const cardDef = pickRandomCardDef(rolledRarity);
-    const finish = rollFinish();
+    const finish = rollFinish(finishUpgradeBonus);
 
     const instance: CardInstance = {
       id: generateUUID(),
@@ -672,7 +718,10 @@ function generateSubgrades(tier: GradeTier, numericGrade: number): GradeSubgrade
   };
 }
 
-function singleGradeRoll(activeTools: ConsumableToolId[]): {
+function singleGradeRoll(
+  activeTools: ConsumableToolId[],
+  extraGrade10Bonus: number = 0
+): {
   tier: GradeTier;
   numericGrade: number;
 } {
@@ -723,6 +772,22 @@ function singleGradeRoll(activeTools: ConsumableToolId[]): {
     }
   }
 
+  // 3. Apply Support Buff Grade 10 / Black Label bonus (e.g. Raiha SR +3% / +3.6% flat bonus)
+  if (extraGrade10Bonus > 0) {
+    const flatBonusPct = extraGrade10Bonus * 100; // e.g. 3.0 or 3.6
+    weights.GEM_MINT_10 += flatBonusPct * 0.85; // Distributed across Gem Mint 10 & Black Label
+    weights.BLACK_LABEL += flatBonusPct * 0.15;
+
+    const lowerTierKeys: GradeTier[] = ['POOR_1_3', 'USED_4_6', 'CRISP_7_8', 'MINT_9'];
+    const lowerTierSum = lowerTierKeys.reduce((sum, key) => sum + weights[key], 0);
+    if (lowerTierSum > flatBonusPct) {
+      const reductionRatio = (lowerTierSum - flatBonusPct) / lowerTierSum;
+      for (const key of lowerTierKeys) {
+        weights[key] *= reductionRatio;
+      }
+    }
+  }
+
   // Roll tier
   const tiers: GradeTier[] = [
     'BLACK_LABEL',
@@ -754,22 +819,23 @@ function singleGradeRoll(activeTools: ConsumableToolId[]): {
 }
 
 /**
- * Evaluates grading outcome with optional consumable tools and insurance reroll.
+ * Evaluates grading outcome with optional consumable tools, support bonuses, and insurance reroll.
  */
 export function rollGrading(
   _card: CardInstance,
-  tools: ConsumableToolId[] = []
+  tools: ConsumableToolId[] = [],
+  extraGrade10Bonus: number = 0
 ): {
   gradeResult: GradeResult;
   insuranceRerolled: boolean;
 } {
-  let { tier, numericGrade } = singleGradeRoll(tools);
+  let { tier, numericGrade } = singleGradeRoll(tools, extraGrade10Bonus);
   let insuranceRerolled = false;
 
   // Apply Vault Insurance if grade is below 7
   if (tools.includes('vault_insurance') && numericGrade < 7) {
     insuranceRerolled = true;
-    const reroll = singleGradeRoll(tools);
+    const reroll = singleGradeRoll(tools, extraGrade10Bonus);
     tier = reroll.tier;
     numericGrade = reroll.numericGrade;
   }
@@ -937,8 +1003,12 @@ export function isGradeHigher(candidate: GradeResult, current?: GradeResult): bo
  */
 export function analyzeShowcaseSlots(
   slots: ShowcaseSlot[],
-  cardMap: Map<string, CardInstance>
+  cardMap: Map<string, CardInstance>,
+  supportSlot?: CardInstance | null
 ): ShowcaseSynergyReport {
+  const activeSupportBuff = resolveActiveSupportBuff(supportSlot ?? null);
+  const sisterMarketMultiplier = 1.0 + (activeSupportBuff?.effects.sisterMarketValueMultiplier ?? 0);
+
   let totalMarketValue = 0;
   let slottedCount = 0;
   const slottedCards: CardInstance[] = [];
@@ -949,7 +1019,8 @@ export function analyzeShowcaseSlots(
     if (!card) continue;
     slottedCards.push(card);
     slottedCount++;
-    totalMarketValue += calculateCardMarketValue(card);
+    const baseVal = calculateCardMarketValue(card);
+    totalMarketValue += Math.round(baseVal * sisterMarketMultiplier);
   }
 
   // 1. Quintuplet Harmony: Ichika, Nino, Miku, Yotsuba, Itsuki all slotted
@@ -974,16 +1045,17 @@ export function analyzeShowcaseSlots(
     slottedCount === 5 &&
     slottedCards.every((card) => card.grade && card.grade.numericGrade >= 9);
 
-  // Synergy multiplier calculation: Base 1.0
-  let synergyMultiplier = 1.0;
-  if (quintupletHarmony) {
-    synergyMultiplier += 0.5; // +50%
-  } else if (monoWaifu) {
-    synergyMultiplier += 0.3; // +30%
-  }
-  if (vaultExcellence) {
-    synergyMultiplier += 1.0; // +100%
-  }
+  // Synergy multiplier calculation:
+  // Fuutarou UR amplifies Quintuplet Harmony from +50% (+0.5) to +100% (+1.0), or +120% (+1.2) if Grade 9/10
+  const harmonyBonus = quintupletHarmony
+    ? 0.5 + (activeSupportBuff?.effects.harmonyBonusBoost ?? 0)
+    : 0;
+  const monoBonus = monoWaifu ? 0.3 : 0;
+  const excellenceBonus = vaultExcellence ? 1.0 : 0;
+
+  const baseSynergiesMultiplier = 1.0 + harmonyBonus + monoBonus + excellenceBonus;
+  const supportMultiplier = activeSupportBuff?.effects.yieldMultiplier ?? 1.0;
+  const synergyMultiplier = baseSynergiesMultiplier * supportMultiplier;
 
   const baseFloorPerMinute = slottedCount * 60; // 60 Yen/min per slotted card (1 Yen/sec)
   const marketBonusPerMinute = totalMarketValue * 0.0002;
@@ -995,6 +1067,8 @@ export function analyzeShowcaseSlots(
     monoWaifu,
     monoWaifuSisterId,
     vaultExcellence,
+    baseSynergiesMultiplier,
+    supportMultiplier,
     synergyMultiplier,
     totalMarketValue,
     baseFloorPerMinute,
@@ -1002,6 +1076,7 @@ export function analyzeShowcaseSlots(
     effectiveYieldPerMinute,
     effectiveYieldPerSecond,
     slottedCount,
+    activeSupportBuff,
   };
 }
 

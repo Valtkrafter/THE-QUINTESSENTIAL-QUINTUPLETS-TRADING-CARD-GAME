@@ -8,6 +8,8 @@ import { useIdleRevenue } from '../../hooks/useIdleRevenue';
 import { calculateCardMarketValue, FINISH_MULTIPLIERS, GRADE_TIER_CONFIG } from '../../config/economy';
 import { GradingSlab } from '../card/GradingSlab';
 import { CardRenderer, CHARACTER_THEMES } from '../card/CardRenderer';
+import { SupportAltar } from './SupportAltar';
+import { SupportDrawer } from './SupportDrawer';
 import { soundEngine } from '../../utils/audioEngine';
 import {
   Coins,
@@ -69,6 +71,9 @@ export const Vitrine: React.FC = () => {
   const [selectedPedestalIndex, setSelectedPedestalIndex] = useState<number | null>(null);
   const [drawerSearchQuery, setDrawerSearchQuery] = useState<string>('');
   const [drawerTab, setDrawerTab] = useState<'all' | 'slabs' | 'raw' | 'ichika' | 'nino' | 'miku' | 'yotsuba' | 'itsuki' | 'support'>('all');
+
+  // Support Altar Drawer State
+  const [isSupportDrawerOpen, setIsSupportDrawerOpen] = useState<boolean>(false);
 
   // Claim celebration particles
   const [isClaiming, setIsClaiming] = useState<boolean>(false);
@@ -283,6 +288,27 @@ export const Vitrine: React.FC = () => {
               +100%
             </span>
           </div>
+
+          {/* 4. Active Support Buff Badge */}
+          {synergyReport.activeSupportBuff ? (
+            <div
+              onClick={() => setIsSupportDrawerOpen(true)}
+              className="px-3 py-1.5 rounded-xl border border-amber-500/60 bg-amber-500/20 text-amber-300 shadow-[0_0_15px_rgba(245,158,11,0.3)] text-xs font-mono font-bold flex items-center gap-1.5 transition-all duration-300 whitespace-nowrap cursor-pointer hover:bg-amber-500/30 animate-pulse"
+              title={synergyReport.activeSupportBuff.description}
+            >
+              <Zap className="w-3.5 h-3.5 text-amber-400" />
+              <span>{synergyReport.activeSupportBuff.badgeLabel}</span>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setIsSupportDrawerOpen(true)}
+              className="px-2.5 py-1.5 rounded-xl border border-dashed border-amber-500/30 bg-amber-500/5 text-amber-400/80 hover:bg-amber-500/10 hover:border-amber-400/60 text-xs font-mono font-medium flex items-center gap-1.5 transition-all duration-200 whitespace-nowrap cursor-pointer"
+            >
+              <Plus className="w-3.5 h-3.5 text-amber-400" />
+              <span>Socket Tutor</span>
+            </button>
+          )}
         </div>
 
         {/* Right: Pulsating Neon Revenue Counter & Claim Button */}
@@ -343,7 +369,7 @@ export const Vitrine: React.FC = () => {
       {/* ============================================================
           MAIN 3D SEMI-CIRCULAR VITRINE STAGE
           ============================================================ */}
-      <div className="relative flex-1 w-full flex items-center justify-center p-4 sm:p-8 overflow-hidden pointer-events-none">
+      <div className="relative flex-1 w-full flex flex-col items-center justify-start pt-4 sm:pt-6 p-4 sm:p-8 overflow-y-auto overflow-x-hidden pointer-events-none">
         {/* Atmospheric background spotlights & ceiling rig */}
         <div className="absolute top-0 inset-x-0 h-24 bg-gradient-to-b from-black/80 via-zinc-950/40 to-transparent pointer-events-none select-none z-10" />
 
@@ -351,9 +377,14 @@ export const Vitrine: React.FC = () => {
         <div className="absolute bottom-0 inset-x-0 h-64 bg-gradient-to-t from-black via-[#0c0c12] to-transparent pointer-events-none select-none" />
         <div className="absolute bottom-10 inset-x-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent pointer-events-none select-none" />
 
+        {/* Elevated Support Altar / Tutor Dais in Upper Stage Zone */}
+        <div className="relative z-30 mb-2 md:mb-4 pointer-events-auto">
+          <SupportAltar onOpenDrawer={() => setIsSupportDrawerOpen(true)} />
+        </div>
+
         {/* 3D Semi-Circular Container */}
         <div
-          className="relative w-full max-w-7xl h-[560px] md:h-[600px] lg:h-[640px] flex items-center justify-center pointer-events-none select-none"
+          className="relative w-full max-w-7xl h-[520px] md:h-[560px] lg:h-[600px] flex items-center justify-center pointer-events-none select-none"
           style={{
             perspective: 1200,
             perspectiveOrigin: '50% 40%',
@@ -523,7 +554,7 @@ export const Vitrine: React.FC = () => {
                       <span className="text-[10px] font-mono text-zinc-400 mt-0.5 pointer-events-none select-none">
                         {card ? (
                           <span className="text-amber-300 font-semibold">
-                            +{((60 + calculateCardMarketValue(card) * 0.0002) * synergyReport.synergyMultiplier).toFixed(1)} ¥/min
+                            +{((60 + calculateCardMarketValue(card) * (1.0 + (synergyReport.activeSupportBuff?.effects.sisterMarketValueMultiplier ?? 0)) * 0.0002) * synergyReport.synergyMultiplier).toFixed(1)} ¥/min
                           </span>
                         ) : (
                           <span className="text-zinc-500">Vacant</span>
@@ -719,6 +750,12 @@ export const Vitrine: React.FC = () => {
           </div>
         )}
       </AnimatePresence>
+
+      {/* Support Altar Tutor Drawer */}
+      <SupportDrawer
+        isOpen={isSupportDrawerOpen}
+        onClose={() => setIsSupportDrawerOpen(false)}
+      />
     </div>
   );
 };

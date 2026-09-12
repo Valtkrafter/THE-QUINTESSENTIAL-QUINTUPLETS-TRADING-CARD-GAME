@@ -34,6 +34,7 @@ import {
 } from '../src/config/economy';
 import { useGameStore, DEFAULT_SHOWCASE_SLOTS, createInitialCardDex, CURRENT_PATCH_VERSION } from '../src/store/useGameStore';
 import { CardInstance, BinderPage, Rarity, GradeTier, ShowcaseSlot, GradeResult } from '../src/types/card';
+import { resolveActiveSupportBuff, SUPPORT_BUFF_CONFIGS, SUPPORT_CODE_MAP } from '../src/config/supportBuffs';
 
 function assert(condition: boolean, message: string): void {
   if (!condition) {
@@ -760,6 +761,293 @@ async function runTests() {
     'markPatchNotesSeen(custom) updates lastSeenPatchVersion to custom version'
   );
   console.log('✅ Patch notes version tracking and store mutations verified.');
+
+  // ============================================================
+  // SECTION 10: STAGE 5: SUPPORT ALTAR & DYNAMIC SHOWCASE BUFF ENGINE
+  // ============================================================
+  testSection('SECTION 10: STAGE 5: SUPPORT ALTAR & DYNAMIC SHOWCASE BUFF ENGINE');
+
+  // 1. Support Buff Dictionary & Master Catalog Coverage
+  const supportDefKeys = Object.keys(SUPPORT_BUFF_CONFIGS);
+  assert(supportDefKeys.length === 7, 'Exactly 7 support cards configured in SUPPORT_BUFF_CONFIGS');
+  assert(SUPPORT_CODE_MAP['TQQ-SUP-01'] === 'fuutarou_c_01', 'TQQ-SUP-01 mapped to fuutarou_c_01');
+  assert(SUPPORT_CODE_MAP['TQQ-SUP-03'] === 'fuutarou_ur_01', 'TQQ-SUP-03 mapped to fuutarou_ur_01');
+  assert(SUPPORT_CODE_MAP['TQQ-SUP-05'] === 'raiha_sr_01', 'TQQ-SUP-05 mapped to raiha_sr_01');
+  assert(SUPPORT_CODE_MAP['TQQ-SUP-06'] === 'maruo_sec_01', 'TQQ-SUP-06 mapped to maruo_sec_01');
+  assert(SUPPORT_CODE_MAP['TQQ-SUP-07'] === 'takeda_r_01', 'TQQ-SUP-07 mapped to takeda_r_01');
+  console.log('✅ Support buff master catalog and code alias dictionaries verified.');
+
+  // 2. Base Resolution vs Grade 9/10 (+20%) Scaling Resolution
+  const rawFuutarouUR: CardInstance = {
+    id: 'test_futa_ur_raw',
+    cardDefId: 'fuutarou_ur_01',
+    characterId: 'fuutarou',
+    rarity: 'UR',
+    finish: 'raw',
+    obtainedAt: Date.now(),
+  };
+  const rawBuff = resolveActiveSupportBuff(rawFuutarouUR);
+  assert(rawBuff !== null, 'raw Fuutarou UR buff resolved');
+  assert(rawBuff!.effects.yieldMultiplier === 2.0, 'Raw Fuutarou UR gives 2.0x yield');
+  assert(rawBuff!.effects.harmonyBonusBoost === 0.5, 'Raw Fuutarou UR gives +0.5 harmony boost');
+  assert(rawBuff!.isGradeScaled === false, 'Raw card is not grade scaled');
+
+  const gradedFuutarouUR: CardInstance = {
+    ...rawFuutarouUR,
+    id: 'test_futa_ur_grade10',
+    grade: {
+      tier: 'GEM_MINT_10',
+      tierLabel: 'Gem Mint 10',
+      numericGrade: 10,
+      isBlackLabel: false,
+      multiplier: 5.0,
+      subgrades: { centering: 10, surface: 10, corners: 10, edges: 9.5 },
+      gradedAt: Date.now(),
+    },
+  };
+  const slabBuff = resolveActiveSupportBuff(gradedFuutarouUR);
+  assert(slabBuff !== null, 'slab Fuutarou UR buff resolved');
+  assert(slabBuff!.isGradeScaled === true, 'Grade 10 slab is grade scaled');
+  assert(slabBuff!.effects.yieldMultiplier === 2.4, 'Grade 10 Fuutarou UR scales 2.0x to 2.40x (+20%)');
+  assert(slabBuff!.effects.harmonyBonusBoost === 0.6, 'Grade 10 Fuutarou UR scales +0.5 to +0.60 harmony boost (+20%)');
+  assert(slabBuff!.badgeLabel.includes('SLAB +20%'), 'Badge label indicates SLAB +20% boost');
+
+  // Verify Raiha SR Grade 10 scaling
+  const slabRaihaSR: CardInstance = {
+    id: 'test_raiha_sr_slab',
+    cardDefId: 'raiha_sr_01',
+    characterId: 'raiha',
+    rarity: 'SR',
+    finish: 'raw',
+    obtainedAt: Date.now(),
+    grade: {
+      tier: 'MINT_9',
+      tierLabel: 'Mint 9',
+      numericGrade: 9,
+      isBlackLabel: false,
+      multiplier: 2.0,
+      subgrades: { centering: 9, surface: 9, corners: 9, edges: 9 },
+      gradedAt: Date.now(),
+    },
+  };
+  const raihaSlabBuff = resolveActiveSupportBuff(slabRaihaSR);
+  assert(raihaSlabBuff!.effects.gradingFeeDiscount === 0.36, 'Grade 9 Raiha SR scales 30% discount to 36% (+20%)');
+  assert(raihaSlabBuff!.effects.grade10BlackLabelBonus === 0.036, 'Grade 9 Raiha SR scales 3% bonus to 3.6% (+20%)');
+
+  // Verify Maruo SEC Grade 10 scaling
+  const slabMaruoSEC: CardInstance = {
+    id: 'test_maruo_sec_slab',
+    cardDefId: 'maruo_sec_01',
+    characterId: 'maruo',
+    rarity: 'SEC',
+    finish: 'raw',
+    obtainedAt: Date.now(),
+    grade: {
+      tier: 'BLACK_LABEL',
+      tierLabel: 'Black Label Quad 10',
+      numericGrade: 10,
+      isBlackLabel: true,
+      multiplier: 25.0,
+      subgrades: { centering: 10, surface: 10, corners: 10, edges: 10 },
+      gradedAt: Date.now(),
+    },
+  };
+  const maruoSlabBuff = resolveActiveSupportBuff(slabMaruoSEC);
+  assert(maruoSlabBuff!.effects.dustBonus === 0.9, 'Grade 10 Maruo scales 75% dust bonus to 90% (+20%)');
+  assert(maruoSlabBuff!.effects.kioskDiscount === 0.3, 'Grade 10 Maruo scales 25% kiosk discount to 30% (+20%)');
+  assert(maruoSlabBuff!.effects.sisterMarketValueMultiplier === 0.24, 'Grade 10 Maruo scales 20% sister valuation to 24% (+20%)');
+
+  // Verify Takeda R Grade 10 scaling
+  const slabTakedaR: CardInstance = {
+    id: 'test_takeda_r_slab',
+    cardDefId: 'takeda_r_01',
+    characterId: 'takeda',
+    rarity: 'R',
+    finish: 'raw',
+    obtainedAt: Date.now(),
+    grade: {
+      tier: 'GEM_MINT_10',
+      tierLabel: 'Gem Mint 10',
+      numericGrade: 10,
+      isBlackLabel: false,
+      multiplier: 5.0,
+      subgrades: { centering: 10, surface: 10, corners: 10, edges: 10 },
+      gradedAt: Date.now(),
+    },
+  };
+  const takedaSlabBuff = resolveActiveSupportBuff(slabTakedaR);
+  assert(takedaSlabBuff!.effects.cooldownReductionSeconds === 8640, 'Grade 10 Takeda scales 7200s (2h) reduction to 8640s (2.4h)');
+  console.log('✅ Base effects and Grade 9/10 (+20%) scaling calculations verified across all mentor cards.');
+
+  // 3. Showcase Multipliers & Synergy Stacking with Support Altar
+  const showcaseSisters: CardInstance[] = [
+    { id: 'sup_ichika', cardDefId: 'ichika_c_01', characterId: 'ichika', rarity: 'C', finish: 'raw', obtainedAt: Date.now() },
+    { id: 'sup_nino', cardDefId: 'nino_c_01', characterId: 'nino', rarity: 'C', finish: 'raw', obtainedAt: Date.now() },
+    { id: 'sup_miku', cardDefId: 'miku_c_01', characterId: 'miku', rarity: 'C', finish: 'raw', obtainedAt: Date.now() },
+    { id: 'sup_yotsuba', cardDefId: 'yotsuba_c_01', characterId: 'yotsuba', rarity: 'C', finish: 'raw', obtainedAt: Date.now() },
+    { id: 'sup_itsuki', cardDefId: 'itsuki_c_01', characterId: 'itsuki', rarity: 'C', finish: 'raw', obtainedAt: Date.now() },
+  ];
+  const showcaseMap = new Map<string, CardInstance>();
+  showcaseSisters.forEach((c) => showcaseMap.set(c.id, c));
+  const showcaseSlots: ShowcaseSlot[] = showcaseSisters.map((c, i) => ({ slotIndex: i, cardInstanceId: c.id }));
+
+  // Without support: Harmony is +50% (1.5x)
+  const baseSynergy = analyzeShowcaseSlots(showcaseSlots, showcaseMap, null);
+  assert(baseSynergy.synergyMultiplier === 1.5, 'Base showcase harmony is 1.5x');
+
+  // With Raw Fuutarou UR in Support Altar:
+  // Harmony bonus is amplified from +0.5 to +1.0 (baseSynergiesMultiplier = 2.0x)
+  // Fuutarou UR yieldMultiplier is 2.0x
+  // Total synergy multiplier = 2.0 * 2.0 = 4.0x
+  const fuutarouURSynergy = analyzeShowcaseSlots(showcaseSlots, showcaseMap, rawFuutarouUR);
+  assert(fuutarouURSynergy.baseSynergiesMultiplier === 2.0, 'Harmony amplified to +100% (+1.0), baseSynergiesMultiplier = 2.0x');
+  assert(fuutarouURSynergy.supportMultiplier === 2.0, 'Fuutarou UR supportMultiplier is 2.0x');
+  assert(fuutarouURSynergy.synergyMultiplier === 4.0, 'Total synergy multiplier is 4.0x (2.0 * 2.0)');
+
+  // With Grade 10 Fuutarou UR in Support Altar:
+  // Harmony bonus is amplified by +0.6 (baseSynergiesMultiplier = 1.0 + 0.5 + 0.6 = 2.1x)
+  // Fuutarou UR yieldMultiplier is 2.4x
+  // Total synergy multiplier = 2.1 * 2.4 = 5.04x
+  const slabFuutarouURSynergy = analyzeShowcaseSlots(showcaseSlots, showcaseMap, gradedFuutarouUR);
+  assert(Number(slabFuutarouURSynergy.baseSynergiesMultiplier.toFixed(2)) === 2.1, 'Grade 10 Harmony amplified to +110% (2.1x)');
+  assert(slabFuutarouURSynergy.supportMultiplier === 2.4, 'Grade 10 Fuutarou UR supportMultiplier is 2.4x');
+  assert(Number(slabFuutarouURSynergy.synergyMultiplier.toFixed(2)) === 5.04, 'Total synergy multiplier is 5.04x (2.1 * 2.4)');
+
+  // With Maruo SEC in Support Altar:
+  // Base raw card value for 5 C cards = 5 * 10 = 50 ¥
+  // With raw Maruo (+20% sister valuation): 50 * 1.2 = 60 ¥
+  const maruoSynergy = analyzeShowcaseSlots(showcaseSlots, showcaseMap, slabMaruoSEC);
+  assert(maruoSynergy.totalMarketValue > baseSynergy.totalMarketValue, 'Maruo SEC increases total market valuation of slotted sisters');
+  console.log('✅ Showcase idle yield, Quintuplet Harmony amplification, and Maruo valuation verified.');
+
+  // 4. Zustand Store Lifecycle, Mount/Unmount & Liquidation Safeguards
+  useGameStore.setState({
+    inventory: [...useGameStore.getState().inventory, rawFuutarouUR, gradedFuutarouUR, slabRaihaSR, slabMaruoSEC, slabTakedaR],
+    supportSlot: null,
+  });
+
+  // Socket Fuutarou UR to Support Altar
+  useGameStore.getState().slotSupportCard(rawFuutarouUR.id);
+  assert(useGameStore.getState().supportSlot?.id === rawFuutarouUR.id, 'Fuutarou UR slotted into supportSlot');
+
+  // Verify liquidation & dusting protection on active Support card
+  let supportDustBlocked = false;
+  try {
+    useGameStore.getState().dustCard(rawFuutarouUR.id);
+  } catch {
+    supportDustBlocked = true;
+  }
+  assert(supportDustBlocked, 'Mounted support card cannot be dusted via dustCard()');
+
+  // dustCards skips mounted support card and yields 0 dust
+  const batchDustEarned = useGameStore.getState().dustCards([rawFuutarouUR.id]);
+  assert(batchDustEarned === 0, 'dustCards() skips mounted support card (0 dust earned)');
+  assert(
+    useGameStore.getState().inventory.some((c) => c.id === rawFuutarouUR.id),
+    'Mounted support card remains in inventory after dustCards()'
+  );
+
+  let supportSellBlocked = false;
+  try {
+    useGameStore.getState().sellCard(rawFuutarouUR.id);
+  } catch {
+    supportSellBlocked = true;
+  }
+  assert(supportSellBlocked, 'Mounted support card cannot be sold via sellCard()');
+
+  // Verify bulk sell skips mounted support card
+  const preBulkCount = useGameStore.getState().inventory.length;
+  useGameStore.getState().sellBulkCards({ rarities: ['UR'], uncertifiedOnly: false });
+  assert(
+    useGameStore.getState().inventory.some((c) => c.id === rawFuutarouUR.id),
+    'Mounted support card preserved during bulk liquidation'
+  );
+  assert(useGameStore.getState().supportSlot?.id === rawFuutarouUR.id, 'supportSlot remains intact after bulk sell');
+  console.log('✅ Support Altar liquidation, dusting, and vaporization protections verified.');
+
+  // Swap to Raiha SR in Support Altar: test grading fee discount
+  useGameStore.getState().slotSupportCard(slabRaihaSR.id);
+  assert(useGameStore.getState().supportSlot?.id === slabRaihaSR.id, 'Raiha SR slotted in Support Altar');
+
+  const rawCardToGrade: CardInstance = {
+    id: 'card_to_grade_test',
+    cardDefId: 'miku_c_01',
+    characterId: 'miku',
+    rarity: 'C',
+    finish: 'raw',
+    obtainedAt: Date.now(),
+  };
+  useGameStore.setState({
+    inventory: [...useGameStore.getState().inventory, rawCardToGrade],
+    yen: 1000,
+  });
+  const startYen = useGameStore.getState().yen;
+  const s5StandardFee = calculateGradingFee(rawCardToGrade, 0); // 50% of 10 = 5 (minimum floor is 1)
+  const discountedFee = calculateGradingFee(rawCardToGrade, 0.36); // 36% discount on 5 = 3
+  assert(discountedFee < s5StandardFee, 'Discounted fee is strictly less than standard fee');
+
+  useGameStore.getState().gradeCard(rawCardToGrade.id);
+  const yenPaid = startYen - useGameStore.getState().yen;
+  assert(yenPaid === discountedFee, 'gradeCard charged the discounted fee with active Raiha SR');
+  console.log('✅ Raiha SR grading fee discount verified through store.gradeCard().');
+
+  // Swap to Maruo SEC in Support Altar: test Kiosk discount & Dusting bonus
+  useGameStore.getState().slotSupportCard(slabMaruoSEC.id);
+  assert(useGameStore.getState().supportSlot?.id === slabMaruoSEC.id, 'Maruo SEC slotted in Support Altar');
+
+  // Test Kiosk discount with Maruo SEC (30% discount with Grade 10)
+  useGameStore.setState({ yen: 10_000_000 });
+  useGameStore.getState().refreshKiosk(false);
+  const kioskOffering = useGameStore.getState().kioskStock[0];
+  if (kioskOffering) {
+    const preKioskYen = useGameStore.getState().yen;
+    const expectedDiscountedPrice = Math.round(kioskOffering.priceYen * 0.7);
+    useGameStore.getState().buyKioskCard(kioskOffering.id);
+    const kioskYenSpent = preKioskYen - useGameStore.getState().yen;
+    assert(kioskYenSpent === expectedDiscountedPrice, 'buyKioskCard applied 30% Maruo discount');
+  }
+
+  // Test Dust bonus with Maruo SEC (+90% with Grade 10)
+  const disposableCard: CardInstance = {
+    id: 'disposable_c_card',
+    cardDefId: 'ichika_c_01',
+    characterId: 'ichika',
+    rarity: 'C',
+    finish: 'raw',
+    obtainedAt: Date.now(),
+  };
+  useGameStore.setState({
+    inventory: [...useGameStore.getState().inventory, disposableCard],
+    stardust: 0,
+  });
+  const expectedDust = calculateDustYield(disposableCard, 0.9);
+  const s5DustEarned = useGameStore.getState().dustCard(disposableCard.id);
+  assert(s5DustEarned === expectedDust, 'dustCard earned +90% stardust with Grade 10 Maruo Altar');
+  assert(useGameStore.getState().stardust === expectedDust, 'Stardust balance updated with bonus');
+  console.log('✅ Maruo SEC Kiosk discount and dusting bonus verified through store mutations.');
+
+  // Swap to Takeda R in Support Altar: test Test-Sheet Pack Cooldown reduction
+  useGameStore.getState().slotSupportCard(slabTakedaR.id);
+  assert(useGameStore.getState().supportSlot?.id === slabTakedaR.id, 'Takeda R slotted in Support Altar');
+  const nowTs = Date.now();
+  useGameStore.setState({
+    packCooldowns: {
+      ...useGameStore.getState().packCooldowns,
+      test_sheet: nowTs - 3600 * 1000, // opened 1 hour ago (base cooldown 4h = 14400s)
+    },
+  });
+  const cdRemainingWithTakeda = useGameStore.getState().getTestSheetCooldownRemaining();
+  // With 8640s (2.4h) reduction, total cooldown is 14400 - 8640 = 5760s (1.6h)
+  // Elapsed is 3600s, so remaining should be ~2160s (rather than 10800s without Takeda)
+  assert(cdRemainingWithTakeda < 3600, 'Test sheet cooldown significantly reduced by Takeda R in Support Altar');
+  console.log('✅ Takeda R pack cooldown reduction verified through getTestSheetCooldownRemaining().');
+
+  // Unmount from Support Altar
+  useGameStore.getState().slotSupportCard(null);
+  assert(useGameStore.getState().supportSlot === null, 'Support Altar vacated successfully');
+  const defaultCdRemaining = useGameStore.getState().getTestSheetCooldownRemaining();
+  assert(defaultCdRemaining > 10000, 'Cooldown restored to standard 4-hour schedule after unmounting Takeda');
+  console.log('✅ Support Altar unmount and baseline restoration verified.');
 
   testSection('🎉 ALL TESTS PASSED SUCCESSFULLY! 100% SPEC COMPLIANCE.');
 }
