@@ -1,4 +1,4 @@
-export const APP_VERSION = '2.0.1'; // Increment with each task
+export const APP_VERSION = '2.0.2'; // Increment with each task
 
 export interface PatchNote {
   version: string;
@@ -11,14 +11,14 @@ export interface PatchNote {
 // ALWAYS overwrite this object with ONLY the latest release
 export const CURRENT_PATCH_NOTE: PatchNote = {
   version: APP_VERSION,
-  title: 'Showcase Polish & Thumbnail Fixes',
+  title: 'Support Altar Redesign & Card Showcase',
   date: new Date().toISOString().split('T')[0],
   highlights: [
-    'Support cards in the showcase now have proper breathing room without top/bottom cropping.',
-    'Slab cards in the pedestal selection drawer now look clean and full-sized.',
+    'Support cards now feature large, beautiful full-art previews with character artwork taking center stage.',
+    'Streamlined filter bar with quick one-click mentor pills and format toggles.',
   ],
   fixes: [
-    'Fixed an issue where graded cards appeared tiny with double black borders in menus.',
-    'Removed duplicate grade badges overlapping on cards.',
+    'Removed the redundant search bar to maximize card browsing space.',
+    'Condensed the active mentor status and drawer header to give cards more breathing room.',
   ],
 };

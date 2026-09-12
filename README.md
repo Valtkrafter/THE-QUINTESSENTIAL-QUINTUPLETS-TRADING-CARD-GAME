@@ -128,7 +128,7 @@ Submit raw cards to the **Grading Station** to be certified in heavy acrylic sla
 - **Grade 9 & 10 Certified Slab Scaling (+20%):** Slotting a certified Mint 9, Gem Mint 10, or Black Label slab into the Support Altar automatically triggers a $+20\%$ scaling multiplier across all numeric effect values (e.g. Fuutarou UR scales to $2.40\times$ yield & $+120\%$ Harmony; Maruo SEC scales to $+90\%$ dust, $30\%$ Kiosk sale, and $+24\%$ sister valuation).
 - **Zero-Clipping Intrinsic Aspect-Ratio Architecture:** The Support Altar card container is decoupled from fixed pixel heights (`w-48 md:w-52 aspect-[63/88] flex-shrink-0 my-2 overflow-visible`), ensuring both raw cards and full acrylic slabs render at authentic geometry without vertical squishing. The full-card hover controls (`Swap` / `Unmount`) are strictly bounded to the card frame, while character lore quotes float with bottom cushion (`bottom-2 inset-x-2 line-clamp-2`) without bleeding past card boundaries or overlapping active buff banners.
 - **Altar Liquidation & Vaporization Immunity:** Slotted support cards are completely immune to accidental liquidation, individual dusting, or batch liquidation.
-- **Dedicated Support Drawer (`SupportDrawer.tsx`):** Integrated slide-over modal drawer filtering strictly to Support characters with real-time name, title, and buff description search, BGS slab filters, and one-click socketing. Features a unified thumbnail frame (`w-14 sm:w-16 aspect-[63/88] rounded-lg overflow-hidden bg-black/40`) establishing strict 1:1 dimension parity between raw cards and certified graded slabs, tier-styled grade metadata badges (`Gr. 7 (CRISP_7_8)`), and locked button alignments.
+- **Dedicated Support Drawer (`SupportDrawer.tsx`):** Streamlined slide-over modal drawer filtering strictly to Support mentor characters (Fuutarou, Raiha, Maruo, Takeda) with single-row mentor and format pills, purged redundant search bar, condensed active mentor banner, and one-click socketing. Features enlarged full-art 3D card previews (`w-24 sm:w-28 aspect-[63/88] rounded-xl overflow-hidden shadow-lg border border-white/10`) with top-right micro grade pills, active buff callout boxes, and generous spacing.
 
 ### 💰 5. Direct Sell System & Bulk Liquidation
 - **Instant Liquid Sales:** Liquidate raw, holo, or graded cards directly for instant $\yen$ currency from the unified `CardActionModal`.
@@ -295,7 +295,7 @@ tqqtcg/
 │   │   ├── showcase/
 │   │   │   ├── SocketDrawer.tsx          # Full-art pedestal selection drawer with 3-col grid & status badges
 │   │   │   ├── SupportAltar.tsx          # Floating tutor dais with downward ambient light cone & Grade 9/10 scaling
-│   │   │   ├── SupportDrawer.tsx         # Slide-over socketing drawer with search, filters & active buff preview
+│   │   │   ├── SupportDrawer.tsx         # Slide-over tutor drawer with streamlined filters & enlarged previews
 │   │   │   ├── Vitrine.tsx               # 5-slot acrylic pedestal stage with flank HUD & dynamic spotlights
 │   │   │   ├── VitrineHarvestConsole.tsx # Right flank HUD: yield streaming visualizer & tactile claim button
 │   │   │   └── VitrineResonancePanel.tsx # Left flank HUD: vault valuation & 3-way synergy resonance matrix
