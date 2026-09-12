@@ -548,7 +548,7 @@ export const CardRenderer: React.FC<CardRendererProps> = ({
 
             {/* LORE QUOTE OVERLAY (z-30) */}
             {cardLoreQuote && (
-              <div className="relative mt-auto w-full p-1.5 rounded-b-md border-t border-zinc-800/80 text-center z-30 shadow-lg pointer-events-none select-none overflow-hidden">
+              <div className="absolute bottom-2 inset-x-2 p-1.5 rounded-md border border-zinc-800/80 text-center z-30 shadow-lg pointer-events-none select-none overflow-hidden">
                 <div className="absolute inset-0 bg-black/80 backdrop-blur-md pointer-events-none select-none" />
                 <p className="relative z-10 text-[10px] sm:text-[11px] italic text-zinc-200 line-clamp-2 leading-tight crisp-render">
                   &ldquo;{cardLoreQuote}&rdquo;

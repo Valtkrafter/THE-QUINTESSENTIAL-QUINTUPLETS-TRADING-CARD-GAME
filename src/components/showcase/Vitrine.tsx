@@ -378,7 +378,7 @@ export const Vitrine: React.FC = () => {
         <div className="absolute bottom-10 inset-x-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent pointer-events-none select-none" />
 
         {/* Elevated Support Altar / Tutor Dais in Upper Stage Zone */}
-        <div className="relative z-30 mb-2 md:mb-4 pointer-events-auto">
+        <div className="relative z-30 mb-2 md:mb-4 pointer-events-auto overflow-visible">
           <SupportAltar onOpenDrawer={() => setIsSupportDrawerOpen(true)} />
         </div>
 
