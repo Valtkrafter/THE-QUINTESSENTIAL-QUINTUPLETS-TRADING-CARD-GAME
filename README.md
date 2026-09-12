@@ -80,8 +80,14 @@ Submit raw cards to the **Grading Station** to be certified in heavy acrylic sla
   - **Vault Insurance:** Guarantees a free automatic re-roll if a card scores below Grade 7.
 
 ### 🏛️ 4. 5-Slot Acrylic Showcase (Vitrine) & Idle Revenue Engine
-- **Semi-Circular 3D Acrylic Stage:** 5 vertical acrylic pedestals arranged along a curved perspective stage (`perspective: 1200px`) against deep Obsidian dark (`#08080a`) with frosted bases, reflection planes, and metallic edge brackets.
-- **Dynamic Character Overhead Spotlights:** Conical top-down light shafts casting authentic illumination matched to signature character colors:
+- **Semi-Circular 3D Acrylic Stage:** 5 vertical acrylic pedestals arranged along a curved perspective stage (`perspective: 1200px`) against deep Obsidian dark (`#08080a`) with frosted bases, reflection planes, and metallic edge brackets. Expanded stage geometry (`max-w-7xl h-[560px] md:h-[600px] lg:h-[640px]`) accommodates high-impact card presentation.
+- **Showcase Full-Art Expansion (`showcaseMode`):** Slotted graded slabs automatically engage `showcaseMode={true}`, suppressing the bulky BGS header, subgrade matrix, and multiplier banner to expand the inner card well to >92% of slab height. Certified grades are rendered via a sleek floating glass pill badge in the top-right corner with tier-specific styling:
+  - *Grade 1–8:* Translucent frosted glass with silver border (`#E2E8F0`).
+  - *Grade 9:* Emerald frosted glass (`#34D399`) with subtle mint glow.
+  - *Grade 10:* Golden amber glass (`#FBBF24`) with gold sheen.
+  - *Black Label (Quad 10):* Obsidian black glass (`#0A0A0E`) with gold border (`#D4AF37`) and pulsing gold halo.
+- **Subpixel Text & 1:1 Crisp Rendering:** Purged GPU rasterization blur caused by fractional CSS `scale(...)` and 3D perspective downsampling. Pedestals render at 1:1 pixel fidelity with responsive card heights (`h-[340px]` to `[420px]`, `aspect-[63/88]`). Text elements are strictly isolated from `backdrop-filter: blur(...)` using decoupled background sibling layers and reinforced with `.crisp-render` hardware composition (`translateZ(0)`, `backface-visibility: hidden`).
+- **Dynamic Character Overhead Spotlights:** Conical top-down light shafts (`h-[480px]`) casting authentic illumination matched to signature character colors:
   - **Ichika:** Warm Amber (`#F59E0B`) 💛
   - **Nino:** Vivid Magenta (`#EC4899`) 🦋
   - **Miku:** Cool Cyan (`#06B6D4`) 🎧

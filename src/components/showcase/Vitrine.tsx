@@ -40,13 +40,13 @@ export const SPOTLIGHT_COLORS: Record<string, { hex: string; rgb: string; glow: 
   empty: { hex: '#475569', rgb: '71, 85, 105', glow: 'rgba(71, 85, 105, 0.15)' },
 };
 
-// 3D semi-circle pedestal stage configurations (angles & depth)
+// 3D semi-circle pedestal stage configurations (angles & depth, 1:1 native pixel rendering)
 const PEDESTAL_CONFIGS = [
-  { index: 0, rotateY: 20, translateZ: -30, translateX: -12, scale: 0.94 },
-  { index: 1, rotateY: 10, translateZ: -10, translateX: -4, scale: 0.97 },
-  { index: 2, rotateY: 0, translateZ: 18, translateX: 0, scale: 1.03 }, // Center Hero
-  { index: 3, rotateY: -10, translateZ: -10, translateX: 4, scale: 0.97 },
-  { index: 4, rotateY: -20, translateZ: -30, translateX: 12, scale: 0.94 },
+  { index: 0, rotateY: 20, translateZ: -30, translateX: -12 },
+  { index: 1, rotateY: 10, translateZ: -10, translateX: -4 },
+  { index: 2, rotateY: 0, translateZ: 20, translateX: 0 }, // Center Hero
+  { index: 3, rotateY: -10, translateZ: -10, translateX: 4 },
+  { index: 4, rotateY: -20, translateZ: -30, translateX: 12 },
 ];
 
 export const Vitrine: React.FC = () => {
@@ -191,14 +191,17 @@ export const Vitrine: React.FC = () => {
       {/* ============================================================
           TOP NEON REVENUE TICKER & SYNERGY STATUS BAR
           ============================================================ */}
-      <div className="shrink-0 w-full px-6 py-4 border-b border-white/10 bg-[#0c0c12]/90 backdrop-blur-md z-20 flex flex-col md:flex-row items-center justify-between gap-4 shadow-xl">
+      <div className="shrink-0 w-full px-6 py-4 border-b border-white/10 relative z-20 shadow-xl overflow-hidden">
+        {/* Isolated blurred background */}
+        <div className="absolute inset-0 bg-[#0c0c12]/90 backdrop-blur-md pointer-events-none select-none" />
+        <div className="relative z-10 w-full flex flex-col md:flex-row items-center justify-between gap-4">
         {/* Left: Vault Stats & Live Revenue */}
         <div className="flex items-center gap-5 w-full md:w-auto justify-between md:justify-start">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-500 to-yellow-300 flex items-center justify-center text-zinc-950 font-black text-lg shadow-[0_0_20px_rgba(245,158,11,0.5)]">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-500 to-yellow-300 flex items-center justify-center text-zinc-950 font-black text-lg shadow-[0_0_20px_rgba(245,158,11,0.5)] crisp-render">
               5
             </div>
-            <div>
+            <div className="crisp-render">
               <h2 className="text-sm font-black tracking-wider text-white uppercase font-mono flex items-center gap-2">
                 <span>The Acrylic Showcase</span>
                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 font-mono">
@@ -335,6 +338,7 @@ export const Vitrine: React.FC = () => {
           ))}
         </div>
       </div>
+    </div>
 
       {/* ============================================================
           MAIN 3D SEMI-CIRCULAR VITRINE STAGE
@@ -349,14 +353,14 @@ export const Vitrine: React.FC = () => {
 
         {/* 3D Semi-Circular Container */}
         <div
-          className="relative w-full max-w-6xl h-[520px] flex items-center justify-center pointer-events-none select-none"
+          className="relative w-full max-w-7xl h-[560px] md:h-[600px] lg:h-[640px] flex items-center justify-center pointer-events-none select-none"
           style={{
             perspective: 1200,
             perspectiveOrigin: '50% 40%',
             transformStyle: 'preserve-3d',
           }}
         >
-          <div className="grid grid-cols-5 gap-3 sm:gap-6 w-full h-full items-center justify-items-center pointer-events-none select-none">
+          <div className="grid grid-cols-5 gap-3 sm:gap-6 w-full h-full items-end justify-items-center pb-4 pointer-events-none select-none">
             {PEDESTAL_CONFIGS.map((config) => {
               const slot = showcaseSlots[config.index];
               const card = slottedCards[config.index];
@@ -367,15 +371,15 @@ export const Vitrine: React.FC = () => {
               return (
                 <div
                   key={config.index}
-                  className="relative flex flex-col items-center justify-end h-full w-full max-w-[210px] transition-transform duration-500 pointer-events-none select-none"
+                  className="relative flex flex-col items-center justify-end h-full w-full max-w-[260px] transition-transform duration-500 pointer-events-none select-none"
                   style={{
-                    transform: `rotateY(${config.rotateY}deg) translateZ(${config.translateZ}px) translateX(${config.translateX}px) scale(${config.scale})`,
+                    transform: `rotateY(${config.rotateY}deg) translateZ(${config.translateZ}px) translateX(${config.translateX}px)`,
                     transformStyle: 'flat',
                   }}
                 >
                   {/* Dynamic Overhead Conical Spotlight */}
                   <div
-                    className="absolute -top-16 inset-x-0 h-[380px] pointer-events-none select-none transition-all duration-700 opacity-60"
+                    className="absolute -top-20 inset-x-0 h-[480px] pointer-events-none select-none transition-all duration-700 opacity-60"
                     style={{
                       background: `conic-gradient(from 180deg at 50% 0%, transparent 65deg, ${spotlight.glow} 85deg, ${spotlight.glow} 95deg, transparent 115deg)`,
                       filter: 'blur(20px)',
@@ -393,7 +397,7 @@ export const Vitrine: React.FC = () => {
 
                   {/* Pedestal Card Mount Slot */}
                   <div
-                    className={`relative w-full ${card?.grade ? 'aspect-[82/130]' : 'aspect-[63/88]'} max-h-[300px] flex items-center justify-center rounded-2xl transition-all duration-300 z-20 pointer-events-auto`}
+                    className="relative w-full aspect-[63/88] h-[340px] sm:h-[360px] md:h-[390px] lg:h-[420px] max-h-[440px] max-w-[280px] flex items-center justify-center rounded-2xl transition-all duration-300 z-20 pointer-events-auto"
                     style={{
                       transform: 'translateZ(20px)',
                     }}
@@ -408,6 +412,7 @@ export const Vitrine: React.FC = () => {
                             size="full"
                             className="w-full h-full pointer-events-none select-none !p-0 !m-0"
                             showMarketValue={false}
+                            showcaseMode={true}
                           />
                         ) : (
                           <CardRenderer
@@ -431,35 +436,40 @@ export const Vitrine: React.FC = () => {
                         />
 
                         {/* Interactive Hover Overlay Anchor */}
-                        <div className="absolute inset-0 z-30 pointer-events-auto w-full h-full rounded-xl bg-black/75 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col items-center justify-center gap-2 p-3 select-none">
-                          <span className="text-amber-400 font-bold text-sm tracking-wide text-center leading-tight font-mono">
-                            {card.name || 'Card'}
-                          </span>
-                          <span className="text-xs text-white/70 font-mono">
-                            ¥ {calculateCardMarketValue(card).toLocaleString()}
-                          </span>
+                        <div className="absolute inset-0 z-30 pointer-events-auto w-full h-full rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col items-center justify-center gap-2 p-3 select-none overflow-hidden">
+                          {/* Isolated backdrop blur layer */}
+                          <div className="absolute inset-0 bg-black/75 backdrop-blur-sm rounded-xl pointer-events-none" />
 
-                          <div className="flex gap-2 mt-1 z-40">
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedPedestalIndex(config.index);
-                              }}
-                              className="pointer-events-auto z-40 bg-amber-500 hover:bg-amber-400 text-black font-semibold text-xs px-3 py-1.5 rounded-lg shadow-md font-mono transition-colors cursor-pointer"
-                            >
-                              Swap
-                            </button>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleUnmountCard(config.index);
-                              }}
-                              className="pointer-events-auto z-40 bg-white/10 hover:bg-white/20 text-white font-medium text-xs px-3 py-1.5 rounded-lg border border-white/10 font-mono transition-colors cursor-pointer"
-                            >
-                              Unmount
-                            </button>
+                          <div className="relative z-10 flex flex-col items-center justify-center gap-2 w-full crisp-render">
+                            <span className="text-amber-400 font-bold text-sm tracking-wide text-center leading-tight font-mono">
+                              {card.name || 'Card'}
+                            </span>
+                            <span className="text-xs text-white/70 font-mono">
+                              ¥ {calculateCardMarketValue(card).toLocaleString()}
+                            </span>
+
+                            <div className="flex gap-2 mt-1 z-40">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedPedestalIndex(config.index);
+                                }}
+                                className="pointer-events-auto z-40 bg-amber-500 hover:bg-amber-400 text-black font-semibold text-xs px-3 py-1.5 rounded-lg shadow-md font-mono transition-colors cursor-pointer"
+                              >
+                                Swap
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleUnmountCard(config.index);
+                                }}
+                                className="pointer-events-auto z-40 bg-white/10 hover:bg-white/20 text-white font-medium text-xs px-3 py-1.5 rounded-lg border border-white/10 font-mono transition-colors cursor-pointer"
+                              >
+                                Unmount
+                              </button>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -467,49 +477,59 @@ export const Vitrine: React.FC = () => {
                       /* Empty Pedestal Slot Placeholder */
                       <div
                         onClick={() => setSelectedPedestalIndex(config.index)}
-                        className="w-full h-full rounded-2xl border-2 border-dashed border-white/20 hover:border-amber-400/70 bg-white/5 hover:bg-white/10 backdrop-blur-sm flex flex-col items-center justify-center gap-3 p-4 transition-all duration-300 hover:shadow-[0_0_25px_rgba(245,158,11,0.2)] cursor-pointer pointer-events-auto group"
+                        className="relative w-full h-full rounded-2xl border-2 border-dashed border-white/20 hover:border-amber-400/70 overflow-hidden flex flex-col items-center justify-center gap-3 p-4 transition-all duration-300 hover:shadow-[0_0_25px_rgba(245,158,11,0.2)] cursor-pointer pointer-events-auto group"
                       >
-                        <div className="w-10 h-10 rounded-2xl bg-white/10 group-hover:bg-amber-500/20 border border-white/20 group-hover:border-amber-400/50 flex items-center justify-center text-zinc-400 group-hover:text-amber-300 transition-colors pointer-events-none select-none">
-                          <Plus className="w-5 h-5" />
-                        </div>
-                        <div className="text-center pointer-events-none select-none">
-                          <span className="text-xs font-mono font-bold text-zinc-300 group-hover:text-amber-200 block">
-                            Mount Card
-                          </span>
-                          <span className="text-[10px] font-mono text-zinc-500">
-                            Slot 0{config.index + 1}
-                          </span>
+                        {/* Isolated backdrop blur layer */}
+                        <div className="absolute inset-0 bg-white/5 group-hover:bg-white/10 backdrop-blur-sm pointer-events-none transition-colors duration-300" />
+
+                        <div className="relative z-10 flex flex-col items-center justify-center gap-3 crisp-render">
+                          <div className="w-10 h-10 rounded-2xl bg-white/10 group-hover:bg-amber-500/20 border border-white/20 group-hover:border-amber-400/50 flex items-center justify-center text-zinc-400 group-hover:text-amber-300 transition-colors pointer-events-none select-none">
+                            <Plus className="w-5 h-5" />
+                          </div>
+                          <div className="text-center pointer-events-none select-none">
+                            <span className="text-xs font-mono font-bold text-zinc-300 group-hover:text-amber-200 block">
+                              Mount Card
+                            </span>
+                            <span className="text-[10px] font-mono text-zinc-500">
+                              Slot 0{config.index + 1}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     )}
                   </div>
 
                   {/* Acrylic Pedestal Base Block */}
-                  <div className="relative w-full h-16 mt-3 rounded-2xl bg-gradient-to-b from-white/15 via-white/5 to-white/0 border border-white/20 backdrop-blur-md shadow-2xl flex flex-col items-center justify-center z-10 overflow-hidden pointer-events-none select-none">
+                  <div className="relative w-full h-16 mt-3 rounded-2xl border border-white/20 shadow-2xl flex flex-col items-center justify-center z-10 overflow-hidden pointer-events-none select-none">
+                    {/* Isolated backdrop blur layer */}
+                    <div className="absolute inset-0 bg-gradient-to-b from-white/15 via-white/5 to-white/0 backdrop-blur-md pointer-events-none select-none" />
+
                     {/* Acrylic Top Rim Reflection */}
                     <div className="absolute top-0 inset-x-0 h-0.5 bg-gradient-to-r from-transparent via-white/40 to-transparent pointer-events-none select-none" />
 
-                    {/* Pedestal Label Badge */}
-                    <div className="flex items-center gap-1.5 pointer-events-none select-none">
-                      <span
-                        className="w-1.5 h-1.5 rounded-full"
-                        style={{ backgroundColor: card ? spotlight.hex : '#71717a' }}
-                      />
-                      <span className="text-[11px] font-mono font-black tracking-wider text-zinc-200 uppercase">
-                        Pedestal 0{config.index + 1}
+                    <div className="relative z-10 flex flex-col items-center justify-center crisp-render">
+                      {/* Pedestal Label Badge */}
+                      <div className="flex items-center gap-1.5 pointer-events-none select-none">
+                        <span
+                          className="w-1.5 h-1.5 rounded-full"
+                          style={{ backgroundColor: card ? spotlight.hex : '#71717a' }}
+                        />
+                        <span className="text-[11px] font-mono font-black tracking-wider text-zinc-200 uppercase">
+                          Pedestal 0{config.index + 1}
+                        </span>
+                      </div>
+
+                      {/* Pedestal Sister Attribution or Value */}
+                      <span className="text-[10px] font-mono text-zinc-400 mt-0.5 pointer-events-none select-none">
+                        {card ? (
+                          <span className="text-amber-300 font-semibold">
+                            +{((60 + calculateCardMarketValue(card) * 0.0002) * synergyReport.synergyMultiplier).toFixed(1)} ¥/min
+                          </span>
+                        ) : (
+                          <span className="text-zinc-500">Vacant</span>
+                        )}
                       </span>
                     </div>
-
-                    {/* Pedestal Sister Attribution or Value */}
-                    <span className="text-[10px] font-mono text-zinc-400 mt-0.5 pointer-events-none select-none">
-                      {card ? (
-                        <span className="text-amber-300 font-semibold">
-                          +{((60 + calculateCardMarketValue(card) * 0.0002) * synergyReport.synergyMultiplier).toFixed(1)} ¥/min
-                        </span>
-                      ) : (
-                        <span className="text-zinc-500">Vacant</span>
-                      )}
-                    </span>
 
                     {/* Ground Pedestal Light Pool */}
                     <div

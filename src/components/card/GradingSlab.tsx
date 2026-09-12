@@ -15,6 +15,7 @@ export interface GradingSlabProps {
   onClick?: () => void;
   showMarketValue?: boolean;
   mockGrade?: GradeResult; // Useful for previewing slabs in showcase
+  showcaseMode?: boolean;
 }
 
 export const GradingSlab: React.FC<GradingSlabProps> = ({
@@ -25,6 +26,7 @@ export const GradingSlab: React.FC<GradingSlabProps> = ({
   onClick,
   showMarketValue = true,
   mockGrade,
+  showcaseMode = false,
 }) => {
   const activeGrade: GradeResult | undefined = card.grade ?? mockGrade;
 
@@ -58,15 +60,22 @@ export const GradingSlab: React.FC<GradingSlabProps> = ({
   const isBlackLabel = activeGrade.isBlackLabel || activeGrade.tier === 'BLACK_LABEL';
   const tier = activeGrade.tier;
 
-  // Scaled dimensions to fit around standard 63mm x 88mm card (authentic BGS slab ratio 82mm x 130mm)
-  const slabSizeClasses = {
-    sm: 'w-[230px] max-w-full max-h-full aspect-[82/130] p-2.5 rounded-2xl',
-    md: 'w-full max-w-[320px] max-h-full aspect-[82/130] p-3.5 rounded-3xl',
-    lg: 'w-full max-w-[380px] max-h-full aspect-[82/130] p-4.5 rounded-3xl',
-    full: 'w-full h-full max-h-full max-w-full aspect-[82/130] p-[3.5%] rounded-2xl sm:rounded-3xl',
-  }[size];
+  // Scaled dimensions to fit around standard 63mm x 88mm card (authentic BGS slab ratio 82mm x 130mm, or full-art 63mm x 88mm in showcaseMode)
+  const slabSizeClasses = showcaseMode
+    ? {
+        sm: 'w-[190px] max-w-full max-h-full aspect-[63/88] p-2 rounded-2xl',
+        md: 'w-full max-w-[280px] max-h-full aspect-[63/88] p-2.5 rounded-2xl sm:rounded-3xl',
+        lg: 'w-full max-w-[340px] max-h-full aspect-[63/88] p-3 rounded-3xl',
+        full: 'w-full h-full max-h-full max-w-full aspect-[63/88] p-2 sm:p-2.5 rounded-2xl sm:rounded-3xl',
+      }[size]
+    : {
+        sm: 'w-[230px] max-w-full max-h-full aspect-[82/130] p-2.5 rounded-2xl',
+        md: 'w-full max-w-[320px] max-h-full aspect-[82/130] p-3.5 rounded-3xl',
+        lg: 'w-full max-w-[380px] max-h-full aspect-[82/130] p-4.5 rounded-3xl',
+        full: 'w-full h-full max-h-full max-w-full aspect-[82/130] p-[3.5%] rounded-2xl sm:rounded-3xl',
+      }[size];
 
-  // Header Plate Styling per Grade Tier
+  // Header Plate Styling per Grade Tier (for standard inspection/binder mode)
   const getHeaderStyle = (t: GradeTier) => {
     if (isBlackLabel || t === 'BLACK_LABEL') {
       return {
@@ -109,7 +118,42 @@ export const GradingSlab: React.FC<GradingSlabProps> = ({
     };
   };
 
+  // Floating Grade Pill Styling for Showcase Mode
+  const getShowcasePillStyle = () => {
+    if (isBlackLabel || tier === 'BLACK_LABEL') {
+      return {
+        borderClass: 'border border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.7)]',
+        bgClass: 'bg-black',
+        textClass: 'text-amber-400 font-black',
+        label: '★ 10.0',
+      };
+    }
+    if (tier === 'GEM_MINT_10') {
+      return {
+        borderClass: 'border border-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.5)]',
+        bgClass: 'bg-amber-950/80',
+        textClass: 'text-amber-300 font-extrabold',
+        label: 'GRADE 10.0',
+      };
+    }
+    if (tier === 'MINT_9') {
+      return {
+        borderClass: 'border border-cyan-400 shadow-[0_0_10px_rgba(6,182,212,0.4)]',
+        bgClass: 'bg-cyan-950/80',
+        textClass: 'text-cyan-300 font-bold',
+        label: 'GRADE 9.0',
+      };
+    }
+    return {
+      borderClass: 'border border-white/20',
+      bgClass: 'bg-black/70',
+      textClass: 'text-white font-bold',
+      label: `GRADE ${activeGrade.numericGrade}.0`,
+    };
+  };
+
   const headerStyle = getHeaderStyle(tier);
+  const showcasePill = getShowcasePillStyle();
   const certNumber = `CERT #${(activeGrade.gradedAt % 90000 + 10000)}`;
   const isFull = size === 'full';
 
@@ -148,85 +192,97 @@ export const GradingSlab: React.FC<GradingSlabProps> = ({
         <div className="absolute bottom-2 right-2 w-2 h-2 rounded-full bg-white/30 border border-white/40 shadow-inner pointer-events-none" />
 
         {/* ============================================================
-            SLAB HEADER LABEL PLATE (pointer-events-none)
+            SLAB HEADER LABEL PLATE (Standard Full BGS Mode Only)
             ============================================================ */}
-        <div
-          className={`w-full mb-[2.5%] shrink-0 rounded-lg border p-[3%] ${headerStyle.plateBg} ${headerStyle.plateBorder} relative overflow-hidden z-30 pointer-events-none`}
-        >
-          {/* Subtle Security Guilloche Watermark Pattern */}
+        {!showcaseMode && (
           <div
-            className="absolute inset-0 opacity-10 pointer-events-none"
-            style={{
-              backgroundImage:
-                'radial-gradient(circle, currentColor 1px, transparent 1px)',
-              backgroundSize: '8px 8px',
-            }}
-          />
+            className={`w-full mb-[2.5%] shrink-0 rounded-lg border p-[3%] ${headerStyle.plateBg} ${headerStyle.plateBorder} relative overflow-hidden z-30 pointer-events-none crisp-render`}
+          >
+            {/* Subtle Security Guilloche Watermark Pattern */}
+            <div
+              className="absolute inset-0 opacity-10 pointer-events-none"
+              style={{
+                backgroundImage:
+                  'radial-gradient(circle, currentColor 1px, transparent 1px)',
+                backgroundSize: '8px 8px',
+              }}
+            />
 
-          <div className="relative z-10 flex items-start justify-between gap-1.5 pointer-events-none">
-            {/* Left: Metadata */}
-            <div className="flex-1 min-w-0 pointer-events-none">
-              <div className="flex items-center gap-1.5 leading-none mb-1">
-                <span className="text-[clamp(8px,3cqi,11px)] tracking-widest font-black uppercase text-amber-500">
-                  TQQ VAULT
-                </span>
-                <span className="text-[clamp(7px,2.6cqi,10px)] px-1 py-0.2 rounded border bg-black/10 border-black/20 font-mono">
-                  {certNumber}
-                </span>
+            <div className="relative z-10 flex items-start justify-between gap-1.5 pointer-events-none">
+              {/* Left: Metadata */}
+              <div className="flex-1 min-w-0 pointer-events-none">
+                <div className="flex items-center gap-1.5 leading-none mb-1">
+                  <span className="text-[clamp(8px,3cqi,11px)] tracking-widest font-black uppercase text-amber-500">
+                    TQQ VAULT
+                  </span>
+                  <span className="text-[clamp(7px,2.6cqi,10px)] px-1 py-0.2 rounded border bg-black/10 border-black/20 font-mono">
+                    {certNumber}
+                  </span>
+                </div>
+
+                <h4 className="font-extrabold text-[clamp(10px,4cqi,15px)] truncate leading-tight drop-shadow-sm">
+                  {cardDef.name}
+                </h4>
+
+                <div className="flex items-center gap-1 text-[clamp(8px,3cqi,11px)] mt-0.5 opacity-90 truncate">
+                  <span className="font-semibold">{cardDef.title}</span>
+                  <span>•</span>
+                  <span className="font-bold">{card.rarity}</span>
+                </div>
               </div>
 
-              <h4 className="font-extrabold text-[clamp(10px,4cqi,15px)] truncate leading-tight drop-shadow-sm">
-                {cardDef.name}
-              </h4>
-
-              <div className="flex items-center gap-1 text-[clamp(8px,3cqi,11px)] mt-0.5 opacity-90 truncate">
-                <span className="font-semibold">{cardDef.title}</span>
-                <span>•</span>
-                <span className="font-bold">{card.rarity}</span>
+              {/* Right: Numeric Grade & Tier Badge */}
+              <div className="flex flex-col items-end justify-center shrink-0 min-w-[50px] text-right pl-1.5 border-l border-black/10 pointer-events-none">
+                <span className="text-[clamp(7px,2.5cqi,9px)] font-bold uppercase tracking-wider opacity-80">
+                  {headerStyle.label}
+                </span>
+                <div className={`text-[clamp(16px,7.5cqi,30px)] leading-none ${headerStyle.gradeText}`}>
+                  {activeGrade.numericGrade}.0
+                </div>
+                <span className="text-[clamp(7px,2.5cqi,9px)] font-semibold opacity-75">
+                  {activeGrade.tierLabel}
+                </span>
               </div>
             </div>
 
-            {/* Right: Numeric Grade & Tier Badge */}
-            <div className="flex flex-col items-end justify-center shrink-0 min-w-[50px] text-right pl-1.5 border-l border-black/10 pointer-events-none">
-              <span className="text-[clamp(7px,2.5cqi,9px)] font-bold uppercase tracking-wider opacity-80">
-                {headerStyle.label}
-              </span>
-              <div className={`text-[clamp(16px,7.5cqi,30px)] leading-none ${headerStyle.gradeText}`}>
-                {activeGrade.numericGrade}.0
+            {/* Subgrades Bar for Black Label & Pristine 10 */}
+            {(isBlackLabel || tier === 'GEM_MINT_10') && (
+              <div className="mt-1.5 pt-1 border-t border-black/15 flex items-center justify-between text-[clamp(7px,2.6cqi,10px)] font-mono leading-none pointer-events-none">
+                <div className="flex flex-col items-center">
+                  <span className="opacity-70 text-[clamp(6px,2.2cqi,8px)]">Centering</span>
+                  <span className="font-bold">{activeGrade.subgrades.centering.toFixed(1)}</span>
+                </div>
+                <div className="flex flex-col items-center">
+                  <span className="opacity-70 text-[clamp(6px,2.2cqi,8px)]">Surface</span>
+                  <span className="font-bold">{activeGrade.subgrades.surface.toFixed(1)}</span>
+                </div>
+                <div className="flex flex-col items-center">
+                  <span className="opacity-70 text-[clamp(6px,2.2cqi,8px)]">Corners</span>
+                  <span className="font-bold">{activeGrade.subgrades.corners.toFixed(1)}</span>
+                </div>
+                <div className="flex flex-col items-center">
+                  <span className="opacity-70 text-[clamp(6px,2.2cqi,8px)]">Edges</span>
+                  <span className="font-bold">{activeGrade.subgrades.edges.toFixed(1)}</span>
+                </div>
               </div>
-              <span className="text-[clamp(7px,2.5cqi,9px)] font-semibold opacity-75">
-                {activeGrade.tierLabel}
-              </span>
-            </div>
+            )}
           </div>
+        )}
 
-          {/* Subgrades Bar for Black Label & Pristine 10 */}
-          {(isBlackLabel || tier === 'GEM_MINT_10') && (
-            <div className="mt-1.5 pt-1 border-t border-black/15 flex items-center justify-between text-[clamp(7px,2.6cqi,10px)] font-mono leading-none pointer-events-none">
-              <div className="flex flex-col items-center">
-                <span className="opacity-70 text-[clamp(6px,2.2cqi,8px)]">Centering</span>
-                <span className="font-bold">{activeGrade.subgrades.centering.toFixed(1)}</span>
-              </div>
-              <div className="flex flex-col items-center">
-                <span className="opacity-70 text-[clamp(6px,2.2cqi,8px)]">Surface</span>
-                <span className="font-bold">{activeGrade.subgrades.surface.toFixed(1)}</span>
-              </div>
-              <div className="flex flex-col items-center">
-                <span className="opacity-70 text-[clamp(6px,2.2cqi,8px)]">Corners</span>
-                <span className="font-bold">{activeGrade.subgrades.corners.toFixed(1)}</span>
-              </div>
-              <div className="flex flex-col items-center">
-                <span className="opacity-70 text-[clamp(6px,2.2cqi,8px)]">Edges</span>
-                <span className="font-bold">{activeGrade.subgrades.edges.toFixed(1)}</span>
-              </div>
-            </div>
-          )}
-        </div>
+        {/* Showcase Mode: Minimalist Floating Grade Pill (Top-Right) */}
+        {showcaseMode && (
+          <div className={`absolute top-2.5 right-2.5 z-30 pointer-events-none select-none rounded-full overflow-hidden px-2.5 py-0.5 text-xs font-mono crisp-render ${showcasePill.borderClass}`}>
+            <div className={`absolute inset-0 ${showcasePill.bgClass} backdrop-blur-md pointer-events-none`} />
+            <span className={`relative z-10 ${showcasePill.textClass} leading-none tracking-wider font-bold`}>
+              {showcasePill.label}
+            </span>
+          </div>
+        )}
 
         {/* ============================================================
-            INNER RECESSED CARD WELL (disableTilt={true} + pointer-events-none)
+            INNER RECESSED CARD WELL (Full-Art in showcaseMode)
             ============================================================ */}
-        <div className="w-full flex-1 min-h-0 flex items-center justify-center rounded-xl slab-inner-well bg-black/60 p-[1.5%] relative z-20 overflow-hidden border border-white/10 pointer-events-none">
+        <div className={`w-full flex-1 min-h-0 flex items-center justify-center rounded-xl slab-inner-well bg-black/60 ${showcaseMode ? 'p-0 h-full' : 'p-[1.5%]'} relative z-20 overflow-hidden border border-white/10 pointer-events-none`}>
           <div className="w-full h-full flex items-center justify-center pointer-events-none">
             <CardRenderer
               card={card}
@@ -235,29 +291,31 @@ export const GradingSlab: React.FC<GradingSlabProps> = ({
               externalLight={light} // Propagates tilt light to inner card shaders
               size="full"
               className="w-full h-full !p-0 !m-0"
-              showMarketValue={showMarketValue}
+              showMarketValue={showMarketValue && !showcaseMode}
               hideInternalFooter={true}
             />
           </div>
         </div>
 
-        {/* Bottom Bar: Acrylic Refraction Stamp & Multiplier */}
-        <div className="w-full mt-[2%] shrink-0 flex items-center justify-between text-[clamp(7px,2.8cqi,10px)] text-zinc-400 px-1 z-30 font-mono pointer-events-none">
-          <span className="text-zinc-500 uppercase tracking-widest flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            Authenticated Vault Slab
-          </span>
+        {/* Bottom Bar: Acrylic Refraction Stamp & Multiplier (Standard Mode Only) */}
+        {!showcaseMode && (
+          <div className="w-full mt-[2%] shrink-0 flex items-center justify-between text-[clamp(7px,2.8cqi,10px)] text-zinc-400 px-1 z-30 font-mono pointer-events-none crisp-render">
+            <span className="text-zinc-500 uppercase tracking-widest flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              Authenticated Vault Slab
+            </span>
 
-          <span
-            className={`font-bold px-1.5 py-0.2 rounded border ${
-              isBlackLabel
-                ? 'bg-amber-400/20 text-amber-300 border-amber-400/50'
-                : 'bg-zinc-800 text-zinc-200 border-zinc-600'
-            }`}
-          >
-            {activeGrade.multiplier}x Multiplier
-          </span>
-        </div>
+            <span
+              className={`font-bold px-1.5 py-0.2 rounded border ${
+                isBlackLabel
+                  ? 'bg-amber-400/20 text-amber-300 border-amber-400/50'
+                  : 'bg-zinc-800 text-zinc-200 border-zinc-600'
+              }`}
+            >
+              {activeGrade.multiplier}x Multiplier
+            </span>
+          </div>
+        )}
 
         {/* Acrylic Surface Glare (Outer Glass Layer) */}
         <motion.div

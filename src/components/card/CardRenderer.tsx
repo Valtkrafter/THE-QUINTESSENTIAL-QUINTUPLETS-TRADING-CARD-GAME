@@ -402,7 +402,7 @@ export const CardRenderer: React.FC<CardRendererProps> = ({
         {/* Outer Card Matte Border (z-20) */}
         <div className={`absolute inset-[3px] rounded-[10px] bg-gradient-to-b from-zinc-900 to-black ${hideInternalFooter ? 'p-1.5 pb-1' : 'p-2'} flex flex-col justify-between overflow-hidden z-20`}>
           {/* HEADER: Title & Grade/Rarity & Symbol (z-30) */}
-          <div className="relative flex items-center justify-between gap-1 pb-1 border-b border-zinc-800/80 z-30">
+          <div className="relative flex items-center justify-between gap-1 pb-1 border-b border-zinc-800/80 z-30 crisp-render">
             <div className="flex items-center gap-1.5 min-w-0">
               <span className="text-xs" title={theme.name}>
                 {theme.symbol}
@@ -531,8 +531,9 @@ export const CardRenderer: React.FC<CardRendererProps> = ({
 
             {/* LORE QUOTE OVERLAY (z-30) */}
             {cardLoreQuote && (
-              <div className="relative mt-auto w-full p-1.5 rounded-b-lg bg-black/80 backdrop-blur-md border-t border-zinc-800/80 text-center z-30 shadow-lg pointer-events-none select-none">
-                <p className="text-[10px] sm:text-[11px] italic text-zinc-200 line-clamp-2 leading-tight">
+              <div className="relative mt-auto w-full p-1.5 rounded-b-lg border-t border-zinc-800/80 text-center z-30 shadow-lg pointer-events-none select-none overflow-hidden">
+                <div className="absolute inset-0 bg-black/80 backdrop-blur-md pointer-events-none select-none" />
+                <p className="relative z-10 text-[10px] sm:text-[11px] italic text-zinc-200 line-clamp-2 leading-tight crisp-render">
                   &ldquo;{cardLoreQuote}&rdquo;
                 </p>
               </div>
@@ -541,7 +542,7 @@ export const CardRenderer: React.FC<CardRendererProps> = ({
 
           {/* FOOTER: Number, Finish, Market Value (z-30) */}
           {!hideInternalFooter && (
-            <div className="relative flex items-center justify-between text-[10px] text-zinc-400 pt-1 border-t border-zinc-800/80 z-30 font-mono pointer-events-none select-none">
+            <div className="relative flex items-center justify-between text-[10px] text-zinc-400 pt-1 border-t border-zinc-800/80 z-30 font-mono pointer-events-none select-none crisp-render">
               <div className="flex items-center gap-1.5 pointer-events-none select-none">
                 <span className="text-zinc-500">{cardNumber}</span>
                 <span
