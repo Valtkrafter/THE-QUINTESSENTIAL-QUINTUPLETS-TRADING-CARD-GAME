@@ -342,7 +342,7 @@ export const CardActionModal: React.FC<CardActionModalProps> = ({
         }
       }}
     >
-      <div className="relative w-full max-w-5xl max-h-[92vh] bg-[#0c0d14] border border-white/10 rounded-3xl overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.8)] flex flex-col">
+      <div className="relative w-full max-w-4xl lg:max-w-5xl max-h-[92vh] bg-[#111116] border border-[#23232e] rounded-2xl md:rounded-3xl overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.8)] flex flex-col">
         {/* Top Header Bar */}
         <div className="h-14 shrink-0 border-b border-white/10 px-6 flex items-center justify-between bg-zinc-950/60 backdrop-blur-sm z-20">
           <div className="flex items-center gap-3">
@@ -389,8 +389,10 @@ export const CardActionModal: React.FC<CardActionModalProps> = ({
               LEFT COLUMN: 3D INTERACTIVE STAGE
               ============================================================ */}
           <div
-            className={`transition-all duration-300 relative flex flex-col items-center justify-center p-6 bg-gradient-to-b from-zinc-950/80 via-[#08080d] to-black overflow-hidden ${
-              isInspectMode ? 'w-full md:w-full h-full' : 'w-full md:w-[48%] shrink-0 border-b md:border-b-0 md:border-r border-white/10'
+            className={`transition-all duration-300 relative flex flex-col items-center justify-center p-4 sm:p-6 bg-gradient-to-b from-zinc-950/80 via-[#08080d] to-black min-w-0 overflow-visible ${
+              isInspectMode
+                ? 'w-full md:w-full h-full'
+                : 'w-full md:w-[45%] lg:w-[42%] shrink-0 border-b md:border-b-0 md:border-r border-white/10'
             }`}
           >
             {/* Ambient Character Glow Backdrop */}
@@ -413,39 +415,51 @@ export const CardActionModal: React.FC<CardActionModalProps> = ({
             )}
 
             {/* 3D Rendered Card / Slab Stage */}
-            <div className="relative z-10 flex flex-col items-center justify-center">
-              <div className="relative flex items-center justify-center">
-                {isSlabbed ? (
-                  <GradingSlab
-                    card={activeCard}
-                    size={isInspectMode ? 'lg' : 'md'}
-                    interactive={true}
-                    showMarketValue={true}
-                  />
-                ) : (
-                  <div className="relative">
-                    <CardRenderer
+            <div className="relative z-10 flex flex-col items-center justify-center w-full">
+              <div className="relative flex items-center justify-center w-full p-2 sm:p-4">
+                <div
+                  className={`w-full ${
+                    isSlabbed
+                      ? isInspectMode
+                        ? 'max-w-[380px] aspect-[82/130]'
+                        : 'max-w-[320px] aspect-[82/130]'
+                      : isInspectMode
+                      ? 'max-w-[320px] aspect-[63/88]'
+                      : 'max-w-[260px] aspect-[63/88]'
+                  } max-h-[64vh] flex items-center justify-center relative transition-all duration-300`}
+                >
+                  {isSlabbed ? (
+                    <GradingSlab
                       card={activeCard}
                       size={isInspectMode ? 'lg' : 'md'}
                       interactive={true}
                       showMarketValue={true}
                     />
-                  </div>
-                )}
+                  ) : (
+                    <div className="relative w-full h-full flex items-center justify-center">
+                      <CardRenderer
+                        card={activeCard}
+                        size={isInspectMode ? 'lg' : 'md'}
+                        interactive={true}
+                        showMarketValue={true}
+                      />
+                    </div>
+                  )}
 
-                {/* Laser Scanning FX Overlay */}
-                <GradingScannerFX
-                  phase={gradingPhase}
-                  tier={lastGradeResult?.grade.tier}
-                  numericGrade={lastGradeResult?.grade.numericGrade}
-                  isBlackLabel={lastGradeResult?.grade.isBlackLabel}
-                  insuranceRerolled={lastGradeResult?.insuranceRerolled}
-                  activeTool={Array.from(selectedTools)[0] ?? null}
-                />
+                  {/* Laser Scanning FX Overlay */}
+                  <GradingScannerFX
+                    phase={gradingPhase}
+                    tier={lastGradeResult?.grade.tier}
+                    numericGrade={lastGradeResult?.grade.numericGrade}
+                    isBlackLabel={lastGradeResult?.grade.isBlackLabel}
+                    insuranceRerolled={lastGradeResult?.insuranceRerolled}
+                    activeTool={Array.from(selectedTools)[0] ?? null}
+                  />
+                </div>
               </div>
 
               {/* Hover Tilt Hint */}
-              <div className="mt-4 flex items-center gap-2 px-3.5 py-1 rounded-full bg-black/60 border border-white/10 text-zinc-400 text-[11px] backdrop-blur shadow">
+              <div className="mt-2 flex items-center gap-2 px-3.5 py-1 rounded-full bg-black/60 border border-white/10 text-zinc-400 text-[11px] backdrop-blur shadow">
                 <Eye className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
                 <span>Tilt mouse to admire 3D reflections & light specular vector</span>
               </div>
@@ -456,7 +470,7 @@ export const CardActionModal: React.FC<CardActionModalProps> = ({
               RIGHT COLUMN: CONTEXTUAL ACTION DASHBOARD
               ============================================================ */}
           {!isInspectMode && (
-            <div className="flex-1 min-h-0 flex flex-col bg-[#0c0d14] overflow-y-auto">
+            <div className="w-full md:w-[55%] lg:w-[58%] flex-1 min-h-0 flex flex-col justify-between pl-0 min-w-0 bg-[#0c0d14] overflow-y-auto">
               {/* Value & Stats Banner */}
               <div className="p-5 border-b border-white/10 bg-zinc-950/40 flex flex-wrap items-center justify-between gap-3">
                 <div>

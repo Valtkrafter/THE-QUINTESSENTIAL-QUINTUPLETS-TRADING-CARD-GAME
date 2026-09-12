@@ -65,6 +65,7 @@ Every card rendered through `CardRenderer.tsx` supports dynamic multi-layer foil
 ### 🛡️ 3. BGS-Style Acrylic Grading Slabs & Grading Lab
 Submit raw cards to the **Grading Station** to be certified in heavy acrylic slabs:
 - **Authentic BGS Geometry & Container Queries:** Built to exact $82\text{mm} \times 130\text{mm}$ aspect ratio (`aspect-[82/130]`) with CSS container queries (`container-type: inline-size`) and fluid typography (`clamp()`, `cqi`), ensuring proportional headers, subgrades, and uncompressed inner card wells (`aspect-[63/88]`) in both full-screen inspection and compact grid drawers.
+- **Responsive Containment & 3D Tilt Cushions:** Features auto-scaling boundaries (`max-w-full`, `max-h-full`) with dedicated $16\text{px}$–$24\text{px}$ yaw cushions (`rotateY: \pm 12^\circ`), preventing horizontal truncation of acrylic bevels, sonic-welded corner screws, and gold header plates across modal inspection dialogs.
 - **4 Numerical Subgrades:** Centering, Surface, Corners, and Edges (evaluated from 1.0 to 10.0).
 - **Certified Grade Tiers:**
   - `POOR_1_3` (Grade 1–3, $0.5\times$ multiplier)
@@ -234,7 +235,7 @@ tqqtcg/
 │   ├── components/
 │   │   ├── binder/
 │   │   │   ├── BinderGrid.tsx       # Collection card grid with view filters and stats
-│   │   │   ├── CardActionModal.tsx  # Unified card inspect, slot, grade, sell, and dust modal
+│   │   │   ├── CardActionModal.tsx  # Rebalanced two-column inspect modal with responsive unclipped slab stage
 │   │   │   └── GrandBinder.tsx      # Main hub with Showcase / Collection / Card-Dex view switcher
 │   │   ├── card/
 │   │   │   ├── CardRenderer.tsx     # Holographic foil shader engine & card frame

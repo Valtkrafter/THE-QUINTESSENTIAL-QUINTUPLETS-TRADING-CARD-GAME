@@ -60,9 +60,9 @@ export const GradingSlab: React.FC<GradingSlabProps> = ({
 
   // Scaled dimensions to fit around standard 63mm x 88mm card (authentic BGS slab ratio 82mm x 130mm)
   const slabSizeClasses = {
-    sm: 'w-[230px] aspect-[82/130] p-2.5 rounded-2xl',
-    md: 'w-[325px] aspect-[82/130] p-3.5 rounded-3xl',
-    lg: 'w-[400px] aspect-[82/130] p-4.5 rounded-3xl',
+    sm: 'w-[230px] max-w-full max-h-full aspect-[82/130] p-2.5 rounded-2xl',
+    md: 'w-full max-w-[320px] max-h-full aspect-[82/130] p-3.5 rounded-3xl',
+    lg: 'w-full max-w-[380px] max-h-full aspect-[82/130] p-4.5 rounded-3xl',
     full: 'w-full h-full max-h-full max-w-full aspect-[82/130] p-[3.5%] rounded-2xl sm:rounded-3xl',
   }[size];
 
@@ -119,7 +119,7 @@ export const GradingSlab: React.FC<GradingSlabProps> = ({
       className={`card-perspective-wrapper select-none relative ${
         isFull
           ? 'w-full h-full flex items-center justify-center'
-          : 'inline-block p-4 -m-4 sm:p-6 sm:-m-6 before:absolute before:-inset-4 before:content-[\'\']'
+          : 'w-full h-full flex items-center justify-center before:absolute before:-inset-4 before:content-[\'\']'
       } cursor-pointer ${className}`}
       style={{ containerType: 'inline-size' }}
       onClick={onClick}

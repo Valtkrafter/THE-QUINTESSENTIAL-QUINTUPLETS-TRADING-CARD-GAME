@@ -355,9 +355,9 @@ export const CardRenderer: React.FC<CardRendererProps> = ({
 
   // Dimensions based on standard 63mm x 88mm ratio
   const sizeClasses = {
-    sm: 'w-[190px]',
-    md: 'w-[260px]',
-    lg: 'w-[320px]',
+    sm: 'w-[190px] max-w-full max-h-full',
+    md: 'w-[260px] max-w-full max-h-full',
+    lg: 'w-[320px] max-w-full max-h-full',
     full: 'w-full h-full max-h-full max-w-full',
   }[size];
 
