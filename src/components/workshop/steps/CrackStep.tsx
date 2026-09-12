@@ -101,27 +101,27 @@ export const CrackStep: React.FC<CrackStepProps> = ({ card, onComplete }) => {
   };
 
   return (
-    <div className="relative w-full h-full flex flex-col items-center justify-between p-4 sm:p-6 select-none overflow-hidden">
-      {/* Step Instruction Header */}
-      <div className="text-center z-10">
+    <div className="relative w-full h-full flex flex-col select-none overflow-hidden">
+      {/* 1. TOP HEADER (Static & flex-shrink-0) */}
+      <header className="flex-shrink-0 text-center z-10 pt-3 px-4">
         <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-mono font-bold mb-1.5">
           <Wrench className="w-3.5 h-3.5 text-amber-400" />
           <span>Stage 1: Acrylic Slab Depenetration</span>
         </div>
-        <h2 className="text-xl sm:text-2xl font-black text-white tracking-wide">
+        <h2 className="text-lg sm:text-xl md:text-2xl font-black text-white tracking-wide">
           {!allSnipped ? 'Snip the 4 Sonic-Welded Corners' : !isCracked ? 'Pry Open the Side Seam' : 'Slab Cracked Cleanly!'}
         </h2>
-        <p className="text-xs text-zinc-400 max-w-md mx-auto mt-1">
+        <p className="text-xs text-zinc-400 max-w-md mx-auto mt-0.5 sm:mt-1">
           {!allSnipped
             ? `Use precision wire pliers to snip corner stress notches (${snippedCount}/4). Relieves internal structural tension.`
             : !isCracked
             ? 'Insert the flat steel pry tool into the lateral weld seam and hold tension until fracture propagation.'
             : 'The acrylic casing has separated into fragments. Card extracted with zero surface trauma.'}
         </p>
-      </div>
+      </header>
 
-      {/* Main Interactive Slab Stage */}
-      <div className="relative flex-1 flex items-center justify-center my-4 w-full">
+      {/* 2. INTERACTIVE WORKBENCH AREA (Flexible & Scaled with min-h-0) */}
+      <main className="flex-1 min-h-0 w-full overflow-y-auto flex flex-col items-center justify-center p-2 sm:p-4 my-auto">
         <motion.div
           animate={
             isPrying && !isCracked
@@ -142,7 +142,7 @@ export const CrackStep: React.FC<CrackStepProps> = ({ card, onComplete }) => {
               : {}
           }
           transition={{ duration: 0.1, repeat: isPrying ? Infinity : 0 }}
-          className="relative w-[280px] sm:w-[320px] aspect-[82/130] rounded-3xl p-4 flex flex-col items-center justify-center bg-white/5 border border-white/20 shadow-2xl backdrop-blur-sm"
+          className="relative max-h-[320px] sm:max-h-[360px] md:max-h-[400px] aspect-[82/130] w-auto h-full max-w-full rounded-3xl p-3 sm:p-4 flex flex-col items-center justify-center bg-white/5 border border-white/20 shadow-2xl backdrop-blur-sm"
         >
           {/* Outer Slab Acrylic Casing */}
           <div className="absolute inset-0 rounded-3xl border-2 border-white/30 bg-gradient-to-br from-white/10 via-transparent to-black/30 pointer-events-none shadow-[inset_0_0_20px_rgba(255,255,255,0.15)]" />
@@ -304,17 +304,17 @@ export const CrackStep: React.FC<CrackStepProps> = ({ card, onComplete }) => {
             )}
           </div>
         </motion.div>
-      </div>
+      </main>
 
-      {/* Bottom Controls / Phase B Pry Bar */}
-      <div className="w-full max-w-md z-10 flex flex-col items-center gap-3">
+      {/* 3. BOTTOM ACTION BAR (Strictly Pinned & Protected) */}
+      <footer className="w-full flex-shrink-0 p-4 pt-2 pb-6 border-t border-[#232730] bg-[#0f1115]/90 backdrop-blur-md flex flex-col items-center gap-2 z-20">
         {!allSnipped ? (
-          <div className="flex items-center gap-2 text-xs font-mono text-zinc-400 bg-zinc-950/80 px-4 py-2 rounded-xl border border-white/10">
-            <AlertCircle className="w-4 h-4 text-amber-400" />
+          <div className="w-full max-w-md flex items-center justify-center gap-2 text-xs font-mono text-zinc-400 bg-zinc-950/80 px-4 py-2.5 rounded-xl border border-white/10">
+            <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
             <span>Click all 4 corner amber notches to clip the acrylic weld.</span>
           </div>
         ) : !isCracked ? (
-          <div className="w-full flex flex-col items-center gap-2">
+          <div className="w-full max-w-md flex flex-col items-center gap-2">
             {/* Tension Meter */}
             <div className="w-full bg-zinc-900/90 rounded-full h-3 border border-white/10 overflow-hidden p-0.5">
               <div
@@ -334,7 +334,7 @@ export const CrackStep: React.FC<CrackStepProps> = ({ card, onComplete }) => {
               onMouseLeave={() => setIsPrying(false)}
               onTouchStart={() => setIsPrying(true)}
               onTouchEnd={() => setIsPrying(false)}
-              className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 text-black font-black text-sm uppercase tracking-widest shadow-xl shadow-amber-500/20 active:scale-95 transition-transform flex items-center justify-center gap-2 cursor-grab active:cursor-grabbing"
+              className="w-full py-3 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 text-black font-black text-sm uppercase tracking-widest shadow-xl shadow-amber-500/20 active:scale-95 transition-transform flex items-center justify-center gap-2 cursor-grab active:cursor-grabbing"
             >
               <Wrench className="w-4 h-4 text-black" />
               <span>HOLD TO PRY OPEN</span>
@@ -344,23 +344,23 @@ export const CrackStep: React.FC<CrackStepProps> = ({ card, onComplete }) => {
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="w-full flex flex-col items-center gap-2"
+            className="w-full max-w-md flex flex-col items-center gap-2"
           >
-            <div className="flex items-center gap-2 text-xs font-mono text-emerald-400 bg-emerald-950/60 border border-emerald-500/40 px-4 py-2 rounded-xl">
-              <Sparkles className="w-4 h-4 text-emerald-400" />
+            <div className="w-full flex items-center justify-center gap-2 text-xs font-mono text-emerald-400 bg-emerald-950/60 border border-emerald-500/40 px-4 py-2 rounded-xl">
+              <Sparkles className="w-4 h-4 text-emerald-400 shrink-0" />
               <span>Acrylic cracked cleanly! Card ready for microscope inspection.</span>
             </div>
             <button
               type="button"
               onClick={onComplete}
-              className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-400 text-black font-black text-sm uppercase tracking-widest shadow-xl shadow-emerald-500/20 hover:brightness-110 active:scale-98 transition flex items-center justify-center gap-2"
+              className="w-full py-3 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-400 text-black font-black text-sm uppercase tracking-widest shadow-xl shadow-emerald-500/20 hover:brightness-110 active:scale-98 transition flex items-center justify-center gap-2"
             >
-              <span>PROCEED TO DIGITAL MICROSCOPE</span>
+              <span>PROCEED TO DIGITAL MICROSCOPE ▶</span>
               <Sparkles className="w-4 h-4" />
             </button>
           </motion.div>
         )}
-      </div>
+      </footer>
     </div>
   );
 };

@@ -97,14 +97,14 @@ export const PolishStep: React.FC<PolishStepProps> = ({ card, onComplete }) => {
   };
 
   return (
-    <div className="relative w-full h-full flex flex-col items-center justify-between p-4 sm:p-6 select-none overflow-hidden">
-      {/* Step Header */}
-      <div className="text-center z-10">
+    <div className="relative w-full h-full flex flex-col select-none overflow-hidden">
+      {/* 1. TOP HEADER (Static & flex-shrink-0) */}
+      <header className="flex-shrink-0 text-center z-10 pt-3 px-4">
         <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-yellow-500/10 border border-yellow-500/30 text-yellow-300 text-xs font-mono font-bold mb-1.5">
           <Sparkles className="w-3.5 h-3.5 text-yellow-400" />
           <span>Stage 4: Restoration Balm &amp; Microfiber Holographic Buff</span>
         </div>
-        <h2 className="text-xl sm:text-2xl font-black text-white tracking-wide">
+        <h2 className="text-lg sm:text-xl md:text-2xl font-black text-white tracking-wide">
           {!allDabbed ? 'Dab Yellow Restoration Balm onto Holo Foil' : !isBuffComplete ? 'Buff Circularly with Microfiber Cloth' : 'Mirror-Grade Specular Buff Finished!'}
         </h2>
         <p className="text-xs text-zinc-400 max-w-md mx-auto mt-0.5">
@@ -114,15 +114,15 @@ export const PolishStep: React.FC<PolishStepProps> = ({ card, onComplete }) => {
             ? 'Drag the dark grey microfiber cloth in circular motions to polish away fine swirls.'
             : 'Foil surface restored to factory mirror clarity. +1.5 Surface bonus and +15% Gem Mint 10 odds.'}
         </p>
-      </div>
+      </header>
 
-      {/* Main Workspace Stage */}
-      <div className="relative flex-1 w-full max-w-3xl flex items-center justify-center my-2">
-        <div className="relative flex items-center justify-center gap-6 sm:gap-12 flex-wrap">
+      {/* 2. INTERACTIVE WORKBENCH AREA (Flexible & Scaled with min-h-0) */}
+      <main className="flex-1 min-h-0 w-full overflow-y-auto flex items-center justify-center p-2 sm:p-4 my-auto">
+        <div className="relative flex items-center justify-center gap-4 sm:gap-8 md:gap-12 flex-wrap my-auto">
           {/* Tool Tray (Restoration Wax Jar & Applicator) */}
-          <div className="flex flex-col items-center gap-3 bg-zinc-950/80 p-3 rounded-2xl border border-white/10 shadow-xl">
+          <div className="flex flex-col items-center gap-2 sm:gap-3 bg-zinc-950/80 p-2.5 sm:p-3 rounded-2xl border border-white/10 shadow-xl flex-shrink-0">
             {/* Yellow Balm Jar */}
-            <div className="relative w-16 h-16 rounded-2xl bg-gradient-to-br from-yellow-300 via-amber-400 to-yellow-500 border-2 border-yellow-200 shadow-[0_0_15px_rgba(234,179,8,0.4)] flex flex-col items-center justify-center text-center p-1">
+            <div className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br from-yellow-300 via-amber-400 to-yellow-500 border-2 border-yellow-200 shadow-[0_0_15px_rgba(234,179,8,0.4)] flex flex-col items-center justify-center text-center p-1">
               <span className="text-[8px] font-mono font-black text-zinc-950 uppercase leading-none">
                 KURADASHI
               </span>
@@ -130,7 +130,7 @@ export const PolishStep: React.FC<PolishStepProps> = ({ card, onComplete }) => {
             </div>
 
             {/* Dark Grey Microfiber Cloth Visual */}
-            <div className={`w-14 h-12 rounded-xl bg-zinc-800 border border-zinc-600 shadow-md flex items-center justify-center transition-all ${allDabbed && !isBuffComplete ? 'ring-2 ring-yellow-400 animate-pulse' : 'opacity-70'}`}>
+            <div className={`w-12 h-10 sm:w-14 sm:h-12 rounded-xl bg-zinc-800 border border-zinc-600 shadow-md flex items-center justify-center transition-all ${allDabbed && !isBuffComplete ? 'ring-2 ring-yellow-400 animate-pulse' : 'opacity-70'}`}>
               <span className="text-[8px] font-mono text-zinc-300 font-bold uppercase">CLOTH</span>
             </div>
 
@@ -149,7 +149,7 @@ export const PolishStep: React.FC<PolishStepProps> = ({ card, onComplete }) => {
           <div
             onPointerMove={handleCardPointerMove}
             onPointerLeave={() => (lastPointerPosRef.current = null)}
-            className="relative w-[220px] sm:w-[260px] aspect-[63/88] rounded-2xl overflow-hidden shadow-2xl border-2 border-white/20 bg-zinc-900 flex items-center justify-center cursor-pointer select-none"
+            className="relative max-h-[300px] sm:max-h-[340px] md:max-h-[380px] aspect-[63/88] w-auto h-full rounded-2xl overflow-hidden shadow-2xl border-2 border-white/20 bg-zinc-900 flex items-center justify-center cursor-pointer select-none"
           >
             {/* Card Base */}
             <CardRenderer
@@ -211,51 +211,53 @@ export const PolishStep: React.FC<PolishStepProps> = ({ card, onComplete }) => {
             )}
           </div>
         </div>
-      </div>
+      </main>
 
-      {/* Bottom Progress Bar & Step Forward */}
-      <div className="w-full max-w-md z-10 flex flex-col items-center gap-3">
-        {!allDabbed ? (
-          <div className="w-full flex items-center justify-between p-3 rounded-xl bg-zinc-950/80 border border-white/10 text-xs font-mono">
-            <span className="text-zinc-400">Balm Application Progress:</span>
-            <span className="text-yellow-400 font-bold">
-              {dabbedSlots.length} / {BALM_DAB_SLOTS.length} Dots Dabbed
-            </span>
-          </div>
-        ) : !isBuffComplete ? (
-          <div className="w-full flex flex-col items-center gap-2">
-            <div className="w-full bg-zinc-900 rounded-full h-3 border border-white/10 overflow-hidden p-0.5">
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-yellow-400 via-amber-400 to-yellow-300 transition-all duration-100 shadow-[0_0_10px_rgba(234,179,8,0.7)]"
-                style={{ width: `${buffProgress}%` }}
-              />
+      {/* 3. BOTTOM ACTION BAR (Strictly Pinned & Protected) */}
+      <footer className="w-full flex-shrink-0 p-4 pt-2 pb-6 border-t border-[#232730] bg-[#0f1115]/90 backdrop-blur-md flex flex-col items-center gap-2 z-20">
+        <div className="w-full max-w-md flex flex-col items-center gap-2">
+          {!allDabbed ? (
+            <div className="w-full flex items-center justify-between p-3 rounded-xl bg-zinc-950/80 border border-white/10 text-xs font-mono">
+              <span className="text-zinc-400">Balm Application Progress:</span>
+              <span className="text-yellow-400 font-bold">
+                {dabbedSlots.length} / {BALM_DAB_SLOTS.length} Dots Dabbed
+              </span>
             </div>
-            <span className="text-[10px] font-mono text-zinc-400">
-              Microfiber Buffing: <strong>{Math.round(buffProgress)}%</strong> / 100% (Rub in circles)
-            </span>
-          </div>
-        ) : (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="w-full flex flex-col items-center gap-2"
-          >
-            <div className="w-full p-2.5 rounded-xl bg-yellow-500/15 border border-yellow-500/40 text-yellow-300 text-xs font-mono flex items-center justify-center gap-2">
-              <Sparkles className="w-4 h-4 text-yellow-400" />
-              <span>Surface micro-scratches cleared! +1.5 Surface roll buff active.</span>
+          ) : !isBuffComplete ? (
+            <div className="w-full flex flex-col items-center gap-2">
+              <div className="w-full bg-zinc-900 rounded-full h-3 border border-white/10 overflow-hidden p-0.5">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-yellow-400 via-amber-400 to-yellow-300 transition-all duration-100 shadow-[0_0_10px_rgba(234,179,8,0.7)]"
+                  style={{ width: `${buffProgress}%` }}
+                />
+              </div>
+              <span className="text-[10px] font-mono text-zinc-400">
+                Microfiber Buffing: <strong>{Math.round(buffProgress)}%</strong> / 100% (Rub in circles)
+              </span>
             </div>
-
-            <button
-              type="button"
-              onClick={onComplete}
-              className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-yellow-400 via-amber-400 to-yellow-400 text-black font-black text-sm uppercase tracking-widest shadow-xl shadow-yellow-500/20 hover:brightness-110 active:scale-98 transition flex items-center justify-center gap-2"
+          ) : (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="w-full flex flex-col items-center gap-2"
             >
-              <span>PROCEED TO SEMI-RIGID HOLDER</span>
-              <Sparkles className="w-4 h-4" />
-            </button>
-          </motion.div>
-        )}
-      </div>
+              <div className="w-full p-2 rounded-xl bg-yellow-500/15 border border-yellow-500/40 text-yellow-300 text-xs font-mono flex items-center justify-center gap-2">
+                <Sparkles className="w-4 h-4 text-yellow-400" />
+                <span>Surface micro-scratches cleared! +1.5 Surface roll buff active.</span>
+              </div>
+
+              <button
+                type="button"
+                onClick={onComplete}
+                className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-yellow-400 via-amber-400 to-yellow-400 text-black font-black text-sm uppercase tracking-widest shadow-xl shadow-yellow-500/20 hover:brightness-110 active:scale-98 transition flex items-center justify-center gap-2"
+              >
+                <span>PROCEED TO SEMI-RIGID HOLDER</span>
+                <Sparkles className="w-4 h-4" />
+              </button>
+            </motion.div>
+          )}
+        </div>
+      </footer>
     </div>
   );
 };

@@ -109,7 +109,7 @@ export const RestorationWorkbenchModal: React.FC<RestorationWorkbenchModalProps>
     >
       {/* Outer Studio Housing with Dark Self-Healing Cutting Mat Aesthetic */}
       <div
-        className="relative w-full max-w-5xl h-[92vh] max-h-[850px] bg-[#16181d] border border-[#232730] rounded-3xl overflow-hidden shadow-[0_0_60px_rgba(0,0,0,0.9)] flex flex-col"
+        className="relative w-full max-w-5xl h-full max-h-[92vh] bg-[#16181d] border border-[#232730] rounded-3xl overflow-hidden shadow-[0_0_60px_rgba(0,0,0,0.9)] flex flex-col"
         style={{
           backgroundImage: `
             linear-gradient(to right, #232730 1px, transparent 1px),
@@ -127,8 +127,8 @@ export const RestorationWorkbenchModal: React.FC<RestorationWorkbenchModalProps>
           }}
         />
 
-        {/* Top Header Bar & Progress Breadcrumbs */}
-        <div className="relative z-10 shrink-0 border-b border-white/10 px-4 sm:px-6 py-3 bg-[#0d0e12]/80 backdrop-blur-md flex flex-wrap items-center justify-between gap-3">
+        {/* Top Header Bar & Progress Breadcrumbs (Static & flex-shrink-0) */}
+        <header className="relative z-10 flex-shrink-0 border-b border-white/10 px-4 sm:px-6 py-2.5 sm:py-3 bg-[#0d0e12]/80 backdrop-blur-md flex flex-wrap items-center justify-between gap-3">
           {/* Left: Specimen Metadata */}
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center">
@@ -196,10 +196,10 @@ export const RestorationWorkbenchModal: React.FC<RestorationWorkbenchModalProps>
             <span>Exit Lab</span>
             <X className="w-4 h-4" />
           </button>
-        </div>
+        </header>
 
-        {/* Modal Main Stage Container */}
-        <div className="relative z-10 flex-1 min-h-0 flex flex-col items-center justify-center overflow-hidden">
+        {/* Modal Main Stage Container (Flexible & min-h-0) */}
+        <main className="relative z-10 flex-1 min-h-0 flex flex-col items-center justify-center overflow-hidden w-full">
           <AnimatePresence mode="wait">
             {currentStep === 'crack' && (
               <motion.div
@@ -208,7 +208,7 @@ export const RestorationWorkbenchModal: React.FC<RestorationWorkbenchModalProps>
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.96 }}
                 transition={{ duration: 0.25 }}
-                className="w-full h-full"
+                className="w-full h-full min-h-0 flex flex-col"
               >
                 <CrackStep
                   card={activeCard}
@@ -226,7 +226,7 @@ export const RestorationWorkbenchModal: React.FC<RestorationWorkbenchModalProps>
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.96 }}
                 transition={{ duration: 0.25 }}
-                className="w-full h-full"
+                className="w-full h-full min-h-0 flex flex-col"
               >
                 <MicroscopeStep
                   card={activeCard}
@@ -254,7 +254,7 @@ export const RestorationWorkbenchModal: React.FC<RestorationWorkbenchModalProps>
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.96 }}
                 transition={{ duration: 0.25 }}
-                className="w-full h-full"
+                className="w-full h-full min-h-0 flex flex-col"
               >
                 <ClampPressStep
                   card={activeCard}
@@ -282,7 +282,7 @@ export const RestorationWorkbenchModal: React.FC<RestorationWorkbenchModalProps>
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.96 }}
                 transition={{ duration: 0.25 }}
-                className="w-full h-full"
+                className="w-full h-full min-h-0 flex flex-col"
               >
                 <PolishStep
                   card={activeCard}
@@ -310,7 +310,7 @@ export const RestorationWorkbenchModal: React.FC<RestorationWorkbenchModalProps>
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.96 }}
                 transition={{ duration: 0.25 }}
-                className="w-full h-full"
+                className="w-full h-full min-h-0 flex flex-col"
               >
                 <SleeveStep
                   card={activeCard}
@@ -319,7 +319,7 @@ export const RestorationWorkbenchModal: React.FC<RestorationWorkbenchModalProps>
               </motion.div>
             )}
           </AnimatePresence>
-        </div>
+        </main>
       </div>
     </div>
   );

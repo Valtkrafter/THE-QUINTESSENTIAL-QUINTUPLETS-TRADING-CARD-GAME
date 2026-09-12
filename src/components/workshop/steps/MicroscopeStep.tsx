@@ -101,23 +101,24 @@ export const MicroscopeStep: React.FC<MicroscopeStepProps> = ({ card, onComplete
   };
 
   return (
-    <div className="relative w-full h-full flex flex-col items-center justify-between p-3 sm:p-5 select-none overflow-hidden">
-      {/* Step Header */}
-      <div className="text-center z-10">
+    <div className="relative w-full h-full flex flex-col select-none overflow-hidden">
+      {/* 1. TOP HEADER (Static & flex-shrink-0) */}
+      <header className="flex-shrink-0 text-center z-10 pt-3 px-4">
         <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 text-xs font-mono font-bold mb-1">
           <Search className="w-3.5 h-3.5 text-cyan-400" />
           <span>Stage 2: SVBONY LCD Digital Microscope 50X</span>
         </div>
-        <h2 className="text-xl sm:text-2xl font-black text-white tracking-wide">
-          Swab Dirt & Residues Under 50X Zoom
+        <h2 className="text-lg sm:text-xl md:text-2xl font-black text-white tracking-wide">
+          Swab Dirt &amp; Residues Under 50X Zoom
         </h2>
         <p className="text-xs text-zinc-400 max-w-md mx-auto mt-0.5">
           Hold and rub the cotton swab applicator over the marked red target rings until blemishes dissolve into sterile green rings.
         </p>
-      </div>
+      </header>
 
-      {/* Main Split-View Workspace */}
-      <div className="relative flex-1 w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 gap-4 items-center justify-center my-2">
+      {/* 2. INTERACTIVE WORKBENCH AREA (Flexible & Scaled with min-h-0) */}
+      <main className="flex-1 min-h-0 w-full overflow-y-auto flex items-center justify-center p-2 sm:p-4 my-auto">
+        <div className="relative w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 gap-4 items-center justify-center my-auto">
         {/* ============================================================
             LEFT / TOP: SVBONY DIGITAL LCD MONITOR
             ============================================================ */}
@@ -300,12 +301,13 @@ export const MicroscopeStep: React.FC<MicroscopeStepProps> = ({ card, onComplete
             <RotateCw className="w-3.5 h-3.5 text-cyan-400" />
             <span>FLIP TO {isFlipped ? 'FRONT (OBVERSE)' : 'BACK (REVERSE)'}</span>
           </button>
+          </div>
         </div>
-      </div>
+      </main>
 
-      {/* Bottom Checklist & Progression */}
-      <div className="w-full max-w-md z-10 flex flex-col items-center gap-2">
-        <div className="w-full flex items-center justify-between text-xs font-mono px-3 py-2 rounded-xl bg-zinc-950/80 border border-white/10">
+      {/* 3. BOTTOM ACTION BAR (Strictly Pinned & Protected) */}
+      <footer className="w-full flex-shrink-0 p-4 pt-2 pb-6 border-t border-[#232730] bg-[#0f1115]/90 backdrop-blur-md flex flex-col items-center gap-2 z-20">
+        <div className="w-full max-w-md flex items-center justify-between text-xs font-mono px-3 py-2 rounded-xl bg-zinc-950/80 border border-white/10">
           <div className="flex items-center gap-1.5">
             {frontCleanCount === 4 ? (
               <CheckCircle2 className="w-4 h-4 text-emerald-400" />
@@ -335,9 +337,9 @@ export const MicroscopeStep: React.FC<MicroscopeStepProps> = ({ card, onComplete
             animate={{ opacity: 1, y: 0 }}
             type="button"
             onClick={onComplete}
-            className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-400 text-black font-black text-sm uppercase tracking-widest shadow-xl shadow-emerald-500/20 hover:brightness-110 active:scale-98 transition flex items-center justify-center gap-2"
+            className="w-full max-w-md py-3 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-400 text-black font-black text-sm uppercase tracking-widest shadow-xl shadow-emerald-500/20 hover:brightness-110 active:scale-98 transition flex items-center justify-center gap-2"
           >
-            <span>PROCEED TO CLAMP PRESS (WARP REMOVAL)</span>
+            <span>PROCEED TO CLAMP PRESS (WARP REMOVAL) ▶</span>
             <Sparkles className="w-4 h-4" />
           </motion.button>
         ) : (
@@ -349,7 +351,7 @@ export const MicroscopeStep: React.FC<MicroscopeStepProps> = ({ card, onComplete
               : 'Swab all marked spots to unlock the Hard Press Station.'}
           </div>
         )}
-      </div>
+      </footer>
     </div>
   );
 };

@@ -67,24 +67,24 @@ export const ClampPressStep: React.FC<ClampPressStepProps> = ({ card, onComplete
   };
 
   return (
-    <div className="relative w-full h-full flex flex-col items-center justify-between p-4 sm:p-6 select-none overflow-hidden">
-      {/* Step Header */}
-      <div className="text-center z-10">
+    <div className="relative w-full h-full flex flex-col select-none overflow-hidden">
+      {/* 1. TOP HEADER (Static & flex-shrink-0) */}
+      <header className="flex-shrink-0 text-center z-10 pt-3 px-4">
         <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-mono font-bold mb-1.5">
           <Gauge className="w-3.5 h-3.5 text-amber-400" />
-          <span>Stage 3: Dual Acrylic Press & WORKPRO Clamp Station</span>
+          <span>Stage 3: Dual Acrylic Press &amp; WORKPRO Clamp Station</span>
         </div>
-        <h2 className="text-xl sm:text-2xl font-black text-white tracking-wide">
-          24-Hour Hard Press & Warp Removal
+        <h2 className="text-lg sm:text-xl md:text-2xl font-black text-white tracking-wide">
+          24-Hour Hard Press &amp; Warp Removal
         </h2>
         <p className="text-xs text-zinc-400 max-w-md mx-auto mt-0.5">
           Ratchet dual bar clamps to 150 PSI between 12mm optical acrylic plates to eliminate cardstock curling and corner bowing.
         </p>
-      </div>
+      </header>
 
-      {/* Main Press Mechanical Stage */}
-      <div className="relative flex-1 w-full max-w-3xl flex items-center justify-center my-3">
-        <div className="relative w-[340px] sm:w-[380px] h-[340px] sm:h-[380px] flex items-center justify-center">
+      {/* 2. INTERACTIVE WORKBENCH AREA (Flexible & Scaled with min-h-0) */}
+      <main className="flex-1 min-h-0 w-full overflow-y-auto flex items-center justify-center p-2 sm:p-4 my-auto">
+        <div className="relative max-h-[300px] sm:max-h-[340px] md:max-h-[380px] aspect-square h-full w-auto flex items-center justify-center my-auto">
           {/* WORKPRO Orange/Black Bar Clamps - Left */}
           <div className="absolute left-1 sm:left-4 z-30 flex flex-col items-center pointer-events-none">
             {/* Top Clamp Jaw */}
@@ -167,12 +167,12 @@ export const ClampPressStep: React.FC<ClampPressStepProps> = ({ card, onComplete
             </div>
           </div>
         </div>
-      </div>
+      </main>
 
-      {/* Interactive Controls & Speed-up Toggles */}
-      <div className="w-full max-w-md z-10 flex flex-col items-center gap-3">
+      {/* 3. BOTTOM ACTION BAR (Strictly Pinned & Protected) */}
+      <footer className="w-full flex-shrink-0 p-4 pt-2 pb-6 border-t border-[#232730] bg-[#0f1115]/90 backdrop-blur-md flex flex-col items-center gap-2 z-20">
         {!isOptimalPressure ? (
-          <div className="w-full flex flex-col items-center gap-2">
+          <div className="w-full max-w-md flex flex-col items-center gap-2">
             <div className="w-full bg-zinc-900 rounded-full h-2.5 border border-white/10 overflow-hidden">
               <div
                 className="h-full bg-gradient-to-r from-amber-500 to-emerald-400 transition-all duration-200"
@@ -183,14 +183,14 @@ export const ClampPressStep: React.FC<ClampPressStepProps> = ({ card, onComplete
             <button
               type="button"
               onClick={handleRatchetClamp}
-              className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-orange-500 via-amber-500 to-orange-500 text-black font-black text-sm uppercase tracking-widest shadow-xl shadow-orange-500/20 active:scale-95 transition flex items-center justify-center gap-2 hover:brightness-110"
+              className="w-full py-3 rounded-2xl bg-gradient-to-r from-orange-500 via-amber-500 to-orange-500 text-black font-black text-sm uppercase tracking-widest shadow-xl shadow-orange-500/20 active:scale-95 transition flex items-center justify-center gap-2 hover:brightness-110"
             >
               <Gauge className="w-4 h-4 text-black" />
               <span>RATCHET CLAMPS (+30 PSI)</span>
             </button>
           </div>
         ) : !isPressingDone ? (
-          <div className="w-full flex flex-col items-center gap-2.5">
+          <div className="w-full max-w-md flex flex-col items-center gap-2.5">
             <div className="w-full p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-mono text-center flex items-center justify-center gap-2">
               <Clock className="w-4 h-4 text-amber-400 animate-spin" />
               <span>Target 150 PSI Attained! Choose Rest Duration:</span>
@@ -202,7 +202,7 @@ export const ClampPressStep: React.FC<ClampPressStepProps> = ({ card, onComplete
                 type="button"
                 onClick={handleStartStandardRest}
                 disabled={isTimelapseRunning}
-                className="py-3 px-3 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-white/15 text-zinc-200 text-xs font-mono font-bold flex flex-col items-center justify-center gap-1 transition active:scale-95 disabled:opacity-50 shadow"
+                className="py-2.5 px-3 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-white/15 text-zinc-200 text-xs font-mono font-bold flex flex-col items-center justify-center gap-1 transition active:scale-95 disabled:opacity-50 shadow"
               >
                 <div className="flex items-center gap-1.5 text-zinc-300">
                   <Clock className="w-3.5 h-3.5 text-cyan-400" />
@@ -217,7 +217,7 @@ export const ClampPressStep: React.FC<ClampPressStepProps> = ({ card, onComplete
               <button
                 type="button"
                 onClick={handleQuickPress}
-                className="py-3 px-3 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-black text-xs font-mono font-black flex flex-col items-center justify-center gap-1 transition active:scale-95 shadow-lg shadow-amber-500/20"
+                className="py-2.5 px-3 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-black text-xs font-mono font-black flex flex-col items-center justify-center gap-1 transition active:scale-95 shadow-lg shadow-amber-500/20"
               >
                 <div className="flex items-center gap-1.5">
                   <Zap className="w-3.5 h-3.5 text-black" />
@@ -233,7 +233,7 @@ export const ClampPressStep: React.FC<ClampPressStepProps> = ({ card, onComplete
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="w-full flex flex-col items-center gap-2"
+            className="w-full max-w-md flex flex-col items-center gap-2"
           >
             <div className="w-full p-2.5 rounded-xl bg-emerald-950/70 border border-emerald-500/40 text-emerald-300 text-xs font-mono flex items-center justify-center gap-2">
               <ShieldCheck className="w-4 h-4 text-emerald-400" />
@@ -243,14 +243,14 @@ export const ClampPressStep: React.FC<ClampPressStepProps> = ({ card, onComplete
             <button
               type="button"
               onClick={onComplete}
-              className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-400 text-black font-black text-sm uppercase tracking-widest shadow-xl shadow-emerald-500/20 hover:brightness-110 active:scale-98 transition flex items-center justify-center gap-2"
+              className="w-full py-3 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-400 text-black font-black text-sm uppercase tracking-widest shadow-xl shadow-emerald-500/20 hover:brightness-110 active:scale-98 transition flex items-center justify-center gap-2"
             >
-              <span>PROCEED TO RESTORATION WAX POLISH</span>
+              <span>PROCEED TO RESTORATION WAX POLISH ▶</span>
               <Sparkles className="w-4 h-4" />
             </button>
           </motion.div>
         )}
-      </div>
+      </footer>
     </div>
   );
 };

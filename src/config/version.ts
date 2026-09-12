@@ -1,4 +1,4 @@
-export const APP_VERSION = '2.1.1'; // Increment with each task
+export const APP_VERSION = '2.1.2'; // Increment with each task
 
 export interface PatchNote {
   version: string;
@@ -11,15 +11,15 @@ export interface PatchNote {
 // ALWAYS overwrite this object with ONLY the latest release
 export const CURRENT_PATCH_NOTE: PatchNote = {
   version: APP_VERSION,
-  title: 'Card-Dex Full-Art Display Polish',
+  title: 'Restoration Lab Viewport & Footer Polish',
   date: new Date().toISOString().split('T')[0],
   highlights: [
-    'Graded cards in the Card-Dex catalog now feature full-art illustrations matching the showcase vitrine.',
-    'All cards in the catalog grid now have unified height and proportions.',
+    'The Restoration Workbench now uses a pinned 3-tier layout to guarantee all controls stay visible on any screen size.',
+    'Restoration stages now scale card holders and tool stages proportionally to fit vertical workspace constraints.',
   ],
   fixes: [
-    'Removed oversized grading headers that squished character portraits in the Card-Dex.',
-    'Unified grade badges into a single sleek indicator in the top-right corner.',
+    'Fixed action buttons (Proceed to Microscope, Semi-Rigid Holder, Re-Grading) clipping off the bottom edge of the modal.',
+    'Eliminated inner scrolling overflow issues across all 5 restoration workbenches.',
   ],
 };
 
