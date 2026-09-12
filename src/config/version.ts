@@ -1,4 +1,4 @@
-export const APP_VERSION = '2.0.4'; // Increment with each task
+export const APP_VERSION = '2.1.0'; // Increment with each task
 
 export interface PatchNote {
   version: string;
@@ -11,15 +11,16 @@ export interface PatchNote {
 // ALWAYS overwrite this object with ONLY the latest release
 export const CURRENT_PATCH_NOTE: PatchNote = {
   version: APP_VERSION,
-  title: 'Visual Polish & Dark Theme Scrollbars',
+  title: 'Restoration Workbench & Crack-to-Regrade',
   date: new Date().toISOString().split('T')[0],
   highlights: [
-    'Replaced all default browser scrollbars with custom obsidian-dark styling.',
-    'Showcase view now fits smoothly on your screen without any extra scrolling.',
+    'Enter the physical Restoration Lab to crack slabs, clean flaws under a 50x microscope, and clamp-press cards flat.',
+    'Buff holographic foil with restoration wax and sleeve cards in semi-rigid savers with an animated inspection checklist.',
+    'Re-grade restored cards at the Vault with a locked Grade 7+ floor, subgrade buffs, and an amber RE-CERTIFIED badge.',
   ],
   fixes: [
-    'Removed the awkward vertical scroll arrows on the Card-Dex filter bar.',
-    'Fixed scrollbars overlapping content in drawers and menus.',
+    'Fixed graded slabs locking cards permanently—now you can crack and restore low grades for a second chance at Gem Mint.',
+    'Optimized tactile workshop audio effects with ultra-low latency procedural Web Audio synthesis.',
   ],
 };
 

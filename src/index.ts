@@ -13,3 +13,5 @@ export * from './components/pack/BoosterPack3D';
 export * from './components/pack/PackOpeningModal';
 export * from './components/pack/SelectBoosterModal';
 export * from './components/pack/TearMechanism';
+export * from './components/workshop/RestorationWorkbenchModal';
+

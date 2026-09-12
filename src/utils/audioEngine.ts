@@ -5,6 +5,7 @@
  */
 
 import { GradeTier, Rarity } from '../types/card';
+import { playSound } from './audio';
 
 class AudioEngine {
   private ctx: AudioContext | null = null;
@@ -771,6 +772,41 @@ class AudioEngine {
     } catch {
       // Audio fallback
     }
+  }
+
+  public playPlasticSnip(volume = 0.9): void {
+    if (this.muted) return;
+    playSound('plastic_snip', volume);
+  }
+
+  public playAcrylicCrackAndShatter(volume = 0.85): void {
+    if (this.muted) return;
+    playSound('plastic_crunch_shatter', volume);
+  }
+
+  public playSwabRub(volume = 0.4): void {
+    if (this.muted) return;
+    playSound('cotton_swab_rub', volume);
+  }
+
+  public playCleanChime(volume = 0.6): void {
+    if (this.muted) return;
+    playSound('clean_chime', volume);
+  }
+
+  public playClampRatchet(volume = 0.75): void {
+    if (this.muted) return;
+    playSound('clamp_ratchet', volume);
+  }
+
+  public playWaxRub(volume = 0.5): void {
+    if (this.muted) return;
+    playSound('wax_buff_rub', volume);
+  }
+
+  public playPenScribble(volume = 0.5): void {
+    if (this.muted) return;
+    playSound('pen_scribble', volume);
   }
 }
 

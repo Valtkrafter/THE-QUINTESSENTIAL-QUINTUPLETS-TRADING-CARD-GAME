@@ -48,6 +48,25 @@ export interface GradeResult {
   multiplier: number;
   subgrades: GradeSubgrades;
   gradedAt: number;
+  isRestored?: boolean;
+}
+
+export interface RestorationChecklist {
+  allClean: boolean;
+  polished: boolean;
+  waxed: boolean;
+  microScratchRemoval: boolean;
+  flattened: boolean;
+  gradePrepCertified: boolean;
+}
+
+export interface RestorationProgress {
+  step: 'crack' | 'microscope' | 'clamp' | 'polish' | 'sleeve' | 'completed';
+  crackedCleanly: boolean;
+  dustSpotsRemoved: number; // target: 4
+  clamped: boolean;
+  waxBuffed: boolean;
+  checklist: RestorationChecklist;
 }
 
 export interface CardDefinition {
@@ -82,6 +101,9 @@ export interface CardInstance {
   title?: string;
   cardNumber?: string;
   forceFit?: 'exact' | 'top' | 'contain';
+  crackCount?: number;
+  restoration?: RestorationProgress;
+  isGradePrepCertified?: boolean;
 }
 
 export type PackId =

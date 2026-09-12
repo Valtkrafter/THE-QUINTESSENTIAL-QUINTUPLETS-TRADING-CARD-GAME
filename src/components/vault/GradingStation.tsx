@@ -104,8 +104,18 @@ export const GradingStation: React.FC<GradingStationProps> = ({
     let gem10 = 4.7;
     let blackLabel = 0.3;
 
-    // 1. Microfiber cloth: 100% eliminates 1-3
-    if (equippedTool === 'microfiber_cloth') {
+    // Grade Prep Certified: locked floor at Grade 7 (eliminates Poor 1–3 and Used 4–6)
+    if (selectedCard?.isGradePrepCertified) {
+      poor = 0;
+      used = 0;
+      const sum = crisp + mint + gem10 + blackLabel;
+      const factor = 100.0 / sum;
+      crisp *= factor;
+      mint *= factor;
+      gem10 *= factor;
+      blackLabel *= factor;
+    } else if (equippedTool === 'microfiber_cloth') {
+      // 1. Microfiber cloth: 100% eliminates 1-3
       poor = 0;
       const sum = used + crisp + mint + gem10 + blackLabel;
       const factor = 100.0 / sum;
@@ -120,11 +130,13 @@ export const GradingStation: React.FC<GradingStationProps> = ({
     if (equippedTool === 'centering_laser') {
       const boost = 5.0;
       gem10 += boost;
-      const lowerSum = poor + used + crisp + mint;
+      const lowerSum = selectedCard?.isGradePrepCertified ? crisp + mint : poor + used + crisp + mint;
       if (lowerSum > boost) {
         const ratio = (lowerSum - boost) / lowerSum;
-        poor *= ratio;
-        used *= ratio;
+        if (!selectedCard?.isGradePrepCertified) {
+          poor *= ratio;
+          used *= ratio;
+        }
         crisp *= ratio;
         mint *= ratio;
       }
@@ -136,11 +148,13 @@ export const GradingStation: React.FC<GradingStationProps> = ({
       const bonusPct = extraGrade10 * 100;
       gem10 += Number((bonusPct * 0.9).toFixed(2));
       blackLabel += Number((bonusPct * 0.1).toFixed(2));
-      const lowerSum = poor + used + crisp + mint;
+      const lowerSum = selectedCard?.isGradePrepCertified ? crisp + mint : poor + used + crisp + mint;
       if (lowerSum > bonusPct) {
         const ratio = (lowerSum - bonusPct) / lowerSum;
-        poor *= ratio;
-        used *= ratio;
+        if (!selectedCard?.isGradePrepCertified) {
+          poor *= ratio;
+          used *= ratio;
+        }
         crisp *= ratio;
         mint *= ratio;
       }
@@ -154,7 +168,7 @@ export const GradingStation: React.FC<GradingStationProps> = ({
       gem10: Number(gem10.toFixed(1)),
       blackLabel: Number(blackLabel.toFixed(1)),
     };
-  }, [equippedTool, activeSupportBuff]);
+  }, [equippedTool, activeSupportBuff, selectedCard]);
 
   // Handle Tool Socketing Toggle
   const toggleTool = (toolId: ConsumableToolId) => {
@@ -443,8 +457,13 @@ export const GradingStation: React.FC<GradingStationProps> = ({
                           : 'border-zinc-800 bg-zinc-950/60 hover:border-zinc-700 text-zinc-400'
                       }`}
                     >
-                      <div className="w-16 h-22 rounded-lg bg-black/60 overflow-hidden mb-1.5 border border-white/10 flex items-center justify-center pointer-events-none">
+                      <div className="w-16 h-22 rounded-lg bg-black/60 overflow-hidden mb-1.5 border border-white/10 flex items-center justify-center pointer-events-none relative">
                         <CardRenderer card={card} size="sm" interactive={false} showMarketValue={false} />
+                        {card.isGradePrepCertified && (
+                          <div className="absolute top-0.5 right-0.5 z-10 px-1 py-0.2 rounded bg-amber-500/90 text-black text-[7px] font-black uppercase tracking-tighter">
+                            PREP
+                          </div>
+                        )}
                       </div>
                       <span className="text-[10px] font-bold text-white truncate w-full text-center">
                         {card.name ?? 'Card'}
@@ -498,18 +517,12 @@ export const GradingStation: React.FC<GradingStationProps> = ({
                         : 'border-zinc-900 bg-zinc-950/40 text-zinc-600 opacity-60 cursor-not-allowed'
                     }`}
                   >
-                    <div className="flex items-center justify-between w-full mb-1">
-                      <span className="font-extrabold text-[11px] leading-tight">Cloth</span>
-                      <span className="text-[9px] font-mono px-1 rounded bg-black/40 border border-white/10">
-                        x{owned}
-                      </span>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-bold text-[11px] text-white truncate">Cloth</span>
+                      {isEquipped && <Check className="w-3.5 h-3.5 text-emerald-400" />}
                     </div>
-                    <p className="text-[9px] leading-snug opacity-80 mb-2">
-                      Blocks Grades 1–3 (No Beaten cards)
-                    </p>
-                    <div className="w-full flex items-center justify-center py-1 rounded bg-black/30 text-[9px] font-bold uppercase">
-                      {isEquipped ? 'Equipped' : owned > 0 ? 'Equip' : 'Need 50 Dust'}
-                    </div>
+                    <span className="text-[9px] text-zinc-400 line-clamp-2">No Grade 1-3</span>
+                    <span className="text-[9px] font-mono text-zinc-500 mt-1">Owned: {owned}</span>
                   </button>
                 );
               })()}
@@ -531,18 +544,12 @@ export const GradingStation: React.FC<GradingStationProps> = ({
                         : 'border-zinc-900 bg-zinc-950/40 text-zinc-600 opacity-60 cursor-not-allowed'
                     }`}
                   >
-                    <div className="flex items-center justify-between w-full mb-1">
-                      <span className="font-extrabold text-[11px] leading-tight">Laser</span>
-                      <span className="text-[9px] font-mono px-1 rounded bg-black/40 border border-white/10">
-                        x{owned}
-                      </span>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-bold text-[11px] text-white truncate">Laser</span>
+                      {isEquipped && <Check className="w-3.5 h-3.5 text-cyan-400" />}
                     </div>
-                    <p className="text-[9px] leading-snug opacity-80 mb-2">
-                      +5% Flat Chance for Grade 10
-                    </p>
-                    <div className="w-full flex items-center justify-center py-1 rounded bg-black/30 text-[9px] font-bold uppercase">
-                      {isEquipped ? 'Equipped' : owned > 0 ? 'Equip' : 'Need 150 Dust'}
-                    </div>
+                    <span className="text-[9px] text-zinc-400 line-clamp-2">+5% Grade 10</span>
+                    <span className="text-[9px] font-mono text-zinc-500 mt-1">Owned: {owned}</span>
                   </button>
                 );
               })()}
@@ -558,24 +565,18 @@ export const GradingStation: React.FC<GradingStationProps> = ({
                     disabled={owned <= 0 || isProcessing}
                     className={`p-2.5 rounded-xl border text-left transition flex flex-col justify-between ${
                       isEquipped
-                        ? 'border-amber-400 bg-amber-950/40 text-amber-200 shadow-md'
+                        ? 'border-purple-400 bg-purple-950/40 text-purple-200 shadow-md'
                         : owned > 0
                         ? 'border-zinc-800 bg-zinc-950 text-zinc-300 hover:border-zinc-700'
                         : 'border-zinc-900 bg-zinc-950/40 text-zinc-600 opacity-60 cursor-not-allowed'
                     }`}
                   >
-                    <div className="flex items-center justify-between w-full mb-1">
-                      <span className="font-extrabold text-[11px] leading-tight">Insurance</span>
-                      <span className="text-[9px] font-mono px-1 rounded bg-black/40 border border-white/10">
-                        x{owned}
-                      </span>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-bold text-[11px] text-white truncate">Insurance</span>
+                      {isEquipped && <Check className="w-3.5 h-3.5 text-purple-400" />}
                     </div>
-                    <p className="text-[9px] leading-snug opacity-80 mb-2">
-                      Auto-Reroll if 1st Roll &lt; Grade 7
-                    </p>
-                    <div className="w-full flex items-center justify-center py-1 rounded bg-black/30 text-[9px] font-bold uppercase">
-                      {isEquipped ? 'Equipped' : owned > 0 ? 'Equip' : 'Need 300 Dust'}
-                    </div>
+                    <span className="text-[9px] text-zinc-400 line-clamp-2">Reroll &lt; 7</span>
+                    <span className="text-[9px] font-mono text-zinc-500 mt-1">Owned: {owned}</span>
                   </button>
                 );
               })()}
@@ -597,22 +598,34 @@ export const GradingStation: React.FC<GradingStationProps> = ({
               )}
             </h3>
 
+            {/* Certified Prep Floor Alert */}
+            {selectedCard?.isGradePrepCertified && (
+              <div className="mb-2.5 p-2 rounded-xl bg-amber-500/15 border border-amber-500/40 text-amber-300 text-[11px] font-bold flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
+                <span>Restoration Certified: Guaranteed Floor &ge; Grade 7 (Crisp)</span>
+              </div>
+            )}
+
             <div className="flex flex-col gap-2 font-mono text-xs">
               {/* Poor 1-3 */}
               <div className="flex items-center justify-between p-1.5 rounded-lg bg-zinc-950/80 border border-zinc-800/80">
                 <div className="flex items-center gap-2">
                   <span className="w-2.5 h-2.5 rounded-full bg-red-500 shrink-0" />
-                  <span className={`text-zinc-300 ${equippedTool === 'microfiber_cloth' ? 'line-through opacity-50' : ''}`}>
+                  <span className={`text-zinc-300 ${equippedTool === 'microfiber_cloth' || selectedCard?.isGradePrepCertified ? 'line-through opacity-50' : ''}`}>
                     Grades 1–3 (Schulhof-Müll)
                   </span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  {equippedTool === 'microfiber_cloth' && (
+                  {selectedCard?.isGradePrepCertified ? (
+                    <span className="text-[9px] font-bold text-amber-400 px-1.5 py-0.5 rounded bg-amber-950 border border-amber-500/40">
+                      CERTIFIED FLOOR
+                    </span>
+                  ) : equippedTool === 'microfiber_cloth' ? (
                     <span className="text-[9px] font-bold text-emerald-400 px-1.5 py-0.5 rounded bg-emerald-950 border border-emerald-500/40">
                       PROTECTED
                     </span>
-                  )}
-                  <span className={`font-bold ${equippedTool === 'microfiber_cloth' ? 'text-zinc-600' : 'text-red-400'}`}>
+                  ) : null}
+                  <span className={`font-bold ${equippedTool === 'microfiber_cloth' || selectedCard?.isGradePrepCertified ? 'text-zinc-600' : 'text-red-400'}`}>
                     {dynamicProbabilities.poor}%
                   </span>
                 </div>
@@ -622,9 +635,20 @@ export const GradingStation: React.FC<GradingStationProps> = ({
               <div className="flex items-center justify-between p-1.5 rounded-lg bg-zinc-950/80 border border-zinc-800/80">
                 <div className="flex items-center gap-2">
                   <span className="w-2.5 h-2.5 rounded-full bg-zinc-400 shrink-0" />
-                  <span className="text-zinc-300">Grades 4–6 (Gebraucht)</span>
+                  <span className={`text-zinc-300 ${selectedCard?.isGradePrepCertified ? 'line-through opacity-50' : ''}`}>
+                    Grades 4–6 (Gebraucht)
+                  </span>
                 </div>
-                <span className="font-bold text-zinc-300">{dynamicProbabilities.used}%</span>
+                <div className="flex items-center gap-1.5">
+                  {selectedCard?.isGradePrepCertified && (
+                    <span className="text-[9px] font-bold text-amber-400 px-1.5 py-0.5 rounded bg-amber-950 border border-amber-500/40">
+                      CERTIFIED FLOOR
+                    </span>
+                  )}
+                  <span className={`font-bold ${selectedCard?.isGradePrepCertified ? 'text-zinc-600' : 'text-zinc-300'}`}>
+                    {dynamicProbabilities.used}%
+                  </span>
+                </div>
               </div>
 
               {/* Crisp 7-8 */}

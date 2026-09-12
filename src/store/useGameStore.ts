@@ -23,6 +23,7 @@ import {
   ShowcaseSlot,
   ShowcaseSynergyReport,
   CardDexEntry,
+  RestorationProgress,
 } from '../types/card';
 import { CARD_MAP, CARDS_CATALOG } from '../config/cardsData';
 import {
@@ -124,6 +125,11 @@ export interface GameState {
   getShowcaseSynergyReport: () => ShowcaseSynergyReport;
   recordCardDiscovery: (card: CardInstance) => void;
   syncCardDex: () => void;
+
+  // Restoration Workbench & Crack-to-Regrade System
+  startRestoration: (cardId: string) => void;
+  advanceRestorationStep: (cardId: string, stepResult: Partial<RestorationProgress>) => void;
+  completeRestoration: (cardId: string) => void;
 }
 
 const DEFAULT_BINDER_SLOTS: BinderSlot[] = [
@@ -448,6 +454,7 @@ export const useGameStore = create<GameState>()(
         const updatedCard: CardInstance = {
           ...card,
           grade: gradeResult,
+          isGradePrepCertified: false,
         };
 
         const updatedInventory = [...state.inventory];
@@ -1140,6 +1147,131 @@ export const useGameStore = create<GameState>()(
 
       markPatchNotesSeen: (version?: string): void => {
         set({ lastSeenPatchVersion: version ?? CURRENT_PATCH_VERSION });
+      },
+
+      startRestoration: (cardId: string): void => {
+        const state = get();
+        const cardIndex = state.inventory.findIndex((c) => c.id === cardId);
+        if (cardIndex === -1) {
+          throw new Error(`Card not found: ${cardId}`);
+        }
+        const card = state.inventory[cardIndex];
+        if (!card.grade && !card.restoration) {
+          throw new Error('Only graded cards can be entered into the Restoration Workbench.');
+        }
+
+        // Deduct 75 Yen tool fee only if restoration hasn't been started yet for this card
+        const isNewRestoration = !card.restoration;
+        const toolFee = 75;
+        if (isNewRestoration && state.yen < toolFee) {
+          throw new Error(`Insufficient Yen for Slab Breaker tool fee. Required: ${toolFee} ¥, Available: ${state.yen} ¥`);
+        }
+
+        const initialRestoration: RestorationProgress = card.restoration ?? {
+          step: 'crack',
+          crackedCleanly: false,
+          dustSpotsRemoved: 0,
+          clamped: false,
+          waxBuffed: false,
+          checklist: {
+            allClean: false,
+            polished: false,
+            waxed: false,
+            microScratchRemoval: false,
+            flattened: false,
+            gradePrepCertified: false,
+          },
+        };
+
+        const updatedCard: CardInstance = {
+          ...card,
+          restoration: initialRestoration,
+        };
+
+        const updatedInventory = [...state.inventory];
+        updatedInventory[cardIndex] = updatedCard;
+
+        set({
+          yen: isNewRestoration ? state.yen - toolFee : state.yen,
+          inventory: updatedInventory,
+        });
+      },
+
+      advanceRestorationStep: (
+        cardId: string,
+        stepResult: Partial<RestorationProgress>
+      ): void => {
+        const state = get();
+        const cardIndex = state.inventory.findIndex((c) => c.id === cardId);
+        if (cardIndex === -1) {
+          throw new Error(`Card not found: ${cardId}`);
+        }
+        const card = state.inventory[cardIndex];
+        if (!card.restoration) {
+          throw new Error('Restoration session not active for this card.');
+        }
+
+        const mergedChecklist = {
+          ...card.restoration.checklist,
+          ...(stepResult.checklist ?? {}),
+        };
+
+        const updatedRestoration: RestorationProgress = {
+          ...card.restoration,
+          ...stepResult,
+          checklist: mergedChecklist,
+        };
+
+        const updatedCard: CardInstance = {
+          ...card,
+          restoration: updatedRestoration,
+        };
+
+        const updatedInventory = [...state.inventory];
+        updatedInventory[cardIndex] = updatedCard;
+
+        set({ inventory: updatedInventory });
+      },
+
+      completeRestoration: (cardId: string): void => {
+        const state = get();
+        const cardIndex = state.inventory.findIndex((c) => c.id === cardId);
+        if (cardIndex === -1) {
+          throw new Error(`Card not found: ${cardId}`);
+        }
+        const card = state.inventory[cardIndex];
+
+        const updatedRestoration: RestorationProgress = {
+          ...(card.restoration ?? {
+            crackedCleanly: true,
+            dustSpotsRemoved: 4,
+            clamped: true,
+            waxBuffed: true,
+            checklist: {
+              allClean: true,
+              polished: true,
+              waxed: true,
+              microScratchRemoval: true,
+              flattened: true,
+              gradePrepCertified: true,
+            },
+          }),
+          step: 'completed',
+        };
+
+        // Mark card raw, apply isGradePrepCertified: true, increment crackCount: 1
+        const updatedCard: CardInstance = {
+          ...card,
+          grade: undefined,
+          isGradePrepCertified: true,
+          crackCount: (card.crackCount ?? 0) + 1,
+          restoration: updatedRestoration,
+        };
+
+        const updatedInventory = [...state.inventory];
+        updatedInventory[cardIndex] = updatedCard;
+
+        set({ inventory: updatedInventory });
       },
 
       resetSave: (): void => {

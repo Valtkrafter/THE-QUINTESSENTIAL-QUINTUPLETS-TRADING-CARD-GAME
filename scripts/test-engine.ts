@@ -1050,6 +1050,171 @@ async function runTests() {
   assert(defaultCdRemaining > 10000, 'Cooldown restored to standard 4-hour schedule after unmounting Takeda');
   console.log('✅ Support Altar unmount and baseline restoration verified.');
 
+  // ==========================================
+  // SECTION 11: RESTORATION WORKBENCH & CRACK-TO-REGRADE SYSTEM
+  // ==========================================
+  testSection('SECTION 11: RESTORATION WORKBENCH & CRACK-TO-REGRADE SYSTEM');
+
+  // 1. Setup graded card for restoration testing
+  const slabToCrack: CardInstance = {
+    id: 'restoration_specimen_01',
+    cardDefId: 'nino_sr_01',
+    characterId: 'nino',
+    rarity: 'SR',
+    finish: 'holo',
+    obtainedAt: Date.now(),
+    grade: {
+      tier: 'USED_4_6',
+      tierLabel: 'Gebraucht',
+      numericGrade: 5,
+      isBlackLabel: false,
+      multiplier: 0.85,
+      subgrades: {
+        centering: 5.0,
+        surface: 5.5,
+        corners: 5.0,
+        edges: 4.5,
+      },
+      gradedAt: Date.now() - 100000,
+    },
+  };
+
+  useGameStore.setState({
+    inventory: [...useGameStore.getState().inventory, slabToCrack],
+    yen: 500,
+  });
+
+  // 2. Test startRestoration: Deducts 75 ¥ and initializes restoration session
+  const preStartRestorationYen = useGameStore.getState().yen;
+  useGameStore.getState().startRestoration(slabToCrack.id);
+  const postStartYen = useGameStore.getState().yen;
+  assert(preStartRestorationYen - postStartYen === 75, 'Deducted 75 ¥ for Slab Breaker tool fee');
+
+  const cardInRestoration = useGameStore.getState().inventory.find((c) => c.id === slabToCrack.id);
+  assert(cardInRestoration !== undefined, 'Card found in inventory');
+  assert(cardInRestoration?.restoration?.step === 'crack', 'Restoration initialized at step crack');
+  assert(cardInRestoration?.restoration?.crackedCleanly === false, 'crackedCleanly initially false');
+  console.log('✅ startRestoration verified: 75 ¥ fee deducted and session initialized.');
+
+  // Resuming does not charge fee again
+  useGameStore.getState().startRestoration(slabToCrack.id);
+  assert(useGameStore.getState().yen === postStartYen, 'Resuming active restoration does not deduct fee again');
+  console.log('✅ startRestoration resume idempotency verified.');
+
+  // 3. Test advanceRestorationStep
+  useGameStore.getState().advanceRestorationStep(slabToCrack.id, {
+    step: 'microscope',
+    crackedCleanly: true,
+  });
+  let specimen = useGameStore.getState().inventory.find((c) => c.id === slabToCrack.id);
+  assert(specimen?.restoration?.step === 'microscope', 'Advanced to microscope step');
+  assert(specimen?.restoration?.crackedCleanly === true, 'crackedCleanly updated to true');
+
+  useGameStore.getState().advanceRestorationStep(slabToCrack.id, {
+    step: 'clamp',
+    dustSpotsRemoved: 4,
+    checklist: {
+      allClean: true,
+      polished: false,
+      waxed: false,
+      microScratchRemoval: false,
+      flattened: false,
+      gradePrepCertified: false,
+    },
+  });
+  specimen = useGameStore.getState().inventory.find((c) => c.id === slabToCrack.id);
+  assert(specimen?.restoration?.step === 'clamp', 'Advanced to clamp step');
+  assert(specimen?.restoration?.checklist.allClean === true, 'allClean checklist checked');
+
+  useGameStore.getState().advanceRestorationStep(slabToCrack.id, {
+    step: 'polish',
+    clamped: true,
+    checklist: {
+      allClean: true,
+      polished: false,
+      waxed: false,
+      microScratchRemoval: false,
+      flattened: true,
+      gradePrepCertified: false,
+    },
+  });
+  specimen = useGameStore.getState().inventory.find((c) => c.id === slabToCrack.id);
+  assert(specimen?.restoration?.step === 'polish', 'Advanced to polish step');
+  assert(specimen?.restoration?.clamped === true, 'clamped set to true');
+
+  useGameStore.getState().advanceRestorationStep(slabToCrack.id, {
+    step: 'sleeve',
+    waxBuffed: true,
+    checklist: {
+      allClean: true,
+      polished: true,
+      waxed: true,
+      microScratchRemoval: true,
+      flattened: true,
+      gradePrepCertified: false,
+    },
+  });
+  specimen = useGameStore.getState().inventory.find((c) => c.id === slabToCrack.id);
+  assert(specimen?.restoration?.step === 'sleeve', 'Advanced to sleeve step');
+  assert(specimen?.restoration?.waxBuffed === true, 'waxBuffed set to true');
+  console.log('✅ advanceRestorationStep multi-stage progression and checklist tracking verified.');
+
+  // 4. Test completeRestoration
+  useGameStore.getState().completeRestoration(slabToCrack.id);
+  specimen = useGameStore.getState().inventory.find((c) => c.id === slabToCrack.id);
+  assert(specimen !== undefined, 'Specimen still exists');
+  assert(specimen?.grade === undefined, 'Slab cracked: grade is undefined (raw card)');
+  assert(specimen?.isGradePrepCertified === true, 'isGradePrepCertified flagged true');
+  assert(specimen?.crackCount === 1, 'crackCount incremented to 1');
+  assert(specimen?.restoration?.step === 'completed', 'Restoration step marked completed');
+  console.log('✅ completeRestoration verified: slab marked raw, isGradePrepCertified true, crackCount 1.');
+
+  // 5. Monte Carlo Audit of rollGrading on Grade Prep Certified card (2,000 iterations)
+  let certifiedUnderGrade7Count = 0;
+  let certifiedPoorCount = 0;
+  let certifiedUsedCount = 0;
+  let certifiedCornersEdgesUnder8_5 = 0;
+  let certifiedSurface10Count = 0;
+  let certifiedRestoredBadgeCount = 0;
+  const N_CERT_ROLLS = 2000;
+
+  for (let i = 0; i < N_CERT_ROLLS; i++) {
+    const outcome = rollGrading(specimen!);
+    const gr = outcome.gradeResult;
+
+    if (gr.numericGrade < 7) certifiedUnderGrade7Count++;
+    if (gr.tier === 'POOR_1_3') certifiedPoorCount++;
+    if (gr.tier === 'USED_4_6') certifiedUsedCount++;
+    if (gr.subgrades.corners < 8.5 || gr.subgrades.edges < 8.5) certifiedCornersEdgesUnder8_5++;
+    if (gr.subgrades.surface === 10.0) certifiedSurface10Count++;
+    if (gr.isRestored === true) certifiedRestoredBadgeCount++;
+  }
+
+  assert(certifiedUnderGrade7Count === 0, `0 rolls under Grade 7 (actual: ${certifiedUnderGrade7Count})`);
+  assert(certifiedPoorCount === 0, `0 Poor 1-3 rolls (actual: ${certifiedPoorCount})`);
+  assert(certifiedUsedCount === 0, `0 Used 4-6 rolls (actual: ${certifiedUsedCount})`);
+  assert(certifiedCornersEdgesUnder8_5 === 0, `0 Corners/Edges subgrades under 8.5 (actual: ${certifiedCornersEdgesUnder8_5})`);
+  assert(certifiedRestoredBadgeCount === N_CERT_ROLLS, `100% of newly graded slabs received isRestored: true badge`);
+  assert(certifiedSurface10Count / N_CERT_ROLLS >= 0.15, `Surface 10.0 roll rate elevated by +15% bonus (actual: ${(certifiedSurface10Count / N_CERT_ROLLS * 100).toFixed(1)}%)`);
+
+  console.log(`Grade Prep Certified 2,000-Roll Audit:`);
+  console.log(`  Grade >= 7 (Crisp+) Floor Compliance: 100%`);
+  console.log(`  Corners & Edges >= 8.5 Compliance: 100%`);
+  console.log(`  Surface 10.0 Frequency: ${(certifiedSurface10Count / N_CERT_ROLLS * 100).toFixed(1)}%`);
+  console.log(`  RE-CERTIFIED / RESTORED Badge: 100%`);
+  console.log('✅ Grade Prep Certified grading perks and subgrade floor verified.');
+
+  // 6. Test Store gradeCard submission of restored card
+  useGameStore.setState({ yen: 100_000 });
+  const regradedOutcome = useGameStore.getState().gradeCard(specimen!.id);
+  assert(regradedOutcome.grade.numericGrade >= 7, 'Re-graded slab scored Grade >= 7');
+  assert(regradedOutcome.grade.isRestored === true, 'Re-graded slab has isRestored: true');
+  const finalCardInStore = useGameStore.getState().inventory.find((c) => c.id === specimen!.id);
+  assert(finalCardInStore?.grade !== undefined, 'Card is now slabbed');
+  assert(finalCardInStore?.grade?.isRestored === true, 'Persisted slab has isRestored: true');
+  assert(finalCardInStore?.isGradePrepCertified === false, 'isGradePrepCertified reset after slabbing');
+  console.log('✅ Re-grading via store.gradeCard verified: issued certified restored slab with amber badge.');
+
   testSection('🎉 ALL TESTS PASSED SUCCESSFULLY! 100% SPEC COMPLIANCE.');
 }
 

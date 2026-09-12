@@ -18,6 +18,7 @@ import { APP_VERSION } from '../../config/version';
 import { CardRenderer, CHARACTER_THEMES, RARITY_BADGES, FINISH_LABELS } from '../card/CardRenderer';
 import { BinderGrid } from './BinderGrid';
 import { CardActionModal } from './CardActionModal';
+import { RestorationWorkbenchModal } from '../workshop/RestorationWorkbenchModal';
 import { PackOpeningModal } from '../pack/PackOpeningModal';
 import { SelectBoosterModal } from '../pack/SelectBoosterModal';
 import { Vitrine } from '../showcase/Vitrine';
@@ -90,6 +91,7 @@ export const GrandBinder: React.FC = () => {
   const [activePackId, setActivePackId] = useState<PackId | null>(null);
   const [showPackSelector, setShowPackSelector] = useState<boolean>(false);
   const [storeInitialTab, setStoreInitialTab] = useState<'packs' | 'kiosk'>('packs');
+  const [restorationCard, setRestorationCard] = useState<CardInstance | null>(null);
 
   // Bulk Liquidation State
   const [showBulkSellModal, setShowBulkSellModal] = useState<boolean>(false);
@@ -551,7 +553,26 @@ export const GrandBinder: React.FC = () => {
           setIsModalOpen(false);
           setSelectedCard(null);
         }}
+        onOpenRestoration={(c) => {
+          setIsModalOpen(false);
+          setSelectedCard(null);
+          setRestorationCard(c);
+        }}
       />
+
+      {/* ============================================================
+          CARD PREP & RESTORATION WORKBENCH MODAL
+          ============================================================ */}
+      {restorationCard && (
+        <RestorationWorkbenchModal
+          card={restorationCard}
+          isOpen={Boolean(restorationCard)}
+          onClose={() => setRestorationCard(null)}
+          onRestorationCompleted={() => {
+            setRestorationCard(null);
+          }}
+        />
+      )}
 
       {/* ============================================================
           BOOSTER PACK SELECTION MODAL & DROP RATES INSPECTOR

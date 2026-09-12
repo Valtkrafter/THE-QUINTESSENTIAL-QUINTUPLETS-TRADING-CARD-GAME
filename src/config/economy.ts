@@ -676,7 +676,11 @@ export function rollPackDrops(
 // 6. GRADING VAULT ROLL ENGINE
 // ==========================================
 
-function generateSubgrades(tier: GradeTier, numericGrade: number): GradeSubgrades {
+function generateSubgrades(
+  tier: GradeTier,
+  numericGrade: number,
+  isGradePrepCertified = false
+): GradeSubgrades {
   if (tier === 'BLACK_LABEL') {
     return {
       centering: 10.0,
@@ -686,41 +690,56 @@ function generateSubgrades(tier: GradeTier, numericGrade: number): GradeSubgrade
     };
   }
 
+  let subgrades: GradeSubgrades;
+
   if (numericGrade === 10) {
     // Gem Mint 10: At least three 10.0 and one 9.5
     const subs = [10.0, 10.0, 10.0, 9.5];
     subs.sort(() => randomFloat() - 0.5);
-    return {
+    subgrades = {
       centering: subs[0],
       surface: subs[1],
       corners: subs[2],
       edges: subs[3],
     };
-  }
-
-  if (numericGrade === 9) {
+  } else if (numericGrade === 9) {
     // Mint 9: Subgrades average around 9.0 (e.g. 9.0, 9.5, 9.0, 8.5)
-    return {
+    subgrades = {
       centering: Number((8.5 + randomFloat()).toFixed(1)),
       surface: Number((8.5 + randomFloat()).toFixed(1)),
       corners: Number((8.5 + randomFloat()).toFixed(1)),
       edges: Number((8.5 + randomFloat()).toFixed(1)),
     };
+  } else {
+    // Generic subgrades around numericGrade +/- 0.5
+    const base = numericGrade;
+    subgrades = {
+      centering: Math.max(1.0, Math.min(10.0, Number((base - 0.5 + randomFloat()).toFixed(1)))),
+      surface: Math.max(1.0, Math.min(10.0, Number((base - 0.5 + randomFloat()).toFixed(1)))),
+      corners: Math.max(1.0, Math.min(10.0, Number((base - 0.5 + randomFloat()).toFixed(1)))),
+      edges: Math.max(1.0, Math.min(10.0, Number((base - 0.5 + randomFloat()).toFixed(1)))),
+    };
   }
 
-  // Generic subgrades around numericGrade +/- 0.5
-  const base = numericGrade;
-  return {
-    centering: Math.max(1.0, Math.min(10.0, Number((base - 0.5 + randomFloat()).toFixed(1)))),
-    surface: Math.max(1.0, Math.min(10.0, Number((base - 0.5 + randomFloat()).toFixed(1)))),
-    corners: Math.max(1.0, Math.min(10.0, Number((base - 0.5 + randomFloat()).toFixed(1)))),
-    edges: Math.max(1.0, Math.min(10.0, Number((base - 0.5 + randomFloat()).toFixed(1)))),
-  };
+  if (isGradePrepCertified) {
+    // Step 3: Removes warp and edge curling; guarantees minimum Subgrade 8.5 on Corners & Edges
+    subgrades.corners = Math.max(8.5, subgrades.corners);
+    subgrades.edges = Math.max(8.5, subgrades.edges);
+
+    // Step 4: Buffs Surface Subgrade roll by +1.5; grants a +15% flat bonus to roll a Gem Mint 10 on Surface
+    subgrades.surface = Math.min(10.0, Number((subgrades.surface + 1.5).toFixed(1)));
+    if (randomFloat() < 0.15) {
+      subgrades.surface = 10.0;
+    }
+  }
+
+  return subgrades;
 }
 
 function singleGradeRoll(
   activeTools: ConsumableToolId[],
-  extraGrade10Bonus: number = 0
+  extraGrade10Bonus: number = 0,
+  isGradePrepCertified = false
 ): {
   tier: GradeTier;
   numericGrade: number;
@@ -744,8 +763,18 @@ function singleGradeRoll(
     BLACK_LABEL: 0.3,
   };
 
-  // 1. Apply Microfiber Cloth (eliminates 1–3, redistributes 12% across remaining tiers)
-  if (hasCloth) {
+  // Grade Prep Certified: Locked floor at Grade 7 (eliminates Poor 1–3 and Used 4–6)
+  if (isGradePrepCertified) {
+    weights.POOR_1_3 = 0;
+    weights.USED_4_6 = 0;
+    const remainingSum = weights.CRISP_7_8 + weights.MINT_9 + weights.GEM_MINT_10 + weights.BLACK_LABEL;
+    const scaleFactor = 100.0 / remainingSum;
+    weights.CRISP_7_8 *= scaleFactor;
+    weights.MINT_9 *= scaleFactor;
+    weights.GEM_MINT_10 *= scaleFactor;
+    weights.BLACK_LABEL *= scaleFactor;
+  } else if (hasCloth) {
+    // 1. Apply Microfiber Cloth (eliminates 1–3, redistributes 12% across remaining tiers)
     weights.POOR_1_3 = 0;
     const remainingSum = weights.USED_4_6 + weights.CRISP_7_8 + weights.MINT_9 + weights.GEM_MINT_10 + weights.BLACK_LABEL; // 88.0
     const scaleFactor = 100.0 / remainingSum;
@@ -761,7 +790,9 @@ function singleGradeRoll(
     const flatBoost = 5.0;
     weights.GEM_MINT_10 += flatBoost;
 
-    const lowerTierKeys: GradeTier[] = ['POOR_1_3', 'USED_4_6', 'CRISP_7_8', 'MINT_9'];
+    const lowerTierKeys: GradeTier[] = isGradePrepCertified
+      ? ['CRISP_7_8', 'MINT_9']
+      : ['POOR_1_3', 'USED_4_6', 'CRISP_7_8', 'MINT_9'];
     const lowerTierSum = lowerTierKeys.reduce((sum, key) => sum + weights[key], 0);
 
     if (lowerTierSum > flatBoost) {
@@ -778,7 +809,9 @@ function singleGradeRoll(
     weights.GEM_MINT_10 += flatBonusPct * 0.85; // Distributed across Gem Mint 10 & Black Label
     weights.BLACK_LABEL += flatBonusPct * 0.15;
 
-    const lowerTierKeys: GradeTier[] = ['POOR_1_3', 'USED_4_6', 'CRISP_7_8', 'MINT_9'];
+    const lowerTierKeys: GradeTier[] = isGradePrepCertified
+      ? ['CRISP_7_8', 'MINT_9']
+      : ['POOR_1_3', 'USED_4_6', 'CRISP_7_8', 'MINT_9'];
     const lowerTierSum = lowerTierKeys.reduce((sum, key) => sum + weights[key], 0);
     if (lowerTierSum > flatBonusPct) {
       const reductionRatio = (lowerTierSum - flatBonusPct) / lowerTierSum;
@@ -800,7 +833,7 @@ function singleGradeRoll(
 
   const roll = randomFloat() * 100.0;
   let cumulative = 0.0;
-  let selectedTier: GradeTier = 'USED_4_6';
+  let selectedTier: GradeTier = isGradePrepCertified ? 'CRISP_7_8' : 'USED_4_6';
 
   for (const tier of tiers) {
     cumulative += weights[tier];
@@ -813,7 +846,12 @@ function singleGradeRoll(
   // Determine numeric grade
   const tierConfig = GRADE_TIER_CONFIG[selectedTier];
   const [minG, maxG] = tierConfig.gradeRange;
-  const numericGrade = randomIntBetween(minG, maxG);
+  let numericGrade = randomIntBetween(minG, maxG);
+
+  if (isGradePrepCertified && numericGrade < 7) {
+    numericGrade = 7;
+    selectedTier = 'CRISP_7_8';
+  }
 
   return { tier: selectedTier, numericGrade };
 }
@@ -822,27 +860,46 @@ function singleGradeRoll(
  * Evaluates grading outcome with optional consumable tools, support bonuses, and insurance reroll.
  */
 export function rollGrading(
-  _card: CardInstance,
+  card: CardInstance,
   tools: ConsumableToolId[] = [],
   extraGrade10Bonus: number = 0
 ): {
   gradeResult: GradeResult;
   insuranceRerolled: boolean;
 } {
-  let { tier, numericGrade } = singleGradeRoll(tools, extraGrade10Bonus);
+  const isCertified = Boolean(card.isGradePrepCertified);
+  let { tier, numericGrade } = singleGradeRoll(tools, extraGrade10Bonus, isCertified);
   let insuranceRerolled = false;
 
   // Apply Vault Insurance if grade is below 7
   if (tools.includes('vault_insurance') && numericGrade < 7) {
     insuranceRerolled = true;
-    const reroll = singleGradeRoll(tools, extraGrade10Bonus);
+    const reroll = singleGradeRoll(tools, extraGrade10Bonus, isCertified);
     tier = reroll.tier;
     numericGrade = reroll.numericGrade;
   }
 
+  if (isCertified && numericGrade < 7) {
+    numericGrade = 7;
+    tier = 'CRISP_7_8';
+  }
+
+  let isBlackLabel = tier === 'BLACK_LABEL';
+  const subgrades = generateSubgrades(tier, numericGrade, isCertified);
+
+  // If quad 10.0 attained, upgrade to Black Label
+  if (
+    subgrades.centering === 10.0 &&
+    subgrades.surface === 10.0 &&
+    subgrades.corners === 10.0 &&
+    subgrades.edges === 10.0
+  ) {
+    tier = 'BLACK_LABEL';
+    isBlackLabel = true;
+    numericGrade = 10;
+  }
+
   const tierConfig = GRADE_TIER_CONFIG[tier];
-  const isBlackLabel = tier === 'BLACK_LABEL';
-  const subgrades = generateSubgrades(tier, numericGrade);
 
   const gradeResult: GradeResult = {
     tier,
@@ -852,6 +909,7 @@ export function rollGrading(
     multiplier: tierConfig.multiplier,
     subgrades,
     gradedAt: Date.now(),
+    isRestored: isCertified || Boolean(card.crackCount && card.crackCount > 0),
   };
 
   return {

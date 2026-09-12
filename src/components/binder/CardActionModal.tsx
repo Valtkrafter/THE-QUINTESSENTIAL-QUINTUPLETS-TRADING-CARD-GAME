@@ -41,6 +41,7 @@ import {
   CheckCircle2,
   Minimize2,
   Info,
+  Wrench,
 } from 'lucide-react';
 
 export interface CardActionModalProps {
@@ -50,6 +51,7 @@ export interface CardActionModalProps {
   onCardUpdated?: (updatedCard: CardInstance) => void;
   onCardDusted?: (cardId: string) => void;
   onCardSold?: (cardId: string, yenEarned: number) => void;
+  onOpenRestoration?: (card: CardInstance) => void;
 }
 
 type ActiveActionTab = 'grade' | 'vaporize' | 'inspect' | 'dossier';
@@ -61,6 +63,7 @@ export const CardActionModal: React.FC<CardActionModalProps> = ({
   onCardUpdated,
   onCardDusted,
   onCardSold,
+  onOpenRestoration,
 }) => {
   // Local active card state to immediately reflect mutations (e.g. grading)
   const [activeCard, setActiveCard] = useState<CardInstance | null>(initialCard);
@@ -600,18 +603,49 @@ export const CardActionModal: React.FC<CardActionModalProps> = ({
                       <div className="space-y-4">
                         <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30">
                           <div className="flex items-center justify-between mb-2">
-                            <span className="text-xs font-mono font-bold text-amber-400 uppercase tracking-wider">
-                              OFFICIAL SLAB CERTIFICATE
-                            </span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-mono font-bold text-amber-400 uppercase tracking-wider">
+                                OFFICIAL SLAB CERTIFICATE
+                              </span>
+                              {activeCard.grade?.isRestored && (
+                                <span className="text-[9px] px-1.5 py-0.5 rounded font-black tracking-wide bg-amber-500/20 text-amber-300 border border-amber-500/50">
+                                  RE-CERTIFIED / RESTORED
+                                </span>
+                              )}
+                            </div>
                             <span className="text-xs font-mono font-bold text-amber-300">
                               GRADE {activeCard.grade?.numericGrade}.0 / 10
                             </span>
                           </div>
-                          <p className="text-xs text-zinc-300">
-                            This card is sonic-welded inside an airtight acrylic slab with UV barrier protection.
-                            Graded cards cannot be graded again or vaporized.
+                          <p className="text-xs text-zinc-300 leading-relaxed">
+                            {activeCard.grade?.isRestored
+                              ? 'This card was professionally cracked, cleaned under a 50x digital microscope, clamp-pressed flat, and re-certified at the Vault with guaranteed subgrade protection.'
+                              : (!activeCard.crackCount || activeCard.crackCount === 0)
+                              ? 'This card is sonic-welded inside an airtight acrylic slab. You can physically crack the slab open in the Restoration Lab to clean flaws, press it flat, and re-grade for a higher score.'
+                              : 'This card is sonic-welded inside an airtight acrylic slab with UV barrier protection. Graded cards cannot be graded again or vaporized.'}
                           </p>
                         </div>
+
+                        {/* High-Contrast Gunmetal & Amber Restoration Workbench Action Button */}
+                        {activeCard.grade !== undefined && (!activeCard.crackCount || activeCard.crackCount === 0) && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              onClose();
+                              onOpenRestoration?.(activeCard);
+                            }}
+                            className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-[#2a1e0d] to-[#1e1708] hover:from-[#3d2a12] hover:to-[#2b200b] border border-[#f59e0b]/40 text-[#f59e0b] shadow-lg shadow-[#f59e0b]/10 font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition active:scale-[0.98] group"
+                            title="Physically break the slab, clean surface flaws under the microscope, and prepare for re-certification."
+                          >
+                            <span className="text-base group-hover:scale-110 transition-transform">🔬</span>
+                            <Wrench className="w-4 h-4 text-amber-400 group-hover:rotate-12 transition-transform" />
+                            <span>
+                              {activeCard.restoration && activeCard.restoration.step !== 'completed'
+                                ? '🔬 Resume Restoration Lab (Crack & Prep)'
+                                : '🔬 Enter Restoration Lab (Crack & Prep)'}
+                            </span>
+                          </button>
+                        )}
 
                         {/* Subgrade Radar / Metrics */}
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 font-mono text-center">

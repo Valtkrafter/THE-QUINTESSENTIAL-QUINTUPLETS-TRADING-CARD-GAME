@@ -249,13 +249,18 @@ export const GradingSlab: React.FC<GradingSlabProps> = ({
             <div className="relative z-10 flex items-start justify-between gap-1.5 pointer-events-none">
               {/* Left: Metadata */}
               <div className="flex-1 min-w-0 pointer-events-none">
-                <div className="flex items-center gap-1.5 leading-none mb-1">
+                <div className="flex items-center gap-1.5 leading-none mb-1 flex-wrap">
                   <span className="text-[clamp(8px,3cqi,11px)] tracking-widest font-black uppercase text-amber-500">
                     TQQ VAULT
                   </span>
                   <span className="text-[clamp(7px,2.6cqi,10px)] px-1 py-0.2 rounded border bg-black/10 border-black/20 font-mono">
                     {certNumber}
                   </span>
+                  {activeGrade.isRestored && (
+                    <span className="text-[clamp(6px,2.2cqi,9px)] px-1.5 py-0.5 rounded font-black tracking-wide bg-gradient-to-r from-amber-500/30 to-amber-600/30 text-amber-300 border border-amber-500/60 shadow-[0_0_8px_rgba(245,158,11,0.4)]">
+                      RE-CERTIFIED / RESTORED
+                    </span>
+                  )}
                 </div>
 
                 <h4 className="font-extrabold text-[clamp(10px,4cqi,15px)] truncate leading-tight drop-shadow-sm">

@@ -27,6 +27,7 @@
 - **Holographic Foil Shader Engine:** Dynamic angle-based light reflections, glitter sheens, prismatic rainbow gradients, gold etching, and voice actress signatures.
 - **BGS-Style Grading Slabs:** Subgrade inspection (Centering, Surface, Corners, Edges) with gold foil headers, acrylic frosted borders, authentic `82:130` BGS geometry, responsive container-query scaling, and the elusive **Black Label (Quad 10)**.
 - **5-Slot Acrylic Showcase (Vitrine):** Semi-circular 3D acrylic pedestal stage with dynamic overhead character spotlights, live $\yen$ revenue ticker, and team synergy multipliers. Serves as the **exclusive source of passive idle revenue** (legacy binder yields purged).
+- **Card Prep & Restoration Workbench & Crack-to-Regrade System:** Physical multi-stage workshop allowing collectors to crack open graded slabs, swab blemishes under a 50x digital SVBONY microscope, clamp-press warp flat with WORKPRO bar clamps, buff with restoration balm, and seal into semi-rigid card savers with handwritten checklists for guaranteed Grade 7+ re-certification and amber restored slab badges.
 - **42-Card Master Card-Dex:** Comprehensive completion catalog (35 Nakano Sisters + 7 unique Support artworks) with undiscovered silhouette shaders, 100% golden holographic aura, and highest finish / grade tracking.
 - **Grand Binder & Collection Hub:** Filterable and sortable card collection with bulk liquidation and individual card inspection.
 - **One-Time Patch Notes System:** Automatic one-time onboarding modal introducing major updates with on-demand header access.
@@ -80,6 +81,16 @@ Submit raw cards to the **Grading Station** to be certified in heavy acrylic sla
   - **Vault Insurance:** Guarantees a free automatic re-roll if a card scores below Grade 7.
 - **Compact Thumbnail Mode (`thumbnail?: boolean`):** High-density list and drawer mode stripping bulky BGS headers, subgrade grids, and heavy outer padding down to a sleek hair-thin acrylic rim (`p-0.5`, `border border-white/20 rounded-lg`). The inner card illustration spans 100% width and height matching raw cards 1:1, complemented by a tier-styled micro grade pill in the top-right corner (Slate for 7–8, Cyan glow for 9, Golden Amber for 10/Black Label).
 
+### 🔬 4. Card Prep & Restoration Workbench & Crack-to-Regrade System
+Directly accessible from the card inspection modal (`CardActionModal.tsx`), collectors can physically crack open graded acrylic slabs and perform professional multi-stage restoration prior to re-submitting to the Vault:
+- **Stage 1: Acrylic Slab Depenetration & Crack:** Snip the 4 sonic-welded corner stress notches using wire pliers (triggering high-frequency shearing noise). Wedge a flat steel pry tool into the lateral weld seam and hold down tension until SVG fracture lines shoot across the top plate, popping the acrylic shell with acoustic shatter physics.
+- **Stage 2: SVBONY 50X LCD Digital Microscope:** High-tech split-view inspection station featuring an LCD monitor housing with scanlines, crosshair, and live digital OSD (`CAM 1 [50X MAG]`). Players manipulate a precision cotton swab tool to clean finger grease, adhesive, and dust specks across the front and reverse sides.
+- **Stage 3: 24-Hour Hard Press Station:** Sandwich cards between dual 12mm optical acrylic plates clamped with heavy-duty WORKPRO bar clamps. Players ratchet clamp triggers to dial in optimal 150 PSI pressure with mechanical ratchets and pneumatic air hiss, permanently eliminating cardstock curl and guaranteeing subgrades $\ge 8.5$ on Corners & Edges.
+- **Stage 4: Holographic Balm & Microfiber Buff:** Dab specialized yellow restoration balm onto holographic foil regions and buff in circular motions using a dark grey microfiber cloth. Progressively eliminates surface micro-scratches and culminates in an ultra-bright specular lens flare sweep (+1.5 Surface Subgrade boost, +15% Gem Mint 10 odds).
+- **Stage 5: Semi-Rigid Card Saver & Post-It Checklist:** Encapsulate the card into an archival Card Saver 1 holder with a slapped-on yellow Post-it note animated with procedural ballpoint pen scribbling.
+- **Guaranteed Grade 7+ Vault Re-Certification:** Re-submitting a Grade Prep Certified card locks the grading floor to Grade 7 (cannot roll Poor 1–3 or Used 4–6) and brands the newly issued slab with an authoritative amber `RE-CERTIFIED / RESTORED` certificate badge.
+
+### 🏛️ 5. 5-Slot Acrylic Showcase (Vitrine) & Support Altar
 - **Dissolved Secondary Horizontal Bar & Genshin/WuWa Flank HUD Architecture:** Replaced the rigid ~80px full-width top status bar with two sleek glassmorphic HUD modules flanking the central Support Altar in the upper negative space:
   - **Left Flank (`VitrineResonancePanel.tsx`):** Displays total vault valuation with amber-gold gradient typography, real-time socket count, and the 3 core resonance synergies (Quintuplet Harmony, Mono-Waifu Obsession, Vault Excellence) with active glowing LED status orbs, live multiplier amplification indicators, and detailed tooltips.
   - **Right Flank (`VitrineHarvestConsole.tsx`):** Command module with real-time idle yield rate meter (`+X ¥/min`, `(Y ¥/s)`), animated 4-band audio-frequency streaming visualizer, recessed uncollected revenue pool counter (`12h Cap` indicator), and a tactile Genshin/WuWa Burst-style golden `CLAIM REVENUE` button with floating coin particles and procedural Web Audio chimes.
@@ -157,6 +168,13 @@ Zero external `.mp3` or `.wav` files. All audio is synthesized procedurally in r
 - **`godpack_fanfare`:** 4-voice detuned sawtooth triad through an automated resonant lowpass filter sweep ($400\text{Hz} \to 2800\text{Hz Warwick}$ sweep).
 - **`coin_pulse`:** Metallic multi-frequency chime ($987.77\text{Hz} \to 1318.5\text{Hz}$) with harmonic sparkle decay for direct sales.
 - **`receipt_register`:** Dual mechanical cash register latch click followed by a high-frequency ($2489\text{Hz}$) purchase ping for market transactions.
+- **`plastic_snip`:** High-Q resonant shearing impulse ($3200\text{Hz} \to 4800\text{Hz}$) simulating heavy wire pliers cutting through sonic-welded slab corners.
+- **`plastic_crunch_shatter`:** Dense highpass acoustic noise burst with randomized dissonant sine pings ($1800\text{Hz} - 5200\text{Hz}$) capturing acrylic casing fracture and pop.
+- **`cotton_swab_rub`:** Soft lowpass-filtered textured friction noise ($450\text{Hz}$, $90\text{ms}$) simulating cotton swab strokes lifting surface debris.
+- **`clean_chime`:** Pristine high-frequency crystalline chime ($1760\text{Hz} \to 3520\text{Hz}$) signaling a completely purified card surface.
+- **`clamp_ratchet`:** Sharp metallic latch click paired with pneumatic pressure hiss ($180\text{Hz} \to 75\text{Hz}$) simulating WORKPRO bar clamp torque.
+- **`wax_buff_rub`:** Velvety filtered noise burst ($650\text{Hz}$) replicating microfiber cloth circular waxing and scratch-filling strokes.
+- **`pen_scribble`:** Rapid alternating frequency clicks ($1200\text{Hz} \leftrightarrow 1600\text{Hz}$) replicating ballpoint pen nib writing on adhesive Post-it paper.
 
 ### 📖 9. Master Card-Dex & Discovery Engine
 - **Master 42-Card Registry:** Complete catalog of cards `TQQ-001` through `TQQ-042` (35 Nakano Sisters: 5 sisters $\times$ 7 rarities + 7 unique Support cards: Fuutarou [3], Raiha [2], Maruo [1], Yusuke Takeda [1]) tracking global completion status across the entire collection.
@@ -311,9 +329,16 @@ tqqtcg/
 │   │   │   ├── Vitrine.tsx               # 5-slot acrylic pedestal stage with flank HUD & dynamic spotlights
 │   │   │   ├── VitrineHarvestConsole.tsx # Right flank HUD: yield streaming visualizer & tactile claim button
 │   │   │   └── VitrineResonancePanel.tsx # Left flank HUD: vault valuation & 3-way synergy resonance matrix
-│   │   └── vault/
-│   │       ├── GradingScannerFX.tsx # Particle laser scanner visualizer
-│   │       └── GradingStation.tsx   # Card submission hub & consumable tool equip
+│   │   ├── vault/
+│   │   │   ├── GradingScannerFX.tsx # Particle laser scanner visualizer
+│   │   │   └── GradingStation.tsx   # Card submission hub & consumable tool equip
+│   │   └── workshop/
+│   │       ├── ClampPressStep.tsx            # Dual 12mm acrylic press & WORKPRO bar clamp station
+│   │       ├── CrackStep.tsx                 # Sonic weld plier snip & pry-to-fracture acrylic cracking
+│   │       ├── MicroscopeStep.tsx            # SVBONY 50X LCD digital microscope blemish swab station
+│   │       ├── PolishStep.tsx                # Holographic balm & microfiber circular buffing station
+│   │       ├── RestorationWorkbenchModal.tsx # Full-screen self-healing mat workbench container & glove vignette
+│   │       └── SleeveStep.tsx                # Semi-rigid Card Saver 1 insertion & Post-it checklist seal
 │   ├── config/
 │   │   ├── cardsData.ts         # Catalog of 42 cards with metadata and quotes
 │   │   ├── economy.ts           # Pricing matrices, valuation formulas, drop tables, pity, synergies
