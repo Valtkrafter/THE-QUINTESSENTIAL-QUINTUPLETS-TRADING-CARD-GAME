@@ -166,11 +166,14 @@ Zero external `.mp3` or `.wav` files. All audio is synthesized procedurally in r
 - **100% Golden Holographic Shimmer Aura:** Attaining full 42/42 completion permanently bathes the Card-Dex header and border frame in an animated rainbow prismatic gold aura.
 - **Comprehensive Card Dossier Modal:** Detailed inspection modal featuring real-time 3D tilt, subgrade plate inspection, authenticated voice actress credentials, character quotes, and acquisition origins.
 
-### 📜 10. Persistent One-Time Patch Notes Modal
-- **One-Time Auto-Display:** Automatically introduces returning and new collectors to all new systems (Vitrine, Card-Dex, BGS 2.0, Singles Kiosk, peel physics) upon launching a new version.
-- **Persistent Version Tracking:** Backed by Zustand `persist` (`lastSeenPatchVersion`), ensuring the modal is presented exactly once automatically and never irritates players on subsequent visits.
-- **On-Demand Inspection:** Easily re-opened at any time directly from the Grand Binder top header via the dedicated `v0.2.0 Notes` sparkle button.
-- **Modern Accessible Dialog Standards:** Fully keyboard navigable (`Escape` key dismiss), light-dismiss backdrop interaction, and fluid spring entrance/exit transitions.
+### 📜 10. Dynamic Single-Version Patch Notes Engine
+- **Minecraft-Style Semantic Versioning (`APP_VERSION`):** Governed by `src/config/version.ts` with small patch increments (`MAJOR.MINOR.PATCH`) for visual tweaks and minor bumps, and minor increments for substantive features.
+- **Single Latest Patchnote Policy:** Overwrites previous patchnotes (`CURRENT_PATCH_NOTE` in `src/config/version.ts` / `src/config/patchNotes.ts`). Presents only the active release in friendly, plain language without developer jargon:
+  - **✨ What's New:** 1–3 bullet points highlighting noticeable collector features.
+  - **🐛 Bug Fixes:** 1–3 bullet points clearly explaining quality-of-life fixes.
+- **Automatic Version Detection & One-Time Auto-Popup:** On app launch, evaluates `localStorage.getItem('TQQ_LAST_SEEN_VERSION') !== APP_VERSION`. If a new version is detected, the modal pops up automatically and persists the seen version upon dismissal.
+- **On-Demand Access:** Collectors can re-open the active release notes anytime directly from the top navigation bar via the glowing `vX.Y.Z Notes` button.
+- **Modern Accessible Dialog Standards:** Fully keyboard navigable (`Escape` key dismiss), light-dismiss backdrop interaction, and fluid spring entrance/exit transitions with procedural Web Audio chimes.
 
 ---
 
@@ -278,10 +281,10 @@ tqqtcg/
 │   │   │   └── GradingSlab.tsx      # Acrylic BGS-style grading slab with subgrade plates
 │   │   ├── catalog/
 │   │   │   └── CardDex.tsx          # 42-card master catalog with silhouettes & 100% gold shimmer
-│   │   ├── common/
-│   │   │   └── PatchNotesModal.tsx  # Accessible one-time patch notes modal with version tracking
 │   │   ├── dusting/
 │   │   │   └── DustingWorkshop.tsx  # Card vaporization and Stardust exchange station
+│   │   ├── layout/
+│   │   │   └── PatchNotesModal.tsx  # Accessible single-version patch notes modal with auto-popup & version tracking
 │   │   ├── market/
 │   │   │   └── SinglesMarket.tsx    # Brushed dark slate Singles Kiosk with 24h timer & reroll
 │   │   ├── pack/
@@ -302,7 +305,9 @@ tqqtcg/
 │   ├── config/
 │   │   ├── cardsData.ts         # Catalog of 42 cards with metadata and quotes
 │   │   ├── economy.ts           # Pricing matrices, valuation formulas, drop tables, pity, synergies
-│   │   └── supportBuffs.ts      # Support buff dictionary, Grade 9/10 scaling, & active buff resolver
+│   │   ├── patchNotes.ts        # Active single-release patch notes configuration & re-exports
+│   │   ├── supportBuffs.ts      # Support buff dictionary, Grade 9/10 scaling, & active buff resolver
+│   │   └── version.ts           # Semantic APP_VERSION and CURRENT_PATCH_NOTE contract
 │   ├── hooks/
 │   │   ├── useIdleRevenue.ts    # Background-safe idle yield calculator with 12h offline cap
 │   │   └── useSmoothTilt.ts     # Overdamped 3D spring tilt hook with dynamic lighting

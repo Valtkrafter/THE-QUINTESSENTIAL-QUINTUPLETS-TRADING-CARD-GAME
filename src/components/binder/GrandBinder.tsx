@@ -14,6 +14,7 @@ import {
   RARITY_BASE_VALUES,
 } from '../../config/economy';
 import { useGameStore, CURRENT_PATCH_VERSION } from '../../store/useGameStore';
+import { APP_VERSION } from '../../config/version';
 import { CardRenderer, CHARACTER_THEMES, RARITY_BADGES, FINISH_LABELS } from '../card/CardRenderer';
 import { BinderGrid } from './BinderGrid';
 import { CardActionModal } from './CardActionModal';
@@ -21,7 +22,7 @@ import { PackOpeningModal } from '../pack/PackOpeningModal';
 import { SelectBoosterModal } from '../pack/SelectBoosterModal';
 import { Vitrine } from '../showcase/Vitrine';
 import { CardDex } from '../catalog/CardDex';
-import { PatchNotesModal } from '../common/PatchNotesModal';
+import { PatchNotesModal } from '../layout/PatchNotesModal';
 import { soundEngine } from '../../utils/audioEngine';
 import Link from 'next/link';
 import {
@@ -68,8 +69,11 @@ export const GrandBinder: React.FC = () => {
   const [showPatchNotes, setShowPatchNotes] = useState<boolean>(false);
 
   useEffect(() => {
-    if (lastSeenPatchVersion !== CURRENT_PATCH_VERSION) {
-      setShowPatchNotes(true);
+    if (typeof window !== 'undefined') {
+      const lastSeen = localStorage.getItem('TQQ_LAST_SEEN_VERSION');
+      if (lastSeen !== APP_VERSION || lastSeenPatchVersion !== CURRENT_PATCH_VERSION) {
+        setShowPatchNotes(true);
+      }
     }
   }, [lastSeenPatchVersion]);
 
@@ -261,11 +265,11 @@ export const GrandBinder: React.FC = () => {
               setShowPatchNotes(true);
             }}
             className="px-2.5 py-1 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 font-mono text-[11px] font-bold transition flex items-center gap-1.5 shadow-sm active:scale-95 cursor-pointer"
-            title="View v0.2.0 Patch Notes"
+            title={`View v${APP_VERSION} Patch Notes`}
           >
             <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
-            <span className="hidden sm:inline">v0.2.0 Notes</span>
-            <span className="sm:hidden">v0.2.0</span>
+            <span className="hidden sm:inline">v{APP_VERSION} Notes</span>
+            <span className="sm:hidden">v{APP_VERSION}</span>
           </button>
         </div>
 
@@ -645,6 +649,9 @@ export const GrandBinder: React.FC = () => {
       <PatchNotesModal
         isOpen={showPatchNotes}
         onClose={() => {
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('TQQ_LAST_SEEN_VERSION', APP_VERSION);
+          }
           markPatchNotesSeen(CURRENT_PATCH_VERSION);
           setShowPatchNotes(false);
         }}

@@ -33,6 +33,7 @@ import {
   isGradeHigher,
 } from '../src/config/economy';
 import { useGameStore, DEFAULT_SHOWCASE_SLOTS, createInitialCardDex, CURRENT_PATCH_VERSION } from '../src/store/useGameStore';
+import { APP_VERSION } from '../src/config/version';
 import { CardInstance, BinderPage, Rarity, GradeTier, ShowcaseSlot, GradeResult } from '../src/types/card';
 import { resolveActiveSupportBuff, SUPPORT_BUFF_CONFIGS, SUPPORT_CODE_MAP } from '../src/config/supportBuffs';
 
@@ -744,7 +745,7 @@ async function runTests() {
 
   // 9. Patch Notes Version Tracking
   testSection('SECTION 9: PATCH NOTES VERSION TRACKING & STORE MUTATIONS');
-  assert(CURRENT_PATCH_VERSION === 'v0.2.0', 'CURRENT_PATCH_VERSION is v0.2.0');
+  assert(CURRENT_PATCH_VERSION === `v${APP_VERSION}`, `CURRENT_PATCH_VERSION is v${APP_VERSION}`);
 
   useGameStore.setState({ lastSeenPatchVersion: '' });
   assert(useGameStore.getState().lastSeenPatchVersion === '', 'Initial lastSeenPatchVersion is empty');

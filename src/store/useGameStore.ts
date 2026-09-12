@@ -46,8 +46,9 @@ import {
   isGradeHigher,
 } from '../config/economy';
 import { resolveActiveSupportBuff } from '../config/supportBuffs';
+import { APP_VERSION } from '../config/version';
 
-export const CURRENT_PATCH_VERSION = 'v0.2.0';
+export const CURRENT_PATCH_VERSION = `v${APP_VERSION}`;
 
 export interface GameStats {
   totalPacksOpened: number;
