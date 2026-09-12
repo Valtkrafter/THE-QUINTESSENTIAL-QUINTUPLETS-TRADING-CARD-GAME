@@ -363,14 +363,14 @@ export const CardRenderer: React.FC<CardRendererProps> = ({
 
   return (
     <div
-      className={`card-perspective-wrapper ${size === 'full' ? 'w-full h-full flex items-center justify-center' : 'inline-block'} select-none relative before:absolute before:-inset-4 before:content-[''] cursor-pointer ${className}`}
+      className={`card-perspective-wrapper ${size === 'full' ? 'w-full h-full flex items-center justify-center' : 'inline-block'} select-none relative before:absolute before:-inset-4 before:content-[''] ${interactive ? 'cursor-pointer' : 'pointer-events-none'} ${className}`}
       onClick={onClick}
-      {...(disableTilt || externalLight ? {} : localTilt.containerProps)}
+      {...(disableTilt || externalLight || !interactive ? {} : localTilt.containerProps)}
     >
       <motion.div
         ref={cardRef}
         style={{
-          ...(disableTilt ? {} : localTilt.tiltStyle),
+          ...(disableTilt || !interactive ? {} : localTilt.tiltStyle),
           '--light-x': resolvedLight.lightX,
           '--light-y': resolvedLight.lightY,
           '--foil-angle': resolvedLight.foilAngle,
@@ -380,19 +380,19 @@ export const CardRenderer: React.FC<CardRendererProps> = ({
           '--glare-opacity': resolvedLight.sheenOpacity,
           backfaceVisibility: 'visible',
           WebkitBackfaceVisibility: 'visible',
-          boxShadow: localTilt.isHovered && !disableTilt
+          boxShadow: localTilt.isHovered && !disableTilt && interactive
             ? `0 20px 40px -10px rgba(0, 0, 0, 0.8), 0 0 25px ${theme.glowColor}`
             : '0 10px 25px -5px rgba(0, 0, 0, 0.6), 0 0 10px rgba(0, 0, 0, 0.4)',
         } as any}
         className={`card-3d-root relative ${sizeClasses} aspect-[63/88] rounded-xl overflow-hidden ${
-          disableTilt ? 'pointer-events-none' : 'cursor-pointer'
+          disableTilt || !interactive ? 'pointer-events-none' : 'cursor-pointer'
         } bg-zinc-950 border border-zinc-800 ${
-          localTilt.isHovered && !disableTilt ? 'is-interacting' : ''
+          localTilt.isHovered && !disableTilt && interactive ? 'is-interacting' : ''
         }`}
       >
         {/* Ambient Character Rim Glow (z-10) */}
         <div
-          className="absolute inset-0 rounded-xl pointer-events-none transition-opacity duration-300 z-10"
+          className="absolute inset-0 rounded-xl pointer-events-none select-none transition-opacity duration-300 z-10"
           style={{
             boxShadow: `inset 0 0 16px ${theme.accent}33, inset 0 0 1px ${theme.accent}88`,
             border: `1.5px solid ${theme.accent}55`,
@@ -512,26 +512,26 @@ export const CardRenderer: React.FC<CardRendererProps> = ({
 
             {/* ARTWORK SPECIFIC SHADER FOIL OVERLAYS (z-20+, blend directly with base art) */}
             {finish === 'holo' && (
-              <div className="finish-holo-overlay absolute inset-0 pointer-events-none z-20" />
+              <div className="finish-holo-overlay absolute inset-0 pointer-events-none select-none z-20" />
             )}
             {finish === 'sparkle' && (
-              <div className="finish-sparkle-overlay absolute inset-0 pointer-events-none z-20" />
+              <div className="finish-sparkle-overlay absolute inset-0 pointer-events-none select-none z-20" />
             )}
             {finish === 'rainbow' && (
-              <div className="finish-rainbow-overlay absolute inset-0 pointer-events-none z-20" />
+              <div className="finish-rainbow-overlay absolute inset-0 pointer-events-none select-none z-20" />
             )}
             {finish === 'gold_etched' && (
-              <div className="finish-gold-etched-relief absolute inset-0 pointer-events-none z-20" />
+              <div className="finish-gold-etched-relief absolute inset-0 pointer-events-none select-none z-20" />
             )}
 
             {/* Top gradient shadow on art to preserve header contrast only when not perfect */}
             {fitStatus !== 'perfect' && (
-              <div className="absolute top-0 inset-x-0 h-8 bg-gradient-to-b from-black/60 to-transparent pointer-events-none z-25" />
+              <div className="absolute top-0 inset-x-0 h-8 bg-gradient-to-b from-black/60 to-transparent pointer-events-none select-none z-25" />
             )}
 
             {/* LORE QUOTE OVERLAY (z-30) */}
             {cardLoreQuote && (
-              <div className="relative mt-auto w-full p-1.5 rounded-b-lg bg-black/80 backdrop-blur-md border-t border-zinc-800/80 text-center z-30 shadow-lg">
+              <div className="relative mt-auto w-full p-1.5 rounded-b-lg bg-black/80 backdrop-blur-md border-t border-zinc-800/80 text-center z-30 shadow-lg pointer-events-none select-none">
                 <p className="text-[10px] sm:text-[11px] italic text-zinc-200 line-clamp-2 leading-tight">
                   &ldquo;{cardLoreQuote}&rdquo;
                 </p>
@@ -541,8 +541,8 @@ export const CardRenderer: React.FC<CardRendererProps> = ({
 
           {/* FOOTER: Number, Finish, Market Value (z-30) */}
           {!hideInternalFooter && (
-            <div className="relative flex items-center justify-between text-[10px] text-zinc-400 pt-1 border-t border-zinc-800/80 z-30 font-mono">
-              <div className="flex items-center gap-1.5">
+            <div className="relative flex items-center justify-between text-[10px] text-zinc-400 pt-1 border-t border-zinc-800/80 z-30 font-mono pointer-events-none select-none">
+              <div className="flex items-center gap-1.5 pointer-events-none select-none">
                 <span className="text-zinc-500">{cardNumber}</span>
                 <span
                   className="px-1 py-0.2 rounded text-[9px] font-semibold uppercase tracking-wider"
@@ -556,7 +556,7 @@ export const CardRenderer: React.FC<CardRendererProps> = ({
               </div>
 
               {showMarketValue && (
-                <div className="font-bold text-amber-400 flex items-center gap-0.5">
+                <div className="font-bold text-amber-400 flex items-center gap-0.5 pointer-events-none select-none">
                   <span>¥</span>
                   <span>{marketValue.toLocaleString()}</span>
                 </div>
@@ -570,36 +570,36 @@ export const CardRenderer: React.FC<CardRendererProps> = ({
             ============================================================ */}
 
         {/* Finish 1: Raw (Matte print texture) */}
-        {finish === 'raw' && <div className="finish-raw absolute inset-0 pointer-events-none z-24" />}
+        {finish === 'raw' && <div className="finish-raw absolute inset-0 pointer-events-none select-none z-24" />}
 
         {/* Finish 2: Silver Holo (Micro-lines across card) */}
-        {finish === 'holo' && <div className="finish-holo-lines pointer-events-none z-25" />}
+        {finish === 'holo' && <div className="finish-holo-lines pointer-events-none select-none z-25" />}
 
         {/* Finish 3: Starlight Sparkle (Floating stars across card) */}
-        {finish === 'sparkle' && <div className="finish-sparkle-stars pointer-events-none z-25" />}
+        {finish === 'sparkle' && <div className="finish-sparkle-stars pointer-events-none select-none z-25" />}
 
         {/* Finish 4: Prism Rainbow (Shimmer light bar across card) */}
-        {finish === 'rainbow' && <div className="finish-rainbow-shimmer pointer-events-none z-25" />}
+        {finish === 'rainbow' && <div className="finish-rainbow-shimmer pointer-events-none select-none z-25" />}
 
         {/* Finish 5: Gold Etched (Embossed Relief Gold Borders & Texture) */}
         {finish === 'gold_etched' && (
           <>
-            <div className="finish-gold-etched-frame pointer-events-none z-26" />
-            <div className="finish-gold-texture pointer-events-none z-25" />
+            <div className="finish-gold-etched-frame pointer-events-none select-none z-26" />
+            <div className="finish-gold-texture pointer-events-none select-none z-25" />
           </>
         )}
 
         {/* Finish 6: Signed (Voice Actor Hot Stamp Seal) */}
         {finish === 'signed' && (
           <>
-            <div className="finish-holo-overlay opacity-40 pointer-events-none z-25" />
-            <div className="finish-signed-stamp-container pointer-events-none z-35">
-              <div className="finish-signed-gleam pointer-events-none" />
-              <div className="finish-signed-stamp text-xs sm:text-sm font-black flex flex-col items-end leading-none">
-                <span className="text-[9px] tracking-widest uppercase opacity-80">
+            <div className="finish-holo-overlay opacity-40 pointer-events-none select-none z-25" />
+            <div className="finish-signed-stamp-container pointer-events-none select-none z-35">
+              <div className="finish-signed-gleam pointer-events-none select-none" />
+              <div className="finish-signed-stamp text-xs sm:text-sm font-black flex flex-col items-end leading-none pointer-events-none select-none">
+                <span className="text-[9px] tracking-widest uppercase opacity-80 pointer-events-none select-none">
                   Official Cast Stamp
                 </span>
-                <span className="text-base sm:text-lg tracking-wider">
+                <span className="text-base sm:text-lg tracking-wider pointer-events-none select-none">
                   {theme.signatureName.split(' ')[0]}
                 </span>
               </div>
@@ -608,7 +608,7 @@ export const CardRenderer: React.FC<CardRendererProps> = ({
         )}
 
         {/* Specular Laminate Glare (Direct Light Reflection) (z-40) */}
-        <motion.div className="card-specular-glare pointer-events-none z-40" style={resolvedGlareStyle} />
+        <motion.div className="card-specular-glare pointer-events-none select-none z-40" style={resolvedGlareStyle} />
       </motion.div>
     </div>
   );

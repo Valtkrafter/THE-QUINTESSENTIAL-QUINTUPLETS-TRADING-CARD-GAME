@@ -339,24 +339,24 @@ export const Vitrine: React.FC = () => {
       {/* ============================================================
           MAIN 3D SEMI-CIRCULAR VITRINE STAGE
           ============================================================ */}
-      <div className="relative flex-1 w-full flex items-center justify-center p-4 sm:p-8 overflow-hidden">
+      <div className="relative flex-1 w-full flex items-center justify-center p-4 sm:p-8 overflow-hidden pointer-events-none">
         {/* Atmospheric background spotlights & ceiling rig */}
-        <div className="absolute top-0 inset-x-0 h-24 bg-gradient-to-b from-black/80 via-zinc-950/40 to-transparent pointer-events-none z-10" />
+        <div className="absolute top-0 inset-x-0 h-24 bg-gradient-to-b from-black/80 via-zinc-950/40 to-transparent pointer-events-none select-none z-10" />
 
         {/* Vitrine Obsidian Floor Grid & Ambient Reflection */}
-        <div className="absolute bottom-0 inset-x-0 h-64 bg-gradient-to-t from-black via-[#0c0c12] to-transparent pointer-events-none" />
-        <div className="absolute bottom-10 inset-x-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent pointer-events-none" />
+        <div className="absolute bottom-0 inset-x-0 h-64 bg-gradient-to-t from-black via-[#0c0c12] to-transparent pointer-events-none select-none" />
+        <div className="absolute bottom-10 inset-x-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent pointer-events-none select-none" />
 
         {/* 3D Semi-Circular Container */}
         <div
-          className="relative w-full max-w-6xl h-[520px] flex items-center justify-center"
+          className="relative w-full max-w-6xl h-[520px] flex items-center justify-center pointer-events-none select-none"
           style={{
             perspective: 1200,
             perspectiveOrigin: '50% 40%',
             transformStyle: 'preserve-3d',
           }}
         >
-          <div className="grid grid-cols-5 gap-3 sm:gap-6 w-full h-full items-center justify-items-center">
+          <div className="grid grid-cols-5 gap-3 sm:gap-6 w-full h-full items-center justify-items-center pointer-events-none select-none">
             {PEDESTAL_CONFIGS.map((config) => {
               const slot = showcaseSlots[config.index];
               const card = slottedCards[config.index];
@@ -367,15 +367,15 @@ export const Vitrine: React.FC = () => {
               return (
                 <div
                   key={config.index}
-                  className="relative flex flex-col items-center justify-end h-full w-full max-w-[210px] transition-transform duration-500"
+                  className="relative flex flex-col items-center justify-end h-full w-full max-w-[210px] transition-transform duration-500 pointer-events-none select-none"
                   style={{
                     transform: `rotateY(${config.rotateY}deg) translateZ(${config.translateZ}px) translateX(${config.translateX}px) scale(${config.scale})`,
-                    transformStyle: 'preserve-3d',
+                    transformStyle: 'flat',
                   }}
                 >
                   {/* Dynamic Overhead Conical Spotlight */}
                   <div
-                    className="absolute -top-16 inset-x-0 h-[380px] pointer-events-none transition-all duration-700 opacity-60 group-hover:opacity-100"
+                    className="absolute -top-16 inset-x-0 h-[380px] pointer-events-none select-none transition-all duration-700 opacity-60"
                     style={{
                       background: `conic-gradient(from 180deg at 50% 0%, transparent 65deg, ${spotlight.glow} 85deg, ${spotlight.glow} 95deg, transparent 115deg)`,
                       filter: 'blur(20px)',
@@ -384,7 +384,7 @@ export const Vitrine: React.FC = () => {
 
                   {/* Ceiling Lamp Fixture */}
                   <div
-                    className="w-12 h-2.5 rounded-full border border-white/20 mb-3 z-10 transition-colors duration-700 shadow-lg"
+                    className="w-12 h-2.5 rounded-full border border-white/20 mb-3 z-10 transition-colors duration-700 shadow-lg pointer-events-none select-none"
                     style={{
                       backgroundColor: card ? spotlight.hex : '#27272a',
                       boxShadow: card ? `0 0 15px ${spotlight.hex}` : 'none',
@@ -393,78 +393,86 @@ export const Vitrine: React.FC = () => {
 
                   {/* Pedestal Card Mount Slot */}
                   <div
-                    onClick={() => setSelectedPedestalIndex(config.index)}
-                    className={`group relative w-full ${card?.grade ? 'aspect-[82/130]' : 'aspect-[63/88]'} max-h-[300px] flex items-center justify-center cursor-pointer rounded-2xl transition-all duration-300 hover:scale-[1.03] z-20`}
+                    className={`relative w-full ${card?.grade ? 'aspect-[82/130]' : 'aspect-[63/88]'} max-h-[300px] flex items-center justify-center rounded-2xl transition-all duration-300 z-20 pointer-events-auto`}
+                    style={{
+                      transform: 'translateZ(20px)',
+                    }}
                   >
                     {card ? (
                       /* Socketed Card View (GradingSlab or CardRenderer) */
-                      <div className="w-full h-full relative rounded-xl overflow-hidden shadow-2xl transition-transform duration-300 flex items-center justify-center">
+                      <div className="relative group w-full h-full rounded-xl overflow-hidden shadow-2xl flex items-center justify-center pointer-events-auto">
                         {card.grade ? (
                           <GradingSlab
                             card={card}
                             interactive={false}
                             size="full"
-                            className="w-full h-full pointer-events-none !p-0 !m-0"
+                            className="w-full h-full pointer-events-none select-none !p-0 !m-0"
                             showMarketValue={false}
                           />
                         ) : (
                           <CardRenderer
                             card={card}
                             interactive={false}
+                            disableTilt={true}
                             size="full"
-                            className="w-full h-full pointer-events-none !p-0 !m-0"
+                            className="w-full h-full pointer-events-none select-none !p-0 !m-0"
                             showMarketValue={false}
                             hideInternalFooter={true}
                           />
                         )}
 
-                        {/* Hover Overlay with Swap/Unmount Actions */}
-                        <div className="absolute inset-0 bg-black/75 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col items-center justify-center gap-2 p-3 backdrop-blur-sm z-30">
-                          <span className="text-[11px] font-mono font-bold text-amber-300 text-center leading-tight">
-                            {card.name || 'Card'}
-                          </span>
-                          <span className="text-[10px] font-mono text-zinc-300">
-                            ¥ {calculateCardMarketValue(card).toLocaleString()}
-                          </span>
-
-                          <div className="flex gap-2 mt-1">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedPedestalIndex(config.index);
-                              }}
-                              className="px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold text-[10px] font-mono transition"
-                            >
-                              Swap
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleUnmountCard(config.index);
-                              }}
-                              className="px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-red-500/80 text-zinc-300 hover:text-white font-bold text-[10px] font-mono transition"
-                            >
-                              Unmount
-                            </button>
-                          </div>
-                        </div>
-
                         {/* Pedestal Glass Edge Glow */}
                         <div
-                          className="absolute inset-0 rounded-xl border-2 pointer-events-none transition-colors duration-700"
+                          className="absolute inset-0 rounded-xl border-2 pointer-events-none select-none transition-colors duration-700 z-20"
                           style={{
                             borderColor: spotlight.hex,
                             boxShadow: `0 0 20px ${spotlight.glow}`,
                           }}
                         />
+
+                        {/* Interactive Hover Overlay Anchor */}
+                        <div className="absolute inset-0 z-30 pointer-events-auto w-full h-full rounded-xl bg-black/75 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col items-center justify-center gap-2 p-3 select-none">
+                          <span className="text-amber-400 font-bold text-sm tracking-wide text-center leading-tight font-mono">
+                            {card.name || 'Card'}
+                          </span>
+                          <span className="text-xs text-white/70 font-mono">
+                            ¥ {calculateCardMarketValue(card).toLocaleString()}
+                          </span>
+
+                          <div className="flex gap-2 mt-1 z-40">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedPedestalIndex(config.index);
+                              }}
+                              className="pointer-events-auto z-40 bg-amber-500 hover:bg-amber-400 text-black font-semibold text-xs px-3 py-1.5 rounded-lg shadow-md font-mono transition-colors cursor-pointer"
+                            >
+                              Swap
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleUnmountCard(config.index);
+                              }}
+                              className="pointer-events-auto z-40 bg-white/10 hover:bg-white/20 text-white font-medium text-xs px-3 py-1.5 rounded-lg border border-white/10 font-mono transition-colors cursor-pointer"
+                            >
+                              Unmount
+                            </button>
+                          </div>
+                        </div>
                       </div>
                     ) : (
                       /* Empty Pedestal Slot Placeholder */
-                      <div className="w-full h-full rounded-2xl border-2 border-dashed border-white/20 hover:border-amber-400/70 bg-white/5 hover:bg-white/10 backdrop-blur-sm flex flex-col items-center justify-center gap-3 p-4 transition-all duration-300 group-hover:shadow-[0_0_25px_rgba(245,158,11,0.2)]">
-                        <div className="w-10 h-10 rounded-2xl bg-white/10 group-hover:bg-amber-500/20 border border-white/20 group-hover:border-amber-400/50 flex items-center justify-center text-zinc-400 group-hover:text-amber-300 transition-colors">
+                      <div
+                        onClick={() => setSelectedPedestalIndex(config.index)}
+                        className="w-full h-full rounded-2xl border-2 border-dashed border-white/20 hover:border-amber-400/70 bg-white/5 hover:bg-white/10 backdrop-blur-sm flex flex-col items-center justify-center gap-3 p-4 transition-all duration-300 hover:shadow-[0_0_25px_rgba(245,158,11,0.2)] cursor-pointer pointer-events-auto group"
+                      >
+                        <div className="w-10 h-10 rounded-2xl bg-white/10 group-hover:bg-amber-500/20 border border-white/20 group-hover:border-amber-400/50 flex items-center justify-center text-zinc-400 group-hover:text-amber-300 transition-colors pointer-events-none select-none">
                           <Plus className="w-5 h-5" />
                         </div>
-                        <div className="text-center">
+                        <div className="text-center pointer-events-none select-none">
                           <span className="text-xs font-mono font-bold text-zinc-300 group-hover:text-amber-200 block">
                             Mount Card
                           </span>
@@ -477,12 +485,12 @@ export const Vitrine: React.FC = () => {
                   </div>
 
                   {/* Acrylic Pedestal Base Block */}
-                  <div className="relative w-full h-16 mt-3 rounded-2xl bg-gradient-to-b from-white/15 via-white/5 to-white/0 border border-white/20 backdrop-blur-md shadow-2xl flex flex-col items-center justify-center z-10 overflow-hidden">
+                  <div className="relative w-full h-16 mt-3 rounded-2xl bg-gradient-to-b from-white/15 via-white/5 to-white/0 border border-white/20 backdrop-blur-md shadow-2xl flex flex-col items-center justify-center z-10 overflow-hidden pointer-events-none select-none">
                     {/* Acrylic Top Rim Reflection */}
-                    <div className="absolute top-0 inset-x-0 h-0.5 bg-gradient-to-r from-transparent via-white/40 to-transparent" />
+                    <div className="absolute top-0 inset-x-0 h-0.5 bg-gradient-to-r from-transparent via-white/40 to-transparent pointer-events-none select-none" />
 
                     {/* Pedestal Label Badge */}
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5 pointer-events-none select-none">
                       <span
                         className="w-1.5 h-1.5 rounded-full"
                         style={{ backgroundColor: card ? spotlight.hex : '#71717a' }}
@@ -493,7 +501,7 @@ export const Vitrine: React.FC = () => {
                     </div>
 
                     {/* Pedestal Sister Attribution or Value */}
-                    <span className="text-[10px] font-mono text-zinc-400 mt-0.5">
+                    <span className="text-[10px] font-mono text-zinc-400 mt-0.5 pointer-events-none select-none">
                       {card ? (
                         <span className="text-amber-300 font-semibold">
                           +{((60 + calculateCardMarketValue(card) * 0.0002) * synergyReport.synergyMultiplier).toFixed(1)} ¥/min
@@ -505,7 +513,7 @@ export const Vitrine: React.FC = () => {
 
                     {/* Ground Pedestal Light Pool */}
                     <div
-                      className="absolute -bottom-4 inset-x-0 h-8 blur-md pointer-events-none transition-colors duration-700"
+                      className="absolute -bottom-4 inset-x-0 h-8 blur-md pointer-events-none select-none transition-colors duration-700"
                       style={{ backgroundColor: spotlight.glow }}
                     />
                   </div>
@@ -628,15 +636,16 @@ export const Vitrine: React.FC = () => {
                                 card={card}
                                 interactive={false}
                                 size="full"
-                                className="w-full h-full pointer-events-none !p-0 !m-0"
+                                className="w-full h-full pointer-events-none select-none !p-0 !m-0"
                                 showMarketValue={false}
                               />
                             ) : (
                               <CardRenderer
                                 card={card}
                                 interactive={false}
+                                disableTilt={true}
                                 size="full"
-                                className="w-full h-full pointer-events-none !p-0 !m-0"
+                                className="w-full h-full pointer-events-none select-none !p-0 !m-0"
                                 showMarketValue={false}
                                 hideInternalFooter={true}
                               />

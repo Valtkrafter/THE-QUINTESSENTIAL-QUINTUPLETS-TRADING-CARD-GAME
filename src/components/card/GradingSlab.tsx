@@ -120,10 +120,10 @@ export const GradingSlab: React.FC<GradingSlabProps> = ({
         isFull
           ? 'w-full h-full flex items-center justify-center'
           : 'w-full h-full flex items-center justify-center before:absolute before:-inset-4 before:content-[\'\']'
-      } cursor-pointer ${className}`}
+      } ${interactive ? 'cursor-pointer' : 'pointer-events-none'} ${className}`}
       style={{ containerType: 'inline-size' }}
       onClick={onClick}
-      {...containerProps}
+      {...(interactive ? containerProps : {})}
     >
       <motion.div
         style={{

@@ -88,6 +88,7 @@ Submit raw cards to the **Grading Station** to be certified in heavy acrylic sla
   - **Yotsuba:** Bright Emerald (`#10B981`) 🍀
   - **Itsuki:** Crimson Ruby (`#EF4444`) ⭐
   - **Support / Empty:** Mystic Violet (`#8B5CF6`) / Subtle Slate (`#475569`)
+- **Hit-Testing & 3D Stacking Stabilization:** Outer pedestal wrappers utilize `transform-style: flat` with elevated card mount anchoring (`transform: translateZ(20px)`), purging intercepting pointer events from lighting cones, beam effects, ceiling fixtures, and pedestal footers. The entire $100\%$ surface area of slotted cards provides a stable, full-card hover hitbox with seamless Swap/Unmount action controls.
 - **Idle Yield Formula:**
   $$\text{Yield/Min} = \sum_{i=1}^{5} \left( 60\ \yen + (\text{Market Value}_i \times 0.0002) \right) \times \text{Synergy Multiplier}$$
 - **Guaranteed Base Floor:** Every slotted card generates a guaranteed baseline of $1\ \yen/\text{sec}$ ($60\ \yen/\text{min}$), ensuring newly acquired cards contribute immediate value.
