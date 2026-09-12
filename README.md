@@ -109,7 +109,7 @@ Submit raw cards to the **Grading Station** to be certified in heavy acrylic sla
 - **12-Hour Offline Yield Cap:** Revenue accrues continuously up to a strict 12-hour ($720\text{ minutes}$) ceiling while away.
 - **Background Tab Throttling Protection:** Employs `document.visibilitychange` and `window.focus` listeners with wall-clock epoch timestamp reconciliation (`Date.now() - showcaseLastClaimedTimestamp`), completely preventing browser JavaScript timer throttling from shortchanging yield.
 - **Live Revenue Ticker & Particle Claim:** Real-time ticking counter with glowing neon indicators, active synergy chips, and a golden "Claim Vault Revenue" action firing coin bursts and synthesizer pulses.
-- **Interactive Socketing Drawer:** Modal drawer with real-time collection search, character filters, and instant mount/unmount operations.
+- **Unified Socket Pedestal Drawer (`SocketDrawer.tsx`):** Slide-over selection drawer matching the main Vitrine full-art showcase aesthetic. Features a responsive 3-column grid (`grid-cols-2 sm:grid-cols-3 gap-4 p-4`), smooth scrolling, real-time collection search, character and slab filters, suppressed bulky BGS headers, uncompressed `63:88` full character illustrations, single floating grade badge pills, and state-aware action buttons (`CURRENT`, `SOCKETED`, or glowing amber `MOUNT TO VITRINE`).
 
 ### 🏛️ 5. Support Altar & Dynamic Buff Engine (Tutor Dais)
 - **Elevated Floating Tutor Dais:** An illuminated floating pedestal centered horizontally above the 5-slot acrylic vitrine stage with slate-gold trim (`border-amber-500/30`, `shadow-[0_0_25px_rgba(245,158,11,0.15)]`) and a downward-projecting ambient light cone softly illuminating the lower sister stations.
@@ -286,6 +286,7 @@ tqqtcg/
 │   │   │   ├── SelectBoosterModal.tsx # Portal-mounted pack kiosk with live drop odds & kiosk tab
 │   │   │   └── TearMechanism.tsx    # Direct HTML5 window pointer tear engine
 │   │   ├── showcase/
+│   │   │   ├── SocketDrawer.tsx     # Full-art pedestal selection drawer with 3-col grid & status badges
 │   │   │   ├── SupportAltar.tsx     # Floating tutor dais with downward ambient light cone & Grade 9/10 scaling
 │   │   │   ├── SupportDrawer.tsx    # Slide-over socketing drawer with search, filters & active buff preview
 │   │   │   └── Vitrine.tsx          # 5-slot acrylic pedestal stage with dynamic spotlights & idle claim

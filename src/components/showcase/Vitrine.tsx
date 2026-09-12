@@ -10,6 +10,7 @@ import { GradingSlab } from '../card/GradingSlab';
 import { CardRenderer, CHARACTER_THEMES } from '../card/CardRenderer';
 import { SupportAltar } from './SupportAltar';
 import { SupportDrawer } from './SupportDrawer';
+import { SocketDrawer } from './SocketDrawer';
 import { soundEngine } from '../../utils/audioEngine';
 import {
   Coins,
@@ -69,8 +70,6 @@ export const Vitrine: React.FC = () => {
 
   // Socketing Drawer State
   const [selectedPedestalIndex, setSelectedPedestalIndex] = useState<number | null>(null);
-  const [drawerSearchQuery, setDrawerSearchQuery] = useState<string>('');
-  const [drawerTab, setDrawerTab] = useState<'all' | 'slabs' | 'raw' | 'ichika' | 'nino' | 'miku' | 'yotsuba' | 'itsuki' | 'support'>('all');
 
   // Support Altar Drawer State
   const [isSupportDrawerOpen, setIsSupportDrawerOpen] = useState<boolean>(false);
@@ -95,69 +94,6 @@ export const Vitrine: React.FC = () => {
       return slot.cardInstanceId ? inventoryMap.get(slot.cardInstanceId) ?? null : null;
     });
   }, [showcaseSlots, inventoryMap]);
-
-  // Set of card instance IDs already mounted in showcase
-  const slottedCardIds = useMemo(() => {
-    const set = new Set<string>();
-    for (const slot of showcaseSlots) {
-      if (slot.cardInstanceId) set.add(slot.cardInstanceId);
-    }
-    return set;
-  }, [showcaseSlots]);
-
-  // Candidate cards for the Socketing Drawer
-  const drawerCandidateCards = useMemo(() => {
-    let result = inventory.filter((card) => {
-      // Allow cards that are already in the currently opened slot (so user can see current occupant)
-      // but filter out cards socketed in OTHER showcase slots
-      const currentSlotCardId = selectedPedestalIndex !== null ? showcaseSlots[selectedPedestalIndex]?.cardInstanceId : null;
-      if (card.id !== currentSlotCardId && slottedCardIds.has(card.id)) {
-        return false;
-      }
-      return true;
-    });
-
-    // Apply Filter Tabs
-    if (drawerTab === 'slabs') {
-      result = result.filter((c) => !!c.grade);
-    } else if (drawerTab === 'raw') {
-      result = result.filter((c) => !c.grade);
-    } else if (['ichika', 'nino', 'miku', 'yotsuba', 'itsuki'].includes(drawerTab)) {
-      result = result.filter((c) => c.characterId === drawerTab);
-    } else if (drawerTab === 'support') {
-      result = result.filter((c) => !['ichika', 'nino', 'miku', 'yotsuba', 'itsuki'].includes(c.characterId));
-    }
-
-    // Apply Search
-    if (drawerSearchQuery.trim()) {
-      const q = drawerSearchQuery.toLowerCase();
-      result = result.filter(
-        (c) =>
-          (c.name && c.name.toLowerCase().includes(q)) ||
-          (c.title && c.title.toLowerCase().includes(q)) ||
-          (c.cardNumber && c.cardNumber.toLowerCase().includes(q)) ||
-          c.characterId.toLowerCase().includes(q) ||
-          c.rarity.toLowerCase().includes(q)
-      );
-    }
-
-    // Default sort: highest market value first
-    result.sort((a, b) => calculateCardMarketValue(b) - calculateCardMarketValue(a));
-
-    return result;
-  }, [inventory, drawerTab, drawerSearchQuery, showcaseSlots, selectedPedestalIndex, slottedCardIds]);
-
-  // Handle Mount Card
-  const handleMountCard = (card: CardInstance) => {
-    if (selectedPedestalIndex === null) return;
-    try {
-      slotShowcaseCard(selectedPedestalIndex, card.id);
-      soundEngine.playFoilRustle();
-      setSelectedPedestalIndex(null);
-    } catch (err) {
-      alert((err as Error).message);
-    }
-  };
 
   // Handle Unmount Card
   const handleUnmountCard = (slotIndex: number) => {
@@ -578,178 +514,10 @@ export const Vitrine: React.FC = () => {
       {/* ============================================================
           SOCKETING DRAWER MODAL
           ============================================================ */}
-      <AnimatePresence>
-        {selectedPedestalIndex !== null && (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-end bg-black/80 backdrop-blur-sm animate-fadeIn"
-            onClick={() => setSelectedPedestalIndex(null)}
-          >
-            <motion.div
-              initial={{ x: '100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 220 }}
-              className="w-full max-w-xl h-full bg-[#0e0e14] border-l border-white/10 shadow-2xl flex flex-col z-50 select-none overflow-hidden"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* Drawer Header */}
-              <div className="p-6 border-b border-white/10 flex items-center justify-between bg-zinc-950/60 shrink-0">
-                <div>
-                  <h3 className="text-base font-black font-mono tracking-wider text-white uppercase flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-amber-400" />
-                    <span>Socket Pedestal 0{selectedPedestalIndex + 1}</span>
-                  </h3>
-                  <p className="text-xs text-zinc-400 font-mono mt-0.5">
-                    Mount any raw card or graded acrylic slab to generate passive idle yield.
-                  </p>
-                </div>
-
-                <button
-                  onClick={() => setSelectedPedestalIndex(null)}
-                  className="p-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white transition"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              {/* Drawer Filter & Search Bar */}
-              <div className="p-4 border-b border-white/5 bg-zinc-950/30 flex flex-col gap-3 shrink-0">
-                {/* Search Input */}
-                <div className="relative w-full">
-                  <Search className="w-4 h-4 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="text"
-                    value={drawerSearchQuery}
-                    onChange={(e) => setDrawerSearchQuery(e.target.value)}
-                    placeholder="Search collection by name, rarity, or sister..."
-                    className="w-full pl-9 pr-3 py-2 rounded-xl bg-zinc-900 border border-white/10 text-xs text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-amber-400/60 font-mono"
-                  />
-                  {drawerSearchQuery && (
-                    <button
-                      onClick={() => setDrawerSearchQuery('')}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                </div>
-
-                {/* Filter Tabs */}
-                <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
-                  {(['all', 'slabs', 'raw', 'ichika', 'nino', 'miku', 'yotsuba', 'itsuki', 'support'] as const).map((tab) => (
-                    <button
-                      key={tab}
-                      onClick={() => setDrawerTab(tab)}
-                      className={`px-3 py-1.5 rounded-xl font-mono text-xs font-bold transition capitalize whitespace-nowrap ${
-                        drawerTab === tab
-                          ? 'bg-amber-500 text-zinc-950 shadow'
-                          : 'bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white'
-                      }`}
-                    >
-                      {tab}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Drawer Card Grid */}
-              <div className="flex-1 overflow-y-auto p-4 min-h-0">
-                {drawerCandidateCards.length === 0 ? (
-                  <div className="h-full flex flex-col items-center justify-center text-center p-8">
-                    <Layers className="w-12 h-12 text-zinc-600 mb-3" />
-                    <h4 className="text-sm font-black text-white font-mono uppercase">
-                      No Available Cards Found
-                    </h4>
-                    <p className="text-xs text-zinc-400 mt-1 max-w-xs font-mono">
-                      Try changing your filter tabs or crack open booster packs to collect more cards.
-                    </p>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 pb-12">
-                    {drawerCandidateCards.map((card) => {
-                      const marketValue = calculateCardMarketValue(card);
-                      const isAlreadyInThisSlot = showcaseSlots[selectedPedestalIndex]?.cardInstanceId === card.id;
-
-                      return (
-                        <div
-                          key={card.id}
-                          onClick={() => handleMountCard(card)}
-                          className={`group relative flex flex-col rounded-2xl p-2.5 transition-all duration-200 cursor-pointer border ${
-                            isAlreadyInThisSlot
-                              ? 'bg-amber-500/10 border-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.2)]'
-                              : 'bg-zinc-900/60 hover:bg-zinc-900 border-white/10 hover:border-amber-400/50 hover:scale-[1.02]'
-                          }`}
-                        >
-                          {/* Card Preview Aspect Ratio */}
-                          <div className={`w-full ${card.grade ? 'aspect-[82/130]' : 'aspect-[63/88]'} relative rounded-xl overflow-hidden mb-2 flex items-center justify-center`}>
-                            {card.grade ? (
-                              <GradingSlab
-                                card={card}
-                                interactive={false}
-                                size="full"
-                                className="w-full h-full pointer-events-none select-none !p-0 !m-0"
-                                showMarketValue={false}
-                              />
-                            ) : (
-                              <CardRenderer
-                                card={card}
-                                interactive={false}
-                                disableTilt={true}
-                                size="full"
-                                className="w-full h-full pointer-events-none select-none !p-0 !m-0"
-                                showMarketValue={false}
-                                hideInternalFooter={true}
-                              />
-                            )}
-
-                            {/* Active Slot Occupant Badge */}
-                            {isAlreadyInThisSlot && (
-                              <div className="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-amber-500 text-zinc-950 font-black text-[10px] font-mono z-30 shadow">
-                                Current
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Metadata Details */}
-                          <div className="flex flex-col gap-1 font-mono text-xs">
-                            <span className="font-bold text-white truncate text-[11px]">
-                              {card.name || 'Card'}
-                            </span>
-
-                            <div className="flex items-center justify-between text-[10px]">
-                              <span className="text-amber-300 font-bold">
-                                ¥ {marketValue.toLocaleString()}
-                              </span>
-                              <span className="px-1.5 py-0.2 rounded bg-white/10 text-zinc-300">
-                                {card.grade ? `Grade ${card.grade.numericGrade}` : card.rarity}
-                              </span>
-                            </div>
-
-                            {/* Mount Button */}
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleMountCard(card);
-                              }}
-                              className={`mt-1.5 w-full py-1.5 rounded-xl font-black text-[10px] uppercase tracking-wider transition ${
-                                isAlreadyInThisSlot
-                                  ? 'bg-zinc-800 text-zinc-400 cursor-default'
-                                  : 'bg-amber-500 group-hover:bg-amber-400 text-zinc-950 shadow-md'
-                              }`}
-                            >
-                              {isAlreadyInThisSlot ? 'Socketed' : 'Mount to Vitrine'}
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      <SocketDrawer
+        selectedPedestalIndex={selectedPedestalIndex}
+        onClose={() => setSelectedPedestalIndex(null)}
+      />
 
       {/* Support Altar Tutor Drawer */}
       <SupportDrawer

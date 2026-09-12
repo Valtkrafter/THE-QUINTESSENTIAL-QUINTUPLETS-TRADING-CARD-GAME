@@ -902,7 +902,10 @@ export const useGameStore = create<GameState>()(
         // Calculate effective price taking into account Maruo's Kiosk discount
         const activeBuff = resolveActiveSupportBuff(state.supportSlot);
         const kioskDiscount = activeBuff?.effects.kioskDiscount ?? 0;
-        const effectivePrice = calculateKioskPrice(offering.rarity, kioskDiscount);
+        const effectivePrice =
+          kioskDiscount > 0
+            ? Math.max(1, Math.round(offering.priceYen * (1.0 - Math.min(0.9, kioskDiscount))))
+            : offering.priceYen;
 
         if (state.yen < effectivePrice) {
           throw new Error(

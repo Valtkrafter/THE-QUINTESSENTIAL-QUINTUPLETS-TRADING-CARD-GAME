@@ -17,6 +17,7 @@ export interface CardRendererProps {
   disableTilt?: boolean;
   externalLight?: CardLightState;
   hideInternalFooter?: boolean;
+  showcaseMode?: boolean;
 }
 
 // Character visual theme styling
@@ -228,7 +229,9 @@ export const CardRenderer: React.FC<CardRendererProps> = ({
   disableTilt = false,
   externalLight,
   hideInternalFooter = false,
+  showcaseMode = false,
 }) => {
+  const shouldHideFooter = hideInternalFooter || showcaseMode;
   const cardRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
   const [hasImageError, setHasImageError] = useState(false);
@@ -436,7 +439,7 @@ export const CardRenderer: React.FC<CardRendererProps> = ({
         />
 
         {/* Outer Card Matte Border (z-20) */}
-        <div className={`absolute inset-[3px] rounded-[6px] bg-gradient-to-b from-zinc-900 to-black ${hideInternalFooter ? 'p-1.5 pb-1' : 'p-2'} flex flex-col justify-between overflow-hidden z-20`}>
+        <div className={`absolute inset-[3px] rounded-[6px] bg-gradient-to-b from-zinc-900 to-black ${shouldHideFooter ? 'p-1.5 pb-1' : 'p-2'} flex flex-col justify-between overflow-hidden z-20`}>
           {/* HEADER: Title & Grade/Rarity & Symbol (z-30) */}
           <div className="relative flex items-center justify-between gap-1 pb-1 border-b border-zinc-800/80 z-30 crisp-render">
             <div className="flex items-center gap-1.5 min-w-0 flex-1">
@@ -548,9 +551,9 @@ export const CardRenderer: React.FC<CardRendererProps> = ({
 
             {/* LORE QUOTE OVERLAY (z-30) */}
             {cardLoreQuote && (
-              <div className="absolute bottom-2 inset-x-2 p-1.5 rounded-md border border-zinc-800/80 text-center z-30 shadow-lg pointer-events-none select-none overflow-hidden">
-                <div className="absolute inset-0 bg-black/80 backdrop-blur-md pointer-events-none select-none" />
-                <p className="relative z-10 text-[10px] sm:text-[11px] italic text-zinc-200 line-clamp-2 leading-tight crisp-render">
+              <div className="absolute bottom-2 inset-x-2 rounded-md border border-white/10 text-center z-30 shadow-lg pointer-events-none select-none overflow-hidden">
+                <div className="absolute inset-0 bg-black/60 backdrop-blur-xs backdrop-blur-sm pointer-events-none select-none" />
+                <p className="relative z-10 text-[10px] sm:text-[11px] text-white/80 line-clamp-2 leading-tight px-2 py-1 crisp-render">
                   &ldquo;{cardLoreQuote}&rdquo;
                 </p>
               </div>
@@ -558,7 +561,7 @@ export const CardRenderer: React.FC<CardRendererProps> = ({
           </div>
 
           {/* FOOTER: Number, Finish, Market Value (z-30) */}
-          {!hideInternalFooter && (
+          {!shouldHideFooter && (
             <div className="relative flex items-center justify-between text-[10px] text-zinc-400 pt-1 border-t border-zinc-800/80 z-30 font-mono pointer-events-none select-none crisp-render">
               <div className="flex items-center gap-1.5 pointer-events-none select-none">
                 <span className="text-zinc-500">{cardNumber}</span>

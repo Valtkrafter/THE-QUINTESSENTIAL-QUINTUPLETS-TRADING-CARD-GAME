@@ -51,7 +51,9 @@ export const GradingSlab: React.FC<GradingSlabProps> = ({
         size={size}
         className={className}
         onClick={onClick}
-        showMarketValue={showMarketValue}
+        showMarketValue={showMarketValue && !showcaseMode}
+        hideInternalFooter={showcaseMode}
+        showcaseMode={showcaseMode}
       />
     );
   }
@@ -266,6 +268,7 @@ export const GradingSlab: React.FC<GradingSlabProps> = ({
               className="w-full h-full !p-0 !m-0 !rounded-lg overflow-hidden"
               showMarketValue={showMarketValue && !showcaseMode}
               hideInternalFooter={true}
+              showcaseMode={showcaseMode}
             />
           </div>
         </div>
