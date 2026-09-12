@@ -367,7 +367,7 @@ export const GrandBinder: React.FC = () => {
           VIEW 1: 5-SLOT ACRYLIC SHOWCASE (VITRINE)
           ============================================================ */}
       {activeMainView === 'vitrine' && (
-        <main className="flex-1 min-h-0 overflow-hidden flex flex-col">
+        <main className="flex-1 min-h-0 h-[calc(100vh-64px)] max-h-[calc(100vh-64px)] overflow-hidden flex flex-col justify-between">
           <Vitrine />
         </main>
       )}

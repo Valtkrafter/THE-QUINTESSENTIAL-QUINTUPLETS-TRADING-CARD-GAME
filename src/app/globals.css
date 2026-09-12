@@ -7,6 +7,7 @@
 :root {
   --background: #090a0f;
   --foreground: #ededed;
+  color-scheme: dark;
 }
 
 body {
@@ -28,3 +29,61 @@ body {
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
 }
+
+/* Global Obsidian Dark Scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #27272a #08080a;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #08080a;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #23232e;
+  border-radius: 9999px;
+  border: 2px solid #08080a;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #3f3f46;
+}
+
+::-webkit-scrollbar-corner {
+  background: #08080a;
+}
+
+/* Custom utility for clean horizontal scroll strips */
+.scrollbar-thin-dark {
+  scrollbar-width: thin;
+  scrollbar-color: #27272a transparent;
+}
+.scrollbar-thin-dark::-webkit-scrollbar {
+  height: 4px;
+}
+.scrollbar-thin-dark::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scrollbar-thin-dark::-webkit-scrollbar-thumb {
+  background: #27272a;
+  border-radius: 9999px;
+}
+.scrollbar-thin-dark::-webkit-scrollbar-thumb:hover {
+  background: #3f3f46;
+}
+
+/* Utility to hide scrollbars while maintaining scrollability */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+

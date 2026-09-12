@@ -97,11 +97,11 @@ export const Vitrine: React.FC = () => {
   };
 
   return (
-    <div className="relative w-full h-full bg-[#08080a] text-zinc-100 flex flex-col select-none overflow-hidden font-sans">
+    <div className="relative w-full h-[calc(100vh-64px)] max-h-[calc(100vh-64px)] bg-[#08080a] text-zinc-100 flex flex-col justify-between select-none overflow-hidden font-sans">
       {/* ============================================================
           MAIN 3D SEMI-CIRCULAR VITRINE STAGE & FLANK HUD
           ============================================================ */}
-      <div className="relative flex-1 w-full flex flex-col items-center justify-start pt-2 sm:pt-4 px-4 sm:px-8 pb-10 overflow-y-auto overflow-x-hidden pointer-events-none">
+      <div className="relative flex-1 w-full h-[calc(100vh-64px)] max-h-[calc(100vh-64px)] overflow-hidden flex flex-col justify-between items-center pt-1 px-4 sm:px-8 pb-4 pointer-events-none">
         {/* Atmospheric background spotlights & ceiling rig */}
         <div className="absolute top-0 inset-x-0 h-24 bg-gradient-to-b from-black/80 via-zinc-950/40 to-transparent pointer-events-none select-none z-10" />
 
@@ -112,7 +112,7 @@ export const Vitrine: React.FC = () => {
         {/* ============================================================
             UPPER STAGE ZONE: LEFT FLANK | SUPPORT ALTAR | RIGHT FLANK
             ============================================================ */}
-        <div className="w-full max-w-7xl mx-auto px-4 pt-2 pb-2 sm:pb-4 flex flex-col lg:flex-row items-center justify-between gap-6 relative z-30 pointer-events-auto">
+        <div className="w-full max-w-7xl mx-auto px-4 pt-1 pb-2 flex flex-col lg:flex-row items-center justify-between gap-4 lg:gap-6 relative z-30 pointer-events-auto shrink-0">
           {/* Left Flank Panel: Vault Valuation & Resonance Synergies */}
           <VitrineResonancePanel synergyReport={synergyReport} />
 
@@ -134,7 +134,7 @@ export const Vitrine: React.FC = () => {
             LOWER STAGE ZONE: 3D SEMI-CIRCULAR 5 SISTER PEDESTALS
             ============================================================ */}
         <div
-          className="relative w-full max-w-7xl h-[460px] md:h-[500px] lg:h-[520px] mt-6 md:mt-8 mb-8 pb-10 flex items-center justify-center pointer-events-none select-none"
+          className="relative w-full max-w-7xl h-[420px] md:h-[460px] lg:h-[490px] mb-4 pb-4 flex items-center justify-center pointer-events-none select-none shrink-0"
           style={{
             perspective: 1200,
             perspectiveOrigin: '50% 40%',

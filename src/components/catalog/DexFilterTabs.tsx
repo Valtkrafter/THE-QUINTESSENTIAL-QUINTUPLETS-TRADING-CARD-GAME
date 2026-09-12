@@ -36,7 +36,7 @@ export const DexFilterTabs: React.FC<DexFilterTabsProps> = ({
   className = '',
 }) => {
   return (
-    <div className={`flex items-center gap-1.5 md:gap-2 overflow-x-auto no-scrollbar py-0.5 select-none ${className}`}>
+    <div className={`flex items-center gap-1.5 md:gap-2 overflow-x-auto overflow-y-hidden whitespace-nowrap scrollbar-thin-dark py-1.5 h-auto select-none ${className}`}>
       {TABS.map((tab) => {
         const isSelected = activeTab === tab.id;
         const count = counts[tab.id] ?? { total: 0, discovered: 0 };
