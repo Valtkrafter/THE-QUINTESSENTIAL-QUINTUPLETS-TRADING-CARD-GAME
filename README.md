@@ -28,7 +28,6 @@
 - **BGS-Style Grading Slabs:** Subgrade inspection (Centering, Surface, Corners, Edges) with gold foil headers, acrylic frosted borders, authentic `82:130` BGS geometry, responsive container-query scaling, and the elusive **Black Label (Quad 10)**.
 - **5-Slot Acrylic Showcase (Vitrine):** Semi-circular 3D acrylic pedestal stage with dynamic overhead character spotlights, live $\yen$ revenue ticker, and team synergy multipliers. Serves as the **exclusive source of passive idle revenue** (legacy binder yields purged).
 - **42-Card Master Card-Dex:** Comprehensive completion catalog (35 Nakano Sisters + 7 unique Support artworks) with undiscovered silhouette shaders, 100% golden holographic aura, and highest finish / grade tracking.
-- **Native-Grade Mobile Viewport & Touch Architecture:** PWA standalone manifest, dynamic `100dvh` viewport lock with safe-area insets, zero rubber-banding, ergonomic 5-tab bottom dock navigation, hardware Web Haptics engine, real device gyroscope parallax, iOS-style pull-up bottom sheets, Fuutarou's Study Notebook quest system, and hydraulic Slab Breaker station.
 - **Grand Binder & Collection Hub:** Filterable and sortable card collection with bulk liquidation and individual card inspection.
 - **One-Time Patch Notes System:** Automatic one-time onboarding modal introducing major updates with on-demand header access.
 - **Pure Procedural Web Audio API Engine:** 100% synthesizer-driven procedural sound design. Zero external `.mp3` dependencies for lightning-fast, zero-latency, zero-bandwidth pack opening ceremonies.
@@ -168,27 +167,6 @@ Zero external `.mp3` or `.wav` files. All audio is synthesized procedurally in r
 - **On-Demand Inspection:** Easily re-opened at any time directly from the Grand Binder top header via the dedicated `v0.2.0 Notes` sparkle button.
 - **Modern Accessible Dialog Standards:** Fully keyboard navigable (`Escape` key dismiss), light-dismiss backdrop interaction, and fluid spring entrance/exit transitions.
 
-### 📱 11. Native Mobile Viewport, Touch Architecture & Ergonomics
-- **Standalone PWA & Viewport Lock (`AppViewport.tsx`):** Engineered with Next.js 15 Viewport metadata (`viewport-fit=cover`, `maximum-scale=1.0`, `user-scalable=no`), dynamic `100dvh` units, and CSS environment variables (`--sat`, `--sab`, `--sal`, `--sar`). Eliminates Safari URL bar height oscillations, home bar clipping, and rubber-band bounce (`overscroll-behavior: none`). On desktop displays ($\ge 768\text{px}$), includes an interactive smartphone bezel frame (`max-w-[430px] rounded-[48px]` with dynamic island simulation) and instant viewport mode toggle.
-- **Ergonomic Bottom Dock Navigation (`BottomNavigation.tsx`):** Fixed 64px thumb-zone dock with safe-area padding and 5 high-priority touch targets ($>48\text{px} \times 48\text{px}$):
-  1. *Vitrine (Showcase)* — 5-slot idle revenue stage & Support Altar.
-  2. *Kiosk (Packs & Singles)* — Pack dispenser & daily market singles.
-  3. *Showdown (Exam Battle & Trade)* — 5-subject academic exam simulations & Wonder Trade.
-  4. *Collection (Binder & Card-Dex)* — Master inventory, filtering, and 42-card completion tracking.
-  5. *Vault (Grading & Slab Breaker)* — BGS certification lab & hydraulic slab de-certification station.
-  - Features an animated active tab indicator pill utilizing Framer Motion's `layoutId="activeTabGlow"`.
-- **Top Micro-HUD & Study Notebook Badge (`MobileHeader.tsx`):** Compact 52px top bar anchored below safe-area top inset (`env(safe-area-inset-top)`). Features a procedural SFX audio mute toggle, Fuutarou's Study Notebook quest trigger with badge counter, condensed Yen and Stardust balance chips, and a radial SVG Pity Spark meter.
-- **Hardware Web Haptics Engine (`haptics.ts`):** Direct hardware tactile vibration feedback wrapper with graceful silent fallback:
-  - `hapticLightTap` ($10\text{ms}$): Light UI feedback on button taps and tab switches.
-  - `hapticTearCrimp` ($[15, 30, 15]\text{ms}$): Mechanical crunch when tearing foil pack seals past the breach threshold.
-  - `hapticSlabCrunch` ($[30, 50, 40]\text{ms}$): Heavy hydraulic resistance when cracking acrylic grading slabs.
-  - `hapticJackpot` ($[50, 50, 50, 100]\text{ms}$): Multi-beat celebration vibration upon pulling UR/SEC/MR or Gem Mint 10/Black Label slabs.
-- **Real Device Orientation Gyroscope Parallax (`useMobileTilt.ts`):** Reads hardware `DeviceOrientationEvent` sensor data (`gamma` roll $\pm 20^\circ$ and `beta` pitch $45^\circ \pm 20^\circ$) with iOS 13+ permission request flow (`requestPermission`). Low-pass filtered normalized vectors are fed into holographic foil shaders and 3D pack models, enabling natural tilting by physically angling the phone without touch dragging.
-- **iOS-Style Pull-Up Drawer Modal System (`MobileDrawer.tsx`):** Built with Framer Motion drag gestures (`drag="y"`), top grab handle pill, dark dimming backdrop, and drag-to-dismiss threshold ($>120\text{px}$ downward pull or high downward velocity).
-- **Fuutarou's Study Notebook (`QuestModal.tsx`):** 5 daily recurring tutoring quests (Packs Opened, Duplicates Dusted, Slabs Certified, Showdown Victories, Idle Revenue Claimed) granting Yen and Stardust. Seamlessly integrates with Support Altar: slotting Fuutarou Uesugi (R) grants a $-20\%$ quest objective easing.
-- **Hydraulic Slab Breaker (`SlabBreakerModal.tsx`):** Dedicated station to crack certified slabs back to raw cardstock via `crackSlab()`, featuring hydraulic shatter animation, acrylic crack procedural audio, and `hapticSlabCrunch` tactile vibration.
-- **Exam Showdown & Wonder Trade (`ShowdownHub.tsx`):** 5-subject academic exam showdown (Math, English, Science, Social Studies, Japanese) matching against rival class scores, boosted by Yusuke Takeda (R)'s $+15\%$ Team IQ buff, alongside a Wonder Trade card exchange terminal.
-
 ---
 
 ## 📊 Card Catalog & Economy System
@@ -276,22 +254,20 @@ tqqtcg/
 │   │   ├── Raiha/
 │   │   ├── Maruo/
 │   │   └── Yusuke/
-│   ├── packs/                   # High-resolution 3D booster foil pack wraps
-│   └── manifest.json            # PWA standalone web app manifest
+│   └── packs/                   # High-resolution 3D booster foil pack wraps
 ├── rules.md                     # Strict development protocol & architectural standards
 ├── scripts/
-│   └── test-engine.ts           # Comprehensive test suite (10,000-roll Monte Carlo audit & Stage 1-11 tests)
+│   └── test-engine.ts           # Comprehensive test suite (10,000-roll Monte Carlo audit & Stage 1/2 tests)
 ├── src/
 │   ├── app/
-│   │   ├── globals.css          # Safe-area variables, overscroll locks & custom scrollbar styles
-│   │   ├── layout.tsx           # Global root HTML, Viewport metadata & font provider
+│   │   ├── layout.tsx           # Global root HTML & font provider
 │   │   ├── page.tsx             # Main entry point (renders GrandBinder view switcher)
 │   │   └── showcase/page.tsx    # Interactive sandbox showcase & inspection playground
 │   ├── components/
 │   │   ├── binder/
 │   │   │   ├── BinderGrid.tsx       # Collection card grid with view filters and stats
-│   │   │   ├── CardActionModal.tsx  # Mobile-responsive bottom-sheet inspect modal with Slab Breaker shortcut
-│   │   │   └── GrandBinder.tsx      # Main hub with Showcase / Kiosk / Showdown / Binder / Vault switcher
+│   │   │   ├── CardActionModal.tsx  # Rebalanced two-column inspect modal with responsive unclipped slab stage
+│   │   │   └── GrandBinder.tsx      # Main hub with Showcase / Collection / Card-Dex view switcher
 │   │   ├── card/
 │   │   │   ├── CardRenderer.tsx     # Holographic foil shader engine & card frame
 │   │   │   └── GradingSlab.tsx      # Acrylic BGS-style grading slab with subgrade plates
@@ -301,49 +277,34 @@ tqqtcg/
 │   │   │   └── PatchNotesModal.tsx  # Accessible one-time patch notes modal with version tracking
 │   │   ├── dusting/
 │   │   │   └── DustingWorkshop.tsx  # Card vaporization and Stardust exchange station
-│   │   ├── layout/
-│   │   │   ├── AppViewport.tsx      # 100dvh viewport container, safe-area shell & desktop bezel frame
-│   │   │   ├── BottomNavigation.tsx # Ergonomic 5-tab thumb-zone bottom dock with active layoutId glow
-│   │   │   └── MobileHeader.tsx     # 52px top micro-HUD: SFX toggle, quest badge, balances & Pity Spark
 │   │   ├── market/
 │   │   │   └── SinglesMarket.tsx    # Brushed dark slate Singles Kiosk with 24h timer & reroll
 │   │   ├── pack/
-│   │   │   ├── BoosterPack3D.tsx    # 3D foil booster with cylindrical pillow shading & gyro tilt
-│   │   │   ├── MobilePackKiosk.tsx  # Mobile pack selector and Singles Kiosk sub-navigation
+│   │   │   ├── BoosterPack3D.tsx    # 3D foil booster with cylindrical pillow shading
 │   │   │   ├── PackOpeningModal.tsx # Ceremony modal: tear, suspense, peel & summary
 │   │   │   ├── SelectBoosterModal.tsx # Portal-mounted pack kiosk with live drop odds & kiosk tab
-│   │   │   └── TearMechanism.tsx    # Direct HTML5 window pointer tear engine with haptic feedback
-│   │   ├── quest/
-│   │   │   └── QuestModal.tsx       # Fuutarou's Study Notebook daily quests with Support Altar -20% easing
+│   │   │   └── TearMechanism.tsx    # Direct HTML5 window pointer tear engine
 │   │   ├── showcase/
 │   │   │   ├── SupportAltar.tsx     # Floating tutor dais with downward ambient light cone & Grade 9/10 scaling
 │   │   │   ├── SupportDrawer.tsx    # Slide-over socketing drawer with search, filters & active buff preview
 │   │   │   └── Vitrine.tsx          # 5-slot acrylic pedestal stage with dynamic spotlights & idle claim
-│   │   ├── showdown/
-│   │   │   └── ShowdownHub.tsx      # 5-subject Exam Showdown simulation & Wonder Trade exchange
-│   │   ├── ui/
-│   │   │   └── MobileDrawer.tsx     # Native iOS-style pull-up bottom sheet with drag-to-dismiss gesture
 │   │   └── vault/
 │   │       ├── GradingScannerFX.tsx # Particle laser scanner visualizer
-│   │       ├── GradingStation.tsx   # Card submission hub & consumable tool equip
-│   │       ├── SlabBreakerModal.tsx # Hydraulic slab cracking station with acrylic shatter FX & haptics
-│   │       └── VaultHub.tsx         # Multi-zone mobile vault: Binder, Grading Station & Slab Breaker
+│   │       └── GradingStation.tsx   # Card submission hub & consumable tool equip
 │   ├── config/
 │   │   ├── cardsData.ts         # Catalog of 42 cards with metadata and quotes
 │   │   ├── economy.ts           # Pricing matrices, valuation formulas, drop tables, pity, synergies
 │   │   └── supportBuffs.ts      # Support buff dictionary, Grade 9/10 scaling, & active buff resolver
 │   ├── hooks/
 │   │   ├── useIdleRevenue.ts    # Background-safe idle yield calculator with 12h offline cap
-│   │   ├── useMobileTilt.ts     # Real DeviceOrientationEvent gyroscope hook with iOS permission flow
-│   │   └── useSmoothTilt.ts     # Overdamped 3D spring tilt hook with dynamic mobile gyro integration
+│   │   └── useSmoothTilt.ts     # Overdamped 3D spring tilt hook with dynamic lighting
 │   ├── store/
-│   │   └── useGameStore.ts      # Persistent Zustand store (currencies, inventory, showcase, quests, stats)
+│   │   └── useGameStore.ts      # Persistent Zustand store (currencies, inventory, showcase, dex, stats)
 │   ├── types/
 │   │   └── card.ts              # Strict TypeScript interfaces, enums, and types
 │   └── utils/
 │       ├── audio.ts             # Native Web Audio API procedural synthesis engine
-│       ├── audioEngine.ts       # Sound synthesizer client instance with coin, receipt & slab crack audio
-│       └── haptics.ts           # Hardware Web Haptics engine with procedural vibration profiles
+│       └── audioEngine.ts       # Sound synthesizer client instance with coin & receipt pulses
 ├── package.json
 ├── tsconfig.json
 └── tailwind.config.ts
@@ -383,10 +344,10 @@ tqqtcg/
 
 ## 🧪 Verification & Testing
 
-The repository contains an automated Monte Carlo test suite (`scripts/test-engine.ts`) across 11 complete sections that run 10,000 iterations to verify drop distributions, pity thresholds, grading probabilities, showcase synergies, Support Altar buff scaling, store mutations, slab cracking, quest rewards, and hardware haptics.
+The repository contains an automated Monte Carlo test suite (`scripts/test-engine.ts`) across 10 complete sections that run 10,000 iterations to verify drop distributions, pity thresholds, grading probabilities, showcase synergies, Support Altar buff scaling, and store mutations.
 
 ```bash
-# Run the complete test suite (Sections 1 through 11)
+# Run the complete test suite (Sections 1 through 10)
 npm test
 
 # Run strict TypeScript type verification (0 errors)
@@ -417,16 +378,12 @@ The Showcase allows you to:
 
 | Action | Mouse (Desktop) | Touch (Mobile / Tablet) |
 | :--- | :--- | :--- |
-| **3D Tilt Card / Pack** | Move cursor across element | Physical phone gyro tilt or touch drag |
-| **Tear Booster Pack** | Click & drag yellow `TEAR ▶` notch to the right | Touch & swipe `TEAR ▶` notch past 85% (with haptics) |
-| **Peel Card from Deck** | Drag top card right ($> 120\text{px}$ or $> 400\text{px/s}$) | Swipe or flick card diagonally ($> 80\text{px}$ / $> 300\text{px/s}$) |
+| **3D Tilt Card / Pack** | Move cursor across element | Touch and drag across surface |
+| **Tear Booster Pack** | Click & drag yellow `TEAR ▶` notch to the right | Touch & swipe `TEAR ▶` notch past 85% |
+| **Peel Card from Deck** | Drag top card right ($> 120\text{px}$ or $> 400\text{px/s}$) | Swipe top card right to peel & discard |
 | **Quick Discard / Summary** | Click `Peel Card` / `View Summary` button | Tap `Peel Card` / `View Summary` button |
 | **Skip Ceremony** | Click `Skip All` button (instant summary transition) | Tap `Skip All` button |
 | **Inspect Card** | Click on any card in binder grid | Tap on any card in binder grid |
-| **Dismiss Drawer / Modal** | Click outside / press `Escape` | Pull down grab handle or flick down ($> 120\text{px}$) |
-| **Switch Primary Zone** | Click top navigation buttons or bottom dock | Tap thumb-zone dock icon in Bottom Navigation |
-| **Crack Graded Slab** | Click "Crack Slab" in Card Modal / Vault | Tap "Crack Slab" in Card Modal / Vault Breaker |
-| **Toggle Mobile Bezel Preview**| Click floating phone toggle badge (bottom-right) | N/A (Native edge-to-edge view on mobile screens) |
 
 ---
 

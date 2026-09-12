@@ -9,7 +9,6 @@ import {
   MotionStyle,
 } from 'framer-motion';
 import type { CardLightState } from '../types/card';
-import { useMobileTilt } from './useMobileTilt';
 
 export type { CardLightState };
 
@@ -105,18 +104,6 @@ export function useSmoothTilt({
   // Raw target motion values
   const targetRotateX = useMotionValue(0);
   const targetRotateY = useMotionValue(0);
-
-  // Mobile DeviceOrientation Gyroscope Integration
-  const mobileTilt = useMobileTilt(!disabled && !isPaused);
-
-  useEffect(() => {
-    if (disabled || isPaused) return;
-    if (mobileTilt.isActive) {
-      targetRotateX.set(-mobileTilt.tiltX * maxRotation);
-      targetRotateY.set(mobileTilt.tiltY * maxRotation);
-      targetHoverFactor.set(1);
-    }
-  }, [mobileTilt.tiltX, mobileTilt.tiltY, mobileTilt.isActive, disabled, isPaused, maxRotation, targetRotateX, targetRotateY]);
 
   // Spring physics for smooth rotational inertia
   const mergedSpringConfig = { ...DEFAULT_SPRING_CONFIG, ...springConfig };

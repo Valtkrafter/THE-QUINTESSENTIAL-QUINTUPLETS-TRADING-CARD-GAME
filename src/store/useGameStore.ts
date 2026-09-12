@@ -123,11 +123,6 @@ export interface GameState {
   getShowcaseSynergyReport: () => ShowcaseSynergyReport;
   recordCardDiscovery: (card: CardInstance) => void;
   syncCardDex: () => void;
-
-  // Mobile Architecture Quests & Slab Cracking
-  claimedQuestIds: string[];
-  claimQuest: (questId: string, rewardYen: number, rewardDust: number) => void;
-  crackSlab: (cardInstanceId: string) => CardInstance;
 }
 
 const DEFAULT_BINDER_SLOTS: BinderSlot[] = [
@@ -253,7 +248,6 @@ const INITIAL_STATE = {
     godPacksPulled: 0,
     blackLabelsPulled: 0,
   } as GameStats,
-  claimedQuestIds: [] as string[],
 };
 
 export const useGameStore = create<GameState>()(
@@ -1144,48 +1138,6 @@ export const useGameStore = create<GameState>()(
         set({ lastSeenPatchVersion: version ?? CURRENT_PATCH_VERSION });
       },
 
-      claimQuest: (questId: string, rewardYen: number, rewardDust: number): void => {
-        const state = get();
-        if ((state.claimedQuestIds ?? []).includes(questId)) {
-          return;
-        }
-        set({
-          claimedQuestIds: [...(state.claimedQuestIds ?? []), questId],
-          yen: state.yen + rewardYen,
-          stardust: state.stardust + rewardDust,
-        });
-      },
-
-      crackSlab: (cardInstanceId: string): CardInstance => {
-        const state = get();
-        const cardIndex = state.inventory.findIndex((c) => c.id === cardInstanceId);
-        if (cardIndex === -1) {
-          throw new Error(`Card instance not found: ${cardInstanceId}`);
-        }
-        const card = state.inventory[cardIndex];
-        if (!card.grade) {
-          throw new Error(`Card is not graded in an acrylic slab.`);
-        }
-        const unslabbedCard: CardInstance = {
-          ...card,
-          grade: undefined,
-        };
-        const updatedInventory = [...state.inventory];
-        updatedInventory[cardIndex] = unslabbedCard;
-
-        let updatedSupportSlot = state.supportSlot;
-        if (state.supportSlot?.id === cardInstanceId) {
-          updatedSupportSlot = unslabbedCard;
-        }
-
-        set({
-          inventory: updatedInventory,
-          supportSlot: updatedSupportSlot,
-        });
-
-        return unslabbedCard;
-      },
-
       resetSave: (): void => {
         set({
           ...INITIAL_STATE,
@@ -1196,7 +1148,6 @@ export const useGameStore = create<GameState>()(
           cardDex: createInitialCardDex(),
           showcaseSlots: DEFAULT_SHOWCASE_SLOTS,
           supportSlot: null,
-          claimedQuestIds: [],
         });
       },
     }),
@@ -1206,9 +1157,6 @@ export const useGameStore = create<GameState>()(
         if (state) {
           if (state.lastSeenPatchVersion === undefined) {
             state.lastSeenPatchVersion = '';
-          }
-          if (!state.claimedQuestIds) {
-            state.claimedQuestIds = [];
           }
           if (!state.showcaseSlots || state.showcaseSlots.length !== 5) {
             state.showcaseSlots = DEFAULT_SHOWCASE_SLOTS;

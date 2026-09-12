@@ -137,58 +137,6 @@ class AudioEngine {
   }
 
   /**
-   * Slab Crack: mechanical snap and acrylic crunch fracture
-   */
-  public playSlabCrackSound(): void {
-    if (this.muted) return;
-    const ctx = this.getContext();
-    if (!ctx) return;
-
-    try {
-      const now = ctx.currentTime;
-      const bufferSize = ctx.sampleRate * 0.15;
-      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-      const data = buffer.getChannelData(0);
-      for (let i = 0; i < bufferSize; i++) {
-        data[i] = (Math.random() * 2 - 1) * (Math.random() > 0.3 ? 1 : 0.2);
-      }
-      const noise = ctx.createBufferSource();
-      noise.buffer = buffer;
-
-      const bandpass = ctx.createBiquadFilter();
-      bandpass.type = 'bandpass';
-      bandpass.frequency.setValueAtTime(2400, now);
-      bandpass.frequency.exponentialRampToValueAtTime(800, now + 0.14);
-      bandpass.Q.setValueAtTime(3.0, now);
-
-      const gain = ctx.createGain();
-      gain.gain.setValueAtTime(0.4, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
-
-      noise.connect(bandpass);
-      bandpass.connect(gain);
-      gain.connect(ctx.destination);
-      noise.start(now);
-
-      const osc = ctx.createOscillator();
-      const oscGain = ctx.createGain();
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(180, now);
-      osc.frequency.exponentialRampToValueAtTime(35, now + 0.08);
-
-      oscGain.gain.setValueAtTime(0.5, now);
-      oscGain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
-
-      osc.connect(oscGain);
-      oscGain.connect(ctx.destination);
-      osc.start(now);
-      osc.stop(now + 0.09);
-    } catch {
-      // Audio fallback
-    }
-  }
-
-  /**
    * Sparkle Burst: crystalline chime arpeggio
    */
   public playSparkleSound(): void {
