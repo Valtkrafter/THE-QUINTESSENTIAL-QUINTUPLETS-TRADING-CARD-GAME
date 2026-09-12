@@ -35,6 +35,7 @@ import {
 import { useGameStore, DEFAULT_SHOWCASE_SLOTS, createInitialCardDex, CURRENT_PATCH_VERSION } from '../src/store/useGameStore';
 import { CardInstance, BinderPage, Rarity, GradeTier, ShowcaseSlot, GradeResult } from '../src/types/card';
 import { resolveActiveSupportBuff, SUPPORT_BUFF_CONFIGS, SUPPORT_CODE_MAP } from '../src/config/supportBuffs';
+import { haptics } from '../src/utils/haptics';
 
 function assert(condition: boolean, message: string): void {
   if (!condition) {
@@ -1048,6 +1049,64 @@ async function runTests() {
   const defaultCdRemaining = useGameStore.getState().getTestSheetCooldownRemaining();
   assert(defaultCdRemaining > 10000, 'Cooldown restored to standard 4-hour schedule after unmounting Takeda');
   console.log('✅ Support Altar unmount and baseline restoration verified.');
+
+  testSection('SECTION 11: NATIVE MOBILE VIEWPORT, SLAB CRACKING & QUEST ARCHITECTURE');
+
+  // 1. Test crackSlab store action
+  const testGradedCard: CardInstance = {
+    id: 'test_slab_to_crack_01',
+    cardDefId: 'miku_c_01',
+    characterId: 'miku',
+    rarity: 'C',
+    finish: 'raw',
+    obtainedAt: Date.now(),
+    grade: {
+      numericGrade: 4,
+      tier: 'USED_4_6',
+      tierLabel: 'Gebraucht',
+      multiplier: 0.5,
+      gradedAt: Date.now(),
+      subgrades: { centering: 4, surface: 4, corners: 4, edges: 4 },
+      isBlackLabel: false,
+    },
+  };
+
+  useGameStore.setState({
+    inventory: [...useGameStore.getState().inventory, testGradedCard],
+  });
+
+  const unslabbedResult = useGameStore.getState().crackSlab(testGradedCard.id);
+  assert(unslabbedResult.id === testGradedCard.id, 'Card ID preserved on crack');
+  assert(unslabbedResult.grade === undefined, 'Grade cleared on crack');
+  const invCardAfterCrack = useGameStore.getState().inventory.find((c) => c.id === testGradedCard.id);
+  assert(invCardAfterCrack?.grade === undefined, 'Store inventory reflects unslabbed card');
+  console.log('✅ crackSlab action verified: Graded slab cracked and restored to raw cardstock.');
+
+  // 2. Test claimQuest store action
+  const preQuestYen = useGameStore.getState().yen;
+  const preQuestDust = useGameStore.getState().stardust;
+  const questId = 'test_study_drill_01';
+
+  useGameStore.getState().claimQuest(questId, 500, 20);
+  assert(useGameStore.getState().claimedQuestIds.includes(questId), 'Quest ID registered in claimedQuestIds');
+  assert(useGameStore.getState().yen === preQuestYen + 500, 'Quest reward Yen added to player balance');
+  assert(useGameStore.getState().stardust === preQuestDust + 20, 'Quest reward Stardust added to player balance');
+
+  // Duplicate claim prevention
+  useGameStore.getState().claimQuest(questId, 500, 20);
+  assert(useGameStore.getState().yen === preQuestYen + 500, 'Duplicate quest claim prevented');
+  console.log('✅ claimQuest action verified: Atomic currency grant and duplicate claim prevention.');
+
+  // 3. Test Web Haptics Engine safe fallback
+  assert(typeof haptics.lightTap === 'function', 'haptics.lightTap is a function');
+  assert(typeof haptics.tearCrimp === 'function', 'haptics.tearCrimp is a function');
+  assert(typeof haptics.slabCrunch === 'function', 'haptics.slabCrunch is a function');
+  assert(typeof haptics.jackpot === 'function', 'haptics.jackpot is a function');
+  haptics.lightTap();
+  haptics.tearCrimp();
+  haptics.slabCrunch();
+  haptics.jackpot();
+  console.log('✅ Web Haptics Engine verified: Procedural profiles trigger safely with graceful fallback.');
 
   testSection('🎉 ALL TESTS PASSED SUCCESSFULLY! 100% SPEC COMPLIANCE.');
 }

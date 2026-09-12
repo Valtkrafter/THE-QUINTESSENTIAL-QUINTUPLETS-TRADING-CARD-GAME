@@ -8,6 +8,7 @@ import { useGameStore } from '../../store/useGameStore';
 import { BoosterPack3D, PACK_THEMES } from './BoosterPack3D';
 import { CardRenderer, CHARACTER_THEMES, RARITY_BADGES } from '../card/CardRenderer';
 import { soundEngine } from '../../utils/audio';
+import { haptics } from '../../utils/haptics';
 import {
   Sparkles,
   Volume2,
@@ -52,6 +53,7 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
   const [isPeeling, setIsPeeling] = useState(false);
   const isPeelingRef = useRef(false);
   const cardX = useMotionValue(0);
+  const cardY = useMotionValue(0);
   const cardRotate = useMotionValue(0);
   const cardOpacity = useMotionValue(1);
 
@@ -78,6 +80,7 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
       isPeelingRef.current = false;
       setIsPeeling(false);
       cardX.set(0);
+      cardY.set(0);
       cardRotate.set(0);
       cardOpacity.set(1);
       setDustedCardIds([]);
@@ -88,10 +91,11 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
       isPeelingRef.current = false;
       setIsPeeling(false);
       cardX.set(0);
+      cardY.set(0);
       cardRotate.set(0);
       cardOpacity.set(1);
     }
-  }, [isOpen, packId, cardOpacity, cardRotate, cardX]);
+  }, [isOpen, packId, cardOpacity, cardRotate, cardX, cardY]);
 
   // Clean up on component unmount
   useEffect(() => {
@@ -238,7 +242,7 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
   ]);
 
   // Deterministic peel & discard executor (Stage 1 & Stage 2)
-  const executePeel = useCallback(() => {
+  const executePeel = useCallback((velY: number = 0) => {
     if (isPeelingRef.current || stage !== 'PEELING') return;
     if (currentCardIndex >= pulledCards.length) {
       setStage('SUMMARY');
@@ -248,11 +252,13 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
     isPeelingRef.current = true;
     setIsPeeling(true);
 
-    // Play card slide sound cleanly once
+    // Play card slide sound & tactile haptic tap
     soundEngine.play('card_slide', 0.65);
+    haptics.lightTap();
 
-    // Calculate exit boundary: completely off-screen
+    // Calculate exit boundary: completely off-screen with velocity-based diagonal fling
     const exitX = typeof window !== 'undefined' ? Math.max(window.innerWidth + 200, 1000) : 1000;
+    const exitY = Math.max(-400, Math.min(400, velY * 0.25));
 
     let hasFinalized = false;
     const finalize = () => {
@@ -261,6 +267,7 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
 
       // Force reset transform and opacity for next card layer
       cardX.set(0);
+      cardY.set(0);
       cardRotate.set(0);
       cardOpacity.set(1);
       isPeelingRef.current = false;
@@ -268,49 +275,68 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
 
       const nextIndex = currentCardIndex + 1;
       if (nextIndex >= pulledCards.length) {
-        // Final card (5/5) completely peeled off-screen -> empty stage & transition to Summary
+        // Final card completely peeled off-screen -> transition to Summary
         setCurrentCardIndex(nextIndex);
         setStage('SUMMARY');
         soundEngine.play('reveal_rare', 0.6);
+        haptics.jackpot();
       } else {
         setCurrentCardIndex(nextIndex);
         const nextCard = pulledCards[nextIndex];
         if (nextCard) {
-          if (nextCard.rarity === 'SR') {
-            soundEngine.play('reveal_rare', 0.6);
-          } else if (
+          if (
             nextCard.rarity === 'UR' ||
             nextCard.rarity === 'SEC' ||
             nextCard.rarity === 'MR'
           ) {
             soundEngine.play('sub_bass_pulse', 0.65);
+            haptics.jackpot();
+          } else if (nextCard.rarity === 'SR') {
+            soundEngine.play('reveal_rare', 0.6);
+            haptics.lightTap();
+          } else {
+            haptics.lightTap();
           }
         }
       }
     };
 
-    // Animate smoothly to exit coordinates (duration: 0.28s, easeIn)
+    // Animate smoothly to exit coordinates with diagonal trajectory
     const animX = animate(cardX, exitX, { duration: 0.28, ease: 'easeIn' });
+    const animY = animate(cardY, exitY, { duration: 0.28, ease: 'easeIn' });
     const animRot = animate(cardRotate, 20, { duration: 0.28, ease: 'easeIn' });
     const animOp = animate(cardOpacity, 0, { duration: 0.28, ease: 'easeIn' });
 
-    Promise.all([animX, animRot, animOp]).then(finalize).catch(finalize);
+    Promise.all([animX, animY, animRot, animOp]).then(finalize).catch(finalize);
 
     // Fail-safe timeout guard (ensures cleanup even if thread/visibility lags)
     setTimeout(finalize, 350);
-  }, [cardOpacity, cardRotate, cardX, currentCardIndex, pulledCards, stage]);
+  }, [cardOpacity, cardRotate, cardX, cardY, currentCardIndex, pulledCards, stage]);
 
-  // Handle right-swipe drag end on the top card
+  // Handle right/diagonal thumb flick drag end on the top card
   const handleTopCardDragEnd = useCallback(
     (_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
       if (isPeelingRef.current) return;
 
-      // Peel Trigger Condition: offset.x > 120px OR velocity.x > 400px/s
-      if (info.offset.x > 120 || info.velocity.x > 400) {
-        executePeel();
+      const flickDistance = Math.hypot(info.offset.x, info.offset.y);
+      const flickVelocity = Math.hypot(info.velocity.x, info.velocity.y);
+
+      // Peel Trigger Condition: rightward/diagonal offset > 80px OR velocity > 300px/s
+      if (
+        info.offset.x > 80 ||
+        (flickDistance > 80 && info.offset.x > 25) ||
+        info.velocity.x > 300 ||
+        (flickVelocity > 350 && info.offset.x > 20)
+      ) {
+        executePeel(info.velocity.y);
       } else {
         // Snap back to (0, 0)
         animate(cardX, 0, {
+          type: 'spring',
+          stiffness: 300,
+          damping: 25,
+        });
+        animate(cardY, 0, {
           type: 'spring',
           stiffness: 300,
           damping: 25,
@@ -322,7 +348,7 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
         });
       }
     },
-    [cardRotate, cardX, executePeel]
+    [cardRotate, cardX, cardY, executePeel]
   );
 
   // Skip All directly to Summary (Stage 3 Programmatic Fallback)
@@ -629,11 +655,12 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
                         return (
                           <motion.div
                             key={`${card.id}-${currentCardIndex}`}
-                            drag={!isPeeling ? 'x' : false}
-                            dragConstraints={{ left: 0, right: 600 }}
+                            drag={!isPeeling ? true : false}
+                            dragConstraints={{ left: 0, right: 600, top: -250, bottom: 250 }}
                             dragElastic={0.2}
                             style={{
                               x: cardX,
+                              y: cardY,
                               rotate: cardRotate,
                               opacity: cardOpacity,
                               zIndex: zElevation,
@@ -682,7 +709,7 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
                 <div className="mt-6 flex flex-col items-center gap-3 z-30">
                   <div className="flex items-center gap-3">
                     <button
-                      onClick={executePeel}
+                      onClick={() => executePeel()}
                       disabled={isPeeling}
                       className="px-6 py-2.5 rounded-full bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-black font-black text-xs uppercase tracking-wider flex items-center gap-2 shadow-lg transition active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
                     >

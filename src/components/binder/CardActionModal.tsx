@@ -23,6 +23,7 @@ import { GradingSlab } from '../card/GradingSlab';
 import { CardRenderer, CHARACTER_THEMES, RARITY_BADGES, FINISH_LABELS } from '../card/CardRenderer';
 import { GradingScannerFX, GradingPhase } from '../vault/GradingScannerFX';
 import { soundEngine } from '../../utils/audioEngine';
+import { hapticSlabCrunch } from '../../utils/haptics';
 import {
   X,
   Award,
@@ -41,6 +42,7 @@ import {
   CheckCircle2,
   Minimize2,
   Info,
+  Hammer,
 } from 'lucide-react';
 
 export interface CardActionModalProps {
@@ -77,6 +79,7 @@ export const CardActionModal: React.FC<CardActionModalProps> = ({
   const vaporizeCard = useGameStore((state) => state.vaporizeCard);
   const sellCard = useGameStore((state) => state.sellCard);
   const buyTool = useGameStore((state) => state.buyTool);
+  const crackSlab = useGameStore((state) => state.crackSlab);
 
   // Consumables selected for grading
   const [selectedTools, setSelectedTools] = useState<Set<ConsumableToolId>>(new Set());
@@ -333,16 +336,31 @@ export const CardActionModal: React.FC<CardActionModalProps> = ({
     onClose();
   };
 
+  // Slab Cracking Action
+  const handleCrackCurrentSlab = () => {
+    if (!activeCard?.grade || isGrading || isSelling) return;
+    hapticSlabCrunch();
+    soundEngine.playSlabCrackSound();
+    const updated = crackSlab(activeCard.id);
+    setActiveCard(updated);
+    onCardUpdated?.(updated);
+  };
+
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4 sm:p-6 select-none animate-fadeIn"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/85 backdrop-blur-md p-0 sm:p-6 select-none animate-fadeIn"
       onClick={(e) => {
         if (e.target === e.currentTarget && !isGrading) {
           onClose();
         }
       }}
     >
-      <div className="relative w-full max-w-4xl lg:max-w-5xl max-h-[92vh] bg-[#111116] border border-[#23232e] rounded-2xl md:rounded-3xl overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.8)] flex flex-col">
+      <div className="relative w-full max-w-4xl lg:max-w-5xl max-h-[90dvh] sm:max-h-[92vh] bg-[#111116] border-t sm:border border-[#23232e] rounded-t-[32px] sm:rounded-3xl overflow-hidden shadow-[0_-12px_40px_rgba(0,0,0,0.85)] sm:shadow-[0_0_50px_rgba(0,0,0,0.8)] flex flex-col pb-[env(safe-area-inset-bottom,0px)] sm:pb-0">
+        {/* Mobile Pull Handle Bar */}
+        <div className="sm:hidden w-full flex justify-center pt-2.5 pb-1 shrink-0">
+          <div className="w-12 h-1.5 bg-[#2a2a38] rounded-full" />
+        </div>
+
         {/* Top Header Bar */}
         <div className="h-14 shrink-0 border-b border-white/10 px-6 flex items-center justify-between bg-zinc-950/60 backdrop-blur-sm z-20">
           <div className="flex items-center gap-3">
@@ -498,26 +516,34 @@ export const CardActionModal: React.FC<CardActionModalProps> = ({
                 </div>
               </div>
 
-              {/* Contextual Action Bar: Violet Vaporize (Stardust) [#8B5CF6] & Emerald Green Sell for ¥ [#10B981] */}
+              {/* Contextual Action Bar: Violet Vaporize / Crack Slab & Emerald Green Sell for ¥ */}
               <div className="p-3.5 border-b border-white/10 bg-zinc-950/70 flex flex-wrap items-center gap-2.5">
-                {/* Violet Vaporize Button */}
-                <button
-                  onClick={() => {
-                    if (isSlabbed) return;
-                    setActiveTab('vaporize');
-                    setConfirmingVaporize(true);
-                  }}
-                  disabled={isSlabbed || isGrading || isSelling}
-                  className={`flex-1 min-w-[140px] py-2.5 px-3 rounded-xl font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition active:scale-[0.98] shadow-md ${
-                    isSlabbed
-                      ? 'bg-zinc-900/60 border border-white/5 text-zinc-600 cursor-not-allowed'
-                      : 'bg-[#8B5CF6] hover:bg-[#7C3AED] text-white shadow-[#8B5CF6]/25'
-                  }`}
-                  title={isSlabbed ? 'Graded slabs cannot be vaporized' : 'Convert into Stardust'}
-                >
-                  <Flame className="w-4 h-4" />
-                  <span>Vaporize ({finalDustYield} ★)</span>
-                </button>
+                {isSlabbed ? (
+                  /* Crack Slab Action for Graded Slabs */
+                  <button
+                    onClick={handleCrackCurrentSlab}
+                    disabled={isLockedOrSlotted || isGrading || isSelling}
+                    className="flex-1 min-w-[140px] py-2.5 px-3 rounded-xl font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition active:scale-[0.98] shadow-md bg-red-600 hover:bg-red-500 text-white shadow-red-600/25 cursor-pointer"
+                    title="Crack acrylic slab back to raw card"
+                  >
+                    <Hammer className="w-4 h-4" />
+                    <span>Crack Slab</span>
+                  </button>
+                ) : (
+                  /* Violet Vaporize Button for Raw Cards */
+                  <button
+                    onClick={() => {
+                      setActiveTab('vaporize');
+                      setConfirmingVaporize(true);
+                    }}
+                    disabled={isGrading || isSelling}
+                    className="flex-1 min-w-[140px] py-2.5 px-3 rounded-xl font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition active:scale-[0.98] shadow-md bg-[#8B5CF6] hover:bg-[#7C3AED] text-white shadow-[#8B5CF6]/25 cursor-pointer"
+                    title="Convert into Stardust"
+                  >
+                    <Flame className="w-4 h-4" />
+                    <span>Vaporize ({finalDustYield} ★)</span>
+                  </button>
+                )}
 
                 {/* Emerald Green Sell Button */}
                 <button
