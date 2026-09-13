@@ -1,4 +1,4 @@
-export const APP_VERSION = '2.2.1'; // Increment with each task
+export const APP_VERSION = '2.3.0'; // Increment with each task
 
 export interface PatchNote {
   version: string;
@@ -11,13 +11,14 @@ export interface PatchNote {
 // ALWAYS overwrite this object with ONLY the latest release
 export const CURRENT_PATCH_NOTE: PatchNote = {
   version: APP_VERSION,
-  title: 'Workbench Card Display & Polish Layout Fix',
+  title: 'Franchise Asset Scoping & Self-Healing Pipeline',
   date: new Date().toISOString().split('T')[0],
   highlights: [
-    'Crisp Workbench Cards: Enforced concrete width and aspect-ratio anchors across all restoration steps so cards always display at full resolution.',
-    'Smoother Balm Application: Polishing stage layout now locks both tool jar and card stage in place without flex-wrap jitter.',
+    'Franchise Asset Scoping: Reorganized card illustrations into dedicated /cards/TQQ/ character directories for future multi-series support.',
+    'Self-Healing Asset Pipeline: Cards automatically resolve artwork paths and heal legacy save data on-the-fly with zero broken links.',
   ],
   fixes: [
-    'Fixed cards collapsing into a 0px dot during the restoration polishing, clamping, cracking, and sleeving steps.',
+    'Fixed card artwork returning 404 errors on Vercel Linux production by matching exact on-disk directory casing.',
+    'Fixed existing collections and vitrine showcase cards failing to load artwork after directory migrations.',
   ],
 };

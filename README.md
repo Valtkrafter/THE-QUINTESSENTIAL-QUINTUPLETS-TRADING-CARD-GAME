@@ -297,20 +297,24 @@ $$\text{Market Value} = \text{Base Value}(\text{Rarity}) \times \text{Multiplier
 ```
 tqqtcg/
 ├── public/
-│   ├── cards/                   # Master card illustration assets (42 high-res artworks)
-│   │   ├── Ichika/
-│   │   ├── Nino/
-│   │   ├── Miku/
-│   │   ├── Yotsuba/
-│   │   ├── Itsuki/
-│   │   ├── Futarou/
-│   │   ├── Raiha/
-│   │   ├── Maruo/
-│   │   └── Yusuke/
+│   ├── cards/                   # Master card illustration assets
+│   │   ├── TQQ/                 # Dedicated The Quintessential Quintuplets franchise directory
+│   │   │   ├── Ichika/
+│   │   │   ├── Nino/
+│   │   │   ├── Miku/
+│   │   │   ├── Yotsuba/
+│   │   │   ├── Itsuki/
+│   │   │   ├── Futarou/
+│   │   │   ├── Raiha/
+│   │   │   ├── Maruo/
+│   │   │   ├── isanari/
+│   │   │   └── Yusuke/
+│   │   └── MDUD/                # Multi-franchise asset space
 │   └── packs/                   # High-resolution 3D booster foil pack wraps
 ├── rules.md                     # Strict development protocol & architectural standards
 ├── scripts/
-│   └── test-engine.ts           # Comprehensive test suite (10,000-roll Monte Carlo audit & Stage 1/2 tests)
+│   ├── test-engine.ts           # Comprehensive test suite (10,000-roll Monte Carlo audit & Stage 1/2 tests)
+│   └── verify-tqq-assets.ts     # Strict Linux/Vercel case-sensitivity & asset taxonomy audit
 ├── src/
 │   ├── app/
 │   │   ├── layout.tsx           # Global root HTML & font provider
@@ -372,7 +376,8 @@ tqqtcg/
 │   │   └── card.ts              # Strict TypeScript interfaces, enums, and types
 │   └── utils/
 │       ├── audio.ts             # Native Web Audio API procedural synthesis engine
-│       └── audioEngine.ts       # Sound synthesizer client instance with coin & receipt pulses
+│       ├── audioEngine.ts       # Sound synthesizer client instance with coin & receipt pulses
+│       └── tqqAssetResolver.ts  # Deterministic case mapper & self-healing legacy path migrator
 ├── package.json
 ├── tsconfig.json
 └── tailwind.config.ts
@@ -417,6 +422,9 @@ The repository contains an automated Monte Carlo test suite (`scripts/test-engin
 ```bash
 # Run the complete test suite (Sections 1 through 11)
 npm test
+
+# Verify all card illustrations and case-sensitivity on disk
+npm run verify:assets
 
 # Run strict TypeScript type verification (0 errors)
 npm run typecheck

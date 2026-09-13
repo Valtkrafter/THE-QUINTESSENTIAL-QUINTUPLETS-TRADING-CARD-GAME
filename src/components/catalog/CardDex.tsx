@@ -11,6 +11,7 @@ import { soundEngine } from '../../utils/audioEngine';
 import { DexMicroProgress } from './DexMicroProgress';
 import { DexFilterTabs, DexFilterTab } from './DexFilterTabs';
 import { DexSearchBar } from './DexSearchBar';
+import { normalizeTqqCardPath } from '../../utils/tqqAssetResolver';
 import {
   Lock,
   Sparkles,
@@ -32,6 +33,20 @@ export { DexMicroProgress } from './DexMicroProgress';
 export { DexFilterTabs } from './DexFilterTabs';
 export { DexSearchBar } from './DexSearchBar';
 export type { DexFilterTab } from './DexFilterTabs';
+
+const DexSilhouetteImage: React.FC<{ src?: string; alt: string }> = ({ src, alt }) => {
+  const [hasError, setHasError] = useState(false);
+  if (!src || hasError) return null;
+  const resolved = normalizeTqqCardPath(src);
+  return (
+    <img
+      src={encodeURI(resolved)}
+      alt={alt}
+      onError={() => setHasError(true)}
+      className="absolute inset-0 w-full h-full object-cover filter brightness-0 contrast-200 opacity-20 pointer-events-none"
+    />
+  );
+};
 
 export const CardDex: React.FC = () => {
   const inventory = useGameStore((state) => state.inventory);
@@ -137,7 +152,7 @@ export const CardDex: React.FC = () => {
       finish: dexEntry.highestFinish ?? 'raw',
       obtainedAt: dexEntry.discoveredAt ?? Date.now(),
       grade: dexEntry.bestGrade,
-      imageUrl: selectedCardDef.imageUrl,
+      imageUrl: normalizeTqqCardPath(selectedCardDef.imageUrl, selectedCardDef.characterId),
       name: selectedCardDef.name,
       title: selectedCardDef.title,
       cardNumber: selectedCardDef.cardNumber,
@@ -244,7 +259,7 @@ export const CardDex: React.FC = () => {
                 finish: dexEntry?.highestFinish ?? 'raw',
                 obtainedAt: dexEntry?.discoveredAt ?? Date.now(),
                 grade: dexEntry?.bestGrade,
-                imageUrl: cardDef.imageUrl,
+                imageUrl: normalizeTqqCardPath(cardDef.imageUrl, cardDef.characterId),
                 name: cardDef.name,
                 title: cardDef.title,
                 cardNumber: cardDef.cardNumber,
@@ -296,13 +311,7 @@ export const CardDex: React.FC = () => {
                       /* Undiscovered: Matte Pitch-Black Silhouette with Smoky Particle Shimmer */
                       <div className="w-full h-full bg-[#0c0c10] flex flex-col items-center justify-center relative overflow-hidden">
                         {/* Dark silhouette of artwork */}
-                        {cardDef.imageUrl && (
-                          <img
-                            src={cardDef.imageUrl}
-                            alt="Silhouette"
-                            className="absolute inset-0 w-full h-full object-cover filter brightness-0 contrast-200 opacity-20 pointer-events-none"
-                          />
-                        )}
+                        <DexSilhouetteImage src={cardDef.imageUrl} alt="Silhouette" />
 
                         {/* Smoky Particle Shimmer Overlay */}
                         <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-transparent opacity-40 animate-pulse pointer-events-none" />
@@ -412,13 +421,7 @@ export const CardDex: React.FC = () => {
                   ) : (
                     /* Silhouette Teaser */
                     <div className="w-full h-full bg-[#0c0c10] border border-zinc-800 rounded-2xl flex flex-col items-center justify-center p-6 text-center relative overflow-hidden">
-                      {selectedCardDef.imageUrl && (
-                        <img
-                          src={selectedCardDef.imageUrl}
-                          alt="Classified"
-                          className="absolute inset-0 w-full h-full object-cover filter brightness-0 contrast-200 opacity-20 pointer-events-none"
-                        />
-                      )}
+                      <DexSilhouetteImage src={selectedCardDef.imageUrl} alt="Classified" />
                       <Lock className="w-12 h-12 text-zinc-600 mb-3 animate-pulse relative z-10" />
                       <span className="text-xs font-mono font-black text-zinc-400 uppercase tracking-widest relative z-10">
                         {selectedCardDef.cardNumber}

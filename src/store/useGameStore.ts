@@ -52,6 +52,7 @@ import {
 } from '../config/economy';
 import { resolveActiveSupportBuff } from '../config/supportBuffs';
 import { APP_VERSION } from '../config/version';
+import { normalizeTqqCardPath } from '../utils/tqqAssetResolver';
 
 export const CURRENT_PATCH_VERSION = `v${APP_VERSION}`;
 
@@ -1572,6 +1573,21 @@ export const useGameStore = create<GameState>()(
           }
           if (!state.showcaseLastClaimedTimestamp) {
             state.showcaseLastClaimedTimestamp = Date.now();
+          }
+
+          // Automatically migrate legacy card imageUrls to official /cards/TQQ/ structure
+          if (Array.isArray(state.inventory)) {
+            for (const item of state.inventory) {
+              if (item.imageUrl) {
+                item.imageUrl = normalizeTqqCardPath(item.imageUrl, item.characterId);
+              }
+            }
+          }
+          if (state.supportSlot?.imageUrl) {
+            state.supportSlot.imageUrl = normalizeTqqCardPath(
+              state.supportSlot.imageUrl,
+              state.supportSlot.characterId
+            );
           }
         }
       },

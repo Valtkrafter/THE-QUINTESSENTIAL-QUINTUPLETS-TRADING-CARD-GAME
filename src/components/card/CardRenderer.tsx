@@ -6,6 +6,22 @@ import { CardDefinition, CardInstance, CardLightState, CharacterId, Finish, Grad
 import { CARD_MAP, getCardDef } from '../../config/cardsData';
 import { calculateCardMarketValue } from '../../config/economy';
 import { useSmoothTilt } from '../../hooks/useSmoothTilt';
+import { normalizeTqqCardPath } from '../../utils/tqqAssetResolver';
+
+export const CHARACTER_INITIALS: Record<string, string> = {
+  ichika: 'IN',
+  nino: 'NN',
+  miku: 'MN',
+  yotsuba: 'YN',
+  itsuki: 'IN',
+  fuutarou: 'TQQ',
+  futarou: 'TQQ',
+  raiha: 'RU',
+  maruo: 'MN',
+  isanari: 'IU',
+  takeda: 'YT',
+  yusuke: 'YT',
+};
 
 export interface CardRendererProps {
   card: CardInstance | (CardDefinition & Partial<CardInstance>);
@@ -283,10 +299,11 @@ export const CardRenderer: React.FC<CardRendererProps> = ({
   const cardNumber = card.cardNumber ?? (card as any).cardNumber ?? cardDef?.cardNumber ?? 'TQQ-000';
   const characterRole = (card as any).characterRole ?? cardDef?.characterRole ?? 'sister';
 
-  // Ensure path starts with /cards/ and is unencoded so encodeURI cleanly encodes spaces without double-encoding
+  // Ensure path starts with /cards/ and is normalized to /cards/TQQ/
   const resolvedImageUrl = useMemo(() => {
     if (!rawImageUrl) return '';
-    let pathStr = String(rawImageUrl).trim();
+    const normalized = normalizeTqqCardPath(rawImageUrl, characterId);
+    let pathStr = String(normalized).trim();
     if (!pathStr.startsWith('/') && !pathStr.startsWith('http')) {
       pathStr = '/' + pathStr;
     }
@@ -295,7 +312,17 @@ export const CardRenderer: React.FC<CardRendererProps> = ({
     } catch {
       return pathStr;
     }
-  }, [rawImageUrl]);
+  }, [rawImageUrl, characterId]);
+
+  const [currentSrc, setCurrentSrc] = useState<string>(() => resolvedImageUrl);
+  const [triedFallback, setTriedFallback] = useState<boolean>(false);
+
+  // Sync currentSrc whenever resolvedImageUrl changes
+  useEffect(() => {
+    setCurrentSrc(resolvedImageUrl);
+    setTriedFallback(false);
+    setHasImageError(false);
+  }, [resolvedImageUrl]);
 
   // Aspect-ratio calculation helper
   const computeFitStatus = useCallback(
@@ -331,12 +358,20 @@ export const CardRenderer: React.FC<CardRendererProps> = ({
   };
 
   const handleImageError = () => {
+    // If we haven't tried the canonical cardDef.imageUrl yet and it differs, try it!
+    const canonicalDefUrl = cardDef?.imageUrl ? normalizeTqqCardPath(cardDef.imageUrl, cardDef.characterId) : '';
+    if (!triedFallback && canonicalDefUrl && canonicalDefUrl !== currentSrc) {
+      console.warn(`[CardRenderer] Image failed at "${currentSrc}". Attempting fallback to cardDef: "${canonicalDefUrl}"`);
+      setTriedFallback(true);
+      setCurrentSrc(canonicalDefUrl);
+      return;
+    }
     setHasImageError(true);
     setFitStatus('error');
-    console.error(`[IMAGE LOAD ERROR] Failed to fetch: "${resolvedImageUrl}"`);
+    console.error(`[IMAGE LOAD ERROR] Failed to fetch: "${currentSrc}"`);
   };
 
-  // Reset image error state and recalculate fit status whenever resolvedImageUrl or forceFit changes
+  // Reset image error state and recalculate fit status whenever currentSrc or forceFit changes
   useEffect(() => {
     setHasImageError(false);
     if (forceFit === 'exact') {
@@ -362,7 +397,7 @@ export const CardRenderer: React.FC<CardRendererProps> = ({
     } else {
       setFitStatus('loading');
     }
-  }, [resolvedImageUrl, forceFit, computeFitStatus]);
+  }, [currentSrc, forceFit, computeFitStatus]);
 
   console.log("[CardRenderer Debug]", {
     cardId: card?.id,
@@ -517,11 +552,11 @@ export const CardRenderer: React.FC<CardRendererProps> = ({
               />
 
               {/* Artwork Image or Visual Error Fallback */}
-              {resolvedImageUrl && !hasImageError ? (
+              {currentSrc && !hasImageError ? (
                 <div className="relative w-full h-full overflow-hidden">
                   <img
                     ref={imgRef}
-                    src={encodeURI(resolvedImageUrl)}
+                    src={encodeURI(currentSrc)}
                     alt={cardName}
                     onLoad={handleImageLoad}
                     onError={handleImageError}
@@ -531,16 +566,39 @@ export const CardRenderer: React.FC<CardRendererProps> = ({
                   />
                 </div>
               ) : (
-                /* Visual Error Fallback State */
-                <div className="relative w-full h-full flex flex-col items-center justify-center p-3 text-center my-auto bg-gradient-to-br from-zinc-900 via-zinc-950 to-black select-none pointer-events-none z-0">
+                /* Stylized Obsidian-Metallic Visual Error Fallback State */
+                <div
+                  className="relative w-full h-full flex flex-col items-center justify-center p-3 text-center my-auto select-none pointer-events-none z-0 overflow-hidden"
+                  style={{
+                    background: 'radial-gradient(ellipse at 50% 35%, #181822 0%, #0d0d14 65%, #050508 100%)',
+                    boxShadow: `inset 0 0 30px rgba(0, 0, 0, 0.85), 0 0 25px ${theme.glowColor}`,
+                  }}
+                >
+                  {/* Subtle Brushed Metal Grid Texture */}
                   <div
-                    className="w-14 h-14 sm:w-16 sm:h-16 rounded-full flex items-center justify-center mb-2 shadow-inner border border-white/20 transition-transform duration-300 group-hover:scale-105"
+                    className="absolute inset-0 opacity-10 pointer-events-none"
                     style={{
-                      background: `radial-gradient(circle at 30% 30%, ${theme.accent}66, #09090b)`,
-                      boxShadow: `0 0 20px ${theme.glowColor}`,
+                      backgroundImage:
+                        'repeating-linear-gradient(45deg, rgba(255,255,255,0.06) 0px, rgba(255,255,255,0.06) 1px, transparent 1px, transparent 6px)',
+                    }}
+                  />
+
+                  {/* Metallic Badge Housing with Character Accent Glow Ring */}
+                  <div
+                    className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-2xl flex flex-col items-center justify-center mb-2.5 transition-transform duration-300 group-hover:scale-105 border shadow-2xl backdrop-blur-sm"
+                    style={{
+                      background: `linear-gradient(135deg, ${theme.accent}25 0%, #101018 55%, ${theme.accent}15 100%)`,
+                      borderColor: `${theme.accent}88`,
+                      boxShadow: `0 0 25px ${theme.glowColor}, inset 0 1px 2px rgba(255, 255, 255, 0.35)`,
                     }}
                   >
-                    <span className="text-2xl sm:text-3xl filter drop-shadow">
+                    <span
+                      className="text-xl sm:text-2xl font-black tracking-widest font-mono uppercase drop-shadow-[0_2px_10px_rgba(0,0,0,0.9)]"
+                      style={{ color: theme.accent }}
+                    >
+                      {CHARACTER_INITIALS[characterId] ?? 'TQQ'}
+                    </span>
+                    <span className="text-xs sm:text-sm -mt-0.5 filter drop-shadow">
                       {theme.symbol}
                     </span>
                   </div>
@@ -554,11 +612,12 @@ export const CardRenderer: React.FC<CardRendererProps> = ({
                   </div>
 
                   <div
-                    className="mt-2 px-2 py-0.5 rounded-full text-[9px] font-bold border tracking-wider uppercase"
+                    className="mt-2 px-2.5 py-0.5 rounded-full text-[9px] font-bold border tracking-wider uppercase"
                     style={{
                       color: theme.accent,
                       borderColor: `${theme.accent}66`,
                       backgroundColor: `${theme.accent}15`,
+                      boxShadow: `0 0 12px ${theme.glowColor}`,
                     }}
                   >
                     {rarityBadge.label} • {FINISH_LABELS[finish]}
