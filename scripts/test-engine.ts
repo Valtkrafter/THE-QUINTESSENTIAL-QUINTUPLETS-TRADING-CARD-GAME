@@ -38,6 +38,27 @@ import { useGameStore, DEFAULT_SHOWCASE_SLOTS, createInitialCardDex, CURRENT_PAT
 import { APP_VERSION } from '../src/config/version';
 import { CardInstance, BinderPage, Rarity, GradeTier, ShowcaseSlot, GradeResult } from '../src/types/card';
 import { resolveActiveSupportBuff, SUPPORT_BUFF_CONFIGS, SUPPORT_CODE_MAP } from '../src/config/supportBuffs';
+import {
+  calculateSisterIQ,
+  calculateCharmFromFinish,
+  calculateResolveFromGrade,
+  calculateTeamResolveMax,
+  EXAMINERS,
+  createSisterBattleCard,
+  createSupportBattleCard,
+  deriveBattleStats,
+  ROUND_SUBJECTS,
+} from '../src/config/battleCalculations';
+import { getExaminerById } from '../src/config/examiners';
+import {
+  calculateExaminerPressure,
+  calculatePassiveAssistance,
+  calculateEffectiveCharm,
+  executeSisterSkill,
+  executeRoundTurn,
+} from '../src/utils/battleEngine';
+import { useBattleStore } from '../src/store/useBattleStore';
+import type { BattleState } from '../src/types/battle';
 
 function assert(condition: boolean, message: string): void {
   if (!condition) {
@@ -1344,6 +1365,318 @@ async function runTests() {
   assert(finalCard?.grade?.isRestored === true, 'Persisted slab has isRestored: true');
   assert(finalCard?.restoration === undefined, 'Restoration session reset upon successful certification');
   console.log('✅ submitForReGrading verified: 50% liquidity fee enforced, minimum Grade 7.0 floor applied, and restored slab awarded.');
+
+  // ==========================================
+  // SECTION 12: EXAM SHOWDOWN (STAGE 1 COMBAT ARCHITECTURE)
+  // ==========================================
+  testSection('12. Exam Showdown (Stage 1 Combat Architecture & Calculations)');
+
+  // 1. Base IQ Derivation
+  assert(calculateSisterIQ('C') === 12, 'Common Base IQ is 12');
+  assert(calculateSisterIQ('UC') === 18, 'Uncommon Base IQ is 18');
+  assert(calculateSisterIQ('R') === 28, 'Rare Base IQ is 28');
+  assert(calculateSisterIQ('SR') === 42, 'Super Rare Base IQ is 42');
+  assert(calculateSisterIQ('UR') === 65, 'Ultra Rare Base IQ is 65');
+  assert(calculateSisterIQ('SEC') === 80, 'Secret Rare Base IQ is 80');
+  assert(calculateSisterIQ('MR') === 95, 'Master Rare Base IQ is 95');
+
+  // Final IQ with Tutor Buff
+  assert(calculateSisterIQ('UR', 0.15) === 75, 'UR (65) with +15% Tutor Buff yields round(65 * 1.15) = 75');
+  assert(calculateSisterIQ('MR', 0.20) === 114, 'MR (95) with +20% Tutor Buff yields round(95 * 1.20) = 114');
+  console.log('✅ Base IQ & Final IQ with Tutor Buff formulas verified.');
+
+  // 2. Charm (Crit Chance) by Finish
+  assert(calculateCharmFromFinish('raw') === 0.05, 'Raw card has 5% Charm');
+  assert(calculateCharmFromFinish('holo') === 0.15, 'Holo card has 15% Charm');
+  assert(calculateCharmFromFinish('sparkle') === 0.25, 'Sparkle card has 25% Charm');
+  assert(calculateCharmFromFinish('rainbow') === 0.40, 'Rainbow card has 40% Charm');
+  assert(calculateCharmFromFinish('gold_etched') === 0.50, 'Gold-Etched card has 50% Charm');
+  assert(calculateCharmFromFinish('signed') === 0.65, 'Signed card has 65% Charm');
+  console.log('✅ Charm critical hit probabilities verified across all 6 finishes.');
+
+  // 3. Resolve by Grade Tier
+  assert(calculateResolveFromGrade(undefined) === 120, 'Raw card without grade has 120 Resolve');
+  const dummyGradeResult = (tier: GradeTier, numeric: number, isBlackLabel = false): GradeResult => ({
+    tier,
+    tierLabel: tier,
+    numericGrade: numeric,
+    isBlackLabel,
+    multiplier: 1,
+    subgrades: { centering: numeric, surface: numeric, corners: numeric, edges: numeric },
+    gradedAt: Date.now(),
+  });
+  assert(calculateResolveFromGrade(dummyGradeResult('POOR_1_3', 2.5)) === 140, 'Grade 1-3 has 140 Resolve');
+  assert(calculateResolveFromGrade(dummyGradeResult('USED_4_6', 5.0)) === 200, 'Grade 4-6 has 200 Resolve');
+  assert(calculateResolveFromGrade(dummyGradeResult('CRISP_7_8', 7.5)) === 280, 'Crisp 7-8 has 280 Resolve');
+  assert(calculateResolveFromGrade(dummyGradeResult('MINT_9', 9.0)) === 400, 'Mint 9 has 400 Resolve');
+  assert(calculateResolveFromGrade(dummyGradeResult('GEM_MINT_10', 10.0)) === 520, 'Gem Mint 10 has 520 Resolve');
+  assert(calculateResolveFromGrade(dummyGradeResult('BLACK_LABEL', 10.0, true)) === 680, 'Black Label has 680 Resolve');
+  console.log('✅ Base Resolve mental stamina contribution verified across all 6 grade tiers.');
+
+  // 4. Team Resolve Max Summation
+  const sisterCard1 = createSisterBattleCard({
+    id: 'b_s1',
+    cardDefId: 'ichika_c_01',
+    characterId: 'ichika',
+    rarity: 'C',
+    finish: 'raw',
+    obtainedAt: Date.now(),
+  });
+  const sisterCard2 = createSisterBattleCard({
+    id: 'b_s2',
+    cardDefId: 'nino_mr_01',
+    characterId: 'nino',
+    rarity: 'MR',
+    finish: 'signed',
+    grade: dummyGradeResult('BLACK_LABEL', 10.0, true),
+    obtainedAt: Date.now(),
+  });
+  assert(sisterCard1.stats.resolve === 120, 'Sister 1 has 120 Resolve');
+  assert(sisterCard2.stats.resolve === 680, 'Sister 2 has 680 Resolve');
+  assert(calculateTeamResolveMax([sisterCard1, sisterCard2, null, null, null]) === 800, 'Team Resolve Max is 800');
+  console.log('✅ Team Resolve Max summation verified.');
+
+  // 5. Examiner Data Architecture
+  assert(EXAMINERS.length === 3, '3 examiners configured (Maruo, Proctor, Takeda)');
+  const maruo = EXAMINERS.find((e) => e.id === 'maruo');
+  const proctor = EXAMINERS.find((e) => e.id === 'proctor');
+  const takeda = EXAMINERS.find((e) => e.id === 'takeda');
+  assert(maruo !== undefined && maruo.weaknessSubject === 'history', 'Maruo weakness is history');
+  assert(proctor !== undefined && proctor.weaknessSubject === 'math', 'Proctor weakness is math');
+  assert(takeda !== undefined && takeda.weaknessSubject === 'english', 'Takeda weakness is english');
+  console.log('✅ Examiner data architecture verified.');
+
+  // 6. useBattleStore Lifecycle & Actions
+  const battleStore = useBattleStore.getState();
+  battleStore.resetBattle();
+
+  // Test sister assignment and slot deduplication
+  const deckMiku: CardInstance = {
+    id: 'deck_miku',
+    cardDefId: 'miku_c_01',
+    characterId: 'miku',
+    rarity: 'C',
+    finish: 'raw',
+    grade: dummyGradeResult('GEM_MINT_10', 10.0),
+    obtainedAt: Date.now(),
+  };
+  battleStore.assignSisterToDeck(0, deckMiku);
+  assert(useBattleStore.getState().battleDeck.sisters[0]?.id === 'deck_miku', 'Miku assigned to slot 0');
+
+  // Moving same card to slot 1 clears slot 0
+  battleStore.assignSisterToDeck(1, deckMiku);
+  assert(useBattleStore.getState().battleDeck.sisters[0] === null, 'Slot 0 cleared after moving card to slot 1');
+  assert(useBattleStore.getState().battleDeck.sisters[1]?.id === 'deck_miku', 'Slot 1 now holds Miku');
+
+  // Assign two sisters: Ichika (slot 0) and Miku (slot 1)
+  const deckIchika: CardInstance = {
+    id: 'deck_ichika',
+    cardDefId: 'ichika_c_01',
+    characterId: 'ichika',
+    rarity: 'C',
+    finish: 'raw',
+    grade: dummyGradeResult('GEM_MINT_10', 10.0),
+    obtainedAt: Date.now(),
+  };
+  battleStore.assignSisterToDeck(0, deckIchika);
+  assert(useBattleStore.getState().battleDeck.sisters[0]?.id === 'deck_ichika', 'Ichika assigned to slot 0');
+
+  // Assign support card
+  const deckTakeda: CardInstance = {
+    id: 'deck_takeda',
+    cardDefId: 'takeda_r_01',
+    characterId: 'takeda',
+    rarity: 'R',
+    finish: 'raw',
+    obtainedAt: Date.now(),
+  };
+  battleStore.assignSupportToDeck(deckTakeda);
+  assert(useBattleStore.getState().battleDeck.support?.id === 'deck_takeda', 'Takeda assigned to support slot');
+
+  // Initialize battle against Maruo
+  battleStore.initBattle('maruo');
+  const activeBattle = useBattleStore.getState().battleState;
+  assert(activeBattle.isActive === true, 'Battle is active');
+  assert(activeBattle.currentRound === 1, 'Battle started at Round 1');
+  assert(activeBattle.subject === 'math', 'Round 1 subject is math');
+  assert(activeBattle.testProgress === 0, 'Initial test progress is 0');
+  assert(activeBattle.examiner?.id === 'maruo', 'Examiner is Maruo');
+  assert(useBattleStore.getState().supportCard?.iqBuffPercent === 0.15, 'Takeda +15% IQ buff applied to support card');
+
+  // Turn 1: Slot 0 (Ichika) executes Round 1 (Math)
+  battleStore.executeTurn(0);
+  const round1State = useBattleStore.getState().battleState;
+  assert(round1State.testProgress > 0, 'Test progress increased after Ichika acted');
+  assert(round1State.currentRound === 2, 'Advanced to Round 2 after Ichika acted in Round 1');
+  assert(round1State.subject === 'science', 'Round 2 subject is Science');
+  assert(useBattleStore.getState().sisterCards[0]?.skillUsed === true, 'Ichika skill marked as used');
+
+  // Turn 2: Slot 1 (Miku) executes Round 2 (Science)
+  battleStore.executeTurn(1);
+  const round2State = useBattleStore.getState().battleState;
+  assert(round2State.testProgress >= round1State.testProgress, 'Test progress increased further after Miku acted');
+  assert(round2State.currentRound === 3, 'Advanced to Round 3 after Miku acted in Round 2');
+  assert(round2State.subject === 'history', 'Round 3 subject is History');
+  assert(useBattleStore.getState().sisterCards[1]?.skillUsed === true, 'Miku skill marked as used');
+
+  // Reset battle
+  battleStore.resetBattle();
+  assert(useBattleStore.getState().battleState.isActive === false, 'Battle reset to inactive');
+  console.log('✅ useBattleStore lifecycle & combat turns verified.');
+
+  // ==========================================
+  // SECTION 13: STAGE 2 COMBAT ENGINE & SISTER SKILL ROSTER
+  // ==========================================
+  testSection('13. Stage 2: Combat Engine & Sister Skill Roster Simulation');
+
+  // 1. Examiner Roster Verification
+  const maruoEx = getExaminerById('maruo');
+  assert(maruoEx.name === 'Maruo Nakano', 'Maruo Nakano verified');
+  assert(maruoEx.title === 'The Unyielding Examiner', 'Maruo title verified');
+  assert(maruoEx.basePressurePerRound === 180, 'Maruo base pressure is 180');
+  assert(maruoEx.stressVariance[0] === 160 && maruoEx.stressVariance[1] === 200, 'Maruo stress variance is [160, 200]');
+  assert(maruoEx.weaknessSubject === 'history', 'Maruo weakness is History');
+  assert(maruoEx.specialExamPenalty.includes('Charm by 15%'), 'Maruo penalty reduces Charm by 15%');
+  assert(maruoEx.reward?.yen === 4500 && maruoEx.reward?.stardust === 120, 'Maruo rewards: 4,500 Yen + 120 Stardust');
+
+  const proctorEx = getExaminerById('proctor');
+  assert(proctorEx.basePressurePerRound === 110, 'Proctor base pressure is 110');
+  assert(proctorEx.weaknessSubject === 'math', 'Proctor weakness is Math');
+  assert(proctorEx.reward?.yen === 2000 && proctorEx.reward?.stardust === 50, 'Proctor rewards: 2,000 Yen + 50 Stardust');
+
+  const takedaEx = getExaminerById('takeda');
+  assert(takedaEx.basePressurePerRound === 140, 'Takeda base pressure is 140');
+  assert(takedaEx.weaknessSubject === 'english', 'Takeda weakness is English');
+  assert(takedaEx.reward?.yen === 3200 && takedaEx.reward?.stardust === 80, 'Takeda rewards: 3,200 Yen + 80 Stardust');
+  console.log('✅ Examiner Roster & Rewards verified.');
+
+  // 2. Step A: Examiner Pressure Phase & Shield Mechanics
+  // Unshielded pressure
+  const pressureUnshielded = calculateExaminerPressure(maruoEx, null, false, 0.5);
+  assert(pressureUnshielded.shieldBlocked === false, 'Shield did not block unshielded pressure');
+  assert(pressureUnshielded.finalDamage === 180, 'Middle variance damage is 180');
+
+  // Debuffed pressure (40% reduction from Actress Bluff)
+  const pressureDebuffed = calculateExaminerPressure(maruoEx, { type: 'bluff', roundsRemaining: 2, reduction: 0.40 }, false, 0.5);
+  assert(pressureDebuffed.finalDamage === Math.round(180 * 0.60), '40% reduction applied: round(180 * 0.60) = 108');
+
+  // Shielded pressure (Yotsuba Full Effort)
+  const pressureShielded = calculateExaminerPressure(maruoEx, null, true, 0.5);
+  assert(pressureShielded.shieldBlocked === true, 'Shield successfully blocked incoming stress');
+  assert(pressureShielded.finalDamage === 0, 'Shield absorbed 100% of damage (0 damage taken)');
+  console.log('✅ Step A Examiner Pressure calculations, debuff reduction, and shield nullification verified.');
+
+  // 3. Step B: Sister Skills Simulation
+  const sisterIchika = createSisterBattleCard({ id: 's_ichika', cardDefId: 'ichika_ur_01', characterId: 'ichika', rarity: 'UR', finish: 'raw', obtainedAt: Date.now() });
+  const sisterNino = createSisterBattleCard({ id: 's_nino', cardDefId: 'nino_ur_01', characterId: 'nino', rarity: 'UR', finish: 'raw', obtainedAt: Date.now() });
+  const sisterMiku = createSisterBattleCard({ id: 's_miku', cardDefId: 'miku_ur_01', characterId: 'miku', rarity: 'UR', finish: 'raw', obtainedAt: Date.now() });
+  const sisterYotsuba = createSisterBattleCard({ id: 's_yotsuba', cardDefId: 'yotsuba_ur_01', characterId: 'yotsuba', rarity: 'UR', finish: 'raw', obtainedAt: Date.now() });
+  const sisterItsuki = createSisterBattleCard({ id: 's_itsuki', cardDefId: 'itsuki_ur_01', characterId: 'itsuki', rarity: 'UR', finish: 'raw', obtainedAt: Date.now() });
+  const allFiveSisters = [sisterIchika, sisterNino, sisterMiku, sisterYotsuba, sisterItsuki];
+
+  // (a) Ichika: Actress Bluff (40% debuff, standard IQ)
+  const ichikaSkill = executeSisterSkill(sisterIchika, 180, 'math', maruoEx, null, 1000);
+  assert(ichikaSkill.activatesDebuff !== null && ichikaSkill.activatesDebuff.reduction === 0.40, 'Ichika activates 40% debuff');
+  assert(ichikaSkill.points === sisterIchika.stats.iq, 'Ichika yields standard IQ');
+
+  // (b) Nino: Sharp Tongue (50% damage rebound, +25% team charm)
+  const ninoSkill = executeSisterSkill(sisterNino, 180, 'math', maruoEx, null, 1000);
+  assert(ninoSkill.reboundPoints === 90, 'Nino converts 50% of 180 damage into 90 points');
+  assert(ninoSkill.points === sisterNino.stats.iq + 90, 'Nino total output is base IQ + 90');
+  assert(ninoSkill.addedTeamCharm === 0.25, 'Nino adds +25% team Charm bonus');
+
+  // (c) Miku: Sengoku Tactics (3x on history, 2x otherwise, 100% crit if Fuutarou support)
+  const mikuMath = executeSisterSkill(sisterMiku, 180, 'math', maruoEx, null, 1000);
+  assert(mikuMath.points === sisterMiku.stats.iq * 2, 'Miku deals 2x base IQ on Math');
+
+  // Weakness test: Maruo is weak to History! Miku on History gets 3x base IQ and +25% weakness exploit!
+  const mikuHistory = executeSisterSkill(sisterMiku, 180, 'history', maruoEx, null, 1000);
+  const expectedHistoryPoints = Math.round(sisterMiku.stats.iq * 3 * 1.25);
+  assert(mikuHistory.points === expectedHistoryPoints, `Miku deals 3x on History with +25% weakness bonus (${expectedHistoryPoints})`);
+
+  // Fuutarou Support crit test
+  const fuutarouSupport = createSupportBattleCard({ id: 'sup_f', cardDefId: 'fuutarou_c_01', characterId: 'fuutarou', rarity: 'C', finish: 'raw', obtainedAt: Date.now() });
+  const mikuCharmInfo = calculateEffectiveCharm(sisterMiku, maruoEx, fuutarouSupport, 'history', 0);
+  assert(mikuCharmInfo.isGuaranteedCrit === true && mikuCharmInfo.effectiveCharm === 1.0, 'Miku with Fuutarou support has guaranteed 100% crit');
+
+  // (d) Yotsuba: Full Effort (Restores 35% max resolve & activates shield)
+  const yotsubaSkill = executeSisterSkill(sisterYotsuba, 180, 'math', maruoEx, null, 1000);
+  assert(yotsubaSkill.healsResolve === 350, 'Yotsuba restores 35% of 1000 max resolve = 350');
+  assert(yotsubaSkill.activatesShield === true, 'Yotsuba activates shield');
+
+  // (e) Itsuki: Brain-Food Appetite (Turn 1 eat: 0 pts, isCharged true, heals 15%; Turn 2 strike: 350% base IQ)
+  const itsukiTurn1 = executeSisterSkill(sisterItsuki, 180, 'math', maruoEx, null, 1000);
+  assert(itsukiTurn1.points === 0, 'Itsuki generates 0 points while eating in turn 1');
+  assert(itsukiTurn1.isCharged === true, 'Itsuki gains isCharged = true');
+  assert(itsukiTurn1.healsResolve === 150, 'Itsuki heals 15% of 1000 max resolve = 150');
+
+  const chargedItsuki = { ...sisterItsuki, isCharged: true };
+  const itsukiTurn2 = executeSisterSkill(chargedItsuki, 180, 'math', maruoEx, null, 1000);
+  assert(itsukiTurn2.points === Math.round(sisterItsuki.stats.iq * 3.5), 'Itsuki deals 350% base IQ on Borgar Strike');
+  assert(itsukiTurn2.isCharged === false, 'isCharged consumed after strike');
+  console.log('✅ All 5 Nakano Sister signature skills verified.');
+
+  // 4. Passive Assistance Verification
+  const passiveCalc = calculatePassiveAssistance(allFiveSisters, 0);
+  const expectedPassive = Math.round(sisterNino.stats.iq * 0.15) +
+    Math.round(sisterMiku.stats.iq * 0.15) +
+    Math.round(sisterYotsuba.stats.iq * 0.15) +
+    Math.round(sisterItsuki.stats.iq * 0.15);
+  assert(passiveCalc.passivePoints === expectedPassive, `Passive assistance equals sum of 15% individual IQs (${expectedPassive})`);
+  console.log('✅ Passive study group assistance (15% individual IQ) verified.');
+
+  // 5. Full 5-Round Battle Flow & Step C Resolution
+  const testBattleState: BattleState = {
+    isActive: true,
+    currentRound: 1,
+    subject: 'math',
+    testProgress: 0,
+    teamResolveMax: 1000,
+    teamResolveCurrent: 1000,
+    examiner: maruoEx,
+    activeDebuff: null,
+    shieldActive: false,
+    selectedSisterSlot: null,
+    isCutinPlaying: false,
+    battleLog: [],
+    teamCharmBonus: 0,
+    lastExaminerDamage: 0,
+    isVictory: false,
+    isDefeated: false,
+    screenShakeTrigger: 0,
+  };
+
+  // Setup common sisters for multi-round progression
+  const commonSisters = [
+    createSisterBattleCard({ id: 'cs_1', cardDefId: 'ichika_c_01', characterId: 'ichika', rarity: 'C', finish: 'raw', obtainedAt: Date.now() }),
+    createSisterBattleCard({ id: 'cs_2', cardDefId: 'nino_c_01', characterId: 'nino', rarity: 'C', finish: 'raw', obtainedAt: Date.now() }),
+    createSisterBattleCard({ id: 'cs_3', cardDefId: 'miku_c_01', characterId: 'miku', rarity: 'C', finish: 'raw', obtainedAt: Date.now() }),
+    createSisterBattleCard({ id: 'cs_4', cardDefId: 'yotsuba_c_01', characterId: 'yotsuba', rarity: 'C', finish: 'raw', obtainedAt: Date.now() }),
+    createSisterBattleCard({ id: 'cs_5', cardDefId: 'itsuki_c_01', characterId: 'itsuki', rarity: 'C', finish: 'raw', obtainedAt: Date.now() }),
+  ];
+
+  // Round 1: Ichika acts (rngOverride: damageFactor = 0.5, charmRoll = 0.99 -> no crit)
+  const round1 = executeRoundTurn(testBattleState, commonSisters, null, 0, { damageFactor: 0.5, charmRoll: 0.99 });
+  assert(round1.nextState.currentRound === 2, 'Advanced from Round 1 to Round 2');
+  assert(round1.nextState.subject === 'science', 'Round 2 subject is Science');
+  assert(round1.nextState.activeDebuff?.reduction === 0.40, 'Ichika 40% Actress Bluff debuff active');
+  assert(round1.result.isVictory === false, 'Not victory yet');
+
+  // Round 2: Yotsuba acts -> heals & deploys shield
+  const round2 = executeRoundTurn(round1.nextState, round1.nextSisters, null, 3, { damageFactor: 0.5, charmRoll: 0.99 });
+  assert(round2.nextState.currentRound === 3, 'Advanced from Round 2 to Round 3');
+  assert(round2.nextState.subject === 'history', 'Round 3 subject is History');
+  assert(round2.nextState.shieldActive === true, 'Yotsuba shield active for next round');
+
+  // Round 3: Miku acts on History with Fuutarou support -> Shield blocks damage, Miku guaranteed crit triggers 100+ points victory!
+  const round3 = executeRoundTurn(round2.nextState, round2.nextSisters, fuutarouSupport, 2, { damageFactor: 0.5, charmRoll: 0.0 });
+  assert(round3.result.shieldBlocked === true, 'Round 3 examiner pressure was completely absorbed by Yotsuba shield');
+  assert(round3.result.damageTaken === 0, 'Round 3 damage taken was 0');
+  assert(round3.result.isCritical === true, 'Miku scored a guaranteed critical hit');
+  assert(round3.nextState.testProgress >= 100, 'Test progress reached 100 points');
+  assert(round3.nextState.isVictory === true, '100点 満点 - BESTANDEN! Victory confirmed');
+  assert(round3.nextState.isActive === false, 'Battle marked as finished');
+  console.log('✅ 3-Phase Round Flow (Step A -> Step B -> Step C) & Victory resolution verified.');
 
   testSection('🎉 ALL TESTS PASSED SUCCESSFULLY! 100% SPEC COMPLIANCE.');
 }

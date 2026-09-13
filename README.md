@@ -290,6 +290,58 @@ $$\text{Market Value} = \text{Base Value}(\text{Rarity}) \times \text{Multiplier
   - Minimum floor ($t \ge 24\text{h}$ or near-completion): $50\ ★$ Stardust (free manual unclamp once $t \ge 24\text{h}$).
 - **Restoration Certification Floor:** Guaranteed Grade $\ge 7.0$ (Crisp) minimum upon re-grading, with amber `RE-CERTIFIED / RESTORED` slab badge.
 
+### 7. Exam Showdown: Academic Combat Engine & Turn Flow (v2.4.0)
+- **High-Stakes Tactical Auto-Battler:** A turn-based classroom combat system where a team of 5 Nakano sisters and 1 Support Tutor faces strict examiners (Maruo Nakano, School Board Proctor, Rival Takeda) across 5 academic rounds (Math $\to$ Science $\to$ History $\to$ Literature $\to$ English).
+- **Core Victory Contract:** Achieve **100 Test Points** before team mental stamina (**Resolve**) drops to 0.
+- **3-Phase Round Flow:**
+  - **Step A: Examiner Pressure Phase:**
+    $$\text{Damage} = \text{round}\Big(\text{rand}(\text{stressVariance}[0], \text{stressVariance}[1]) \times \text{DebuffMultiplier}\Big)$$
+    - If `shieldActive === true`, damage is completely absorbed ($0$ damage) and the shield dissipates.
+    - If `teamResolveCurrent \le 0`, triggers immediate Defeat (**F - Durchgefallen**).
+  - **Step B: Player Action Phase:**
+    - Active sister executes her signature skill.
+    - Other 4 unpicked sisters contribute passive baseline assistance: $15\%$ of individual IQ ($\text{round}(\text{IQ}_i \times 0.15)$).
+    - Charm Critical Strike Roll: if $\text{rand}(0, 1) < \text{EffectiveCharm}$, points double ($2\times$) accompanied by screen shake.
+  - **Step C: Resolution Phase:**
+    - If $\text{testProgress} \ge 100$, triggers immediate Victory (**100点 満点 - BESTANDEN!**).
+    - If 5 rounds expire without reaching 100 points, triggers Defeat (**F - Durchgefallen**).
+- **Combat Attribute Derivation:**
+  - **IQ (Test Damage by Rarity):**
+    $\text{C} = 12$, $\text{UC} = 18$, $\text{R} = 28$, $\text{SR} = 42$, $\text{UR} = 65$, $\text{SEC} = 80$, $\text{MR} = 95$.
+    $$\text{Final IQ} = \text{round}\Big(\text{Base IQ} \times (1.0 + \text{TutorIQBuff})\Big)$$
+  - **Charm (Critical Strike Probability by Surface Finish):**
+    $\text{Raw} = 5\%$, $\text{Holo} = 15\%$, $\text{Sparkle} = 25\%$, $\text{Rainbow} = 40\%$, $\text{Gold-Etched} = 50\%$, $\text{Signed} = 65\%$.
+  - **Resolve (Mental Stamina Contribution by BGS Grade):**
+    $\text{Raw} = 120$, $\text{Grade 1–3} = 140$, $\text{Grade 4–6} = 200$, $\text{Crisp 7–8} = 280$, $\text{Mint 9} = 400$, $\text{Gem Mint 10} = 520$, $\text{Black Label} = 680$.
+    $$\text{Team Resolve Max} = \sum_{i=1}^{5} \text{Resolve}_i$$
+- **Nakano Sister Signature Skill Roster:**
+  - **Ichika (*Actress Bluff*):** Activates a 2-round debuff reducing examiner pressure by $40\%$, generating base IQ.
+  - **Nino (*Sharp Tongue*):** Converts $50\%$ of incoming examiner pressure into bonus test points, and raises team Charm by $+25\%$ for the remainder of the battle.
+  - **Miku (*Sengoku Tactics*):** Triples IQ on History exams ($2\times$ otherwise). Guarantees an automatic $100\%$ Critical Strike if Fuutarou is equipped as Support Tutor.
+  - **Yotsuba (*Full Effort*):** Restores $+35\%$ of maximum team Resolve and deploys a $100\%$ stress-absorption shield for the following round.
+  - **Itsuki (*Brain-Food Appetite*):** Turn 1 eats Curry/Borgar (generates $0$ points, heals $+15\%$ Resolve, gains `isCharged = true`). Turn 2 releases Borgar Strike for $350\%$ base IQ.
+- **Examiner Boss Roster:**
+  - **Maruo Nakano (*The Unyielding Examiner*):** Base Pressure: $180$, Variance: $[160, 200]$, Weakness: History ($+25\%$ points). Penalty: Parental Intimidation ($-15\%$ team Charm). Reward: $4{,}500\ \yen$, $120\ ★$ Stardust, 1x Kiosk Voucher.
+  - **School Board Proctor (*Standardized Testing Board*):** Base Pressure: $110$, Variance: $[95, 125]$, Weakness: Math. Reward: $2{,}000\ \yen$, $50\ ★$ Stardust.
+  - **Yusuke Takeda (*Aspiring Top Student*):** Base Pressure: $140$, Variance: $[125, 155]$, Weakness: English. Penalty: Steals 10 test points if scoring under 20 in any round. Reward: $3{,}200\ \yen$, $80\ ★$ Stardust, 1x Test-Sheet Fast Pass.
+- **Procedural Web Audio API Sound Effects:**
+  - `chalk_scribble`: Filtered white noise with pitch modulation for chalkboard math writing.
+  - `manga_slash`: High-frequency noise burst with fast exponential decay for anime cut-ins.
+  - `crit_flash`: Shimmering high sine chords ($880\text{Hz} \to 1760\text{Hz}$) for critical hits.
+  - `stress_impact`: Low resonant triangle boom ($80\text{Hz} \to 30\text{Hz}$) for examiner pressure.
+  - `heartbeat_pulse`: Dual sub-bass thump ($55\text{Hz}$) triggering when team Resolve falls below $25\%$.
+  - `hanko_slam`: Heavy transient woodblock thud with resonant decay for victory stamp.
+- **Manga Cut-Ins & Hanko Victory Sequence:**
+  - 800ms 15-degree diagonal anime action slash with character quote banners, speed lines, and signature colored aura.
+  - Japanese lined test paper victory modal with authentic red Hanamaru flower stamp (**花丸 - 100点 満点 合格**), animated score counter, and persistent currency claim.
+- **Slide-Over Deck-Builder & Persistent Navigation Dock:**
+  - Sleek slide-over deck builder allowing assignment, replacement, and unmounting of 5 sister cards and 1 support tutor with real-time stats and auto-fill.
+  - Persistent bottom navigation dock with Graduation Cap icon and live pulsing battle status indicator.
+- **Automated Monte Carlo Audit (`scripts/test-battle-engine.ts`):**
+  - Runs 1,000 automated simulated matches per deck tier against Maruo Nakano.
+  - Mathematically verifies all-Common win rate ($15\% \dots 25\%$) and all-UR / Graded win rate ($75\% \dots 90\%$).
+  - Guarantees zero division-by-zero, zero negative resolve crashes, and zero infinite loops.
+
 ---
 
 ## 🏗️ Project Architecture
@@ -313,7 +365,8 @@ tqqtcg/
 │   └── packs/                   # High-resolution 3D booster foil pack wraps
 ├── rules.md                     # Strict development protocol & architectural standards
 ├── scripts/
-│   ├── test-engine.ts           # Comprehensive test suite (10,000-roll Monte Carlo audit & Stage 1/2 tests)
+│   ├── test-battle-engine.ts    # 1,000-match Monte Carlo battle audit verifying win rates & invariants
+│   ├── test-engine.ts           # Comprehensive test suite (13 sections covering all game systems)
 │   └── verify-tqq-assets.ts     # Strict Linux/Vercel case-sensitivity & asset taxonomy audit
 ├── src/
 │   ├── app/
@@ -321,10 +374,15 @@ tqqtcg/
 │   │   ├── page.tsx             # Main entry point (renders GrandBinder view switcher)
 │   │   └── showcase/page.tsx    # Interactive sandbox showcase & inspection playground
 │   ├── components/
+│   │   ├── battle/
+│   │   │   ├── BattleDeckDrawer.tsx     # Slide-over tactical deck builder with auto-fill & stat preview
+│   │   │   ├── ExamShowdownArena.tsx    # Night chalkboard battlefield, dual gauges & dynamic taunts
+│   │   │   ├── HankoVictoryModal.tsx    # Lined test paper modal with red Hanamaru stamp ceremony
+│   │   │   └── MangaSkillCutin.tsx      # 800ms 15-degree diagonal anime action slash & quote banners
 │   │   ├── binder/
 │   │   │   ├── BinderGrid.tsx       # Collection card grid with view filters and stats
 │   │   │   ├── CardActionModal.tsx  # Rebalanced two-column inspect modal with responsive unclipped slab stage
-│   │   │   └── GrandBinder.tsx      # Main hub with Showcase / Collection / Card-Dex view switcher
+│   │   │   └── GrandBinder.tsx      # Main hub with Showcase / Collection / Card-Dex / Battle view switcher
 │   │   ├── card/
 │   │   │   ├── CardRenderer.tsx     # Holographic foil shader engine & card frame
 │   │   │   └── GradingSlab.tsx      # Acrylic BGS-style grading slab with subgrade plates
@@ -362,8 +420,10 @@ tqqtcg/
 │   │       ├── RestorationWorkbenchModal.tsx # Full-screen self-healing mat workbench container & glove vignette
 │   │       └── SleeveStep.tsx                # Semi-rigid Card Saver 1 insertion & Post-it checklist seal
 │   ├── config/
+│   │   ├── battleCalculations.ts # Base IQ, Charm crit probabilities, Resolve & Support scaling formulas
 │   │   ├── cardsData.ts         # Catalog of 42 cards with metadata and quotes
 │   │   ├── economy.ts           # Pricing matrices, valuation formulas, drop tables, pity, synergies
+│   │   ├── examiners.ts         # Boss examiners: Maruo Nakano, School Board Proctor, Yusuke Takeda
 │   │   ├── patchNotes.ts        # Active single-release patch notes configuration & re-exports
 │   │   ├── supportBuffs.ts      # Support buff dictionary, Grade 9/10 scaling, & active buff resolver
 │   │   └── version.ts           # Semantic APP_VERSION and CURRENT_PATCH_NOTE contract
@@ -371,12 +431,15 @@ tqqtcg/
 │   │   ├── useIdleRevenue.ts    # Background-safe idle yield calculator with 12h offline cap
 │   │   └── useSmoothTilt.ts     # Overdamped 3D spring tilt hook with dynamic lighting
 │   ├── store/
+│   │   ├── useBattleStore.ts    # Battle store managing deck construction, combat turns & round flow
 │   │   └── useGameStore.ts      # Persistent Zustand store (currencies, inventory, showcase, dex, stats)
 │   ├── types/
+│   │   ├── battle.ts            # Battle interfaces (SubjectType, BattleStats, Examiner, BattleDeck)
 │   │   └── card.ts              # Strict TypeScript interfaces, enums, and types
 │   └── utils/
-│       ├── audio.ts             # Native Web Audio API procedural synthesis engine
+│       ├── audio.ts             # Native Web Audio API procedural synthesis engine (6 combat SFX)
 │       ├── audioEngine.ts       # Sound synthesizer client instance with coin & receipt pulses
+│       ├── battleEngine.ts      # 3-phase combat turn execution engine (Pressure, Action, Resolution)
 │       └── tqqAssetResolver.ts  # Deterministic case mapper & self-healing legacy path migrator
 ├── package.json
 ├── tsconfig.json
@@ -417,11 +480,14 @@ tqqtcg/
 
 ## 🧪 Verification & Testing
 
-The repository contains an automated Monte Carlo test suite (`scripts/test-engine.ts`) across 11 complete sections that run 10,000 iterations to verify drop distributions, pity thresholds, grading probabilities, showcase synergies, Support Altar buff scaling, persistent 24h clamping & skip cost curve, and paid re-grading certifications.
+The repository contains an automated Monte Carlo test suite (`scripts/test-engine.ts`) across 13 complete sections as well as the specialized 1,000-match combat audit (`scripts/test-battle-engine.ts`):
 
 ```bash
-# Run the complete test suite (Sections 1 through 11)
+# Run the complete test suite (Sections 1 through 13 + 1,000-match Monte Carlo combat audit)
 npm test
+
+# Run only the 1,000-match Exam Showdown Monte Carlo combat audit
+npm run test:battle
 
 # Verify all card illustrations and case-sensitivity on disk
 npm run verify:assets

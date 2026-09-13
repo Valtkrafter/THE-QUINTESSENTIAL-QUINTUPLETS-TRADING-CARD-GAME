@@ -12,7 +12,13 @@ export type SoundType =
   | 'clean_chime'
   | 'clamp_ratchet'
   | 'wax_buff_rub'
-  | 'pen_scribble';
+  | 'pen_scribble'
+  | 'chalk_scribble'
+  | 'manga_slash'
+  | 'crit_flash'
+  | 'stress_impact'
+  | 'heartbeat_pulse'
+  | 'hanko_slam';
 
 class ProceduralSoundEngine {
   private ctx: AudioContext | null = null;
@@ -420,6 +426,220 @@ class ProceduralSoundEngine {
         filter.connect(gain);
         gain.connect(ctx.destination);
         noise.start(now);
+        break;
+      }
+
+      case 'chalk_scribble': {
+        // High-frequency abrasive resonant noise bursts (2800Hz -> 5400Hz, 60ms)
+        const dur = 0.06;
+        const bufferSize = Math.floor(ctx.sampleRate * dur);
+        const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] = (Math.random() * 2 - 1) * (Math.random() > 0.25 ? 1 : 0.2);
+        }
+
+        const noise = ctx.createBufferSource();
+        noise.buffer = buffer;
+
+        const filter = ctx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.Q.setValueAtTime(3.5, now);
+        filter.frequency.setValueAtTime(2800, now);
+        filter.frequency.exponentialRampToValueAtTime(5400, now + dur);
+
+        const gain = ctx.createGain();
+        gain.gain.setValueAtTime(0.001, now);
+        gain.gain.linearRampToValueAtTime(volume * 0.6, now + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+
+        noise.connect(filter);
+        filter.connect(gain);
+        gain.connect(ctx.destination);
+        noise.start(now);
+        break;
+      }
+
+      case 'manga_slash': {
+        // Sweeping resonant white noise down-sweep (4000Hz -> 600Hz, Q = 4.0, 220ms)
+        const dur = 0.22;
+        const bufferSize = Math.floor(ctx.sampleRate * dur);
+        const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] = Math.random() * 2 - 1;
+        }
+
+        const noise = ctx.createBufferSource();
+        noise.buffer = buffer;
+
+        const filter = ctx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.Q.setValueAtTime(4.0, now);
+        filter.frequency.setValueAtTime(4000, now);
+        filter.frequency.exponentialRampToValueAtTime(600, now + dur);
+
+        const gain = ctx.createGain();
+        gain.gain.setValueAtTime(0.001, now);
+        gain.gain.linearRampToValueAtTime(volume * 0.9, now + 0.015);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+
+        noise.connect(filter);
+        filter.connect(gain);
+        gain.connect(ctx.destination);
+        noise.start(now);
+        break;
+      }
+
+      case 'crit_flash': {
+        // Bright dual chime triad with metallic ringing overtone (1396Hz + 2093Hz)
+        const dur = 0.35;
+        const osc1 = ctx.createOscillator();
+        const osc2 = ctx.createOscillator();
+        const oscMetal = ctx.createOscillator();
+
+        const gain = ctx.createGain();
+        gain.gain.setValueAtTime(0.001, now);
+        gain.gain.linearRampToValueAtTime(volume * 0.8, now + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+
+        osc1.type = 'sine';
+        osc1.frequency.setValueAtTime(1396, now); // F6
+        osc2.type = 'sine';
+        osc2.frequency.setValueAtTime(2093, now); // C7
+        oscMetal.type = 'triangle';
+        oscMetal.frequency.setValueAtTime(4186, now); // C8 shimmer
+
+        osc1.connect(gain);
+        osc2.connect(gain);
+        oscMetal.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc1.start(now);
+        osc2.start(now);
+        oscMetal.start(now);
+        osc1.stop(now + dur);
+        osc2.stop(now + dur);
+        oscMetal.stop(now + dur);
+        break;
+      }
+
+      case 'stress_impact': {
+        // Sub-bass punch (65Hz -> 28Hz, 450ms) paired with low-mid thud
+        const dur = 0.45;
+        const sub = ctx.createOscillator();
+        const subGain = ctx.createGain();
+        sub.type = 'sine';
+        sub.frequency.setValueAtTime(65, now);
+        sub.frequency.exponentialRampToValueAtTime(28, now + dur);
+
+        subGain.gain.setValueAtTime(0.001, now);
+        subGain.gain.linearRampToValueAtTime(volume * 0.95, now + 0.02);
+        subGain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+
+        sub.connect(subGain);
+        subGain.connect(ctx.destination);
+        sub.start(now);
+        sub.stop(now + dur);
+
+        // Low-mid thud burst
+        const thudBuffer = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.08), ctx.sampleRate);
+        const thudData = thudBuffer.getChannelData(0);
+        for (let i = 0; i < thudData.length; i++) {
+          thudData[i] = Math.random() * 2 - 1;
+        }
+        const thudNoise = ctx.createBufferSource();
+        thudNoise.buffer = thudBuffer;
+        const thudFilter = ctx.createBiquadFilter();
+        thudFilter.type = 'lowpass';
+        thudFilter.frequency.setValueAtTime(180, now);
+
+        const thudGain = ctx.createGain();
+        thudGain.gain.setValueAtTime(volume * 0.6, now);
+        thudGain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+
+        thudNoise.connect(thudFilter);
+        thudFilter.connect(thudGain);
+        thudGain.connect(ctx.destination);
+        thudNoise.start(now);
+        break;
+      }
+
+      case 'heartbeat_pulse': {
+        // Sub-bass double thump (55Hz / 45Hz)
+        const t1Dur = 0.12;
+        const osc1 = ctx.createOscillator();
+        const gain1 = ctx.createGain();
+        osc1.type = 'sine';
+        osc1.frequency.setValueAtTime(55, now);
+        osc1.frequency.exponentialRampToValueAtTime(40, now + t1Dur);
+        gain1.gain.setValueAtTime(0.001, now);
+        gain1.gain.linearRampToValueAtTime(volume * 0.85, now + 0.02);
+        gain1.gain.exponentialRampToValueAtTime(0.001, now + t1Dur);
+
+        osc1.connect(gain1);
+        gain1.connect(ctx.destination);
+        osc1.start(now);
+        osc1.stop(now + t1Dur);
+
+        // Second thump at +0.16s
+        const t2Start = now + 0.16;
+        const t2Dur = 0.14;
+        const osc2 = ctx.createOscillator();
+        const gain2 = ctx.createGain();
+        osc2.type = 'sine';
+        osc2.frequency.setValueAtTime(45, t2Start);
+        osc2.frequency.exponentialRampToValueAtTime(35, t2Start + t2Dur);
+        gain2.gain.setValueAtTime(0.001, t2Start);
+        gain2.gain.linearRampToValueAtTime(volume * 0.7, t2Start + 0.02);
+        gain2.gain.exponentialRampToValueAtTime(0.001, t2Start + t2Dur);
+
+        osc2.connect(gain2);
+        gain2.connect(ctx.destination);
+        osc2.start(t2Start);
+        osc2.stop(t2Start + t2Dur);
+        break;
+      }
+
+      case 'hanko_slam': {
+        // Massive low-end acoustic thump (80Hz -> 30Hz, 180ms) + high-frequency paper slap (1800Hz)
+        const dur = 0.18;
+        const sub = ctx.createOscillator();
+        const subGain = ctx.createGain();
+        sub.type = 'sine';
+        sub.frequency.setValueAtTime(80, now);
+        sub.frequency.exponentialRampToValueAtTime(30, now + dur);
+        subGain.gain.setValueAtTime(0.001, now);
+        subGain.gain.linearRampToValueAtTime(volume * 1.0, now + 0.015);
+        subGain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+
+        sub.connect(subGain);
+        subGain.connect(ctx.destination);
+        sub.start(now);
+        sub.stop(now + dur);
+
+        // Paper slap highpass burst (1800Hz, 40ms)
+        const slapDur = 0.04;
+        const slapBuffer = ctx.createBuffer(1, Math.floor(ctx.sampleRate * slapDur), ctx.sampleRate);
+        const slapData = slapBuffer.getChannelData(0);
+        for (let i = 0; i < slapData.length; i++) {
+          slapData[i] = Math.random() * 2 - 1;
+        }
+        const slapNoise = ctx.createBufferSource();
+        slapNoise.buffer = slapBuffer;
+        const slapFilter = ctx.createBiquadFilter();
+        slapFilter.type = 'bandpass';
+        slapFilter.frequency.setValueAtTime(1800, now);
+        slapFilter.Q.setValueAtTime(3.0, now);
+
+        const slapGain = ctx.createGain();
+        slapGain.gain.setValueAtTime(volume * 0.8, now);
+        slapGain.gain.exponentialRampToValueAtTime(0.001, now + slapDur);
+
+        slapNoise.connect(slapFilter);
+        slapFilter.connect(slapGain);
+        slapGain.connect(ctx.destination);
+        slapNoise.start(now);
         break;
       }
     }

@@ -23,9 +23,11 @@ import { PackOpeningModal } from '../pack/PackOpeningModal';
 import { SelectBoosterModal } from '../pack/SelectBoosterModal';
 import { Vitrine } from '../showcase/Vitrine';
 import { CardDex } from '../catalog/CardDex';
+import { ExamShowdownArena } from '../battle/ExamShowdownArena';
 import { PatchNotesModal } from '../layout/PatchNotesModal';
 import { soundEngine } from '../../utils/audioEngine';
-import Link from 'next/link';
+import { playSound } from '../../utils/audio';
+import { useBattleStore } from '../../store/useBattleStore';
 import {
   Sparkles,
   Coins,
@@ -44,11 +46,12 @@ import {
   ExternalLink,
   Store,
   AlertTriangle,
+  GraduationCap,
 } from 'lucide-react';
 
 type FilterType = 'all' | 'raw' | 'graded' | 'ichika' | 'nino' | 'miku' | 'yotsuba' | 'itsuki' | 'support';
 type SortType = 'value_desc' | 'value_asc' | 'rarity_desc' | 'grade_desc' | 'recent';
-type MainView = 'vitrine' | 'binder' | 'dex';
+type MainView = 'vitrine' | 'binder' | 'dex' | 'battle';
 
 export const GrandBinder: React.FC = () => {
   // Main view switcher (Vitrine Showcase / Collection / Card-Dex)
@@ -65,6 +68,7 @@ export const GrandBinder: React.FC = () => {
   const resetSave = useGameStore((state) => state.resetSave);
   const lastSeenPatchVersion = useGameStore((state) => state.lastSeenPatchVersion);
   const markPatchNotesSeen = useGameStore((state) => state.markPatchNotesSeen);
+  const isBattleActive = useBattleStore((state) => state.battleState.isActive);
 
   // Patch Notes auto-show state (opens once on new version, can be re-opened manually)
   const [showPatchNotes, setShowPatchNotes] = useState<boolean>(false);
@@ -343,6 +347,28 @@ export const GrandBinder: React.FC = () => {
             <span>📖</span>
             <span>Card-Dex ({dexDiscoveredCount}/42)</span>
           </button>
+          <button
+            onClick={() => {
+              playSound('card_slide');
+              setActiveMainView('battle');
+            }}
+            className={`px-3.5 py-1.5 rounded-xl font-bold transition flex items-center gap-1.5 relative ${
+              activeMainView === 'battle'
+                ? 'bg-gradient-to-r from-red-600 via-amber-600 to-red-600 text-white shadow-md font-black'
+                : 'text-zinc-400 hover:text-white hover:bg-white/5'
+            }`}
+          >
+            <div className="relative flex items-center">
+              <GraduationCap className="w-4 h-4 text-amber-300" />
+              {isBattleActive && (
+                <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-red-500 animate-ping shadow-[0_0_6px_#ef4444]" />
+              )}
+            </div>
+            <span>Exam Showdown</span>
+            {isBattleActive && (
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_4px_#10b981]" />
+            )}
+          </button>
         </div>
 
         {/* Right: Currencies & Primary Pack Opener */}
@@ -572,6 +598,15 @@ export const GrandBinder: React.FC = () => {
       )}
 
       {/* ============================================================
+          VIEW 4: EXAM SHOWDOWN ARENA
+          ============================================================ */}
+      {activeMainView === 'battle' && (
+        <main className="flex-1 min-h-0 overflow-hidden flex flex-col">
+          <ExamShowdownArena onExit={() => setActiveMainView('vitrine')} />
+        </main>
+      )}
+
+      {/* ============================================================
           CONTEXTUAL CARD ACTION MODAL
           ============================================================ */}
       <CardActionModal
@@ -710,6 +745,86 @@ export const GrandBinder: React.FC = () => {
           setShowPatchNotes(false);
         }}
       />
+
+      {/* ============================================================
+          BOTTOM NAVIGATION DOCK (Persistent Quick Switcher)
+          ============================================================ */}
+      <nav
+        aria-label="Bottom Navigation Dock"
+        className="fixed bottom-3 left-1/2 -translate-x-1/2 z-40 bg-zinc-950/95 border border-white/15 backdrop-blur-xl px-3 py-1.5 rounded-2xl shadow-2xl flex items-center gap-1.5 font-mono text-xs select-none"
+      >
+        <button
+          onClick={() => {
+            playSound('card_slide');
+            setActiveMainView('vitrine');
+          }}
+          className={`px-3 py-1.5 rounded-xl font-bold transition flex items-center gap-1.5 ${
+            activeMainView === 'vitrine'
+              ? 'bg-amber-500 text-zinc-950 font-black shadow-md'
+              : 'text-zinc-400 hover:text-white hover:bg-white/5'
+          }`}
+        >
+          <span>🏛️</span>
+          <span className="hidden sm:inline">Showcase</span>
+        </button>
+
+        <button
+          onClick={() => {
+            playSound('card_slide');
+            setActiveMainView('binder');
+          }}
+          className={`px-3 py-1.5 rounded-xl font-bold transition flex items-center gap-1.5 relative ${
+            activeMainView === 'binder'
+              ? 'bg-amber-500 text-zinc-950 font-black shadow-md'
+              : 'text-zinc-400 hover:text-white hover:bg-white/5'
+          }`}
+        >
+          <span>🎴</span>
+          <span className="hidden sm:inline">Collection</span>
+          {clampedCompletedCards.length > 0 && (
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_6px_#10b981]" />
+          )}
+        </button>
+
+        <button
+          onClick={() => {
+            playSound('card_slide');
+            setActiveMainView('dex');
+          }}
+          className={`px-3 py-1.5 rounded-xl font-bold transition flex items-center gap-1.5 ${
+            activeMainView === 'dex'
+              ? 'bg-amber-500 text-zinc-950 font-black shadow-md'
+              : 'text-zinc-400 hover:text-white hover:bg-white/5'
+          }`}
+        >
+          <span>📖</span>
+          <span className="hidden sm:inline">Card-Dex</span>
+        </button>
+
+        <button
+          onClick={() => {
+            playSound('card_slide');
+            setActiveMainView('battle');
+          }}
+          className={`px-3 py-1.5 rounded-xl font-bold transition flex items-center gap-1.5 relative ${
+            activeMainView === 'battle'
+              ? 'bg-gradient-to-r from-red-600 via-amber-600 to-red-600 text-white font-black shadow-md'
+              : 'text-zinc-400 hover:text-white hover:bg-white/5'
+          }`}
+        >
+          <div className="relative flex items-center">
+            <GraduationCap className="w-4 h-4 text-amber-300" />
+            {isBattleActive && (
+              <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-red-500 animate-ping shadow-[0_0_6px_#ef4444]" />
+            )}
+          </div>
+          <span className="hidden sm:inline">Exam Showdown</span>
+          <span className="sm:hidden">Battle</span>
+          {isBattleActive && (
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_4px_#10b981]" />
+          )}
+        </button>
+      </nav>
     </div>
   );
 };

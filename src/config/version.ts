@@ -1,4 +1,4 @@
-export const APP_VERSION = '2.3.0'; // Increment with each task
+export const APP_VERSION = '2.4.0'; // Increment with each task
 
 export interface PatchNote {
   version: string;
@@ -10,15 +10,16 @@ export interface PatchNote {
 
 // ALWAYS overwrite this object with ONLY the latest release
 export const CURRENT_PATCH_NOTE: PatchNote = {
-  version: APP_VERSION,
-  title: 'Franchise Asset Scoping & Self-Healing Pipeline',
-  date: new Date().toISOString().split('T')[0],
+  version: '2.4.0',
+  date: '2026-09-13',
+  title: 'Academic Showdown & Battle Engine ⚔️',
   highlights: [
-    'Franchise Asset Scoping: Reorganized card illustrations into dedicated /cards/TQQ/ character directories for future multi-series support.',
-    'Self-Healing Asset Pipeline: Cards automatically resolve artwork paths and heal legacy save data on-the-fly with zero broken links.',
+    'Exam Showdown: Take on Maruo Nakano and strict examiners in an auto-battler showdown.',
+    'Manga Skill Cut-Ins: Unleash signature character abilities with dramatic anime cinematic slashes.',
+    'Deck Builder & Hanko Rewards: Assemble your 5 sisters + tutor to earn Yen, Stardust, and Pack Vouchers.',
   ],
   fixes: [
-    'Fixed card artwork returning 404 errors on Vercel Linux production by matching exact on-disk directory casing.',
-    'Fixed existing collections and vitrine showcase cards failing to load artwork after directory migrations.',
+    'Balanced card stats: IQ, Charm, and Resolve now scale directly from Rarity, Finish, and BGS Slabs.',
+    'Resolved workbench layout bugs and solidified 100vh containment across all viewports.',
   ],
 };

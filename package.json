@@ -8,7 +8,8 @@
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
-    "test": "tsx scripts/test-engine.ts",
+    "test": "tsx scripts/test-engine.ts && tsx scripts/test-battle-engine.ts",
+    "test:battle": "tsx scripts/test-battle-engine.ts",
     "verify:assets": "tsx scripts/verify-tqq-assets.ts"
   },
   "dependencies": {
