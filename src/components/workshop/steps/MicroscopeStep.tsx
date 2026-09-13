@@ -267,7 +267,7 @@ export const MicroscopeStep: React.FC<MicroscopeStepProps> = ({ card, onComplete
             RIGHT / BOTTOM: WORKBENCH MAT CARD POSITIONER & FLIP CONTROL
             ============================================================ */}
         <div className="flex flex-col items-center gap-3 w-full">
-          <div className="relative w-[210px] aspect-[63/88] rounded-2xl overflow-hidden shadow-2xl border-2 border-white/20 bg-zinc-900 flex items-center justify-center">
+          <div className="relative w-[210px] sm:w-[240px] aspect-[63/88] flex-shrink-0 rounded-2xl overflow-hidden shadow-2xl border-2 border-white/20 bg-zinc-900 flex items-center justify-center">
             {!isFlipped ? (
               <CardRenderer
                 card={card}

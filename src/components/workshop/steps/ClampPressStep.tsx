@@ -127,7 +127,7 @@ export const ClampPressStep: React.FC<ClampPressStepProps> = ({ card, onComplete
 
       {/* 2. INTERACTIVE WORKBENCH AREA (Flexible & Scaled with min-h-0) */}
       <main className="flex-1 min-h-0 w-full overflow-y-auto flex items-center justify-center p-2 sm:p-4 my-auto">
-        <div className="relative max-h-[300px] sm:max-h-[340px] md:max-h-[380px] aspect-square h-full w-auto flex items-center justify-center my-auto">
+        <div className="relative w-[300px] sm:w-[350px] md:w-[390px] aspect-square flex-shrink-0 flex items-center justify-center my-auto">
           {/* WORKPRO Orange/Black Bar Clamps - Left */}
           <div className="absolute left-1 sm:left-4 z-30 flex flex-col items-center pointer-events-none">
             {/* Top Clamp Jaw */}
@@ -165,7 +165,7 @@ export const ClampPressStep: React.FC<ClampPressStepProps> = ({ card, onComplete
           </div>
 
           {/* Central Acrylic Sandwich & Card Holder */}
-          <div className="relative w-[210px] sm:w-[240px] aspect-[63/88] rounded-2xl flex items-center justify-center p-3">
+          <div className="relative w-[210px] sm:w-[240px] md:w-[260px] aspect-[63/88] flex-shrink-0 rounded-2xl flex items-center justify-center p-3">
             {/* Bottom 12mm Acrylic Base Plate */}
             <div className="absolute inset-0 rounded-2xl bg-white/10 border-2 border-white/30 backdrop-blur-md shadow-2xl" />
 

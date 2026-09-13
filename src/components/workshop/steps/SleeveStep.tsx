@@ -136,7 +136,7 @@ export const SleeveStep: React.FC<SleeveStepProps> = ({ card, onFinish }) => {
       {/* 2. INTERACTIVE WORKBENCH AREA (Flexible & Scaled with min-h-0) */}
       <main className="flex-1 min-h-0 w-full overflow-y-auto flex flex-col items-center justify-center p-2 sm:p-4 my-auto gap-3">
         {/* Semi-Rigid Outer Holder Shell */}
-        <div className="relative max-h-[280px] sm:max-h-[320px] md:max-h-[360px] aspect-[63/95] w-auto h-full rounded-xl border-2 border-cyan-400/40 bg-gradient-to-b from-cyan-950/20 via-white/5 to-black/40 shadow-2xl backdrop-blur-sm p-2 sm:p-3 pt-5 sm:pt-6 flex flex-col items-center justify-end overflow-hidden flex-shrink-0">
+        <div className="relative w-[240px] sm:w-[280px] md:w-[300px] aspect-[63/95] flex-shrink-0 rounded-xl border-2 border-cyan-400/40 bg-gradient-to-b from-cyan-950/20 via-white/5 to-black/40 shadow-2xl backdrop-blur-sm p-2 sm:p-3 pt-5 sm:pt-6 flex flex-col items-center justify-end overflow-hidden">
           {/* Card Saver Lip Flap */}
           <div className="absolute top-0 inset-x-0 h-5 border-b border-cyan-400/30 bg-white/10 flex items-center justify-center pointer-events-none">
             <span className="text-[8px] font-mono text-cyan-300/80 font-bold uppercase tracking-widest">

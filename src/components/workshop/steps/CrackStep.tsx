@@ -142,7 +142,7 @@ export const CrackStep: React.FC<CrackStepProps> = ({ card, onComplete }) => {
               : {}
           }
           transition={{ duration: 0.1, repeat: isPrying ? Infinity : 0 }}
-          className="relative max-h-[320px] sm:max-h-[360px] md:max-h-[400px] aspect-[82/130] w-auto h-full max-w-full rounded-3xl p-3 sm:p-4 flex flex-col items-center justify-center bg-white/5 border border-white/20 shadow-2xl backdrop-blur-sm"
+          className="relative w-[220px] sm:w-[250px] md:w-[270px] aspect-[82/130] flex-shrink-0 rounded-3xl p-3 sm:p-4 flex flex-col items-center justify-center bg-white/5 border border-white/20 shadow-2xl backdrop-blur-sm"
         >
           {/* Outer Slab Acrylic Casing */}
           <div className="absolute inset-0 rounded-3xl border-2 border-white/30 bg-gradient-to-br from-white/10 via-transparent to-black/30 pointer-events-none shadow-[inset_0_0_20px_rgba(255,255,255,0.15)]" />

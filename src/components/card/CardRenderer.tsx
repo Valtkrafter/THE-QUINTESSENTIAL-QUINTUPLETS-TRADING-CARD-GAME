@@ -10,7 +10,7 @@ import { useSmoothTilt } from '../../hooks/useSmoothTilt';
 export interface CardRendererProps {
   card: CardInstance | (CardDefinition & Partial<CardInstance>);
   interactive?: boolean;
-  size?: 'sm' | 'md' | 'lg' | 'full';
+  size?: 'sm' | 'md' | 'lg' | 'full' | 'custom';
   className?: string;
   onClick?: () => void;
   showMarketValue?: boolean;
@@ -398,18 +398,19 @@ export const CardRenderer: React.FC<CardRendererProps> = ({
   };
 
   // Dimensions based on standard 63mm x 88mm ratio
-  const sizeClasses = isThumbnail || size === 'full'
+  const sizeClasses = isThumbnail || size === 'full' || size === 'custom'
     ? 'w-full h-full max-h-full max-w-full'
     : {
         sm: 'w-[190px] max-w-full max-h-full',
         md: 'w-[260px] max-w-full max-h-full',
         lg: 'w-[320px] max-w-full max-h-full',
         full: 'w-full h-full max-h-full max-w-full',
+        custom: 'w-full h-full max-h-full max-w-full',
       }[size];
 
   return (
     <div
-      className={`card-perspective-wrapper ${size === 'full' || isThumbnail ? 'w-full h-full flex items-center justify-center' : 'inline-block'} select-none relative ${isThumbnail ? '' : "before:absolute before:-inset-4 before:content-['']"} ${effectiveInteractive ? 'cursor-pointer' : 'pointer-events-none'} ${className}`}
+      className={`card-perspective-wrapper ${size === 'full' || size === 'custom' || isThumbnail ? 'w-full h-full flex items-center justify-center' : 'inline-block'} select-none relative ${isThumbnail ? '' : "before:absolute before:-inset-4 before:content-['']"} ${effectiveInteractive ? 'cursor-pointer' : 'pointer-events-none'} ${className}`}
       onClick={onClick}
       {...(effectiveDisableTilt || externalLight || !effectiveInteractive ? {} : localTilt.containerProps)}
     >

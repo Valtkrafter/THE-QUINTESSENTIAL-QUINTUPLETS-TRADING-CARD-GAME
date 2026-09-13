@@ -28,6 +28,8 @@ const BALM_DAB_SLOTS: BalmSpot[] = [
   { index: 3, x: 68, y: 74, label: 'Bottom-Right Foil' },
 ];
 
+export const DAB_TARGETS = BALM_DAB_SLOTS;
+
 export const PolishStep: React.FC<PolishStepProps> = ({ card, onComplete }) => {
   const advanceRestorationStep = useGameStore((state) => state.advanceRestorationStep);
 
@@ -174,9 +176,9 @@ export const PolishStep: React.FC<PolishStepProps> = ({ card, onComplete }) => {
 
       {/* 2. INTERACTIVE WORKBENCH AREA (Flexible & Scaled with min-h-0) */}
       <main className="flex-1 min-h-0 w-full overflow-y-auto flex items-center justify-center p-2 sm:p-4 my-auto">
-        <div className="relative flex items-center justify-center gap-4 sm:gap-8 md:gap-12 flex-wrap my-auto">
+        <div className="relative flex items-center justify-center gap-6 sm:gap-10 w-full my-auto flex-wrap sm:flex-nowrap">
           {/* Tool Tray (Restoration Wax Jar & Microfiber Cloth) */}
-          <div className="flex flex-col items-center gap-2 sm:gap-3 bg-zinc-950/90 p-3 rounded-2xl border border-white/10 shadow-2xl flex-shrink-0">
+          <div className="w-[140px] flex-shrink-0 flex flex-col items-center gap-2 sm:gap-3 bg-zinc-950/90 p-3 rounded-2xl border border-white/10 shadow-2xl">
             {/* Kuradashi Golden Balm Jar */}
             <div className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br from-yellow-300 via-amber-400 to-yellow-600 border-2 border-yellow-200 shadow-[0_0_20px_rgba(245,158,11,0.5)] flex flex-col items-center justify-center text-center p-1 cursor-pointer">
               <span className="text-[8px] font-mono font-black text-zinc-950 uppercase leading-none">
@@ -208,26 +210,28 @@ export const PolishStep: React.FC<PolishStepProps> = ({ card, onComplete }) => {
             )}
           </div>
 
-          {/* Central Card with Micro-Scratches, Matte Wax Smears & 3D Gel Dabs */}
+          {/* Interactive Card Stage & Dab Overlay */}
           <div
             onPointerMove={handleCardPointerMove}
             onPointerLeave={() => (lastPointerPosRef.current = null)}
-            className="relative max-h-[300px] sm:max-h-[340px] md:max-h-[380px] aspect-[63/88] w-auto h-full rounded-2xl overflow-hidden shadow-2xl border-2 border-white/20 bg-zinc-900 flex items-center justify-center cursor-pointer select-none"
+            className="relative w-[260px] sm:w-[300px] md:w-[320px] aspect-[63/88] flex-shrink-0 rounded-2xl shadow-2xl overflow-hidden select-none border-2 border-white/20 bg-zinc-900 flex items-center justify-center cursor-pointer"
           >
-            {/* Card Base Renderer */}
-            <CardRenderer
-              card={card}
-              size="full"
-              interactive={false}
-              showMarketValue={false}
-              hideInternalFooter={true}
-              showcaseMode={true}
-            />
+            {/* Base Card Renderer */}
+            <div className="absolute inset-0 w-full h-full pointer-events-none">
+              <CardRenderer
+                card={card}
+                size="custom"
+                interactive={false}
+                showMarketValue={false}
+                hideInternalFooter={true}
+                showcaseMode={true}
+              />
+            </div>
 
             {/* Faint Micro-Scratches Overlay (Fades out as buffProgress reaches 100%) */}
             <svg
               viewBox="0 0 200 280"
-              className="absolute inset-0 w-full h-full pointer-events-none z-20 stroke-white/40 fill-none transition-opacity duration-300"
+              className="absolute inset-0 w-full h-full pointer-events-none z-10 stroke-white/40 fill-none transition-opacity duration-300"
               style={{ opacity: Math.max(0, (1 - buffProgress / 100) * 0.75) }}
             >
               <line x1="30" y1="40" x2="60" y2="55" strokeWidth="0.8" />
@@ -248,7 +252,7 @@ export const PolishStep: React.FC<PolishStepProps> = ({ card, onComplete }) => {
               return (
                 <div
                   key={`smear-${slot.index}`}
-                  className="absolute pointer-events-none z-20 rounded-full transition-opacity duration-200"
+                  className="absolute pointer-events-none z-10 rounded-full transition-opacity duration-200"
                   style={{
                     left: `${slot.x}%`,
                     top: `${slot.y}%`,
@@ -265,53 +269,64 @@ export const PolishStep: React.FC<PolishStepProps> = ({ card, onComplete }) => {
               );
             })}
 
-            {/* 3D Viscous Gel Droplets & Animated Radar Reticles */}
-            {BALM_DAB_SLOTS.map((slot) => {
-              const isDabbed = dabbedSpots.includes(slot.index);
+            {/* Interactive Balm Dabs & Wax Layer Overlay */}
+            <div className="absolute inset-0 w-full h-full z-20">
+              {/* 3D Balm Droplets & Touch Targets */}
+              {BALM_DAB_SLOTS.map((slot) => {
+                const isDabbed = dabbedSpots.includes(slot.index);
 
-              return (
-                <div
-                  key={`dab-${slot.index}`}
-                  onClick={() => handleDabSpot(slot.index)}
-                  className="absolute transform -translate-x-1/2 -translate-y-1/2 z-30 transition-all duration-300 cursor-pointer"
-                  style={{ left: `${slot.x}%`, top: `${slot.y}%` }}
-                >
-                  {isDabbed ? (
-                    /* 3D Viscous Gel Droplet */
-                    <motion.div
-                      initial={{ scale: 0, y: -4 }}
-                      animate={{ scale: [1.25, 1], y: 0 }}
-                      transition={{ type: 'spring', stiffness: 350, damping: 18 }}
-                      className="w-9 h-9 rounded-full relative shadow-[0_4px_8px_rgba(0,0,0,0.6)] transition-opacity duration-500"
-                      style={{
-                        background:
-                          'radial-gradient(circle at 35% 35%, #fef08a 0%, #fbbf24 45%, #b45309 85%, #78350f 100%)',
-                        opacity: Math.max(0, 1 - buffProgress / 85),
-                      }}
-                    >
-                      {/* Specular Reflection Highlight (Gloss Shine Dot) */}
-                      <div className="w-2.5 h-2.5 bg-white rounded-full absolute top-1.5 left-1.5 opacity-90 blur-[0.5px] pointer-events-none" />
-                      {/* Secondary Rim Refraction */}
-                      <div className="w-1.5 h-1 bg-white/50 rounded-full absolute bottom-1 right-1.5 opacity-60 blur-[0.3px] pointer-events-none" />
-                    </motion.div>
-                  ) : (
-                    /* Undabbed State: High-Contrast Animated Radar Reticle */
-                    <div className="relative w-10 h-10 flex items-center justify-center filter drop-shadow-[0_2px_4px_rgba(0,0,0,0.95)]">
-                      {/* Rotating Dashed Amber Ring */}
-                      <div className="w-10 h-10 border-2 border-dashed border-[#f59e0b] rounded-full animate-[spin_6s_linear_infinite]" />
+                return (
+                  <button
+                    key={`dab-${slot.index}`}
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDabSpot(slot.index);
+                    }}
+                    disabled={isDabbed || allDabbed}
+                    aria-label={`Dab ${slot.label}`}
+                    style={{ top: `${slot.y}%`, left: `${slot.x}%` }}
+                    className={`absolute -translate-x-1/2 -translate-y-1/2 w-11 h-11 flex items-center justify-center transition-all duration-300 ${
+                      isDabbed ? 'cursor-default pointer-events-none' : 'cursor-pointer'
+                    }`}
+                  >
+                    {isDabbed ? (
+                      /* 3D Viscous Gel Droplet */
+                      <motion.div
+                        initial={{ scale: 0, y: -4 }}
+                        animate={{ scale: [1.25, 1], y: 0 }}
+                        transition={{ type: 'spring', stiffness: 350, damping: 18 }}
+                        className="w-9 h-9 rounded-full relative shadow-[0_4px_8px_rgba(0,0,0,0.6)] transition-opacity duration-500"
+                        style={{
+                          background:
+                            'radial-gradient(circle at 35% 35%, #fef08a 0%, #fbbf24 45%, #b45309 85%, #78350f 100%)',
+                          opacity: Math.max(0, 1 - buffProgress / 85),
+                        }}
+                      >
+                        {/* Specular Reflection Highlight (Gloss Shine Dot) */}
+                        <div className="w-2.5 h-2.5 bg-white rounded-full absolute top-1.5 left-1.5 opacity-90 blur-[0.5px] pointer-events-none" />
+                        {/* Secondary Rim Refraction */}
+                        <div className="w-1.5 h-1 bg-white/50 rounded-full absolute bottom-1 right-1.5 opacity-60 blur-[0.3px] pointer-events-none" />
+                      </motion.div>
+                    ) : (
+                      /* Undabbed State: High-Contrast Animated Radar Reticle */
+                      <div className="relative w-10 h-10 flex items-center justify-center filter drop-shadow-[0_2px_4px_rgba(0,0,0,0.95)]">
+                        {/* Rotating Dashed Amber Ring */}
+                        <div className="w-10 h-10 border-2 border-dashed border-[#f59e0b] rounded-full animate-[spin_6s_linear_infinite]" />
 
-                      {/* Pulsing Amber Crosshair Indicator with Drop Shadow */}
-                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                        <Crosshair className="w-5 h-5 text-[#fef08a] drop-shadow-[0_1px_3px_rgba(0,0,0,1)] animate-pulse" />
+                        {/* Pulsing Amber Crosshair Indicator with Drop Shadow */}
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                          <Crosshair className="w-5 h-5 text-[#fef08a] drop-shadow-[0_1px_3px_rgba(0,0,0,1)] animate-pulse" />
+                        </div>
+
+                        {/* Subtle Center Glow Pip */}
+                        <div className="w-2 h-2 rounded-full bg-[#f59e0b] border border-[#78350f] shadow-[0_0_6px_#f59e0b] animate-ping pointer-events-none" />
                       </div>
-
-                      {/* Subtle Center Glow Pip */}
-                      <div className="w-2 h-2 rounded-full bg-[#f59e0b] border border-[#78350f] shadow-[0_0_6px_#f59e0b] animate-ping pointer-events-none" />
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+                    )}
+                  </button>
+                );
+              })}
+            </div>
 
             {/* Ultra-Bright Diagonal Prismatic Flare Sweep at 100% */}
             {showLensFlare && (
@@ -319,7 +334,7 @@ export const PolishStep: React.FC<PolishStepProps> = ({ card, onComplete }) => {
                 initial={{ x: '-150%', opacity: 0 }}
                 animate={{ x: '180%', opacity: [0, 1, 1, 0] }}
                 transition={{ duration: 1.4, ease: 'easeInOut' }}
-                className="absolute inset-y-0 w-48 bg-gradient-to-r from-transparent via-white to-transparent pointer-events-none z-40 transform -skew-x-25 mix-blend-overlay shadow-[0_0_40px_white]"
+                className="absolute inset-y-0 w-48 bg-gradient-to-r from-transparent via-white to-transparent pointer-events-none z-30 transform -skew-x-25 mix-blend-overlay shadow-[0_0_40px_white]"
               />
             )}
           </div>
