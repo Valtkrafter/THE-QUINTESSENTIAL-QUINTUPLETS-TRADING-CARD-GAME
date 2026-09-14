@@ -1,4 +1,4 @@
-export const APP_VERSION = '2.4.0'; // Increment with each task
+export const APP_VERSION = '2.4.1'; // Increment with each task
 
 export interface PatchNote {
   version: string;
@@ -10,16 +10,16 @@ export interface PatchNote {
 
 // ALWAYS overwrite this object with ONLY the latest release
 export const CURRENT_PATCH_NOTE: PatchNote = {
-  version: '2.4.0',
-  date: '2026-09-13',
-  title: 'Academic Showdown & Battle Engine ⚔️',
+  version: '2.4.1',
+  date: '2026-09-14',
+  title: 'Showdown Question Board & Arena Flow 📝',
   highlights: [
-    'Exam Showdown: Take on Maruo Nakano and strict examiners in an auto-battler showdown.',
-    'Manga Skill Cut-Ins: Unleash signature character abilities with dramatic anime cinematic slashes.',
-    'Deck Builder & Hanko Rewards: Assemble your 5 sisters + tutor to earn Yen, Stardust, and Pack Vouchers.',
+    'Exam Question Board: The central chalkboard now features authentic subject questions, formulas, and examiner taunts.',
+    'Dedicated Turn Play Engine: Clear step-by-step turn execution with "Begin Round" and "Solve With Sister" action buttons.',
+    'Purged Redundant Bottom Nav: Removed duplicate floating bottom pill dock across all tabs for a cleaner, unobstructed viewport.',
   ],
   fixes: [
-    'Balanced card stats: IQ, Charm, and Resolve now scale directly from Rarity, Finish, and BGS Slabs.',
-    'Resolved workbench layout bugs and solidified 100vh containment across all viewports.',
+    'Eliminated dead space in the Exam Showdown arena.',
+    'Prevented bottom navigation bar from overlapping card desks and collection grids.',
   ],
 };

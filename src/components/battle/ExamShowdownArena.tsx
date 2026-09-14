@@ -9,7 +9,9 @@ import { MangaSkillCutin } from './MangaSkillCutin';
 import { HankoVictoryModal } from './HankoVictoryModal';
 import { BattleDeckDrawer } from './BattleDeckDrawer';
 import { CardRenderer } from '../card/CardRenderer';
+import { ExamQuestionCard } from './ExamQuestionCard';
 import { EXAMINERS } from '../../config/examiners';
+import { getExamQuestion } from '../../config/examQuestions';
 import { ROUND_SUBJECTS } from '../../config/battleCalculations';
 import { SisterBattleCard } from '../../types/battle';
 import {
@@ -84,6 +86,8 @@ export const ExamShowdownArena: React.FC<ExamShowdownArenaProps> = ({ onExit }) 
   const assignSisterToDeck = useBattleStore((state) => state.assignSisterToDeck);
   const assignSupportToDeck = useBattleStore((state) => state.assignSupportToDeck);
   const initBattle = useBattleStore((state) => state.initBattle);
+  const startRound = useBattleStore((state) => state.startRound);
+  const selectActiveSister = useBattleStore((state) => state.selectActiveSister);
   const executeTurn = useBattleStore((state) => state.executeTurn);
   const resetBattle = useBattleStore((state) => state.resetBattle);
   const isCutinPlaying = useBattleStore((state) => state.battleState.isCutinPlaying);
@@ -138,6 +142,57 @@ export const ExamShowdownArena: React.FC<ExamShowdownArenaProps> = ({ onExit }) 
     }
   }, [battleState.isActive, battleState.isVictory, battleState.isDefeated, selectedExaminerId, initBattle]);
 
+  // Active exam question
+  const currentQuestion = useMemo(() => {
+    return getExamQuestion(battleState.currentRound, battleState.subject);
+  }, [battleState.currentRound, battleState.subject]);
+
+  // Active selected sister
+  const selectedSister = useMemo(() => {
+    if (battleState.selectedSisterSlot === null) return null;
+    return sisterCards[battleState.selectedSisterSlot] || null;
+  }, [battleState.selectedSisterSlot, sisterCards]);
+
+  // Estimated points calculation for selected sister
+  const estimatedPoints = useMemo(() => {
+    const selectedIdx = battleState.selectedSisterSlot;
+    if (selectedIdx === null) return 0;
+    const sister = sisterCards[selectedIdx];
+    if (!sister) return 0;
+
+    const currentSubject = battleState.subject;
+    const examiner = battleState.examiner;
+
+    let points = sister.stats.iq;
+    if (sister.characterId === 'miku') {
+      points = points * (currentSubject === 'history' ? 3 : 2);
+    } else if (sister.characterId === 'itsuki') {
+      points = sister.isCharged ? Math.round(sister.stats.iq * 3.5) : 0;
+    }
+
+    // Examiner Weakness Bonus: +25%
+    if (examiner && currentSubject === examiner.weaknessSubject) {
+      points = Math.round(points * 1.25);
+    }
+
+    // Passive assistance from other sisters: 15% of individual IQ
+    let passivePoints = 0;
+    for (let i = 0; i < sisterCards.length; i++) {
+      if (i === selectedIdx) continue;
+      const other = sisterCards[i];
+      if (other) {
+        passivePoints += Math.round(other.stats.iq * 0.15);
+      }
+    }
+
+    // If Miku + Fuutarou support, 100% crit chance doubles the points
+    if (sister.characterId === 'miku' && supportCard?.characterId === 'fuutarou') {
+      return (points + passivePoints) * 2;
+    }
+
+    return points + passivePoints;
+  }, [battleState.selectedSisterSlot, battleState.subject, battleState.examiner, sisterCards, supportCard]);
+
   // Heartbeat pulse sound when resolve < 25%
   const resolveRatio = battleState.teamResolveMax > 0
     ? battleState.teamResolveCurrent / battleState.teamResolveMax
@@ -163,14 +218,34 @@ export const ExamShowdownArena: React.FC<ExamShowdownArenaProps> = ({ onExit }) 
     }
   }, [battleState.screenShakeTrigger]);
 
-  // Handle Sister Card Selection
+  // Turn Flow Handlers
+  const handleStartRound = () => {
+    playSound('chalk_scribble', 0.7);
+    startRound();
+  };
+
   const handleSisterClick = (sisterIndex: number) => {
-    if (!battleState.isActive || isCutinPlaying) return;
+    if (!battleState.isActive || isCutinPlaying || battleState.isVictory || battleState.isDefeated) return;
     const sister = sisterCards[sisterIndex];
     if (!sister || sister.skillUsed) return;
 
-    playSound('chalk_scribble', 0.7);
-    setActiveCutinSister({ sister, index: sisterIndex });
+    if (battleState.turnPhase === 'awaiting_start') {
+      playSound('chalk_scribble', 0.7);
+      startRound();
+    } else {
+      playSound('card_slide', 0.6);
+    }
+    selectActiveSister(sisterIndex);
+  };
+
+  const handleSolveAction = () => {
+    const selectedIdx = battleState.selectedSisterSlot;
+    if (selectedIdx === null || isCutinPlaying || !battleState.isActive) return;
+    const sister = sisterCards[selectedIdx];
+    if (!sister || sister.skillUsed) return;
+
+    playSound('manga_slash', 0.8);
+    setActiveCutinSister({ sister, index: selectedIdx });
     setCutinPlaying(true);
   };
 
@@ -498,20 +573,36 @@ export const ExamShowdownArena: React.FC<ExamShowdownArenaProps> = ({ onExit }) 
         )}
       </AnimatePresence>
 
-      {/* Empty Deck Auto-Fill Prompt Banner */}
-      {isDeckEmpty && (
-        <div className="relative z-20 mx-auto max-w-lg bg-amber-950/80 border border-amber-500/50 rounded-xl p-4 text-center shadow-xl">
-          <p className="text-sm text-amber-200 font-bold mb-2">
-            ⚠️ No Nakano Sisters currently assigned to the Exam Battle Deck!
-          </p>
-          <button
-            onClick={handleAutoFillDeck}
-            className="px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-black text-xs uppercase tracking-wider rounded-lg shadow-lg cursor-pointer transition-all"
-          >
-            Auto-Fill Deck From Collection ▶
-          </button>
-        </div>
-      )}
+      {/* ============================================================ */}
+      {/* 3. CENTRAL EXAM QUESTION BOARD & CHALKBOARD ZONE            */}
+      {/* ============================================================ */}
+      <div className="relative z-20 flex-1 flex flex-col items-center justify-center px-4 py-2 min-h-0 overflow-y-auto">
+        {isDeckEmpty ? (
+          <div className="max-w-lg w-full bg-amber-950/80 border border-amber-500/50 rounded-xl p-4 text-center shadow-xl">
+            <p className="text-sm text-amber-200 font-bold mb-2">
+              ⚠️ No Nakano Sisters currently assigned to the Exam Battle Deck!
+            </p>
+            <button
+              onClick={handleAutoFillDeck}
+              className="px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-black text-xs uppercase tracking-wider rounded-lg shadow-lg cursor-pointer transition-all"
+            >
+              Auto-Fill Deck From Collection ▶
+            </button>
+          </div>
+        ) : (
+          <ExamQuestionCard
+            question={currentQuestion}
+            currentRound={battleState.currentRound}
+            turnPhase={battleState.turnPhase}
+            selectedSister={selectedSister}
+            estimatedPoints={estimatedPoints}
+            examinerName={battleState.examiner?.name}
+            isCutinPlaying={isCutinPlaying}
+            onStartRound={handleStartRound}
+            onSolve={handleSolveAction}
+          />
+        )}
+      </div>
 
       {/* ============================================================ */}
       {/* 4. BOTTOM ZONE: WOODEN SISTER EXAM DESK                      */}
@@ -563,6 +654,11 @@ export const ExamShowdownArena: React.FC<ExamShowdownArenaProps> = ({ onExit }) 
             const isHovered = hoveredSisterIndex === slotIdx;
             const isActed = sister.skillUsed;
             const canAct = battleState.isActive && !isActed && !isCutinPlaying;
+            const isSelected = battleState.selectedSisterSlot === slotIdx;
+            const isPromptBouncing =
+              battleState.turnPhase === 'question_revealed' &&
+              battleState.selectedSisterSlot === null &&
+              canAct;
 
             return (
               <div
@@ -586,20 +682,28 @@ export const ExamShowdownArena: React.FC<ExamShowdownArenaProps> = ({ onExit }) 
                         <span className="text-xs font-black uppercase tracking-wider text-white">
                           {sister.name}
                         </span>
-                        <span className="text-[10px] font-bold px-1.5 py-0.2 rounded" style={{ backgroundColor: palette.bg, color: palette.color }}>
+                        <span
+                          className="text-[10px] font-bold px-1.5 py-0.2 rounded"
+                          style={{ backgroundColor: palette.bg, color: palette.color }}
+                        >
                           {palette.skillTitle}
                         </span>
                       </div>
 
                       <div className="grid grid-cols-2 gap-1 text-[11px] mb-2 font-mono">
                         <div>
-                          <span className="text-zinc-500">Base IQ:</span> <strong className="text-white">{sister.stats.iq}</strong>
+                          <span className="text-zinc-500">Base IQ:</span>{' '}
+                          <strong className="text-white">{sister.stats.iq}</strong>
                         </div>
                         <div>
-                          <span className="text-zinc-500">Charm:</span> <strong className="text-pink-400">{Math.round((sister.stats.charm + battleState.teamCharmBonus) * 100)}%</strong>
+                          <span className="text-zinc-500">Charm:</span>{' '}
+                          <strong className="text-pink-400">
+                            {Math.round((sister.stats.charm + battleState.teamCharmBonus) * 100)}%
+                          </strong>
                         </div>
                         <div className="col-span-2">
-                          <span className="text-zinc-500">Resolve:</span> <strong className="text-emerald-400">+{sister.stats.resolve} HP</strong>
+                          <span className="text-zinc-500">Resolve:</span>{' '}
+                          <strong className="text-emerald-400">+{sister.stats.resolve} HP</strong>
                         </div>
                       </div>
 
@@ -611,12 +715,19 @@ export const ExamShowdownArena: React.FC<ExamShowdownArenaProps> = ({ onExit }) 
                         <div className="mt-2 text-[10px] font-bold text-zinc-500 uppercase tracking-wider text-center bg-zinc-900 rounded py-0.5">
                           ✓ Skill Already Dispatched
                         </div>
+                      ) : isSelected ? (
+                        <div
+                          className="mt-2 text-[10px] font-black uppercase tracking-wider text-center rounded py-0.5"
+                          style={{ backgroundColor: palette.color, color: '#000' }}
+                        >
+                          ⚔️ Active — Press Solve
+                        </div>
                       ) : (
                         <div
                           className="mt-2 text-[10px] font-black uppercase tracking-wider text-center rounded py-0.5"
                           style={{ backgroundColor: palette.color, color: '#000' }}
                         >
-                          ▶ Click to Execute Skill
+                          ▶ Click to Select for Round {battleState.currentRound}
                         </div>
                       )}
                     </motion.div>
@@ -625,26 +736,70 @@ export const ExamShowdownArena: React.FC<ExamShowdownArenaProps> = ({ onExit }) 
 
                 {/* Card Dock Frame with Signature Readiness Ring */}
                 <motion.div
-                  whileHover={canAct ? { y: -24, scale: 1.05 } : {}}
-                  transition={{ type: 'spring', stiffness: 350, damping: 20 }}
-                  onClick={() => handleSisterClick(slotIdx)}
+                  animate={
+                    isPromptBouncing
+                      ? { y: [0, -8, 0] }
+                      : isSelected
+                      ? { y: -20, scale: 1.06 }
+                      : { y: 0, scale: 1 }
+                  }
+                  transition={
+                    isPromptBouncing
+                      ? {
+                          repeat: Infinity,
+                          duration: 1.3,
+                          delay: slotIdx * 0.12,
+                          ease: 'easeInOut',
+                        }
+                      : { type: 'spring', stiffness: 350, damping: 20 }
+                  }
+                  whileHover={canAct ? { y: -24, scale: 1.08 } : {}}
+                  onClick={() => {
+                    if (isSelected) {
+                      handleSolveAction();
+                    } else {
+                      handleSisterClick(slotIdx);
+                    }
+                  }}
                   className={`relative w-24 sm:w-32 md:w-40 aspect-[63/88] rounded-xl overflow-hidden cursor-pointer transition-all duration-200 ${
-                    canAct
-                      ? 'ring-4 shadow-xl hover:shadow-2xl'
+                    isSelected
+                      ? 'ring-4 ring-offset-2 ring-offset-zinc-950 shadow-2xl z-20'
+                      : canAct
+                      ? 'ring-2 shadow-xl hover:shadow-2xl'
                       : isActed
                       ? 'opacity-40 grayscale filter cursor-not-allowed'
                       : 'opacity-80'
                   }`}
                   style={{
-                    boxShadow: canAct ? palette.glow : undefined,
+                    boxShadow: isSelected
+                      ? `0 0 35px ${palette.color}, 0 0 15px ${palette.color}`
+                      : canAct
+                      ? palette.glow
+                      : undefined,
                     borderColor: palette.color,
                   }}
                 >
                   {/* Readiness Ring Border */}
                   <div
                     className="absolute inset-0 rounded-xl border-2 pointer-events-none z-10"
-                    style={{ borderColor: isActed ? '#52525b' : palette.color }}
+                    style={{
+                      borderColor: isSelected
+                        ? palette.color
+                        : isActed
+                        ? '#52525b'
+                        : palette.color,
+                    }}
                   />
+
+                  {/* Selected Indicator Badge */}
+                  {isSelected && (
+                    <div
+                      className="absolute top-1 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider text-black z-30 shadow-md whitespace-nowrap"
+                      style={{ backgroundColor: palette.color }}
+                    >
+                      Active
+                    </div>
+                  )}
 
                   {/* Render Slotted Card using CardRenderer */}
                   <CardRenderer

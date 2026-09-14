@@ -290,9 +290,26 @@ $$\text{Market Value} = \text{Base Value}(\text{Rarity}) \times \text{Multiplier
   - Minimum floor ($t \ge 24\text{h}$ or near-completion): $50\ ★$ Stardust (free manual unclamp once $t \ge 24\text{h}$).
 - **Restoration Certification Floor:** Guaranteed Grade $\ge 7.0$ (Crisp) minimum upon re-grading, with amber `RE-CERTIFIED / RESTORED` slab badge.
 
-### 7. Exam Showdown: Academic Combat Engine & Turn Flow (v2.4.0)
+### 7. Exam Showdown: Academic Combat Engine, Question Board & Turn Flow (v2.4.1)
 - **High-Stakes Tactical Auto-Battler:** A turn-based classroom combat system where a team of 5 Nakano sisters and 1 Support Tutor faces strict examiners (Maruo Nakano, School Board Proctor, Rival Takeda) across 5 academic rounds (Math $\to$ Science $\to$ History $\to$ Literature $\to$ English).
 - **Core Victory Contract:** Achieve **100 Test Points** before team mental stamina (**Resolve**) drops to 0.
+- **Central Exam Question Board (`src/config/examQuestions.ts`, `ExamQuestionCard.tsx`):**
+  - Mounts in the central chalkboard zone between the Examiner and Sister desks on a semi-translucent dark slate chalkboard card (`bg-[#151b26]/85 backdrop-blur-md border border-cyan-500/30 rounded-2xl shadow-2xl`).
+  - Top-left authentic red Japanese Hanko stamp badge (`PROBLEM [X/5]`), subject badge (`ADVANCED MATHEMATICS`, `CELLULAR BIOPHYSICS`, `SENGOKU ERA HISTORY`, `CLASSICAL HEIAN LITERATURE`, `ACADEMIC ENGLISH`), target point yield, and difficulty rating (`Standard`, `Challenging`, `Patriarch Tier`).
+  - Dedicated glowing code/formula callout box (`bg-[#0c1017]/80 border border-white/10 rounded-lg font-mono text-cyan-300`) with authentic subject equations:
+    - **Round 1 (Math):** Gaussian Integral & Polar Convergence ($\int_{-\infty}^{\infty} e^{-x^2} dx = \sqrt{\pi}$).
+    - **Round 2 (Science):** Cellular Thermodynamic Equilibrium ($\Delta G = \Delta H - T\Delta S < 0$).
+    - **Round 3 (History):** Battle of Nagashino (1575) triple-volley tactics (triggers Miku's weakness exploit).
+    - **Round 4 (Literature):** Heian court aesthetics & *Mono no aware* (5-7-5-7-7 Waka meter).
+    - **Round 5 (English):** Inverted subjunctive and conditional syntax under time constraint.
+  - Examiner Commentary: Italicized flavor commentary from Maruo Nakano below the problem text (*„Wer diese Gleichung nicht im Kopf löst, hat an einer Universität nichts verloren.“*).
+- **Dedicated Interactive Turn Play Engine & Action Buttons (`TurnPhase`):**
+  - Governed by state machine: `awaiting_start` $\to$ `question_revealed` $\to$ `sister_selected` $\to$ `executing_turn` $\to$ `round_complete`.
+  - **State A (`awaiting_start`):** Centered golden action button `▶ BEGIN ROUND [X]: [SUBJECT]` (`from-amber-500 to-amber-600`), playing `chalk_scribble` SFX and unsealing the problem.
+  - **State B (`question_revealed`):** Pulsing instruction banner `👇 SELECT A SISTER TO SOLVE THIS PROBLEM` with gentle card bounce animations prompting the player to pick a sister.
+  - **State C (`sister_selected`):** Focused signature aura on the selected card with real-time estimated test points preview and glowing button `⚔️ SOLVE WITH [SISTER NAME] (EST. [X] PTS) ▶` (`from-cyan-500 to-emerald-500`) triggering the 800ms Manga Cut-In and turn resolution.
+- **Purge of Redundant Floating Bottom Dock:**
+  - Completely removed the duplicate floating bottom pill bar (`BottomNavigation`) across all views, providing uninterrupted vertical clearance for the Sister Desk and collection grids without overlay collisions.
 - **3-Phase Round Flow:**
   - **Step A: Examiner Pressure Phase:**
     $$\text{Damage} = \text{round}\Big(\text{rand}(\text{stressVariance}[0], \text{stressVariance}[1]) \times \text{DebuffMultiplier}\Big)$$
@@ -334,9 +351,8 @@ $$\text{Market Value} = \text{Base Value}(\text{Rarity}) \times \text{Multiplier
 - **Manga Cut-Ins & Hanko Victory Sequence:**
   - 800ms 15-degree diagonal anime action slash with character quote banners, speed lines, and signature colored aura.
   - Japanese lined test paper victory modal with authentic red Hanamaru flower stamp (**花丸 - 100点 満点 合格**), animated score counter, and persistent currency claim.
-- **Slide-Over Deck-Builder & Persistent Navigation Dock:**
+- **Slide-Over Deck-Builder:**
   - Sleek slide-over deck builder allowing assignment, replacement, and unmounting of 5 sister cards and 1 support tutor with real-time stats and auto-fill.
-  - Persistent bottom navigation dock with Graduation Cap icon and live pulsing battle status indicator.
 - **Automated Monte Carlo Audit (`scripts/test-battle-engine.ts`):**
   - Runs 1,000 automated simulated matches per deck tier against Maruo Nakano.
   - Mathematically verifies all-Common win rate ($15\% \dots 25\%$) and all-UR / Graded win rate ($75\% \dots 90\%$).
@@ -376,6 +392,7 @@ tqqtcg/
 │   ├── components/
 │   │   ├── battle/
 │   │   │   ├── BattleDeckDrawer.tsx     # Slide-over tactical deck builder with auto-fill & stat preview
+│   │   │   ├── ExamQuestionCard.tsx     # Central chalkboard question card with formula container & taunts
 │   │   │   ├── ExamShowdownArena.tsx    # Night chalkboard battlefield, dual gauges & dynamic taunts
 │   │   │   ├── HankoVictoryModal.tsx    # Lined test paper modal with red Hanamaru stamp ceremony
 │   │   │   └── MangaSkillCutin.tsx      # 800ms 15-degree diagonal anime action slash & quote banners
@@ -424,6 +441,7 @@ tqqtcg/
 │   │   ├── cardsData.ts         # Catalog of 42 cards with metadata and quotes
 │   │   ├── economy.ts           # Pricing matrices, valuation formulas, drop tables, pity, synergies
 │   │   ├── examiners.ts         # Boss examiners: Maruo Nakano, School Board Proctor, Yusuke Takeda
+│   │   ├── examQuestions.ts     # Subject exam questions catalog, formulas, and examiner taunts
 │   │   ├── patchNotes.ts        # Active single-release patch notes configuration & re-exports
 │   │   ├── supportBuffs.ts      # Support buff dictionary, Grade 9/10 scaling, & active buff resolver
 │   │   └── version.ts           # Semantic APP_VERSION and CURRENT_PATCH_NOTE contract

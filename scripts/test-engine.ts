@@ -58,6 +58,7 @@ import {
   executeRoundTurn,
 } from '../src/utils/battleEngine';
 import { useBattleStore } from '../src/store/useBattleStore';
+import { EXAM_QUESTIONS, getExamQuestion } from '../src/config/examQuestions';
 import type { BattleState } from '../src/types/battle';
 
 function assert(condition: boolean, message: string): void {
@@ -1524,6 +1525,33 @@ async function runTests() {
   assert(useBattleStore.getState().battleState.isActive === false, 'Battle reset to inactive');
   console.log('✅ useBattleStore lifecycle & combat turns verified.');
 
+  // 7. Exam Question Board Catalog & Turn Phase State Machine
+  assert(EXAM_QUESTIONS.length === 5, '5 subject questions defined in examQuestions registry');
+  const qMath = getExamQuestion(1, 'math');
+  assert(qMath.subject === 'math' && (qMath.formulaOrExcerpt?.includes('√π') ?? false), 'Round 1 Math question with Gaussian formula verified');
+  const qScience = getExamQuestion(2, 'science');
+  assert(qScience.subject === 'science' && (qScience.formulaOrExcerpt?.includes('ΔG') ?? false), 'Round 2 Science question with Gibbs formula verified');
+  const qHistory = getExamQuestion(3, 'history');
+  assert(qHistory.subject === 'history' && qHistory.problemText.includes('Nagashino'), 'Round 3 History question with Nagashino verified');
+  const qLit = getExamQuestion(4, 'literature');
+  assert(qLit.subject === 'literature' && (qLit.formulaOrExcerpt?.includes('Mono no aware') ?? false), 'Round 4 Literature question with Heian meter verified');
+  const qEng = getExamQuestion(5, 'english');
+  assert(qEng.subject === 'english' && (qEng.formulaOrExcerpt?.includes('Had we mastered') ?? false), 'Round 5 English question with subjunctive syntax verified');
+
+  // Test turn state machine transitions
+  battleStore.initBattle('maruo');
+  assert(useBattleStore.getState().battleState.turnPhase === 'awaiting_start', 'Initial turn phase is awaiting_start');
+  battleStore.startRound();
+  assert(useBattleStore.getState().battleState.turnPhase === 'question_revealed', 'turnPhase transitioned to question_revealed after startRound()');
+  battleStore.selectActiveSister(0);
+  assert(useBattleStore.getState().battleState.selectedSisterSlot === 0, 'Sister slot 0 selected');
+  assert(useBattleStore.getState().battleState.turnPhase === 'sister_selected', 'turnPhase transitioned to sister_selected');
+  battleStore.executeAnswer();
+  assert(useBattleStore.getState().battleState.currentRound === 2, 'Round advanced to 2 after executeAnswer()');
+  assert(useBattleStore.getState().battleState.turnPhase === 'awaiting_start', 'turnPhase reset to awaiting_start for Round 2');
+  battleStore.resetBattle();
+  console.log('✅ Exam Question Board & Turn Phase State Machine verified.');
+
   // ==========================================
   // SECTION 13: STAGE 2 COMBAT ENGINE & SISTER SKILL ROSTER
   // ==========================================
@@ -1637,6 +1665,7 @@ async function runTests() {
     activeDebuff: null,
     shieldActive: false,
     selectedSisterSlot: null,
+    turnPhase: 'awaiting_start',
     isCutinPlaying: false,
     battleLog: [],
     teamCharmBonus: 0,

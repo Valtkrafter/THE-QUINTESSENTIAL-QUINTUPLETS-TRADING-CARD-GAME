@@ -302,6 +302,8 @@ export function executeRoundTurn(
       isDefeated: true,
       lastExaminerDamage: pressureResult.finalDamage,
       shieldActive: false,
+      turnPhase: 'round_complete',
+      selectedSisterSlot: null,
       battleLog: [...state.battleLog, ...logMessages],
     };
 
@@ -455,6 +457,8 @@ export function executeRoundTurn(
     lastExaminerDamage: pressureResult.finalDamage,
     isVictory,
     isDefeated,
+    turnPhase: isVictory || isDefeated ? 'round_complete' : 'awaiting_start',
+    selectedSisterSlot: null,
     screenShakeTrigger: isCritical ? state.screenShakeTrigger + 1 : state.screenShakeTrigger,
     battleLog: [...state.battleLog, ...logMessages],
   };

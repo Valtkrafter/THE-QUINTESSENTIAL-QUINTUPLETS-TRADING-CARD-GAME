@@ -95,6 +95,7 @@ function simulateMatch(
     activeDebuff: null,
     shieldActive: false,
     selectedSisterSlot: null,
+    turnPhase: 'awaiting_start',
     isCutinPlaying: false,
     teamCharmBonus: 0,
     lastExaminerDamage: 0,

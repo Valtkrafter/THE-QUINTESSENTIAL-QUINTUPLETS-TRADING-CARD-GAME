@@ -60,6 +60,13 @@ export interface BattleDebuff {
   reduction: number;
 }
 
+export type TurnPhase =
+  | 'awaiting_start'
+  | 'question_revealed'
+  | 'sister_selected'
+  | 'executing_turn'
+  | 'round_complete';
+
 export interface BattleState {
   isActive: boolean;
   currentRound: number; // 1 to 5
@@ -71,6 +78,7 @@ export interface BattleState {
   activeDebuff: BattleDebuff | null;
   shieldActive: boolean; // For Yotsuba's nullification
   selectedSisterSlot: number | null;
+  turnPhase: TurnPhase;
   isCutinPlaying: boolean;
   battleLog: string[];
   // Stage 2 Combat State Extensions

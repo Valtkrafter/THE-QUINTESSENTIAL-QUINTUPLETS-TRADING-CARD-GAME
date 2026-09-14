@@ -14,6 +14,7 @@ import {
   Examiner,
   SisterBattleCard,
   SupportBattleCard,
+  TurnPhase,
 } from '../types/battle';
 import {
   calculateTeamResolveMax,
@@ -38,6 +39,9 @@ export interface BattleStore {
 
   // Combat Actions
   initBattle: (examinerId: string) => void;
+  startRound: () => void;
+  selectActiveSister: (index: number) => void;
+  executeAnswer: () => void;
   executeTurn: (sisterIndex: number) => void;
   resetBattle: () => void;
   setCutinPlaying: (isPlaying: boolean) => void;
@@ -62,6 +66,7 @@ const INITIAL_BATTLE_STATE: BattleState = {
   activeDebuff: null,
   shieldActive: false,
   selectedSisterSlot: null,
+  turnPhase: 'awaiting_start',
   isCutinPlaying: false,
   battleLog: [],
   teamCharmBonus: 0,
@@ -152,6 +157,7 @@ export const useBattleStore = create<BattleStore>()(
             activeDebuff: null,
             shieldActive: false,
             selectedSisterSlot: null,
+            turnPhase: 'awaiting_start',
             isCutinPlaying: false,
             teamCharmBonus: 0,
             lastExaminerDamage: 0,
@@ -164,6 +170,47 @@ export const useBattleStore = create<BattleStore>()(
             ],
           },
         });
+      },
+
+      startRound: () => {
+        set((state) => ({
+          battleState: {
+            ...state.battleState,
+            turnPhase: 'question_revealed',
+          },
+        }));
+      },
+
+      selectActiveSister: (index: number) => {
+        const { sisterCards } = get();
+        if (index < 0 || index >= sisterCards.length) return;
+        const sister = sisterCards[index];
+        if (!sister || sister.skillUsed) return;
+
+        set((state) => ({
+          battleState: {
+            ...state.battleState,
+            selectedSisterSlot: index,
+            turnPhase: 'sister_selected',
+          },
+        }));
+      },
+
+      executeAnswer: () => {
+        const { battleState, sisterCards, executeTurn } = get();
+        if (battleState.selectedSisterSlot === null) return;
+        const sisterIndex = battleState.selectedSisterSlot;
+        const sister = sisterCards[sisterIndex];
+        if (!sister || sister.skillUsed) return;
+
+        set((state) => ({
+          battleState: {
+            ...state.battleState,
+            turnPhase: 'executing_turn',
+          },
+        }));
+
+        executeTurn(sisterIndex);
       },
 
       executeTurn: (sisterIndex: number) => {
