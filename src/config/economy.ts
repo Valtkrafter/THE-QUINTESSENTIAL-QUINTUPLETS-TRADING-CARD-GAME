@@ -262,7 +262,7 @@ export const PACKS_CONFIG: Record<PackId, PackConfig> = {
     id: 'god_pack',
     name: 'God Pack',
     description: 'The legendary hidden pack. Contains only Ultra Rare, Secret Rare, and Master Rare cards.',
-    costYen: 0,
+    costYen: 5000000,
     slots: 5,
     isGodPack: true,
     canTriggerGodPack: false,
@@ -602,8 +602,8 @@ export function rollPackDrops(
     throw new Error(`Unknown pack ID: ${packId}`);
   }
 
-  // 1. Check God Pack trigger (0.05% on Packs 4–6)
-  let isGodPack = false;
+  // 1. Check God Pack trigger (0.05% on Packs 4–6, or directly opened God Pack)
+  let isGodPack = packConfig.isGodPack === true;
   let activeDropTable = { ...packConfig.dropTable };
   if (packConfig.canTriggerGodPack && randomFloat() * 100.0 < 0.05) {
     isGodPack = true;

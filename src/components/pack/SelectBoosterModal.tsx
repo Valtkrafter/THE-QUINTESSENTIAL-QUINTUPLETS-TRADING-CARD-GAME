@@ -346,11 +346,18 @@ export const SelectBoosterModal: React.FC<SelectBoosterModalProps> = ({
                 onSelectPack(chosen);
               }}
               disabled={yen < inspectedConfig.costYen && inspectedConfig.costYen > 0}
-              className="px-6 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 disabled:opacity-40 disabled:pointer-events-none text-black font-black text-xs uppercase tracking-wider shadow-lg transition active:scale-95 flex items-center gap-1.5"
+              title={yen < inspectedConfig.costYen && inspectedConfig.isGodPack ? 'Benötigt 5.000.000 ¥' : undefined}
+              className={`px-6 py-2.5 rounded-xl font-black text-xs uppercase tracking-wider shadow-lg transition active:scale-95 flex items-center gap-1.5 ${
+                inspectedConfig.isGodPack
+                  ? yen >= inspectedConfig.costYen
+                    ? 'bg-gradient-to-r from-amber-500 to-amber-600 hover:brightness-110 text-black font-extrabold shadow-amber-500/30 animate-pulse'
+                    : 'bg-[#1a1d24] text-zinc-500 cursor-not-allowed border border-red-500/20 opacity-70'
+                  : 'bg-amber-500 hover:bg-amber-400 disabled:opacity-40 disabled:pointer-events-none text-black'
+              }`}
             >
               <span>Open This Pack</span>
               <span className="font-mono text-[11px] opacity-85">
-                ({inspectedConfig.costYen > 0 ? `${inspectedConfig.costYen.toLocaleString()} ¥` : 'FREE'})
+                ({inspectedConfig.costYen > 0 ? `${inspectedConfig.costYen.toLocaleString('de-DE')} ¥` : 'FREE'})
               </span>
             </button>
           </div>
@@ -463,7 +470,11 @@ export const SelectBoosterModal: React.FC<SelectBoosterModalProps> = ({
             return (
               <div
                 key={pId}
-                onClick={() => onSelectPack(pId)}
+                onClick={() => {
+                  if (canAfford || config.costYen === 0) {
+                    onSelectPack(pId);
+                  }
+                }}
                 className={`group relative p-4 rounded-2xl bg-zinc-900/60 border transition-all duration-200 flex flex-col justify-between overflow-hidden cursor-pointer ${
                   isGodTier
                     ? 'border-yellow-400/50 hover:border-yellow-300 shadow-[0_0_20px_rgba(250,204,21,0.15)]'
@@ -502,16 +513,22 @@ export const SelectBoosterModal: React.FC<SelectBoosterModalProps> = ({
                       <span>{theme.motifIcon}</span>
                     </div>
 
-                    <span
-                      className="px-2 py-0.5 rounded-full text-[9px] font-black tracking-wider uppercase border font-mono shadow"
-                      style={{
-                        backgroundColor: `${theme.primaryColor}20`,
-                        borderColor: theme.primaryColor,
-                        color: theme.primaryColor,
-                      }}
-                    >
-                      {theme.badge}
-                    </span>
+                    {isGodTier ? (
+                      <span className="bg-amber-500/20 text-amber-300 border border-amber-500/40 font-mono font-bold px-2.5 py-0.5 rounded-full text-xs shadow">
+                        5.000.000 ¥
+                      </span>
+                    ) : (
+                      <span
+                        className="px-2 py-0.5 rounded-full text-[9px] font-black tracking-wider uppercase border font-mono shadow"
+                        style={{
+                          backgroundColor: `${theme.primaryColor}20`,
+                          borderColor: theme.primaryColor,
+                          color: theme.primaryColor,
+                        }}
+                      >
+                        {theme.badge}
+                      </span>
+                    )}
                   </div>
 
                   {/* Japanese & English Titles */}
@@ -556,14 +573,24 @@ export const SelectBoosterModal: React.FC<SelectBoosterModalProps> = ({
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
+                      if (!canAfford && config.costYen > 0) return;
                       onSelectPack(pId);
                     }}
                     disabled={!canAfford && config.costYen > 0}
-                    className="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 disabled:opacity-35 disabled:pointer-events-none text-black font-black text-xs uppercase tracking-wider transition active:scale-95 shadow-md flex items-center justify-center gap-1.5"
+                    title={!canAfford && isGodTier ? 'Benötigt 5.000.000 ¥' : undefined}
+                    className={`w-full py-2.5 rounded-xl uppercase tracking-wider transition active:scale-95 flex items-center justify-center gap-1.5 ${
+                      isGodTier
+                        ? canAfford
+                          ? 'bg-gradient-to-r from-amber-500 to-amber-600 hover:brightness-110 text-black font-extrabold shadow-lg shadow-amber-500/30 text-xs'
+                          : 'bg-[#1a1d24] text-zinc-500 cursor-not-allowed border border-red-500/20 opacity-70 text-xs font-bold'
+                        : canAfford
+                        ? 'bg-amber-500 hover:bg-amber-400 text-black font-black text-xs shadow-md'
+                        : 'bg-amber-500 text-black font-black text-xs disabled:opacity-35 disabled:pointer-events-none'
+                    }`}
                   >
-                    <span>Open Pack</span>
+                    <span>OPEN PACK</span>
                     <span className="font-mono opacity-80 text-[11px]">
-                      ({config.costYen > 0 ? `${config.costYen.toLocaleString()} ¥` : 'FREE'})
+                      ({config.costYen > 0 ? `${config.costYen.toLocaleString('de-DE')} ¥` : 'FREE'})
                     </span>
                   </button>
                 </div>

@@ -143,7 +143,7 @@ export const PACK_THEMES: Record<PackId, PackThemeConfig> = {
     name: 'God Pack',
     japaneseTitle: '神話降臨 ゴッドパック',
     subtitle: 'Hidden 0.05% Celestial Miracle',
-    badge: '★ GOD PACK ★',
+    badge: '5.000.000 ¥',
     primaryColor: '#FCD34D',
     secondaryColor: '#EC4899',
     fallbackGradient: 'linear-gradient(135deg, #b45309 0%, #451a03 100%)',

@@ -231,6 +231,16 @@ async function runTests() {
   assert(testSheetConfig.costYen === 0, 'Test-Sheet cost must be 0');
   assert(testSheetConfig.slots === 3, 'Test-Sheet slots must be 3');
 
+  // Celestial God Pack configuration (5,000,000 ¥ endgame sink)
+  const godPackConfig = PACKS_CONFIG.god_pack;
+  assert(godPackConfig.costYen === 5000000, 'God Pack cost must be 5,000,000 ¥');
+  assert(godPackConfig.slots === 5, 'God Pack slots must be 5');
+  assert(godPackConfig.canTriggerGodPack === false, 'God Pack cannot recursively trigger God Pack');
+  assert(godPackConfig.cooldownSeconds === undefined || godPackConfig.cooldownSeconds === 0, 'God Pack has no cooldown');
+  assert(godPackConfig.dropTable.C === 0 && godPackConfig.dropTable.UC === 0 && godPackConfig.dropTable.R === 0 && godPackConfig.dropTable.SR === 0, 'God Pack contains no C, UC, R, or SR cards');
+  assert(godPackConfig.dropTable.UR === 50.0 && godPackConfig.dropTable.SEC === 40.0 && godPackConfig.dropTable.MR === 10.0, 'God Pack drop table has 50% UR, 40% SEC, 10% MR');
+  console.log('✅ Celestial God Pack configuration verified: 5,000,000 ¥ endgame sink with 100% UR/SEC/MR.');
+
   // Pity counter increments on paid packs
   const initialPitySR = { packsWithoutSR: 29, packsWithoutUR: 10 };
   const pitySRResult = rollPackDrops('lernsession', initialPitySR);
@@ -315,6 +325,7 @@ async function runTests() {
   assert(packResult.cards.length === 5, 'Pack gave 5 cards');
   console.log('✅ openPack action verified.');
 
+
   // Pick a card to dust
   const rawCardToDust = useGameStore.getState().inventory[0];
   const dustEarned = useGameStore.getState().dustCard(rawCardToDust.id);
@@ -374,6 +385,38 @@ async function runTests() {
   // Claim idle revenue
   const claimed = useGameStore.getState().claimIdleRevenue();
   console.log(`✅ claimIdleRevenue action verified (claimed: ${claimed} ¥).`);
+
+  // Verify God Pack 5,000,000 ¥ Endgame Sink Safeguards
+  // Case A: Insufficient funds (< 5,000,000 ¥)
+  useGameStore.setState({ yen: 4999999 });
+  let godPackErrorThrown = false;
+  try {
+    useGameStore.getState().openPack('god_pack');
+  } catch (err) {
+    godPackErrorThrown = true;
+    assert(
+      (err as Error).message.includes('Insufficient Yen'),
+      'Must abort on insufficient Yen for God Pack'
+    );
+  }
+  assert(godPackErrorThrown, 'Opening God Pack with < 5,000,000 ¥ must throw error');
+  assert(useGameStore.getState().yen === 4999999, 'Yen must remain untouched after aborted God Pack purchase');
+
+  // Case B: Sufficient funds (5,000,000 ¥)
+  const invCountBeforeGodPack = useGameStore.getState().inventory.length;
+  useGameStore.setState({ yen: 5000000 });
+  const godPackResult = useGameStore.getState().openPack('god_pack');
+  assert(useGameStore.getState().yen === 0, 'Yen must be exactly 0 after deducting 5,000,000 ¥');
+  assert(godPackResult.cards.length === 5, 'God Pack must provide 5 cards');
+  assert(useGameStore.getState().inventory.length === invCountBeforeGodPack + 5, 'Inventory incremented by 5 cards');
+  assert(godPackResult.isGodPack === true, 'God Pack must set isGodPack to true');
+  for (const c of godPackResult.cards) {
+    assert(
+      c.rarity === 'UR' || c.rarity === 'SEC' || c.rarity === 'MR',
+      `God Pack card must be UR, SEC, or MR, got ${c.rarity}`
+    );
+  }
+  console.log('✅ God Pack 5,000,000 ¥ pricing sink and balance validation verified.');
 
   testSection('7. Stage 1: Direct Sell System, Bulk Liquidation & Singles Kiosk');
 

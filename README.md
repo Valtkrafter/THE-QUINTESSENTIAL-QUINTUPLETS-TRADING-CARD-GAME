@@ -256,7 +256,7 @@ $$\text{Market Value} = \text{Base Value}(\text{Rarity}) \times \text{Multiplier
 | **Schulfest** | $3{,}000\ \yen$ | $5$ | High-tier festival pack with boosted Ultra Rare odds. |
 | **Klassenfahrt Kyoto** | $8{,}500\ \yen$ | $5$ | **No Commons.** Minimum Uncommon (UC) in every slot. |
 | **Braut des Schicksals** | $25{,}000\ \yen$ | $5$ | **No Commons or Uncommons.** Guaranteed Rare (R) or higher in every slot. |
-| **Celestial God Pack** | $100{,}000\ \yen$ | $5$ | **★ 100% Ultra, Secret, and Master Rares only!** |
+| **Celestial God Pack** | $5{,}000{,}000\ \yen$ | $5$ | **★ 100% Ultra, Secret, and Master Rares only! Ultimate endgame currency sink.** |
 
 ### 5. Showcase Idle Revenue & Support Altar Engine
 - **Master Dynamic Yield Formula:**
