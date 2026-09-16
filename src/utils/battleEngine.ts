@@ -9,8 +9,12 @@
  */
 
 import {
+  ArtsCard,
+  ArtsCardPlayResult,
+  ArtsCardType,
   BattleDebuff,
   BattleState,
+  CombatState,
   Examiner,
   RoundExecutionResult,
   SisterBattleCard,
@@ -18,6 +22,8 @@ import {
   SupportBattleCard,
 } from '../types/battle';
 import { ROUND_SUBJECTS } from '../config/battleCalculations';
+import { generateArtsCard, SISTER_ARTS_TEMPLATES } from '../config/artsCards';
+
 
 export interface RngOverride {
   damageFactor?: number; // 0.0 to 1.0 (maps to stressVariance)
@@ -465,3 +471,192 @@ export function executeRoundTurn(
 
   return { nextState, nextSisters, result };
 }
+
+// ==========================================
+// STAGE 2: ARTS-CARD COMBAT ENGINE DYNAMICS
+// ==========================================
+
+export const COMBO_TIME_WINDOW_MS = 2000; // < 2.0s interval
+
+/**
+ * Calculates the combo multiplier based on consecutive Arts Cards played.
+ * Progression: 1.0x -> 1.1x -> 1.25x -> 1.45x -> 1.70x ... up to 2.50x cap.
+ */
+export function calculateComboMultiplier(comboCount: number): number {
+  if (comboCount <= 1) return 1.0;
+  if (comboCount === 2) return 1.10;
+  if (comboCount === 3) return 1.25;
+  if (comboCount === 4) return 1.45;
+  if (comboCount === 5) return 1.70;
+  return Math.min(2.50, Math.round((1.0 + (comboCount - 1) * 0.20) * 100) / 100);
+}
+
+/**
+ * Updates combo count given the timestamp of the last card played.
+ * If played within < 2.0s, combo count increments. Otherwise, resets to 1.
+ */
+export function updateComboCount(
+  lastCardPlayedTimestamp: number | undefined,
+  currentTimestamp: number,
+  currentComboCount: number
+): number {
+  if (!lastCardPlayedTimestamp || lastCardPlayedTimestamp <= 0) {
+    return 1;
+  }
+  const diff = currentTimestamp - lastCardPlayedTimestamp;
+  if (diff >= 0 && diff < COMBO_TIME_WINDOW_MS) {
+    return currentComboCount + 1;
+  }
+  return 1;
+}
+
+/**
+ * Focus Energy (Ki): Continuous regeneration (+5 Focus/sec).
+ */
+export function calculateFocusRegen(
+  currentFocus: number,
+  maxFocus: number = 100,
+  deltaSeconds: number = 1.0
+): number {
+  return Math.min(maxFocus, Math.max(0, currentFocus + deltaSeconds * 5.0));
+}
+
+/**
+ * Focus Energy (Ki): Instant charge (+25 Focus).
+ */
+export function chargeFocusEnergy(
+  currentFocus: number,
+  maxFocus: number = 100,
+  chargeAmount: number = 25
+): number {
+  return Math.min(maxFocus, Math.max(0, currentFocus + chargeAmount));
+}
+
+/**
+ * Draws an Arts Card dynamically from the 5 slotted sisters.
+ */
+export function drawArtsCardFromDeck(
+  sisters: (SisterBattleCard | null)[],
+  customThumbnails?: Record<string, string>
+): ArtsCard {
+  const availableSisters = sisters.filter((s): s is SisterBattleCard => s !== null);
+  const chosenSisterId: 'ichika' | 'nino' | 'miku' | 'yotsuba' | 'itsuki' =
+    availableSisters.length > 0
+      ? availableSisters[Math.floor(Math.random() * availableSisters.length)].characterId
+      : (['ichika', 'nino', 'miku', 'yotsuba', 'itsuki'][
+          Math.floor(Math.random() * 5)
+        ] as 'ichika' | 'nino' | 'miku' | 'yotsuba' | 'itsuki');
+
+  const customThumbnail = customThumbnails?.[chosenSisterId];
+  return generateArtsCard(chosenSisterId, undefined, customThumbnail);
+}
+
+/**
+ * Draws starting hand (default 4 cards) from slotted sisters.
+ */
+export function drawStartingHand(
+  sisters: (SisterBattleCard | null)[],
+  handSize: number = 4,
+  customThumbnails?: Record<string, string>
+): ArtsCard[] {
+  const hand: ArtsCard[] = [];
+  for (let i = 0; i < handSize; i++) {
+    hand.push(drawArtsCardFromDeck(sisters, customThumbnails));
+  }
+  return hand;
+}
+
+/**
+ * Executes playing an Arts Card:
+ * - Checks focus energy availability
+ * - Evaluates combo count & combo multiplier (< 2.0s window)
+ * - Calculates test point gain with tutor buff & examiner weakness
+ * - Applies heal / shield
+ * - Deducts focus energy
+ * - Checks victory threshold (>= 100 points)
+ * - Removes card from hand
+ */
+export function executeArtsCardPlay(
+  combatState: CombatState,
+  cardId: string,
+  examiner?: Examiner | null,
+  supportCard?: SupportBattleCard | null,
+  currentSubject?: SubjectType,
+  currentTimestamp: number = Date.now(),
+  maxResolve: number = 1000
+): {
+  nextCombatState: CombatState;
+  result: ArtsCardPlayResult;
+} {
+  const cardIndex = combatState.hand.findIndex((c) => c.id === cardId);
+  if (cardIndex === -1) {
+    throw new Error(`Arts card with id "${cardId}" not found in current hand`);
+  }
+
+  const card = combatState.hand[cardIndex];
+  if (combatState.focusEnergy < card.cost) {
+    throw new Error(
+      `Insufficient Focus Energy to play ${card.title} (Requires ${card.cost}, current: ${combatState.focusEnergy})`
+    );
+  }
+
+  // 1. Combo calculation
+  const comboCount = updateComboCount(
+    combatState.lastCardPlayedTimestamp,
+    currentTimestamp,
+    combatState.comboCount
+  );
+  const comboMultiplier = calculateComboMultiplier(comboCount);
+
+  // 2. Focus energy deduction
+  const focusRemaining = Math.max(0, combatState.focusEnergy - card.cost);
+
+  // 3. Points calculation with tutor buff & examiner weakness
+  const tutorBuff = supportCard ? supportCard.iqBuffPercent : 0;
+  let pointsDealt = Math.round(card.basePoints * comboMultiplier * (1.0 + tutorBuff));
+  if (examiner && currentSubject && currentSubject === examiner.weaknessSubject) {
+    pointsDealt = Math.round(pointsDealt * 1.25);
+  }
+
+  // 4. Resolve healing & Shielding
+  const healedAmount = card.healResolve || 0;
+  const newTeamResolve = Math.min(maxResolve, combatState.teamResolve + healedAmount);
+  const shieldActivated = card.type === 'support' && card.sisterId === 'yotsuba';
+  const activeShield = shieldActivated || combatState.activeShield;
+
+  // 5. Test points progression
+  const currentTestPoints = Math.min(100, combatState.currentTestPoints + pointsDealt);
+  const isVictory = currentTestPoints >= 100;
+
+  // 6. Remove card from hand
+  const nextHand = combatState.hand.filter((_, idx) => idx !== cardIndex);
+
+  const logMessage = `🎴 Played [${card.title}] (${card.type.toUpperCase()}, ${card.cost} Focus)! +${pointsDealt} pts (${comboMultiplier}x combo #${comboCount})${healedAmount > 0 ? ` +${healedAmount} HP` : ''}${shieldActivated ? ' [Shield Deployed!]' : ''}.`;
+
+  const result: ArtsCardPlayResult = {
+    card,
+    pointsDealt,
+    comboMultiplier,
+    comboCount,
+    healedAmount,
+    shieldActivated,
+    focusRemaining,
+    currentTestPoints,
+    isVictory,
+    logMessage,
+  };
+
+  const nextCombatState: CombatState = {
+    ...combatState,
+    focusEnergy: focusRemaining,
+    hand: nextHand,
+    comboCount,
+    currentTestPoints,
+    teamResolve: newTeamResolve,
+    activeShield,
+    lastCardPlayedTimestamp: currentTimestamp,
+  };
+
+  return { nextCombatState, result };
+}
+

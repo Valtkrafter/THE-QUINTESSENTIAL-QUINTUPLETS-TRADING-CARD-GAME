@@ -88,7 +88,7 @@ export const ExamQuestionCard: React.FC<ExamQuestionCardProps> = ({
       initial={{ opacity: 0, scale: 0.96, y: 8 }}
       animate={{ opacity: 1, scale: 1, y: 0 }}
       transition={{ duration: 0.25, ease: 'easeOut' }}
-      className="relative bg-[#151b26]/85 backdrop-blur-md border border-cyan-500/30 rounded-2xl shadow-2xl p-4 sm:p-5 max-w-2xl w-full mx-auto select-none overflow-hidden"
+      className="relative bg-[#151b26]/85 backdrop-blur-md border border-cyan-500/30 rounded-2xl shadow-2xl p-4 sm:p-5 max-w-2xl w-full mx-auto select-none overflow-visible"
       style={{
         boxShadow:
           '0 20px 40px -15px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 0 30px rgba(6, 182, 212, 0.1)',
@@ -96,7 +96,7 @@ export const ExamQuestionCard: React.FC<ExamQuestionCardProps> = ({
     >
       {/* Subtle Amber Chalk Grid Vignette Background */}
       <div
-        className="absolute inset-0 pointer-events-none opacity-5"
+        className="absolute inset-0 pointer-events-none opacity-5 rounded-2xl overflow-hidden"
         style={{
           backgroundImage:
             'radial-gradient(circle at 1px 1px, #f59e0b 1px, transparent 0)',

@@ -87,6 +87,7 @@ export interface BattleState {
   isVictory: boolean;             // 100点 満点 - BESTANDEN
   isDefeated: boolean;            // F - Durchgefallen
   screenShakeTrigger: number;     // Incremented to trigger visual screen shake on crit
+  combatState?: CombatState;      // Active Arts-Card Combat Engine State
 }
 
 export interface BattleDeck {
@@ -117,3 +118,47 @@ export interface RoundExecutionResult {
   isDefeated: boolean;
   logMessages: string[];
 }
+
+// ==========================================
+// STAGE 2: ARTS-CARD COMBAT ENGINE TYPES
+// ==========================================
+
+export type ArtsCardType = 'strike' | 'blast' | 'support' | 'ultimate';
+
+export interface ArtsCard {
+  id: string;
+  sisterId: 'ichika' | 'nino' | 'miku' | 'yotsuba' | 'itsuki';
+  type: ArtsCardType;
+  title: string;
+  cost: number; // Focus cost (e.g. 20, 30, 40, 70)
+  basePoints: number;
+  healResolve?: number;
+  effectDescription: string;
+  artThumbnail: string;
+}
+
+export interface CombatState {
+  focusEnergy: number; // 0 to 100 (Ki system)
+  maxFocus: number;    // Default: 100
+  hand: ArtsCard[];    // 4 cards currently in hand
+  comboCount: number;
+  currentTestPoints: number; // Target: 100
+  teamResolve: number;
+  examinerStressQueue: number;
+  activeShield: boolean;
+  lastCardPlayedTimestamp?: number;
+}
+
+export interface ArtsCardPlayResult {
+  card: ArtsCard;
+  pointsDealt: number;
+  comboMultiplier: number;
+  comboCount: number;
+  healedAmount: number;
+  shieldActivated: boolean;
+  focusRemaining: number;
+  currentTestPoints: number;
+  isVictory: boolean;
+  logMessage: string;
+}
+

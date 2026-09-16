@@ -10,10 +10,13 @@ import { HankoVictoryModal } from './HankoVictoryModal';
 import { BattleDeckDrawer } from './BattleDeckDrawer';
 import { CardRenderer } from '../card/CardRenderer';
 import { ExamQuestionCard } from './ExamQuestionCard';
+import { FocusEnergyMeter } from './FocusEnergyMeter';
+import { ArtsHandDock } from './ArtsHandDock';
 import { EXAMINERS } from '../../config/examiners';
 import { getExamQuestion } from '../../config/examQuestions';
 import { ROUND_SUBJECTS } from '../../config/battleCalculations';
-import { SisterBattleCard } from '../../types/battle';
+import { ArtsCard, SisterBattleCard } from '../../types/battle';
+import { calculateComboMultiplier } from '../../utils/battleEngine';
 import {
   Shield,
   Zap,
@@ -88,22 +91,46 @@ export const ExamShowdownArena: React.FC<ExamShowdownArenaProps> = ({ onExit }) 
   const initBattle = useBattleStore((state) => state.initBattle);
   const startRound = useBattleStore((state) => state.startRound);
   const selectActiveSister = useBattleStore((state) => state.selectActiveSister);
+  const setSelectedSisterSlot = useBattleStore((state) => state.setSelectedSisterSlot);
   const executeTurn = useBattleStore((state) => state.executeTurn);
   const resetBattle = useBattleStore((state) => state.resetBattle);
   const isCutinPlaying = useBattleStore((state) => state.battleState.isCutinPlaying);
   const setCutinPlaying = useBattleStore((state) => state.setCutinPlaying);
 
+  // Stage 3 Arts-Card Store Bindings
+  const combatState = useBattleStore((state) => state.combatState);
+  const playArtsCard = useBattleStore((state) => state.playArtsCard);
+  const chargeFocus = useBattleStore((state) => state.chargeFocus);
+  const tickFocus = useBattleStore((state) => state.tickFocus);
+  const setCombatState = useBattleStore((state) => state.setCombatState);
+  const executeExaminerAttack = useBattleStore((state) => state.executeExaminerAttack);
+
   const inventory = useGameStore((state) => state.inventory);
 
   // Local interaction state
-  const [hoveredSisterIndex, setHoveredSisterIndex] = useState<number | null>(null);
   const [activeCutinSister, setActiveCutinSister] = useState<{
     sister: SisterBattleCard;
     index: number;
+    source?: 'turn' | 'arts_ultimate';
   } | null>(null);
   const [showLogDrawer, setShowLogDrawer] = useState<boolean>(false);
   const [showDeckDrawer, setShowDeckDrawer] = useState<boolean>(false);
   const [selectedExaminerId, setSelectedExaminerId] = useState<string>('maruo');
+
+  // Stage 3: Combat Engine Real-Time State
+  const [isChargingFocus, setIsChargingFocus] = useState<boolean>(false);
+  const [pressureCountdown, setPressureCountdown] = useState<number>(5.5);
+  const [examinerAttackBanner, setExaminerAttackBanner] = useState<{ message: string; blocked: boolean } | null>(null);
+  const [lastArtsImpact, setLastArtsImpact] = useState<{
+    card: ArtsCard;
+    points: number;
+    heal: number;
+    shield: boolean;
+    combo: number;
+    multiplier: number;
+    timestamp: number;
+  } | null>(null);
+  const [comboTimeRemaining, setComboTimeRemaining] = useState<number>(0);
 
   // Auto-fill deck with inventory sisters if deck empty
   const isDeckEmpty = useMemo(() => {
@@ -218,6 +245,71 @@ export const ExamShowdownArena: React.FC<ExamShowdownArenaProps> = ({ onExit }) 
     }
   }, [battleState.screenShakeTrigger]);
 
+  // Continuous Focus Regen (+5/sec)
+  useEffect(() => {
+    if (!battleState.isActive || battleState.isVictory || battleState.isDefeated) return;
+    const interval = setInterval(() => {
+      tickFocus(200);
+    }, 200);
+    return () => clearInterval(interval);
+  }, [battleState.isActive, battleState.isVictory, battleState.isDefeated, tickFocus]);
+
+  const MAX_PRESSURE_TIME = 5.5;
+
+  // Examiner Counter-Pressure Countdown Loop
+  useEffect(() => {
+    if (!battleState.isActive || battleState.isVictory || battleState.isDefeated || isCutinPlaying) return;
+
+    const interval = setInterval(() => {
+      // Pause countdown when player is holding Concentrate/Charge button
+      if (isChargingFocus) return;
+
+      setPressureCountdown((prev) => {
+        if (prev <= 0.1) {
+          const attackResult = executeExaminerAttack();
+          if (attackResult) {
+            if (attackResult.shieldBlocked) {
+              playSound('clean_chime', 0.85);
+              setExaminerAttackBanner({ message: '🛡️ Prüfungsfrage abgewehrt! (Shield Blocked)', blocked: true });
+            } else {
+              playSound('stress_impact', 0.9);
+              setExaminerAttackBanner({ message: `💥 Prüfungsfrage trifft! -${attackResult.finalDamage} HP Stress!`, blocked: false });
+            }
+            setTimeout(() => setExaminerAttackBanner(null), 1600);
+          }
+          return MAX_PRESSURE_TIME;
+        }
+        return Math.max(0, Number((prev - 0.1).toFixed(1)));
+      });
+    }, 100);
+
+    return () => clearInterval(interval);
+  }, [battleState.isActive, battleState.isVictory, battleState.isDefeated, isCutinPlaying, isChargingFocus, executeExaminerAttack]);
+
+  // Real-time Combo Window Decay (2.0s timeout)
+  useEffect(() => {
+    if (combatState.comboCount <= 0 || !combatState.lastCardPlayedTimestamp) {
+      setComboTimeRemaining(0);
+      return;
+    }
+
+    const interval = setInterval(() => {
+      const elapsed = Date.now() - (combatState.lastCardPlayedTimestamp || 0);
+      const remaining = Math.max(0, 2000 - elapsed);
+      setComboTimeRemaining(remaining);
+
+      if (remaining <= 0) {
+        setCombatState({ comboCount: 0 });
+      }
+    }, 50);
+
+    return () => clearInterval(interval);
+  }, [combatState.comboCount, combatState.lastCardPlayedTimestamp, setCombatState]);
+
+  const currentMultiplier = useMemo(() => {
+    return calculateComboMultiplier(combatState.comboCount);
+  }, [combatState.comboCount]);
+
   // Turn Flow Handlers
   const handleStartRound = () => {
     playSound('chalk_scribble', 0.7);
@@ -245,14 +337,55 @@ export const ExamShowdownArena: React.FC<ExamShowdownArenaProps> = ({ onExit }) 
     if (!sister || sister.skillUsed) return;
 
     playSound('manga_slash', 0.8);
-    setActiveCutinSister({ sister, index: selectedIdx });
+    setActiveCutinSister({ sister, index: selectedIdx, source: 'turn' });
     setCutinPlaying(true);
+  };
+
+  const handlePlayArtsCard = (card: ArtsCard) => {
+    if (!battleState.isActive || isCutinPlaying || battleState.isVictory || battleState.isDefeated) return;
+
+    const result = playArtsCard(card.id);
+    if (!result) return;
+
+    // If Ultimate Card: trigger 800ms Manga Cut-in!
+    if (card.type === 'ultimate') {
+      const sisterIdx = sisterCards.findIndex((s) => s?.characterId === card.sisterId);
+      const cutinSister = (sisterIdx >= 0 && sisterCards[sisterIdx])
+        ? sisterCards[sisterIdx]!
+        : sisterCards.find((s) => s !== null);
+
+      if (cutinSister) {
+        setActiveCutinSister({
+          sister: cutinSister,
+          index: sisterIdx >= 0 ? sisterIdx : 0,
+          source: 'arts_ultimate',
+        });
+        setCutinPlaying(true);
+      }
+    }
+
+    // Trigger visual impact flash on chalkboard
+    setLastArtsImpact({
+      card,
+      points: result.pointsDealt,
+      heal: result.healedAmount,
+      shield: result.shieldActivated,
+      combo: result.comboCount,
+      multiplier: result.comboMultiplier,
+      timestamp: Date.now(),
+    });
+
+    setTimeout(() => {
+      setLastArtsImpact(null);
+    }, 900);
   };
 
   const handleCutinComplete = () => {
     if (activeCutinSister) {
-      executeTurn(activeCutinSister.index);
-      playSound('stress_impact', 0.7);
+      if (activeCutinSister.source !== 'arts_ultimate') {
+        executeTurn(activeCutinSister.index);
+        playSound('stress_impact', 0.7);
+      }
     }
     setCutinPlaying(false);
     setActiveCutinSister(null);
@@ -440,7 +573,7 @@ export const ExamShowdownArena: React.FC<ExamShowdownArenaProps> = ({ onExit }) 
             </div>
           </div>
 
-          {/* Center: Examiner Portrait with Rim-Lit Glasses & Taunt Bubble */}
+          {/* Center: Examiner Portrait with Counter-Pressure Bar & Taunt Bubble */}
           <div className="relative flex flex-col items-center flex-shrink-0">
             {/* Dynamic Taunt Speech Bubble */}
             <motion.div
@@ -453,8 +586,44 @@ export const ExamShowdownArena: React.FC<ExamShowdownArenaProps> = ({ onExit }) 
               <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-zinc-900 border-r border-b border-amber-500/40 rotate-45" />
             </motion.div>
 
+            {/* Examiner Counter-Pressure Bar */}
+            <div className="w-full max-w-[120px] mb-1 flex flex-col items-center z-10">
+              <div className="flex items-center justify-between w-full px-0.5 text-[9px] font-mono font-black">
+                <span
+                  className={`flex items-center gap-0.5 ${
+                    pressureCountdown <= 1.5 ? 'text-red-400 animate-pulse' : 'text-amber-300'
+                  }`}
+                >
+                  <AlertTriangle className="w-2.5 h-2.5" />
+                  {pressureCountdown <= 0.1 ? 'ANGRIFF!' : `Prüfung in ${pressureCountdown.toFixed(1)}s!`}
+                </span>
+                {isChargingFocus && (
+                  <span className="text-[8px] text-cyan-300 font-bold bg-cyan-950/80 px-1 rounded border border-cyan-500/40 animate-pulse">
+                    ⏸ CHARGE
+                  </span>
+                )}
+              </div>
+              {/* Countdown Gauge Fill */}
+              <div className="w-full h-1.5 bg-zinc-950 rounded-full overflow-hidden border border-white/20 p-0.2 mt-0.5">
+                <div
+                  className={`h-full rounded-full transition-all duration-100 ${
+                    pressureCountdown <= 1.5
+                      ? 'bg-red-500 shadow-[0_0_10px_#ef4444]'
+                      : 'bg-gradient-to-r from-amber-500 to-rose-500'
+                  }`}
+                  style={{ width: `${Math.max(0, Math.min(100, (pressureCountdown / MAX_PRESSURE_TIME) * 100))}%` }}
+                />
+              </div>
+            </div>
+
             {/* Examiner Frame */}
-            <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden border-2 border-amber-500/60 shadow-[0_0_30px_rgba(245,158,11,0.25)] bg-zinc-950 flex items-center justify-center">
+            <div
+              className={`relative w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden border-2 transition-all duration-200 bg-zinc-950 flex items-center justify-center ${
+                pressureCountdown <= 1.5
+                  ? 'border-red-500 shadow-[0_0_30px_rgba(239,68,68,0.7)] ring-2 ring-red-500/50'
+                  : 'border-amber-500/60 shadow-[0_0_30px_rgba(245,158,11,0.25)]'
+              }`}
+            >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={battleState.examiner?.portraitPath || '/cards/TQQ/Maruo/maru 1.jpg'}
@@ -466,6 +635,24 @@ export const ExamShowdownArena: React.FC<ExamShowdownArenaProps> = ({ onExit }) 
                 {battleState.examiner?.name.split(' ')[0]}
               </span>
             </div>
+
+            {/* Attack Outcome Banner */}
+            <AnimatePresence>
+              {examinerAttackBanner && (
+                <motion.div
+                  initial={{ scale: 0.8, opacity: 0, y: 10 }}
+                  animate={{ scale: 1.05, opacity: 1, y: 0 }}
+                  exit={{ scale: 0.8, opacity: 0, y: -10 }}
+                  className={`absolute -bottom-8 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider shadow-2xl z-40 whitespace-nowrap border ${
+                    examinerAttackBanner.blocked
+                      ? 'bg-emerald-950 text-emerald-300 border-emerald-500/60 shadow-emerald-950/80'
+                      : 'bg-red-950 text-red-200 border-red-500/60 shadow-red-950/80 animate-bounce'
+                  }`}
+                >
+                  {examinerAttackBanner.message}
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {/* Examiner Selector Pills */}
             <div className="flex gap-1 mt-1.5">
@@ -576,7 +763,65 @@ export const ExamShowdownArena: React.FC<ExamShowdownArenaProps> = ({ onExit }) 
       {/* ============================================================ */}
       {/* 3. CENTRAL EXAM QUESTION BOARD & CHALKBOARD ZONE            */}
       {/* ============================================================ */}
-      <div className="relative z-20 flex-1 flex flex-col items-center justify-center px-4 py-2 min-h-0 overflow-y-auto">
+      <div className="relative z-10 overflow-visible flex-1 flex flex-col items-center justify-center px-4 py-2 min-h-0">
+        {/* Floating Real-Time Combo Counter Arcade Banner */}
+        <AnimatePresence>
+          {combatState.comboCount > 0 && (
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0, y: -10 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.8, opacity: 0, y: -10 }}
+              className="absolute top-2 z-30 px-3 py-1 rounded-full bg-black/85 border border-amber-400/60 backdrop-blur-md shadow-[0_0_20px_rgba(245,158,11,0.4)] flex items-center gap-2 font-mono"
+            >
+              <div className="flex items-center gap-1.5 font-black text-xs sm:text-sm text-amber-400">
+                <span className="animate-bounce">🔥</span>
+                <span>{combatState.comboCount} COMBO!</span>
+              </div>
+              <div className="text-[11px] font-bold text-cyan-300 bg-cyan-950/60 px-1.5 py-0.5 rounded border border-cyan-500/30">
+                {currentMultiplier.toFixed(2)}x Yield
+              </div>
+              {/* Combo Window 2s Decay Bar */}
+              <div className="w-12 h-1.5 bg-zinc-800 rounded-full overflow-hidden border border-white/10">
+                <div
+                  className="h-full bg-amber-400 transition-all duration-75"
+                  style={{ width: `${Math.max(0, Math.min(100, (comboTimeRemaining / 2000) * 100))}%` }}
+                />
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Card Impact Flash on Chalkboard */}
+        <AnimatePresence>
+          {lastArtsImpact && (
+            <motion.div
+              key={lastArtsImpact.timestamp}
+              initial={{ opacity: 0.95, scale: 0.7, y: 15 }}
+              animate={{ opacity: 1, scale: 1.05, y: 0 }}
+              exit={{ opacity: 0, scale: 1.3, y: -15 }}
+              transition={{ duration: 0.4, ease: 'easeOut' }}
+              className="absolute pointer-events-none z-30 flex flex-col items-center justify-center p-4 rounded-2xl bg-black/85 border-2 border-amber-400 shadow-[0_0_50px_rgba(245,158,11,0.8)] backdrop-blur-md"
+            >
+              <div className="text-amber-300 font-mono font-black text-2xl sm:text-3xl tracking-tight flex items-center gap-2 drop-shadow-lg">
+                <span>⚡</span>
+                {lastArtsImpact.card.type === 'support'
+                  ? `+${lastArtsImpact.heal} RESOLVE HP!`
+                  : `+${lastArtsImpact.points} TEST POINTS!`}
+              </div>
+              {lastArtsImpact.multiplier > 1.0 && (
+                <div className="text-cyan-300 font-black text-xs uppercase tracking-widest mt-1">
+                  🔥 {lastArtsImpact.combo} HIT COMBO! ({lastArtsImpact.multiplier.toFixed(2)}x MULTIPLIER)
+                </div>
+              )}
+              {lastArtsImpact.shield && (
+                <div className="text-emerald-300 font-black text-xs uppercase tracking-wider mt-1">
+                  🛡️ ACADEMIC SHIELD ACTIVATED!
+                </div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {isDeckEmpty ? (
           <div className="max-w-lg w-full bg-amber-950/80 border border-amber-500/50 rounded-xl p-4 text-center shadow-xl">
             <p className="text-sm text-amber-200 font-bold mb-2">
@@ -605,17 +850,17 @@ export const ExamShowdownArena: React.FC<ExamShowdownArenaProps> = ({ onExit }) 
       </div>
 
       {/* ============================================================ */}
-      {/* 4. BOTTOM ZONE: WOODEN SISTER EXAM DESK                      */}
+      {/* 4. BOTTOM ZONE: WOODEN SISTER EXAM DESK (Z-30 RELATIVE)      */}
       {/* ============================================================ */}
       <div
-        className="relative z-10 w-full pt-4 pb-4 px-4 bg-gradient-to-b from-[#2a1f18] via-[#221812] to-[#17100b] border-t-4 border-[#3e2c22] shadow-[0_-15px_40px_rgba(0,0,0,0.8)]"
+        className="relative z-30 w-full pt-2 pb-2 px-3 sm:px-4 bg-gradient-to-b from-[#2a1f18] via-[#221812] to-[#17100b] border-t-4 border-[#3e2c22] shadow-[0_-15px_40px_rgba(0,0,0,0.8)]"
         style={{
           boxShadow: 'inset 0 10px 30px rgba(0,0,0,0.6), 0 -10px 30px rgba(0,0,0,0.8)',
         }}
       >
         {/* Tutor Mentor Dais Flank */}
         {supportCard && (
-          <div className="max-w-7xl mx-auto mb-2 flex items-center justify-between px-2 text-xs">
+          <div className="max-w-7xl mx-auto mb-1.5 flex items-center justify-between px-2 text-xs">
             <div className="flex items-center gap-2 text-zinc-300">
               <span className="font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1">
                 <Sparkles className="w-3.5 h-3.5" /> Active Support Tutor:
@@ -629,8 +874,141 @@ export const ExamShowdownArena: React.FC<ExamShowdownArenaProps> = ({ onExit }) 
           </div>
         )}
 
-        {/* Ergonomic Arc Sister Docks (5 Sister Slots) */}
-        <div className="max-w-7xl mx-auto flex items-end justify-center gap-2 sm:gap-4 md:gap-6 pt-2 pb-2">
+        {/* ACTIVE ARTS-CARD COMBAT DOCK & FOCUS ENERGY METER */}
+        <div className="max-w-7xl mx-auto w-full px-2 mb-2 flex items-center justify-center gap-3 sm:gap-4 relative z-30 overflow-visible">
+          {/* Left: Focus Energy Arc/Vertical Ki Meter */}
+          <FocusEnergyMeter
+            focusEnergy={combatState.focusEnergy}
+            maxFocus={combatState.maxFocus}
+            onCharge={(amount) => chargeFocus(amount || 40)}
+            onChargingStateChange={setIsChargingFocus}
+            disabled={!battleState.isActive || battleState.isVictory || battleState.isDefeated}
+          />
+
+          {/* Center: 4 Horizontal Arts Cards Hand Dock */}
+          <ArtsHandDock
+            hand={combatState.hand}
+            focusEnergy={combatState.focusEnergy}
+            onPlayCard={handlePlayArtsCard}
+            disabled={!battleState.isActive || isCutinPlaying || battleState.isVictory || battleState.isDefeated}
+          />
+        </div>
+
+        {/* DEDICATED NON-FLOATING BOTTOM COMMAND TRAY */}
+        <div className="max-w-7xl mx-auto w-full px-2 mb-2 relative z-30">
+          {selectedSister ? (
+            <motion.div
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 6 }}
+              transition={{ duration: 0.18 }}
+              className="w-full bg-zinc-950/95 border-2 rounded-xl p-2.5 sm:p-3 shadow-2xl flex flex-wrap items-center justify-between gap-3 backdrop-blur-md"
+              style={{
+                borderColor: SISTER_PALETTE[selectedSister.characterId].color,
+                boxShadow: `0 0 25px ${SISTER_PALETTE[selectedSister.characterId].color}33`,
+              }}
+            >
+              {/* Left: Sister Info & Signature Skill */}
+              <div className="flex items-center gap-3 min-w-[200px]">
+                <div
+                  className="w-9 h-9 rounded-lg flex items-center justify-center font-black text-sm text-black flex-shrink-0 shadow-md"
+                  style={{ backgroundColor: SISTER_PALETTE[selectedSister.characterId].color }}
+                >
+                  {selectedSister.name[0]}
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-black text-sm text-white uppercase tracking-wider">
+                      {selectedSister.name}
+                    </span>
+                    <span
+                      className="text-[10px] font-bold px-1.5 py-0.5 rounded uppercase"
+                      style={{
+                        backgroundColor: SISTER_PALETTE[selectedSister.characterId].bg,
+                        color: SISTER_PALETTE[selectedSister.characterId].color,
+                        border: `1px solid ${SISTER_PALETTE[selectedSister.characterId].border}`,
+                      }}
+                    >
+                      {SISTER_PALETTE[selectedSister.characterId].skillTitle}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-zinc-300 line-clamp-1 mt-0.5">
+                    {SISTER_PALETTE[selectedSister.characterId].skillDesc}
+                  </p>
+                </div>
+              </div>
+
+              {/* Center: Real-Time Combat Stats Cluster */}
+              <div className="flex items-center gap-2 sm:gap-4 font-mono text-xs">
+                <div className="bg-zinc-900/90 border border-white/10 rounded-lg px-2.5 py-1 text-center">
+                  <span className="text-[10px] text-zinc-500 block uppercase">Base IQ</span>
+                  <span className="font-black text-white">{selectedSister.stats.iq}</span>
+                </div>
+                <div className="bg-zinc-900/90 border border-white/10 rounded-lg px-2.5 py-1 text-center">
+                  <span className="text-[10px] text-zinc-500 block uppercase">Charm</span>
+                  <span className="font-black text-pink-400">
+                    {Math.round((selectedSister.stats.charm + battleState.teamCharmBonus) * 100)}%
+                  </span>
+                </div>
+                <div className="bg-zinc-900/90 border border-white/10 rounded-lg px-2.5 py-1 text-center">
+                  <span className="text-[10px] text-zinc-500 block uppercase">Resolve</span>
+                  <span className="font-black text-emerald-400">+{selectedSister.stats.resolve} HP</span>
+                </div>
+                <div className="bg-cyan-950/80 border border-cyan-500/40 rounded-lg px-3 py-1 text-center shadow-[0_0_12px_rgba(6,182,212,0.2)]">
+                  <span className="text-[10px] text-cyan-400 block uppercase font-bold">Est. Yield</span>
+                  <span className="font-black text-cyan-300 text-sm">+{estimatedPoints} PTS</span>
+                </div>
+              </div>
+
+              {/* Right: Action Buttons (Solve / Unlock) */}
+              <div className="flex items-center gap-2 ml-auto">
+                <button
+                  onClick={() => setSelectedSisterSlot(null)}
+                  className="px-3 py-2 text-xs font-bold text-zinc-400 hover:text-white bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 rounded-lg transition-colors cursor-pointer"
+                  title="Unlock Focus Stage"
+                >
+                  ✕ Unlock
+                </button>
+
+                <button
+                  disabled={selectedSister.skillUsed || isCutinPlaying || !battleState.isActive}
+                  onClick={handleSolveAction}
+                  className={`px-5 py-2 rounded-lg font-black text-xs uppercase tracking-wider shadow-lg flex items-center gap-1.5 transition-all cursor-pointer ${
+                    selectedSister.skillUsed
+                      ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed border border-zinc-700'
+                      : 'bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 hover:brightness-110 text-black border border-amber-300/40 shadow-amber-500/30 active:scale-95'
+                  }`}
+                >
+                  {selectedSister.skillUsed ? (
+                    <span>✓ Already Dispatched</span>
+                  ) : (
+                    <>
+                      <span>⚔️</span>
+                      <span>Solve Problem ▶</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </motion.div>
+          ) : (
+            <div className="w-full bg-zinc-950/60 border border-white/10 rounded-xl py-2 px-4 flex items-center justify-between text-xs text-zinc-400 font-mono backdrop-blur-sm">
+              <div className="flex items-center gap-2">
+                <span className="text-amber-400">👉</span>
+                <span className="text-zinc-300 font-medium">Click a Sister Card below to lock into the Focus Stage and view tactical commands</span>
+              </div>
+              {battleState.examiner && (
+                <div className="hidden sm:flex items-center gap-2 text-zinc-400 text-[11px]">
+                  <span>Examiner Weakness:</span>
+                  <span className="text-amber-300 font-bold uppercase">{battleState.examiner.weaknessSubject}</span>
+                  <span className="text-zinc-500">(+25% Pts)</span>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Ergonomic Arc Sister Docks (5 Sister Slots) (Z-30 RELATIVE) */}
+        <div className="max-w-7xl mx-auto flex items-end justify-center gap-2 sm:gap-4 md:gap-6 pt-3 pb-2 relative z-30">
           {sisterCards.map((sister, slotIdx) => {
             const cardInstance = battleDeck.sisters[slotIdx];
             if (!sister || !cardInstance) {
@@ -641,7 +1019,7 @@ export const ExamShowdownArena: React.FC<ExamShowdownArenaProps> = ({ onExit }) 
                     playSound('card_slide');
                     setShowDeckDrawer(true);
                   }}
-                  className="w-24 sm:w-32 md:w-40 aspect-[63/88] rounded-xl border-2 border-dashed border-zinc-700 hover:border-amber-500/50 bg-black/40 flex flex-col items-center justify-center p-2 text-center text-zinc-500 cursor-pointer transition-all hover:scale-105"
+                  className="w-24 sm:w-32 md:w-40 aspect-[63/88] rounded-xl border-2 border-dashed border-zinc-700 hover:border-amber-500/50 bg-black/40 flex flex-col items-center justify-center p-2 text-center text-zinc-500 cursor-pointer transition-all hover:scale-105 relative z-10"
                 >
                   <span className="text-xl mb-1">➕</span>
                   <span className="text-[10px] font-bold uppercase tracking-wider">Empty Slot {slotIdx + 1}</span>
@@ -651,7 +1029,6 @@ export const ExamShowdownArena: React.FC<ExamShowdownArenaProps> = ({ onExit }) 
             }
 
             const palette = SISTER_PALETTE[sister.characterId];
-            const isHovered = hoveredSisterIndex === slotIdx;
             const isActed = sister.skillUsed;
             const canAct = battleState.isActive && !isActed && !isCutinPlaying;
             const isSelected = battleState.selectedSisterSlot === slotIdx;
@@ -663,84 +1040,17 @@ export const ExamShowdownArena: React.FC<ExamShowdownArenaProps> = ({ onExit }) 
             return (
               <div
                 key={sister.cardId || slotIdx}
-                className="relative group flex flex-col items-center"
-                onMouseEnter={() => setHoveredSisterIndex(slotIdx)}
-                onMouseLeave={() => setHoveredSisterIndex(null)}
+                className={`flex flex-col items-center transition-all ${
+                  isSelected ? 'z-40 relative' : 'z-10 relative'
+                }`}
               >
-                {/* Tactical Skill Preview Flyout Tooltip (Lifts up on hover) */}
-                <AnimatePresence>
-                  {isHovered && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                      animate={{ opacity: 1, y: -24, scale: 1 }}
-                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                      transition={{ duration: 0.15 }}
-                      className="absolute -top-36 z-30 w-52 bg-zinc-950/95 border-2 rounded-xl p-3 shadow-2xl pointer-events-none text-left"
-                      style={{ borderColor: palette.color, boxShadow: palette.glow }}
-                    >
-                      <div className="flex items-center justify-between border-b border-zinc-800 pb-1 mb-1.5">
-                        <span className="text-xs font-black uppercase tracking-wider text-white">
-                          {sister.name}
-                        </span>
-                        <span
-                          className="text-[10px] font-bold px-1.5 py-0.2 rounded"
-                          style={{ backgroundColor: palette.bg, color: palette.color }}
-                        >
-                          {palette.skillTitle}
-                        </span>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-1 text-[11px] mb-2 font-mono">
-                        <div>
-                          <span className="text-zinc-500">Base IQ:</span>{' '}
-                          <strong className="text-white">{sister.stats.iq}</strong>
-                        </div>
-                        <div>
-                          <span className="text-zinc-500">Charm:</span>{' '}
-                          <strong className="text-pink-400">
-                            {Math.round((sister.stats.charm + battleState.teamCharmBonus) * 100)}%
-                          </strong>
-                        </div>
-                        <div className="col-span-2">
-                          <span className="text-zinc-500">Resolve:</span>{' '}
-                          <strong className="text-emerald-400">+{sister.stats.resolve} HP</strong>
-                        </div>
-                      </div>
-
-                      <p className="text-[10px] text-zinc-300 leading-snug">
-                        {palette.skillDesc}
-                      </p>
-
-                      {isActed ? (
-                        <div className="mt-2 text-[10px] font-bold text-zinc-500 uppercase tracking-wider text-center bg-zinc-900 rounded py-0.5">
-                          ✓ Skill Already Dispatched
-                        </div>
-                      ) : isSelected ? (
-                        <div
-                          className="mt-2 text-[10px] font-black uppercase tracking-wider text-center rounded py-0.5"
-                          style={{ backgroundColor: palette.color, color: '#000' }}
-                        >
-                          ⚔️ Active — Press Solve
-                        </div>
-                      ) : (
-                        <div
-                          className="mt-2 text-[10px] font-black uppercase tracking-wider text-center rounded py-0.5"
-                          style={{ backgroundColor: palette.color, color: '#000' }}
-                        >
-                          ▶ Click to Select for Round {battleState.currentRound}
-                        </div>
-                      )}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
                 {/* Card Dock Frame with Signature Readiness Ring */}
                 <motion.div
                   animate={
                     isPromptBouncing
                       ? { y: [0, -8, 0] }
                       : isSelected
-                      ? { y: -20, scale: 1.06 }
+                      ? { y: -24, scale: 1.05 }
                       : { y: 0, scale: 1 }
                   }
                   transition={
@@ -751,9 +1061,8 @@ export const ExamShowdownArena: React.FC<ExamShowdownArenaProps> = ({ onExit }) 
                           delay: slotIdx * 0.12,
                           ease: 'easeInOut',
                         }
-                      : { type: 'spring', stiffness: 350, damping: 20 }
+                      : { type: 'spring', stiffness: 350, damping: 22 }
                   }
-                  whileHover={canAct ? { y: -24, scale: 1.08 } : {}}
                   onClick={() => {
                     if (isSelected) {
                       handleSolveAction();
@@ -763,16 +1072,16 @@ export const ExamShowdownArena: React.FC<ExamShowdownArenaProps> = ({ onExit }) 
                   }}
                   className={`relative w-24 sm:w-32 md:w-40 aspect-[63/88] rounded-xl overflow-hidden cursor-pointer transition-all duration-200 ${
                     isSelected
-                      ? 'ring-4 ring-offset-2 ring-offset-zinc-950 shadow-2xl z-20'
+                      ? 'ring-4 ring-offset-2 ring-offset-zinc-950 shadow-2xl z-40'
                       : canAct
-                      ? 'ring-2 shadow-xl hover:shadow-2xl'
+                      ? 'ring-2 shadow-xl hover:ring-white/40'
                       : isActed
                       ? 'opacity-40 grayscale filter cursor-not-allowed'
                       : 'opacity-80'
                   }`}
                   style={{
                     boxShadow: isSelected
-                      ? `0 0 35px ${palette.color}, 0 0 15px ${palette.color}`
+                      ? `0 0 35px ${palette.color}, 0 0 15px ${palette.color}, 0 -12px 30px ${palette.color}80`
                       : canAct
                       ? palette.glow
                       : undefined,
@@ -791,13 +1100,28 @@ export const ExamShowdownArena: React.FC<ExamShowdownArenaProps> = ({ onExit }) 
                     }}
                   />
 
-                  {/* Selected Indicator Badge */}
+                  {/* Selected Indicator Badge (Anchored on Active Card) */}
                   {isSelected && (
                     <div
-                      className="absolute top-1 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider text-black z-30 shadow-md whitespace-nowrap"
+                      className="absolute top-1 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider text-black z-30 shadow-md whitespace-nowrap animate-pulse"
                       style={{ backgroundColor: palette.color }}
                     >
-                      Active
+                      ★ FOCUS STAGE
+                    </div>
+                  )}
+
+                  {/* Anchored Bottom Quick Stats Bar when in Focus Stage */}
+                  {isSelected && (
+                    <div className="absolute bottom-0 inset-x-0 bg-black/90 backdrop-blur-sm border-t border-white/20 p-1 text-[9px] font-mono text-center z-30">
+                      <div className="font-bold text-white flex justify-around">
+                        <span>IQ {sister.stats.iq}</span>
+                        <span className="text-pink-400">
+                          {Math.round((sister.stats.charm + battleState.teamCharmBonus) * 100)}%
+                        </span>
+                      </div>
+                      <div className="text-cyan-300 font-black text-[8px] uppercase tracking-wider mt-0.5">
+                        +{estimatedPoints} PTS • CLICK TO SOLVE
+                      </div>
                     </div>
                   )}
 

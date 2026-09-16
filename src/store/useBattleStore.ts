@@ -8,9 +8,12 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { CardInstance } from '../types/card';
 import {
+  ArtsCard,
+  ArtsCardPlayResult,
   BattleDebuff,
   BattleDeck,
   BattleState,
+  CombatState,
   Examiner,
   SisterBattleCard,
   SupportBattleCard,
@@ -23,7 +26,15 @@ import {
   EXAMINERS,
   ROUND_SUBJECTS,
 } from '../config/battleCalculations';
-import { executeRoundTurn } from '../utils/battleEngine';
+import {
+  calculateExaminerPressure,
+  calculateFocusRegen,
+  chargeFocusEnergy,
+  drawArtsCardFromDeck,
+  drawStartingHand,
+  executeArtsCardPlay,
+  executeRoundTurn,
+} from '../utils/battleEngine';
 import { useGameStore } from './useGameStore';
 
 export interface BattleStore {
@@ -34,6 +45,7 @@ export interface BattleStore {
 
   // Active Combat State
   battleState: BattleState;
+  combatState: CombatState;
   sisterCards: (SisterBattleCard | null)[];
   supportCard: SupportBattleCard | null;
 
@@ -48,11 +60,31 @@ export interface BattleStore {
   setSelectedSisterSlot: (slotIndex: number | null) => void;
   setShieldActive: (active: boolean) => void;
   setActiveDebuff: (debuff: BattleDebuff | null) => void;
+
+  // Stage 2 & 3: Arts-Card Combat Actions
+  playArtsCard: (cardIdOrIndex: string | number) => ArtsCardPlayResult | null;
+  chargeFocus: (amount?: number) => void;
+  tickFocus: (deltaMs?: number) => void;
+  drawArtsCard: () => ArtsCard | null;
+  setCombatState: (combatState: Partial<CombatState>) => void;
+  executeExaminerAttack: () => { incomingDamage: number; shieldBlocked: boolean; finalDamage: number } | null;
 }
 
 const INITIAL_DECK: BattleDeck = {
   sisters: [null, null, null, null, null],
   support: null,
+};
+
+export const INITIAL_COMBAT_STATE: CombatState = {
+  focusEnergy: 50,
+  maxFocus: 100,
+  hand: [],
+  comboCount: 0,
+  currentTestPoints: 0,
+  teamResolve: 0,
+  examinerStressQueue: 0,
+  activeShield: false,
+  lastCardPlayedTimestamp: 0,
 };
 
 const INITIAL_BATTLE_STATE: BattleState = {
@@ -74,6 +106,7 @@ const INITIAL_BATTLE_STATE: BattleState = {
   isVictory: false,
   isDefeated: false,
   screenShakeTrigger: 0,
+  combatState: INITIAL_COMBAT_STATE,
 };
 
 export const useBattleStore = create<BattleStore>()(
@@ -81,6 +114,7 @@ export const useBattleStore = create<BattleStore>()(
     (set, get) => ({
       battleDeck: INITIAL_DECK,
       battleState: INITIAL_BATTLE_STATE,
+      combatState: INITIAL_COMBAT_STATE,
       sisterCards: [null, null, null, null, null],
       supportCard: null,
 
@@ -143,9 +177,30 @@ export const useBattleStore = create<BattleStore>()(
         const initialRound = 1;
         const initialSubject = ROUND_SUBJECTS[initialRound] || 'math';
 
+        const customThumbnails: Record<string, string> = {};
+        battleDeck.sisters.forEach((card) => {
+          if (card && card.imageUrl) {
+            customThumbnails[card.characterId] = card.imageUrl;
+          }
+        });
+        const initialHand = drawStartingHand(sisterCards, 4, customThumbnails);
+
+        const initialCombatState: CombatState = {
+          focusEnergy: 50,
+          maxFocus: 100,
+          hand: initialHand,
+          comboCount: 0,
+          currentTestPoints: 0,
+          teamResolve: teamResolveMax,
+          examinerStressQueue: 0,
+          activeShield: false,
+          lastCardPlayedTimestamp: 0,
+        };
+
         set({
           sisterCards,
           supportCard,
+          combatState: initialCombatState,
           battleState: {
             isActive: true,
             currentRound: initialRound,
@@ -164,9 +219,11 @@ export const useBattleStore = create<BattleStore>()(
             isVictory: false,
             isDefeated: false,
             screenShakeTrigger: 0,
+            combatState: initialCombatState,
             battleLog: [
               `Exam session started against ${examiner.name} (${examiner.title})!`,
               `Round 1 Subject: ${initialSubject.toUpperCase()}. Target: 100 Test Points.`,
+              `Arts-Card Combat Engine active: Focus Energy 50/100, Hand drawn (4 cards).`,
             ],
           },
         });
@@ -256,15 +313,22 @@ export const useBattleStore = create<BattleStore>()(
           }
         }
 
-        set({
+        set((state) => ({
           battleState: nextState,
           sisterCards: nextSisters,
-        });
+          combatState: {
+            ...state.combatState,
+            currentTestPoints: nextState.testProgress,
+            teamResolve: nextState.teamResolveCurrent,
+            activeShield: nextState.shieldActive,
+          },
+        }));
       },
 
       resetBattle: () => {
         set({
           battleState: INITIAL_BATTLE_STATE,
+          combatState: INITIAL_COMBAT_STATE,
           sisterCards: [null, null, null, null, null],
           supportCard: null,
         });
@@ -304,6 +368,237 @@ export const useBattleStore = create<BattleStore>()(
             activeDebuff: debuff,
           },
         }));
+      },
+
+      playArtsCard: (cardIdOrIndex: string | number) => {
+        const { combatState, battleState, supportCard } = get();
+        if (!battleState.isActive || battleState.isVictory || battleState.isDefeated) {
+          return null;
+        }
+
+        const card = typeof cardIdOrIndex === 'number'
+          ? combatState.hand[cardIdOrIndex]
+          : combatState.hand.find((c) => c.id === cardIdOrIndex);
+
+        if (!card) return null;
+        if (combatState.focusEnergy < card.cost) return null;
+
+        const maxResolve = battleState.teamResolveMax > 0 ? battleState.teamResolveMax : 1000;
+        const { nextCombatState, result } = executeArtsCardPlay(
+          combatState,
+          card.id,
+          battleState.examiner,
+          supportCard,
+          battleState.subject,
+          Date.now(),
+          maxResolve
+        );
+
+        // Synchronize battleState with combatState
+        const updatedBattleState: BattleState = {
+          ...battleState,
+          testProgress: nextCombatState.currentTestPoints,
+          teamResolveCurrent: nextCombatState.teamResolve,
+          shieldActive: nextCombatState.activeShield,
+          isVictory: result.isVictory,
+          isActive: !result.isVictory && !battleState.isDefeated,
+          turnPhase: result.isVictory ? 'round_complete' : battleState.turnPhase,
+          combatState: nextCombatState,
+          battleLog: [...battleState.battleLog, result.logMessage],
+        };
+
+        // If victory, handle rewards
+        if (result.isVictory && battleState.examiner?.reward) {
+          const reward = battleState.examiner.reward;
+          const multiplier = supportCard?.rewardMultiplier ?? 1.0;
+          const yenEarned = Math.round(reward.yen * multiplier);
+          const stardustEarned = Math.round(reward.stardust * multiplier);
+          try {
+            const gameStore = useGameStore.getState();
+            if (gameStore && typeof gameStore.yen === 'number') {
+              useGameStore.setState((s) => ({
+                yen: s.yen + yenEarned,
+                stardust: s.stardust + stardustEarned,
+                stats: {
+                  ...s.stats,
+                  totalYenEarned: s.stats.totalYenEarned + yenEarned,
+                  totalStardustEarned: s.stats.totalStardustEarned + stardustEarned,
+                },
+              }));
+              updatedBattleState.battleLog.push(
+                `🎁 Academic Victory Rewards Claimed: +${yenEarned.toLocaleString()} ¥ & +${stardustEarned} ★ Stardust${multiplier > 1.0 ? ` (${multiplier}x Tutor Bonus)` : ''}!`
+              );
+            }
+          } catch {
+            // Safe in test environments
+          }
+        }
+
+        set({
+          combatState: nextCombatState,
+          battleState: updatedBattleState,
+        });
+
+        // Automatically draw replacement card after 0.5s cooldown
+        if (typeof setTimeout !== 'undefined') {
+          setTimeout(() => {
+            const currentState = get();
+            if (currentState.combatState.hand.length < 4 && currentState.battleState.isActive) {
+              currentState.drawArtsCard();
+            }
+          }, 500);
+        }
+
+        return result;
+      },
+
+      chargeFocus: (amount: number = 25) => {
+        set((state) => {
+          const newFocus = chargeFocusEnergy(
+            state.combatState.focusEnergy,
+            state.combatState.maxFocus,
+            amount
+          );
+          const updatedCombatState: CombatState = {
+            ...state.combatState,
+            focusEnergy: newFocus,
+          };
+          return {
+            combatState: updatedCombatState,
+            battleState: {
+              ...state.battleState,
+              combatState: updatedCombatState,
+            },
+          };
+        });
+      },
+
+      tickFocus: (deltaMs: number = 1000) => {
+        set((state) => {
+          if (!state.battleState.isActive || state.battleState.isVictory || state.battleState.isDefeated) {
+            return state;
+          }
+          const deltaSeconds = deltaMs / 1000;
+          const newFocus = calculateFocusRegen(
+            state.combatState.focusEnergy,
+            state.combatState.maxFocus,
+            deltaSeconds
+          );
+          const updatedCombatState: CombatState = {
+            ...state.combatState,
+            focusEnergy: newFocus,
+          };
+          return {
+            combatState: updatedCombatState,
+            battleState: {
+              ...state.battleState,
+              combatState: updatedCombatState,
+            },
+          };
+        });
+      },
+
+      drawArtsCard: () => {
+        const { combatState, sisterCards, battleDeck } = get();
+        if (combatState.hand.length >= 4) return null;
+
+        const customThumbnails: Record<string, string> = {};
+        battleDeck.sisters.forEach((card) => {
+          if (card && card.imageUrl) {
+            customThumbnails[card.characterId] = card.imageUrl;
+          }
+        });
+
+        const newCard = drawArtsCardFromDeck(sisterCards, customThumbnails);
+        const updatedCombatState: CombatState = {
+          ...combatState,
+          hand: [...combatState.hand, newCard],
+        };
+        set((state) => ({
+          combatState: updatedCombatState,
+          battleState: {
+            ...state.battleState,
+            combatState: updatedCombatState,
+          },
+        }));
+        return newCard;
+      },
+
+      setCombatState: (partial: Partial<CombatState>) => {
+        set((state) => {
+          const updatedCombatState: CombatState = {
+            ...state.combatState,
+            ...partial,
+          };
+          return {
+            combatState: updatedCombatState,
+            battleState: {
+              ...state.battleState,
+              combatState: updatedCombatState,
+            },
+          };
+        });
+      },
+
+      executeExaminerAttack: () => {
+        const { battleState, combatState } = get();
+        if (!battleState.isActive || battleState.isVictory || battleState.isDefeated) {
+          return null;
+        }
+        const examiner = battleState.examiner;
+        if (!examiner) return null;
+
+        const isShielded = battleState.shieldActive || combatState.activeShield;
+        const pressure = calculateExaminerPressure(
+          examiner,
+          battleState.activeDebuff,
+          isShielded
+        );
+
+        const newResolve = Math.max(0, battleState.teamResolveCurrent - pressure.finalDamage);
+        const isDefeated = newResolve <= 0;
+        const newShield = pressure.shieldBlocked ? false : isShielded;
+
+        // Decrement remaining rounds for active debuff if present
+        let nextDebuff: BattleDebuff | null = battleState.activeDebuff;
+        if (nextDebuff) {
+          const remaining = nextDebuff.roundsRemaining - 1;
+          nextDebuff = remaining > 0 ? { ...nextDebuff, roundsRemaining: remaining } : null;
+        }
+
+        const nextCombatState: CombatState = {
+          ...combatState,
+          teamResolve: newResolve,
+          activeShield: newShield,
+        };
+
+        const nextBattleState: BattleState = {
+          ...battleState,
+          teamResolveCurrent: newResolve,
+          shieldActive: newShield,
+          activeDebuff: nextDebuff,
+          isDefeated,
+          isActive: !isDefeated,
+          screenShakeTrigger: pressure.finalDamage > 0 ? Date.now() : battleState.screenShakeTrigger,
+          combatState: nextCombatState,
+          lastExaminerDamage: pressure.finalDamage,
+          battleLog: [
+            ...battleState.battleLog,
+            pressure.logMessage,
+            ...(isDefeated ? [`💀 Team Resolve collapsed to 0 HP! Grade: F - DURCHGEFALLEN.`] : []),
+          ],
+        };
+
+        set({
+          battleState: nextBattleState,
+          combatState: nextCombatState,
+        });
+
+        return {
+          incomingDamage: pressure.incomingDamage,
+          shieldBlocked: pressure.shieldBlocked,
+          finalDamage: pressure.finalDamage,
+        };
       },
     }),
     {

@@ -290,11 +290,15 @@ $$\text{Market Value} = \text{Base Value}(\text{Rarity}) \times \text{Multiplier
   - Minimum floor ($t \ge 24\text{h}$ or near-completion): $50\ ★$ Stardust (free manual unclamp once $t \ge 24\text{h}$).
 - **Restoration Certification Floor:** Guaranteed Grade $\ge 7.0$ (Crisp) minimum upon re-grading, with amber `RE-CERTIFIED / RESTORED` slab badge.
 
-### 7. Exam Showdown: Academic Combat Engine, Question Board & Turn Flow (v2.4.1)
-- **High-Stakes Tactical Auto-Battler:** A turn-based classroom combat system where a team of 5 Nakano sisters and 1 Support Tutor faces strict examiners (Maruo Nakano, School Board Proctor, Rival Takeda) across 5 academic rounds (Math $\to$ Science $\to$ History $\to$ Literature $\to$ English).
+### 7. Exam Showdown: Academic Combat Engine, Focus Stage & Command Tray (v2.5.0)
+- **High-Stakes Tactical Battle Engine:** An academic battle system where a team of 5 Nakano sisters and 1 Support Tutor faces strict examiners (Maruo Nakano, School Board Proctor, Rival Takeda) across 5 academic rounds (Math $\to$ Science $\to$ History $\to$ Literature $\to$ English).
 - **Core Victory Contract:** Achieve **100 Test Points** before team mental stamina (**Resolve**) drops to 0.
+- **Permanent Purge of Hover Tooltips & Stacking Hierarchy (v2.5.0):**
+  - **Click-to-Select / Field Locking Model:** Clicking a Sister card selects and locks it into the active "Focus Stage". The selected card smoothly raises up by $-24\text{px}$ with a glowing character aura, anchored quick stats, and elevated stacking order (`z-40 relative`).
+  - **Dedicated Non-Floating Bottom Command Tray (`z-30 relative`):** Renders sister stats (Base IQ, Charm %, Resolve HP, Est. Points Yield) and interactive command buttons (`⚔️ Solve Problem ▶`, `✕ Unlock Focus`) directly inside a solid, docked command tray directly above the desk wells. Permanently purges CSS `:hover`-dependent action buttons, chalkboard clipping, and hover-tunnel dismissals.
+  - **Strict Stacking Context Hierarchy:** Central Chalkboard uses `z-10 relative overflow-visible`, the active command tray and card play slots use `z-30 relative`, active focus cards elevate to `z-40 relative`, and floating Manga Cut-Ins / Hanko Victory Modals use `z-50 fixed inset-0`.
 - **Central Exam Question Board (`src/config/examQuestions.ts`, `ExamQuestionCard.tsx`):**
-  - Mounts in the central chalkboard zone between the Examiner and Sister desks on a semi-translucent dark slate chalkboard card (`bg-[#151b26]/85 backdrop-blur-md border border-cyan-500/30 rounded-2xl shadow-2xl`).
+  - Mounts in the central chalkboard zone between the Examiner and Sister desks on a semi-translucent dark slate chalkboard card (`bg-[#151b26]/85 backdrop-blur-md border border-cyan-500/30 rounded-2xl shadow-2xl overflow-visible`).
   - Top-left authentic red Japanese Hanko stamp badge (`PROBLEM [X/5]`), subject badge (`ADVANCED MATHEMATICS`, `CELLULAR BIOPHYSICS`, `SENGOKU ERA HISTORY`, `CLASSICAL HEIAN LITERATURE`, `ACADEMIC ENGLISH`), target point yield, and difficulty rating (`Standard`, `Challenging`, `Patriarch Tier`).
   - Dedicated glowing code/formula callout box (`bg-[#0c1017]/80 border border-white/10 rounded-lg font-mono text-cyan-300`) with authentic subject equations:
     - **Round 1 (Math):** Gaussian Integral & Polar Convergence ($\int_{-\infty}^{\infty} e^{-x^2} dx = \sqrt{\pi}$).
@@ -307,7 +311,7 @@ $$\text{Market Value} = \text{Base Value}(\text{Rarity}) \times \text{Multiplier
   - Governed by state machine: `awaiting_start` $\to$ `question_revealed` $\to$ `sister_selected` $\to$ `executing_turn` $\to$ `round_complete`.
   - **State A (`awaiting_start`):** Centered golden action button `▶ BEGIN ROUND [X]: [SUBJECT]` (`from-amber-500 to-amber-600`), playing `chalk_scribble` SFX and unsealing the problem.
   - **State B (`question_revealed`):** Pulsing instruction banner `👇 SELECT A SISTER TO SOLVE THIS PROBLEM` with gentle card bounce animations prompting the player to pick a sister.
-  - **State C (`sister_selected`):** Focused signature aura on the selected card with real-time estimated test points preview and glowing button `⚔️ SOLVE WITH [SISTER NAME] (EST. [X] PTS) ▶` (`from-cyan-500 to-emerald-500`) triggering the 800ms Manga Cut-In and turn resolution.
+  - **State C (`sister_selected`):** Focused signature aura on the selected card with real-time estimated test points preview, dedicated non-floating command tray, and glowing button `⚔️ SOLVE WITH [SISTER NAME] (EST. [X] PTS) ▶` (`from-cyan-500 to-emerald-500`) triggering the 800ms Manga Cut-In and turn resolution.
 - **Purge of Redundant Floating Bottom Dock:**
   - Completely removed the duplicate floating bottom pill bar (`BottomNavigation`) across all views, providing uninterrupted vertical clearance for the Sister Desk and collection grids without overlay collisions.
 - **3-Phase Round Flow:**
@@ -358,6 +362,47 @@ $$\text{Market Value} = \text{Base Value}(\text{Rarity}) \times \text{Multiplier
   - Mathematically verifies all-Common win rate ($15\% \dots 25\%$) and all-UR / Graded win rate ($75\% \dots 90\%$).
   - Guarantees zero division-by-zero, zero negative resolve crashes, and zero infinite loops.
 
+### 8. v2.5.0 Arts-Card Combat Engine (Dragon Ball Legends / Pokémon TCG Style) & Arena Overhaul
+
+- **Hover-Bug Purge & Click-to-Select Focus Stage:**
+  - Permanently purged all CSS `:hover`-dependent interaction paths on the Sister Desk.
+  - Replaced with an explicit Click-to-Select Focus Stage: selected cards elevate smoothly by $-24\text{px}$ with character-specific glowing auras and `z-40 relative`.
+  - Non-floating bottom command tray displays sister lore, signature skills, real-time stats (Base IQ, Charm %, Resolve HP, Est. Yield), and tactical dispatch actions (`⚔️ Solve Problem ▶`, `✕ Unlock`).
+- **Active Arts Hand Dock (`src/components/battle/ArtsHandDock.tsx`):**
+  - Renders 4 horizontal action cards at the bottom center drawn dynamically from slotted Nakano sisters:
+    - **Strike Card (Red Border `#EF4444` / 20 Focus):** *"Quick Answer"* — Rapid low-cost test points.
+    - **Blast Card (Amber Border `#F59E0B` / 40 Focus):** *"Theorem Proof"* — Heavy test points scaling with sister IQ.
+    - **Support Card (Green Border `#10B981` / 30 Focus):** *"Study Break / Note Pass"* — Heals team Resolve or deploys a $100\%$ stress-absorption shield.
+    - **Ultimate Card (Cyan Border `#06B6D4` / 70 Focus):** *"Awakened Genius"* — Triggers the 800ms Manga Skill Cut-In and deals $50+$ test points.
+  - Glowing top-left Focus orb: illuminates brightly with pulsing energy when `cost <= focusEnergy`, and dims when insufficient Ki.
+  - Card launches dynamically onto the chalkboard problem with upward trajectory, impact flash, and Web Audio SFX.
+- **Focus Energy Meter & Tactile Concentrate Mechanics (`src/components/battle/FocusEnergyMeter.tsx`):**
+  - Left flank vertical Ki fluid cylinder gauge transitioning from deep blue (`#1e3a8a`) to electric cyan (`#06b6d4`) and radiant golden energy glow (`#f59e0b`) with digital readouts (`[ 75 / 100 ]`).
+- **Focus Energy (Ki) System & Mathematical Formulas:**
+  - Initial battle start: Focus Energy starts at $50 / 100\ \text{Ki}$.
+  - Passive continuous regeneration formula ($+5\text{ Ki/sec}$):
+    $$\text{Focus}(t + \Delta t) = \min\Big(\text{MaxFocus},\ \text{Focus}(t) + 5.0 \times \Delta t\Big)$$
+  - Tactile Concentrate surge formula ($+40\text{ Ki}$ upon 1.0s hold):
+    $$\text{Focus}_{\text{charged}} = \min\Big(\text{MaxFocus},\ \text{Focus} + 40\Big)$$
+- **Arcade Combo Multiplier Chain:**
+  - Cards played within $< 2.0\text{s}$ interval chain into combos with escalating score multipliers:
+    $$M(\text{combo}) = \begin{cases} 1.00\times & \text{if } \text{combo} = 1 \\ 1.10\times & \text{if } \text{combo} = 2 \\ 1.25\times & \text{if } \text{combo} = 3 \\ 1.45\times & \text{if } \text{combo} = 4 \\ 1.70\times & \text{if } \text{combo} \ge 5 \end{cases}$$
+  - Dynamic score yield calculation:
+    $$\text{Points Dealt} = \text{round}\Big(\text{BasePoints} \times M(\text{combo}) \times \text{WeaknessMultiplier}\Big)$$
+  - Floating arcade combo banner with 2.0s decay progress bar.
+  - Chalkboard radiant impact flash displaying acquired test points, critical multipliers, and shield activations.
+- **Examiner Counter-Pressure Bar & Attack Loop:**
+  - High-visibility countdown timer on Maruo Nakano's portrait (`Prüfungsfrage in 4.2s!`) with dynamic shrinking gauge.
+  - Flashes alarming crimson red with active pulse when under $1.5\text{s}$. Pauses while player concentrates/charges.
+  - When timer hits 0, Maruo strikes, dealing stress damage to Resolve unless absorbed by an active academic shield (`executeExaminerAttack`).
+- **Procedural Web Audio SFX Additions:**
+  - `arts_strike`: Rapid swoosh + snappy chalk crack.
+  - `arts_blast`: Energy beam sweep + resonant sub-bass thump.
+  - `arts_support`: Soothing emerald chime arpeggio (C6, E6, G6, C7).
+  - `arts_ultimate`: Power surge sub-drop + dramatic A-Major orchestral chord triad.
+  - `focus_charge_hum`: 110Hz to 220Hz rising triangle wave charging hum.
+  - `focus_charge_burst`: Golden dual-tone ping (1760Hz & 2637Hz) upon charge completion.
+
 ---
 
 ## 🏗️ Project Architecture
@@ -391,9 +436,11 @@ tqqtcg/
 │   │   └── showcase/page.tsx    # Interactive sandbox showcase & inspection playground
 │   ├── components/
 │   │   ├── battle/
+│   │   │   ├── ArtsHandDock.tsx         # 4-card horizontal action dock with glowing Focus Ki orbs & launch FX
 │   │   │   ├── BattleDeckDrawer.tsx     # Slide-over tactical deck builder with auto-fill & stat preview
 │   │   │   ├── ExamQuestionCard.tsx     # Central chalkboard question card with formula container & taunts
-│   │   │   ├── ExamShowdownArena.tsx    # Night chalkboard battlefield, dual gauges & dynamic taunts
+│   │   │   ├── ExamShowdownArena.tsx    # Night chalkboard battlefield, dual gauges, combo HUD & pressure timer
+│   │   │   ├── FocusEnergyMeter.tsx     # Vertical Ki gauge & tactile 1s concentrate hold-to-charge mechanics
 │   │   │   ├── HankoVictoryModal.tsx    # Lined test paper modal with red Hanamaru stamp ceremony
 │   │   │   └── MangaSkillCutin.tsx      # 800ms 15-degree diagonal anime action slash & quote banners
 │   │   ├── binder/
@@ -437,6 +484,7 @@ tqqtcg/
 │   │       ├── RestorationWorkbenchModal.tsx # Full-screen self-healing mat workbench container & glove vignette
 │   │       └── SleeveStep.tsx                # Semi-rigid Card Saver 1 insertion & Post-it checklist seal
 │   ├── config/
+│   │   ├── artsCards.ts         # Master Arts Card templates (Strike, Blast, Support, Ultimate) & generator
 │   │   ├── battleCalculations.ts # Base IQ, Charm crit probabilities, Resolve & Support scaling formulas
 │   │   ├── cardsData.ts         # Catalog of 42 cards with metadata and quotes
 │   │   ├── economy.ts           # Pricing matrices, valuation formulas, drop tables, pity, synergies

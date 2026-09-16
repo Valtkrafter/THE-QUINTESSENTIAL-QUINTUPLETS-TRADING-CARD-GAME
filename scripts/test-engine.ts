@@ -56,10 +56,17 @@ import {
   calculateEffectiveCharm,
   executeSisterSkill,
   executeRoundTurn,
+  calculateFocusRegen,
+  chargeFocusEnergy,
+  calculateComboMultiplier,
+  updateComboCount,
+  drawArtsCardFromDeck,
+  drawStartingHand,
 } from '../src/utils/battleEngine';
+import { SISTER_ARTS_TEMPLATES, generateArtsCard } from '../src/config/artsCards';
 import { useBattleStore } from '../src/store/useBattleStore';
 import { EXAM_QUESTIONS, getExamQuestion } from '../src/config/examQuestions';
-import type { BattleState } from '../src/types/battle';
+import type { BattleState, ArtsCard, CombatState } from '../src/types/battle';
 
 function assert(condition: boolean, message: string): void {
   if (!condition) {
@@ -1707,6 +1714,110 @@ async function runTests() {
   assert(round3.nextState.isActive === false, 'Battle marked as finished');
   console.log('✅ 3-Phase Round Flow (Step A -> Step B -> Step C) & Victory resolution verified.');
 
+  // ==========================================
+  // SECTION 14: STAGE 2 ARTS-CARD COMBAT ENGINE
+  // ==========================================
+  testSection('14. Stage 2: Arts-Card Combat Engine & Ki Focus Mechanics');
+
+  // 1. Templates & Structure
+  assert(Object.keys(SISTER_ARTS_TEMPLATES).length === 5, '5 sisters have Arts Card templates');
+  const ichikaArts = SISTER_ARTS_TEMPLATES.ichika;
+  assert(ichikaArts.length === 4, 'Ichika has 4 Arts Card templates (Strike, Blast, Support, Ultimate)');
+  assert(ichikaArts.some((a) => a.type === 'strike' && a.cost === 20), 'Strike card costs 20 Focus');
+  assert(ichikaArts.some((a) => a.type === 'blast' && a.cost === 30), 'Blast card costs 30 Focus');
+  assert(ichikaArts.some((a) => a.type === 'support' && a.cost === 40), 'Support card costs 40 Focus');
+  assert(ichikaArts.some((a) => a.type === 'ultimate' && a.cost === 70), 'Ultimate card costs 70 Focus');
+  console.log('✅ ArtsCard data structure & templates verified.');
+
+  // 2. Focus Energy (Ki) continuous regen & charging
+  assert(calculateFocusRegen(50, 100, 1.0) === 55, '+5 Focus/sec continuous regen verified (50 -> 55)');
+  assert(calculateFocusRegen(98, 100, 1.0) === 100, 'Focus regen caps at maxFocus 100 (98 -> 100)');
+  assert(chargeFocusEnergy(50, 100, 25) === 75, '+25 Focus charge verified (50 -> 75)');
+  assert(chargeFocusEnergy(85, 100, 25) === 100, 'Focus charge caps at maxFocus 100 (85 -> 100)');
+  console.log('✅ Focus Energy (Ki) continuous regen (+5/s) and Charge Focus (+25) verified.');
+
+  // 3. Combo Multiplier Progression & Timing Window
+  assert(calculateComboMultiplier(1) === 1.0, 'Combo 1 multiplier is 1.0x');
+  assert(calculateComboMultiplier(2) === 1.10, 'Combo 2 multiplier is 1.10x');
+  assert(calculateComboMultiplier(3) === 1.25, 'Combo 3 multiplier is 1.25x');
+  assert(calculateComboMultiplier(4) === 1.45, 'Combo 4 multiplier is 1.45x');
+  assert(calculateComboMultiplier(5) === 1.70, 'Combo 5 multiplier is 1.70x');
+
+  const now = Date.now();
+  assert(updateComboCount(now - 1500, now, 2) === 3, 'Consecutive card played within 1.5s (<2.0s) increments combo');
+  assert(updateComboCount(now - 2500, now, 2) === 1, 'Card played after 2.5s (>2.0s) resets combo count to 1');
+  console.log('✅ Combo Multiplier (1.0x -> 1.1x -> 1.25x) & <2.0s interval window verified.');
+
+  // 4. Starting Hand & Deck Drawing Dynamics
+  const handSisters = [sisterIchika, sisterNino, sisterMiku, sisterYotsuba, sisterItsuki];
+  const hand = drawStartingHand(handSisters, 4);
+  assert(hand.length === 4, 'Starting hand draws exactly 4 cards');
+  assert(hand.every((c) => ['ichika', 'nino', 'miku', 'yotsuba', 'itsuki'].includes(c.sisterId)), 'All drawn cards belong to slotted sisters');
+  console.log('✅ Arts Card Pool & dynamic drawing from slotted sisters verified.');
+
+  // 5. Active Combat State & Playing Arts Cards via Store
+  battleStore.initBattle('maruo');
+  const combat = useBattleStore.getState().combatState;
+  assert(combat.focusEnergy === 50, 'Initial Focus Energy starts at 50 / 100');
+  assert(combat.maxFocus === 100, 'Max Focus is 100');
+  assert(combat.hand.length === 4, 'Hand has 4 Arts Cards');
+  assert(combat.currentTestPoints === 0, 'Initial test points is 0');
+
+  // Charge focus
+  battleStore.chargeFocus();
+  assert(useBattleStore.getState().combatState.focusEnergy === 75, 'chargeFocus() raised focus to 75');
+
+  // Play an Arts Card from hand
+  const firstCard = useBattleStore.getState().combatState.hand[0];
+  const playRes = battleStore.playArtsCard(firstCard.id);
+  assert(playRes !== null, 'Card play was executed successfully');
+  assert(useBattleStore.getState().combatState.focusEnergy === 75 - firstCard.cost, 'Focus deducted correctly');
+  assert(useBattleStore.getState().combatState.currentTestPoints > 0, 'Test points increased from Arts Card');
+  assert(useBattleStore.getState().battleState.testProgress === useBattleStore.getState().combatState.currentTestPoints, 'battleState and combatState stay synchronized');
+  console.log('✅ Arts-Card playing, Focus deduction, and state synchronization verified.');
+
+  battleStore.resetBattle();
+
+  // ==========================================
+  // SECTION 15: STAGE 3 ARENA UI, HAND DOCK & EXAMINER PRESSURE
+  // ==========================================
+  testSection('15. Stage 3: Arena UI, Hand Dock, Examiner Counter-Pressure & Ki Charge');
+
+  // 1. Tactile Concentrate / Charge (+40 Ki)
+  battleStore.initBattle('maruo');
+  const preChargeFocus = useBattleStore.getState().combatState.focusEnergy;
+  assert(preChargeFocus === 50, 'Focus starts at 50');
+  battleStore.chargeFocus(40);
+  assert(useBattleStore.getState().combatState.focusEnergy === 90, 'Holding charge surged +40 Focus Ki (50 -> 90)');
+
+  // 2. Examiner Counter-Pressure Attack without Shield
+  const preAttackResolve = useBattleStore.getState().battleState.teamResolveCurrent;
+  const attackRes1 = battleStore.executeExaminerAttack();
+  assert(attackRes1 !== null, 'Examiner attack executed');
+  if (!attackRes1) throw new Error('Examiner attack returned null');
+  assert(attackRes1.shieldBlocked === false, 'Unshielded attack was not blocked');
+  assert(attackRes1.finalDamage > 0, 'Dealt positive stress damage');
+  assert(
+    useBattleStore.getState().battleState.teamResolveCurrent === preAttackResolve - attackRes1.finalDamage,
+    'Stress damage deducted from Team Resolve'
+  );
+  console.log(`✅ Examiner Counter-Pressure attack without shield dealt ${attackRes1.finalDamage} stress to Resolve.`);
+
+  // 3. Examiner Counter-Pressure Attack with Active Shield
+  battleStore.setShieldActive(true);
+  assert(useBattleStore.getState().battleState.shieldActive === true, 'Shield activated');
+  const preShieldResolve = useBattleStore.getState().battleState.teamResolveCurrent;
+  const attackRes2 = battleStore.executeExaminerAttack();
+  assert(attackRes2 !== null, 'Examiner attack executed');
+  if (!attackRes2) throw new Error('Examiner attack returned null');
+  assert(attackRes2.shieldBlocked === true, 'Shield successfully blocked examiner strike');
+  assert(attackRes2.finalDamage === 0, 'Final damage was 0 under shield');
+  assert(useBattleStore.getState().battleState.teamResolveCurrent === preShieldResolve, 'Team Resolve preserved intact');
+  assert(useBattleStore.getState().battleState.shieldActive === false, 'Shield consumed after absorbing strike');
+  console.log('✅ Examiner Counter-Pressure attack with active shield completely absorbed (0 damage).');
+
+  battleStore.resetBattle();
+
   testSection('🎉 ALL TESTS PASSED SUCCESSFULLY! 100% SPEC COMPLIANCE.');
 }
 
@@ -1714,3 +1825,4 @@ runTests().catch((err) => {
   console.error('Fatal test error:', err);
   process.exit(1);
 });
+

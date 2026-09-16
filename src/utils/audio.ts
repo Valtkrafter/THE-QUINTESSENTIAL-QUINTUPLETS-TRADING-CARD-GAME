@@ -18,7 +18,13 @@ export type SoundType =
   | 'crit_flash'
   | 'stress_impact'
   | 'heartbeat_pulse'
-  | 'hanko_slam';
+  | 'hanko_slam'
+  | 'arts_strike'
+  | 'arts_blast'
+  | 'arts_support'
+  | 'arts_ultimate'
+  | 'focus_charge_hum'
+  | 'focus_charge_burst';
 
 class ProceduralSoundEngine {
   private ctx: AudioContext | null = null;
@@ -640,6 +646,200 @@ class ProceduralSoundEngine {
         slapFilter.connect(slapGain);
         slapGain.connect(ctx.destination);
         slapNoise.start(now);
+        break;
+      }
+
+      case 'arts_strike': {
+        // Rapid swoosh + snappy impact (70ms)
+        const dur = 0.09;
+        const bufferSize = Math.floor(ctx.sampleRate * dur);
+        const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] = Math.random() * 2 - 1;
+        }
+
+        const noise = ctx.createBufferSource();
+        noise.buffer = buffer;
+
+        const filter = ctx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(2200, now);
+        filter.frequency.exponentialRampToValueAtTime(700, now + dur);
+        filter.Q.setValueAtTime(3.5, now);
+
+        const gain = ctx.createGain();
+        gain.gain.setValueAtTime(volume * 0.85, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+
+        noise.connect(filter);
+        filter.connect(gain);
+        gain.connect(ctx.destination);
+        noise.start(now);
+
+        // Snap pop transient
+        const osc = ctx.createOscillator();
+        const oscGain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(360, now);
+        osc.frequency.exponentialRampToValueAtTime(80, now + 0.05);
+
+        oscGain.gain.setValueAtTime(volume * 0.9, now);
+        oscGain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+
+        osc.connect(oscGain);
+        oscGain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.06);
+        break;
+      }
+
+      case 'arts_blast': {
+        // High-energy arcane boom + formula chime
+        const dur = 0.32;
+        const osc = ctx.createOscillator();
+        const filter = ctx.createBiquadFilter();
+        const gain = ctx.createGain();
+
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(440, now);
+        osc.frequency.exponentialRampToValueAtTime(110, now + dur);
+
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(2200, now);
+        filter.frequency.exponentialRampToValueAtTime(350, now + dur);
+
+        gain.gain.setValueAtTime(volume * 0.75, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+
+        osc.connect(filter);
+        filter.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + dur + 0.02);
+
+        // Sub bass thump
+        const sub = ctx.createOscillator();
+        const subGain = ctx.createGain();
+        sub.type = 'sine';
+        sub.frequency.setValueAtTime(100, now);
+        sub.frequency.exponentialRampToValueAtTime(32, now + 0.25);
+        subGain.gain.setValueAtTime(volume * 0.9, now);
+        subGain.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
+
+        sub.connect(subGain);
+        subGain.connect(ctx.destination);
+        sub.start(now);
+        sub.stop(now + 0.3);
+        break;
+      }
+
+      case 'arts_support': {
+        // Soothing emerald resonance chime (C6, E6, G6, C7)
+        const notes = [1046.5, 1318.5, 1567.98, 2093.0];
+        notes.forEach((freq, idx) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          const start = now + idx * 0.035;
+
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, start);
+
+          gain.gain.setValueAtTime(volume * 0.35, start);
+          gain.gain.exponentialRampToValueAtTime(0.001, start + 0.5);
+
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(start);
+          osc.stop(start + 0.55);
+        });
+        break;
+      }
+
+      case 'arts_ultimate': {
+        // Dramatic power surge + thunderous manga cut-in swell
+        const dur = 0.75;
+        const sub = ctx.createOscillator();
+        const subGain = ctx.createGain();
+        sub.type = 'sine';
+        sub.frequency.setValueAtTime(80, now);
+        sub.frequency.exponentialRampToValueAtTime(24, now + dur);
+
+        subGain.gain.setValueAtTime(volume * 1.0, now);
+        subGain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+
+        sub.connect(subGain);
+        subGain.connect(ctx.destination);
+        sub.start(now);
+        sub.stop(now + dur + 0.05);
+
+        // Epic chord triad (A4, C#5, E5, A5)
+        const chord = [440, 554.37, 659.25, 880];
+        chord.forEach((freq, idx) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          const noteStart = now + idx * 0.03;
+
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, noteStart);
+
+          gain.gain.setValueAtTime(volume * 0.3, noteStart);
+          gain.gain.exponentialRampToValueAtTime(0.001, noteStart + 0.7);
+
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(noteStart);
+          osc.stop(noteStart + 0.75);
+        });
+        break;
+      }
+
+      case 'focus_charge_hum': {
+        // Tactile buzzing hum (1s duration, rising frequency from 110Hz to 220Hz)
+        const humDur = 1.0;
+        const osc = ctx.createOscillator();
+        const filter = ctx.createBiquadFilter();
+        const gain = ctx.createGain();
+
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(110, now);
+        osc.frequency.exponentialRampToValueAtTime(220, now + humDur);
+
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(440, now);
+        filter.Q.setValueAtTime(2.0, now);
+
+        gain.gain.setValueAtTime(0.001, now);
+        gain.gain.linearRampToValueAtTime(volume * 0.45, now + 0.15);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + humDur);
+
+        osc.connect(filter);
+        filter.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + humDur + 0.05);
+        break;
+      }
+
+      case 'focus_charge_burst': {
+        // Golden burst ping when charge completes
+        const freqs = [1760.0, 2637.0];
+        freqs.forEach((freq, idx) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          const start = now + idx * 0.02;
+
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, start);
+
+          gain.gain.setValueAtTime(volume * 0.4, start);
+          gain.gain.exponentialRampToValueAtTime(0.001, start + 0.25);
+
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(start);
+          osc.stop(start + 0.28);
+        });
         break;
       }
     }
