@@ -403,11 +403,28 @@ $$\text{Market Value} = \text{Base Value}(\text{Rarity}) \times \text{Multiplier
   - `focus_charge_hum`: 110Hz to 220Hz rising triangle wave charging hum.
   - `focus_charge_burst`: Golden dual-tone ping (1760Hz & 2637Hz) upon charge completion.
 
-### 9. Native AAA 3D Booster Pack Opening Ceremony Engine (v2.6.0 Phase 1)
+### 9. Native AAA 3D Booster Pack Opening Ceremony Engine (v2.6.0 - v2.6.1 Phase 1)
 
 - **Decoupled 6-Phase Ceremony State Machine (`src/store/usePackCeremonyStore.ts`):**
   Governs the unboxing lifecycle across discrete physical states inspired by Pokémon TCG Pocket & Weiss Schwarz SP:
   $$\text{IDLE} \longrightarrow \text{INSPECTING\_PACK} \longrightarrow \text{TEARING\_CRIMP} \longrightarrow \text{EXTRACTING\_CARDS} \longrightarrow \text{PEELING\_REVEAL} \longrightarrow \text{CEREMONY\_SUMMARY}$$
+- **3D Dual-Sided Booster Pack & Coordinate Hierarchy (`src/components/pack/BoosterPack3D.tsx`):**
+  - **Tier 1: Outer Static Anchor:** Container dimensions `w-[320px] sm:w-[340px] h-[520px] sm:h-[550px]` with `perspective: 1200px` on a flat coordinate plane, permanently eliminating coordinate oscillations and `getBoundingClientRect()` feedback loops.
+  - **Tier 2: Inertia Rotation Gimbal:** Driven by Framer Motion springs `{ damping: 30, stiffness: 100, mass: 0.8 }`. Dragging outside the tear zone allows free 360° horizontal rotation around the Y-axis (`rotateY: [-180deg, 180deg]`) and slight vertical tilt (`rotateX: [-15deg, 15deg]`).
+  - **Tier 3: Physical Foil Volumes:**
+    - **Front Shell:** Pack wrapper art with dynamic metallic foil gradient overlay:
+      `background: linear-gradient(calc(var(--angle) + 45deg), transparent 20%, rgba(255,255,255,0.4) 50%, transparent 80%)`.
+    - **Back Shell:** `rotateY(180deg) translateZ(1px)`. Displays authentic Japanese TCG pack back: JAN barcode (`4573414718820`), Kodansha copyright text, drop-rate distribution summary table, and center back-seal flap (`w-6 h-full bg-[#181820] shadow-md`).
+    - **Corrugated Top & Bottom Crimps:** $28\text{px}$ high flaps with metallic crimp teeth pattern created via CSS:
+      `repeating-linear-gradient(90deg, #1f242d 0px, #3a4252 2px, #0e1116 4px)`.
+    - **Cylindrical Pillow Shading:** Radial vignette shadow along vertical edges simulating cylindrical volume:
+      `box-shadow: inset 18px 0 25px -10px rgba(0,0,0,0.8), inset -18px 0 25px -10px rgba(0,0,0,0.8)`.
+- **Vector Perforation Tear Crimp (`src/components/pack/FoilTearCrimp.tsx`):**
+  - Sits along the top crimp boundary ($44\text{px}$ below the top edge of the pack).
+  - **Visual Design:** Neon dashed laser perforation line across the foil (`stroke-dasharray: 4 4`, `#fbbf24`) with a floating golden chevron tab labeled `TEAR ▶` and expanding pulsing touch hitbox ($48\text{px} \times 48\text{px}$).
+  - **Direct Window Pointer Capture:** Window-bound pointer tracking with `clientX` direct capture preventing dropped events on rapid thumb/mouse swipes.
+  - **Dynamic Mesh & Jagged SVG Deformation:** As `tearProgress` advances from $0.0 \to 0.82$, the severed top flap rotates along the Z-axis by up to $18^\circ$ and pulls open upwards while an SVG jagged foil path (`d="M 0 0 L 12 3 L 24 -2 L 36 4 ... "`) unmasks progressively from left to right.
+  - **Breach Execution ($\text{progress} \ge 0.82$):** Detaches the top crimp entirely with simulated gravity, rotation, and fading. Triggers tactile haptic feedback (`hapticTearCrimp` in `src/utils/haptics.ts`), screen shake animation ($8\text{px}$ displacement, 140ms duration), procedural Web Audio snap (`soundEngine.play('tear_pack', 0.9)`), and advances store state to `EXTRACTING_CARDS`.
 - **Holographic Dynamic Refraction Angle:**
   $$H(\theta_x, \theta_y) = \left( \operatorname{atan2}(\theta_y, \theta_x) \times \frac{180}{\pi} + 360 \right) \bmod 360$$
 - **Specular Hotspot Projection:**
@@ -483,7 +500,8 @@ tqqtcg/
 │   │   ├── market/
 │   │   │   └── SinglesMarket.tsx    # Brushed dark slate Singles Kiosk with 24h timer & reroll
 │   │   ├── pack/
-│   │   │   ├── BoosterPack3D.tsx    # 3D foil booster with cylindrical pillow shading
+│   │   │   ├── BoosterPack3D.tsx    # 3D dual-sided foil booster with 360° gimbal & authentic Japanese back
+│   │   │   ├── FoilTearCrimp.tsx    # Vector laser perforation tear crimp with jagged SVG foil physics
 │   │   │   ├── PackOpeningModal.tsx # Ceremony modal: tear, suspense, peel & summary
 │   │   │   ├── SelectBoosterModal.tsx # Portal-mounted pack kiosk with live drop odds & kiosk tab
 │   │   │   └── TearMechanism.tsx    # Direct HTML5 window pointer tear engine
@@ -530,6 +548,7 @@ tqqtcg/
 │       ├── audio.ts             # Native Web Audio API procedural synthesis engine (6 combat SFX)
 │       ├── audioEngine.ts       # Sound synthesizer client instance with coin & receipt pulses
 │       ├── battleEngine.ts      # 3-phase combat turn execution engine (Pressure, Action, Resolution)
+│       ├── haptics.ts           # Tactile vibration API utility for tear friction & snaps
 │       ├── shaderMath.ts        # Dynamic holographic refraction, specular hotspot & tear mathematics
 │       └── tqqAssetResolver.ts  # Deterministic case mapper & self-healing legacy path migrator
 ├── package.json
@@ -571,7 +590,7 @@ tqqtcg/
 
 ## 🧪 Verification & Testing
 
-The repository contains an automated Monte Carlo test suite (`scripts/test-engine.ts`) across 13 complete sections as well as the specialized 1,000-match combat audit (`scripts/test-battle-engine.ts`):
+The repository contains an automated Monte Carlo test suite (`scripts/test-engine.ts`) across 17 complete sections as well as the specialized 1,000-match combat audit (`scripts/test-battle-engine.ts`):
 
 ```bash
 # Run the complete test suite (Sections 1 through 13 + 1,000-match Monte Carlo combat audit)

@@ -97,6 +97,8 @@ import {
   resolveCardSuspenseProfile,
 } from '../src/config/suspenseProfiles';
 import { usePackCeremonyStore } from '../src/store/usePackCeremonyStore';
+import { PACK_THEMES } from '../src/components/pack/BoosterPack3D';
+import { hapticTearCrimp, hapticLight, hapticSuccess } from '../src/utils/haptics';
 
 function assert(condition: boolean, message: string): void {
   if (!condition) {
@@ -2089,6 +2091,73 @@ async function runTests() {
   assert(usePackCeremonyStore.getState().tearProgress === 0, 'resetCeremony reset tearProgress to 0');
   assert(usePackCeremonyStore.getState().isBreached === false, 'resetCeremony reset isBreached to false');
   console.log('✅ usePackCeremonyStore lifecycle and atomic actions verified.');
+
+  // ========================================
+  // SECTION 17: STAGE 2: 3D DUAL-SIDED BOOSTER PACK & VECTOR TEAR MECHANISM
+  // ========================================
+  testSection('17. 3D Dual-Sided Booster Pack & Vector Tear Mechanism');
+
+  // 1. Pack Themes Configuration Audit
+  const expectedPacks = [
+    'test_sheet',
+    'kiosk',
+    'lernsession',
+    'sommerfeuerwerk',
+    'schulfest',
+    'klassenfahrt_kyoto',
+    'braut_schicksal',
+    'god_pack',
+  ] as const;
+
+  for (const pId of expectedPacks) {
+    const theme = PACK_THEMES[pId];
+    assert(theme !== undefined, `Pack theme exists for ${pId}`);
+    assert(typeof theme.name === 'string' && theme.name.length > 0, `Valid name for ${pId}`);
+    assert(typeof theme.japaneseTitle === 'string' && theme.japaneseTitle.length > 0, `Valid japaneseTitle for ${pId}`);
+    assert(typeof theme.subtitle === 'string' && theme.subtitle.length > 0, `Valid subtitle for ${pId}`);
+    assert(typeof theme.badge === 'string' && theme.badge.length > 0, `Valid badge for ${pId}`);
+    assert(typeof theme.primaryColor === 'string' && theme.primaryColor.startsWith('#'), `Valid primaryColor for ${pId}`);
+    assert(typeof theme.secondaryColor === 'string' && theme.secondaryColor.length > 0, `Valid secondaryColor for ${pId}`);
+    assert(typeof theme.borderClass === 'string', `Valid borderClass for ${pId}`);
+    assert(typeof theme.motifIcon === 'string' && theme.motifIcon.length > 0, `Valid motifIcon for ${pId}`);
+    assert(typeof theme.artFile === 'string' && theme.artFile.startsWith('/packs/'), `Valid artFile for ${pId}`);
+  }
+  console.log('✅ PACK_THEMES master registry verified across all 8 booster pack tiers.');
+
+  // 2. Haptic Feedback Utility Safe Guardrails
+  let hapticThrew = false;
+  try {
+    hapticTearCrimp();
+    hapticLight();
+    hapticSuccess();
+  } catch {
+    hapticThrew = true;
+  }
+  assert(!hapticThrew, 'Haptic feedback utility functions execute safely without throwing in Node/SSR environment');
+  console.log('✅ Haptic feedback safe execution and SSR guardrails verified.');
+
+  // 3. Mathematical Tear Progress across Mobile (320px) and Desktop (340px)
+  // Mobile (320px): denominator = 320 * 0.85 = 272px
+  assert(calculateTearProgress(0, 320) === 0.0, 'Mobile tear progress is 0.0 at deltaX = 0');
+  assert(Number(calculateTearProgress(136, 320).toFixed(2)) === 0.5, 'Mobile tear progress is 0.50 at midpoint 136px');
+  const mobileBreachDeltaX = 320 * 0.85 * TEAR_BREACH_THRESHOLD; // 272 * 0.82 = 223.04px
+  assert(Number(calculateTearProgress(mobileBreachDeltaX, 320).toFixed(2)) === 0.82, 'Mobile tear progress is 0.82 at breach deltaX');
+  assert(calculateTearProgress(300, 320) === 1.0, 'Mobile tear progress is clamped to 1.0 at deltaX = 300px');
+
+  // Desktop (340px): denominator = 340 * 0.85 = 289px
+  assert(calculateTearProgress(0, 340) === 0.0, 'Desktop tear progress is 0.0 at deltaX = 0');
+  assert(Number(calculateTearProgress(144.5, 340).toFixed(2)) === 0.5, 'Desktop tear progress is 0.50 at midpoint 144.5px');
+  const desktopBreachDeltaX = 340 * 0.85 * TEAR_BREACH_THRESHOLD; // 289 * 0.82 = 236.98px
+  assert(Number(calculateTearProgress(desktopBreachDeltaX, 340).toFixed(2)) === 0.82, 'Desktop tear progress is 0.82 at breach deltaX');
+  assert(calculateTearProgress(350, 340) === 1.0, 'Desktop tear progress is clamped to 1.0 at deltaX = 350px');
+  console.log('✅ Vector tear progress and breach thresholds verified across mobile (320px) and desktop (340px).');
+
+  // 4. Dynamic Foil Reflection Angle Derivation Across All 4 Quadrants
+  assert(calculateHolographicAngle(1.0, 0.0) === 0, 'Angle at (1, 0) is 0 deg');
+  assert(calculateHolographicAngle(0.0, 1.0) === 90, 'Angle at (0, 1) is 90 deg');
+  assert(calculateHolographicAngle(-1.0, 0.0) === 180, 'Angle at (-1, 0) is 180 deg');
+  assert(calculateHolographicAngle(0.0, -1.0) === 270, 'Angle at (0, -1) is 270 deg');
+  console.log('✅ Dynamic metallic foil reflection angle derivation verified across all 4 quadrants.');
 
   testSection('🎉 ALL TESTS PASSED SUCCESSFULLY! 100% SPEC COMPLIANCE.');
 }

@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { motion, useMotionValue, useSpring, useTransform, AnimatePresence } from 'framer-motion';
 import { PackId } from '../../types/card';
 import { PACKS_CONFIG } from '../../config/economy';
-import { soundEngine } from '../../utils/audio';
-import { useSmoothTilt } from '../../hooks/useSmoothTilt';
-import { TearMechanism } from './TearMechanism';
+import { usePackCeremonyStore } from '../../store/usePackCeremonyStore';
+import { calculateHolographicAngle, clamp } from '../../utils/shaderMath';
+import { FoilTearCrimp } from './FoilTearCrimp';
 
 export interface BoosterPack3DProps {
   packId?: PackId;
@@ -16,12 +16,13 @@ export interface BoosterPack3DProps {
   className?: string;
   onClick?: () => void;
   isTorn?: boolean;
-  tearProgress?: number; // 0 to 100
+  tearProgress?: number; // 0 to 100 or 0 to 1
   disableTilt?: boolean;
   isPaused?: boolean;
   onTearProgress?: (progress: number) => void;
   onTearComplete?: () => void;
   onDragStateChange?: (isDragging: boolean) => void;
+  onScreenShake?: (active: boolean) => void;
   children?: React.ReactNode;
 }
 
@@ -169,66 +170,145 @@ export const BoosterPack3D: React.FC<BoosterPack3DProps> = ({
   onTearProgress,
   onTearComplete,
   onDragStateChange,
+  onScreenShake,
   children,
 }) => {
   const [artLoaded, setArtLoaded] = useState(true);
-  const [isTearing, setIsTearing] = useState(false);
   const [localIsTorn, setLocalIsTorn] = useState(false);
-  const effectiveIsTorn = isTorn || localIsTorn;
+  const [isRotatingPack, setIsRotatingPack] = useState(false);
+  const [shakeDisplacement, setShakeDisplacement] = useState(0);
+
   const activePackId = packId ?? tierId ?? 'kiosk';
   const theme = PACK_THEMES[activePackId] ?? PACK_THEMES.kiosk;
   const config = PACKS_CONFIG[activePackId];
   const isGodPack = activePackId === 'god_pack' || config?.isGodPack;
 
-  // Reset local state if pack resets
-  React.useEffect(() => {
-    if (!isTorn) {
-      setLocalIsTorn(false);
-      setIsTearing(false);
-    }
-  }, [isTorn]);
+  const storeBreached = usePackCeremonyStore((s) => s.isBreached);
+  const effectiveIsTorn = isTorn || localIsTorn || storeBreached;
 
-  // Universal smooth 3D tilt engine with pause support
-  const {
-    tiltRef,
-    style,
-    tiltStyle,
-    glareStyle,
-    isHovered,
-    handleMouseMove,
-    handleMouseLeave,
-    handleMouseEnter,
-  } = useSmoothTilt({
-    maxRotation: 8,
-    perspective: 1000,
-    disabled: !interactive || disableTilt || effectiveIsTorn,
-    isPaused: isPaused || isTearing,
+  // --------------------------------------------------------------------------
+  // TIER 2: INERTIA ROTATION GIMBAL (Framer Motion Springs)
+  // Dynamics: damping: 30, stiffness: 100, mass: 0.8
+  // --------------------------------------------------------------------------
+  const rotX = useMotionValue(0);
+  const rotY = useMotionValue(0);
+
+  const springRotX = useSpring(rotX, { damping: 30, stiffness: 100, mass: 0.8 });
+  const springRotY = useSpring(rotY, { damping: 30, stiffness: 100, mass: 0.8 });
+
+  const dragStartRef = useRef<{ clientX: number; clientY: number; initRotX: number; initRotY: number } | null>(null);
+
+  // Dynamic metallic foil reflection gradient overlay computed from 3D tilt vectors
+  const foilGradientStyle = useTransform([springRotX, springRotY], ([rx, ry]: number[]) => {
+    const normX = (ry ?? 0) / 180;
+    const normY = -(rx ?? 0) / 15;
+    const angle = calculateHolographicAngle(normX, normY);
+    return `linear-gradient(${angle + 45}deg, transparent 20%, rgba(255,255,255,0.4) 50%, transparent 80%)`;
   });
 
-  const handleTearCompleteInternal = () => {
-    setLocalIsTorn(true);
-    setIsTearing(false);
-    onDragStateChange?.(false);
-    onTearComplete?.();
+  // Handle pack rotation gestures (outside tear zone)
+  const handlePackPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!interactive || disableTilt || isPaused) return;
+    // Disregard if click occurred on tear notch or its children
+    const target = e.target as HTMLElement | null;
+    if (target?.closest('.pointer-events-auto')) return;
+
+    e.preventDefault();
+    setIsRotatingPack(true);
+    onDragStateChange?.(true);
+
+    dragStartRef.current = {
+      clientX: e.clientX,
+      clientY: e.clientY,
+      initRotX: rotX.get(),
+      initRotY: rotY.get(),
+    };
   };
 
-  // Clamped tear progress (0 to 100)
-  const progressPct = Math.max(0, Math.min(100, tearProgress));
+  useEffect(() => {
+    const handleGlobalPointerMove = (e: PointerEvent) => {
+      if (!dragStartRef.current) return;
 
-  // Heat-Sealed Metallic Crimped Teeth Strip (Strictly 26px height)
+      const deltaX = e.clientX - dragStartRef.current.clientX;
+      const deltaY = e.clientY - dragStartRef.current.clientY;
+
+      // 360° horizontal rotation around Y-axis [-180°, 180°]
+      const newRotY = clamp(dragStartRef.current.initRotY + deltaX * 0.75, -180, 180);
+      // Slight vertical tilt [-15°, 15°]
+      const newRotX = clamp(dragStartRef.current.initRotX - deltaY * 0.2, -15, 15);
+
+      rotY.set(newRotY);
+      rotX.set(newRotX);
+
+      // Sync normalized tilt vectors with usePackCeremonyStore
+      const normTiltX = clamp(newRotY / 180, -1.0, 1.0);
+      const normTiltY = clamp(-newRotX / 15, -1.0, 1.0);
+      usePackCeremonyStore.getState().setTilt(normTiltX, normTiltY);
+    };
+
+    const handleGlobalPointerUp = () => {
+      if (!dragStartRef.current) return;
+      dragStartRef.current = null;
+      setIsRotatingPack(false);
+      onDragStateChange?.(false);
+    };
+
+    window.addEventListener('pointermove', handleGlobalPointerMove);
+    window.addEventListener('pointerup', handleGlobalPointerUp);
+    window.addEventListener('pointercancel', handleGlobalPointerUp);
+
+    return () => {
+      window.removeEventListener('pointermove', handleGlobalPointerMove);
+      window.removeEventListener('pointerup', handleGlobalPointerUp);
+      window.removeEventListener('pointercancel', handleGlobalPointerUp);
+    };
+  }, [interactive, disableTilt, isPaused, rotX, rotY, onDragStateChange]);
+
+  // Screen shake triggered on breach (8px displacement, 140ms duration)
+  const triggerScreenShake = useCallback(
+    (active: boolean) => {
+      onScreenShake?.(active);
+      if (active) {
+        setShakeDisplacement(8);
+        const timer = setTimeout(() => {
+          setShakeDisplacement(0);
+        }, 140);
+        return () => clearTimeout(timer);
+      } else {
+        setShakeDisplacement(0);
+      }
+    },
+    [onScreenShake]
+  );
+
+  const handleTearCompleteInternal = useCallback(() => {
+    setLocalIsTorn(true);
+    onTearComplete?.();
+  }, [onTearComplete]);
+
+  // Reset local state if pack resets
+  useEffect(() => {
+    if (!isTorn && !storeBreached) {
+      setLocalIsTorn(false);
+      rotX.set(0);
+      rotY.set(0);
+    }
+  }, [isTorn, storeBreached, rotX, rotY]);
+
+  // Corrugated Top & Bottom Flaps (28px height with metallic crimp teeth)
   const renderCrimpedSeal = (isTop: boolean) => (
     <div
-      className={`h-[26px] w-full shrink-0 relative overflow-hidden flex items-center justify-center pointer-events-none select-none ${
+      className={`h-[28px] w-full shrink-0 relative overflow-hidden flex items-center justify-center pointer-events-none select-none ${
         isTop ? 'border-b border-white/20' : 'border-t border-white/20'
       }`}
       style={{
-        background: 'repeating-linear-gradient(90deg, #1e1e26 0px, #4b4b5e 2px, #121218 4px)',
+        background: 'repeating-linear-gradient(90deg, #1f242d 0px, #3a4252 2px, #0e1116 4px)',
       }}
     >
       {/* Embossed pressure ridges */}
       <div className="absolute inset-0 opacity-30 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:6px_6px] pointer-events-none select-none" />
 
-      {/* Euro-Hole Punch Cutout (Centered punch on top crimp) */}
+      {/* Euro-Hole Punch Cutout (Centered on top crimp) */}
       {isTop && (
         <div className="w-9 h-2.5 rounded-full bg-black/90 border border-white/20 shadow-inner z-10 pointer-events-none select-none" />
       )}
@@ -236,220 +316,379 @@ export const BoosterPack3D: React.FC<BoosterPack3DProps> = ({
   );
 
   return (
-    // LAYER 1: STATIC 2D EVENT BOUNDARY (DO NOT ADD 3D TRANSFORMS HERE)
-    <div
-      className={`relative w-[320px] h-[520px] aspect-[320/520] select-none cursor-pointer ${className}`}
+    // ========================================================================
+    // TIER 1: OUTER STATIC ANCHOR (Flat 2D Coordinate Plane, Perspective 1200px)
+    // Container Dimensions: w-[320px] sm:w-[340px] h-[520px] sm:h-[550px]
+    // ========================================================================
+    <motion.div
+      className={`relative w-[320px] sm:w-[340px] h-[520px] sm:h-[550px] select-none ${className}`}
+      style={{
+        perspective: 1200,
+      }}
+      animate={{
+        x: shakeDisplacement > 0 ? [-shakeDisplacement, shakeDisplacement, -4, 4, 0] : 0,
+      }}
+      transition={{ duration: 0.14 }}
       onClick={onClick}
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
-      onMouseEnter={handleMouseEnter}
+      onPointerDown={handlePackPointerDown}
     >
-      {/* LAYER 2: 3D ROTATING VISUAL PACK */}
+      {/* ====================================================================
+          TIER 2: INERTIA ROTATION GIMBAL (transform-style: preserve-3d)
+          ==================================================================== */}
       <motion.div
-        ref={tiltRef}
         style={{
-          ...(disableTilt ? {} : style),
-          boxShadow: `
-            inset 14px 0 20px -8px rgba(0, 0, 0, 0.65),
-            inset -14px 0 20px -8px rgba(0, 0, 0, 0.65),
-            0 25px 50px -12px rgba(0, 0, 0, 0.85)${
-              isHovered ? `, 0 0 35px ${theme.accentGlow}` : `, 0 0 15px ${theme.accentGlow}66`
-            }
-          `,
+          transformStyle: 'preserve-3d',
+          rotateX: springRotX,
+          rotateY: springRotY,
+          cursor: interactive && !isPaused ? (isRotatingPack ? 'grabbing' : 'grab') : 'default',
         }}
-        className={`w-full h-full relative rounded-3xl overflow-hidden flex flex-col justify-between pointer-events-none select-none ${
-          isHovered && !disableTilt && !isPaused && !isTearing ? 'is-interacting' : ''
-        } ${theme.borderClass} border bg-[#09090f]`}
+        className={`w-full h-full relative rounded-3xl select-none ${
+          isFloating && !effectiveIsTorn ? 'shadow-[0_25px_60px_-15px_rgba(0,0,0,0.85)]' : ''
+        }`}
       >
-        {/* ============================================================
-            1. TOP METALLIC FOIL CRIMP (Strictly 26px)
-            Z-INDEX: z-40 | POINTER-EVENTS-NONE
-            Animates upward on tear breach (y: -90, rotate: -6, opacity: 0 over 320ms)
-            ============================================================ */}
-        <motion.div
-          className="z-40 shrink-0 select-none bg-[#16161f] shadow-md pointer-events-none"
-          animate={
-            effectiveIsTorn
-              ? { y: -90, rotate: -6, opacity: 0 }
-              : { y: 0, rotate: 0, opacity: 1 }
-          }
-          transition={{ duration: 0.32, ease: 'easeOut' }}
+        {/* ==================================================================
+            TIER 3: PHYSICAL FOIL VOLUMES (Front Shell & Back Shell)
+            ================================================================== */}
+
+        {/* ------------------------------------------------------------------
+            A. FRONT SHELL (Pack Wrapper Art, Metallic Foil, Pillow Shading)
+            ------------------------------------------------------------------ */}
+        <div
+          className={`absolute inset-0 w-full h-full rounded-3xl overflow-hidden flex flex-col justify-between select-none pointer-events-none ${theme.borderClass} border bg-[#09090f]`}
+          style={{
+            transform: 'translateZ(0px)',
+            backfaceVisibility: 'hidden',
+            WebkitBackfaceVisibility: 'hidden',
+            boxShadow:
+              'inset 18px 0 25px -10px rgba(0,0,0,0.8), inset -18px 0 25px -10px rgba(0,0,0,0.8)',
+          }}
         >
-          {renderCrimpedSeal(true)}
-        </motion.div>
+          {/* Top Corrugated Crimp (28px) - Attached if unsevered */}
+          <div className="z-30 shrink-0 bg-[#16161f] shadow-md pointer-events-none select-none">
+            {renderCrimpedSeal(true)}
+          </div>
 
-        {/* ============================================================
-            2. PERFORATION SEAM (VISUAL GUIDE)
-            Z-INDEX: z-30 | POINTER-EVENTS-NONE
-            ZERO-DELAY REMOVAL: Instantly unmounted when effectiveIsTorn is true
-            ============================================================ */}
-        {!effectiveIsTorn && (
-          <div className="relative w-full z-30 pointer-events-none select-none">
-            <div className="h-6 w-full px-3 flex items-center justify-between border-b border-dashed border-white/30 bg-black/50 backdrop-blur-xs relative overflow-hidden pointer-events-none select-none">
-              <div className="flex items-center gap-1.5 text-[9px] font-mono tracking-widest text-zinc-300 uppercase z-10 pointer-events-none select-none">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-                <span>PERFORATION SEAM</span>
+          {/* Foil Graphics & Artwork Container */}
+          <div className="relative flex-1 p-5 flex flex-col justify-between overflow-hidden pointer-events-none select-none">
+            {/* Base Art */}
+            {artLoaded && (
+              <img
+                src={theme.artFile}
+                alt={theme.name}
+                className="absolute inset-0 w-full h-full object-cover select-none pointer-events-none z-10"
+                onError={() => setArtLoaded(false)}
+              />
+            )}
+
+            {/* Programmatic Fallback Background */}
+            {!artLoaded && (
+              <div
+                className="absolute inset-0 select-none pointer-events-none z-10"
+                style={{ background: theme.fallbackGradient }}
+              />
+            )}
+
+            {/* Dark vignette layers */}
+            <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/20 to-black/80 pointer-events-none select-none z-20" />
+
+            {/* Dynamic Metallic Foil Gradient Overlay:
+                linear-gradient(calc(var(--angle) + 45deg), transparent 20%, rgba(255,255,255,0.4) 50%, transparent 80%) */}
+            <motion.div
+              className="absolute inset-0 pointer-events-none mix-blend-screen opacity-50 select-none z-20"
+              style={{
+                background: foilGradientStyle,
+              }}
+            />
+
+            {/* Diagonal Foil Sheen Texture */}
+            <div
+              className="absolute inset-0 opacity-15 pointer-events-none select-none z-20"
+              style={{
+                backgroundImage:
+                  'repeating-linear-gradient(45deg, rgba(255,255,255,0.3) 0px, rgba(255,255,255,0.3) 1px, transparent 1px, transparent 8px)',
+              }}
+            />
+
+            {/* Cylindrical Pillow Shading Overlay */}
+            <div
+              className="pointer-events-none absolute inset-0 select-none z-30"
+              style={{
+                boxShadow:
+                  'inset 18px 0 25px -10px rgba(0,0,0,0.8), inset -18px 0 25px -10px rgba(0,0,0,0.8)',
+              }}
+            />
+
+            {/* Center Cylindrical Light Core */}
+            <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-48 bg-gradient-to-r from-transparent via-white/10 to-transparent pointer-events-none select-none z-30" />
+
+            {/* Set Header Typography */}
+            <div className="relative z-10 flex items-start justify-between pointer-events-none select-none mt-2">
+              <div>
+                <span className="text-[10px] tracking-widest font-black uppercase text-amber-400 drop-shadow font-mono">
+                  TQQ VAULT EXPANSE SET 01
+                </span>
+                <div className="text-[13px] text-white font-serif tracking-wider font-bold drop-shadow">
+                  五等分の花嫁
+                </div>
               </div>
 
-              <span className="text-[10px] text-amber-300 font-bold tracking-widest font-mono z-10 pointer-events-none select-none">
-                PULL TO TEAR ▶
+              <span
+                className="px-2.5 py-0.5 rounded-full text-[10px] font-black tracking-wider uppercase border shadow-md font-mono backdrop-blur-xs select-none pointer-events-none"
+                style={{
+                  backgroundColor: `${theme.primaryColor}30`,
+                  borderColor: theme.primaryColor,
+                  color: theme.primaryColor,
+                }}
+              >
+                {theme.badge}
               </span>
             </div>
-          </div>
-        )}
 
-        {/* ============================================================
-            3. PACK BODY: FOIL GRAPHICS, ARTWORK & PROGRAMMATIC FALLBACK
-            ============================================================ */}
-        <div className="relative flex-1 p-5 flex flex-col justify-between overflow-hidden pointer-events-none select-none">
-          {/* Base Foil / Card Artwork: z-10 */}
-          {artLoaded && (
-            <img
-              src={theme.artFile}
-              alt={theme.name}
-              className="absolute inset-0 w-full h-full object-cover select-none pointer-events-none z-10"
-              onError={() => setArtLoaded(false)}
-            />
-          )}
+            {/* Center Motif Emblem & Title */}
+            <div className="relative z-10 flex flex-col items-center justify-center text-center my-auto pointer-events-none select-none">
+              <div
+                className="w-20 h-20 sm:w-24 sm:h-24 rounded-full flex items-center justify-center mb-2 shadow-2xl border border-white/40 backdrop-blur-sm pointer-events-none select-none"
+                style={{
+                  background: `radial-gradient(circle at 35% 35%, ${theme.primaryColor}99, #09090b)`,
+                  boxShadow: `0 0 35px ${theme.accentGlow}`,
+                }}
+              >
+                <span className="text-4xl sm:text-5xl filter drop-shadow-xl select-none">
+                  {theme.motifIcon}
+                </span>
+              </div>
 
-          {/* Programmatic Fallback Background (when artwork is missing/fails) */}
-          {!artLoaded && (
-            <div
-              className="absolute inset-0 select-none pointer-events-none z-10"
-              style={{ background: theme.fallbackGradient }}
-            />
-          )}
-
-          {/* Foil Shaders / Holographic Overlays: z-20 */}
-          <div className="absolute inset-0 bg-gradient-to-b from-black/65 via-black/25 to-black/80 pointer-events-none select-none z-20" />
-
-          <div
-            className="absolute inset-0 opacity-40 pointer-events-none mix-blend-color-dodge select-none z-20"
-            style={{
-              background: `linear-gradient(135deg, transparent 15%, ${theme.primaryColor} 45%, #ffffff 50%, ${theme.secondaryColor} 55%, transparent 85%)`,
-              backgroundSize: '250% 250%',
-              backgroundPosition: 'calc(var(--glare-x, 50%) * 2) calc(var(--glare-y, 50%) * 2)',
-            }}
-          />
-
-          <div
-            className="absolute inset-0 opacity-15 pointer-events-none select-none z-20"
-            style={{
-              backgroundImage:
-                'repeating-linear-gradient(45deg, rgba(255,255,255,0.25) 0px, rgba(255,255,255,0.25) 1px, transparent 1px, transparent 7px)',
-            }}
-          />
-
-          {/* Pillow Shading Container & Edge Gradients: z-30 */}
-          <div className="pointer-events-none absolute inset-0 shadow-[inset_14px_0_20px_-8px_rgba(0,0,0,0.65),inset_-14px_0_20px_-8px_rgba(0,0,0,0.65)] select-none z-30" />
-          <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-48 bg-gradient-to-r from-transparent via-white/12 to-transparent pointer-events-none select-none z-30" />
-
-          {/* SET HEADER: Authentic Japanese Logo Typography & Foiled Set Badge (z-10) */}
-          <div className="relative z-10 flex items-start justify-between pointer-events-none select-none">
-            <div>
-              <span className="text-[10px] tracking-widest font-black uppercase text-amber-400 drop-shadow font-mono">
-                TQQ VAULT EXPANSE SET 01
+              <span className="text-xs font-serif tracking-widest text-zinc-200 mb-0.5 opacity-95 drop-shadow font-bold select-none">
+                {theme.japaneseTitle}
               </span>
-              <div className="text-[13px] text-white font-serif tracking-wider font-bold drop-shadow">
-                五等分の花嫁
+
+              <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white drop-shadow-md select-none">
+                {theme.name}
+              </h2>
+
+              <p className="text-[11px] text-zinc-300 mt-1 max-w-[220px] font-medium leading-tight drop-shadow select-none">
+                {theme.subtitle}
+              </p>
+            </div>
+
+            {/* Footer: Nakano Sister Emojis & Card Count */}
+            <div className="relative z-10 pt-2 border-t border-white/20 flex items-center justify-between text-[10px] text-zinc-300 pointer-events-none select-none">
+              <div className="flex items-center gap-1.5 text-sm select-none">
+                <span title="Ichika">💛</span>
+                <span title="Nino">🦋</span>
+                <span title="Miku">🎧</span>
+                <span title="Yotsuba">🍀</span>
+                <span title="Itsuki">⭐</span>
+              </div>
+
+              <div className="font-mono text-[9px] uppercase tracking-wider text-amber-400 font-bold select-none">
+                {config?.slots ?? 5} CARDS PER PACK
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom Corrugated Crimp (28px) */}
+          <div className="z-30 shrink-0 bg-[#16161f] shadow-md pointer-events-none select-none">
+            {renderCrimpedSeal(false)}
+          </div>
+
+          {/* God Pack Volumetric Rays */}
+          {isGodPack && (
+            <div className="absolute inset-0 pointer-events-none mix-blend-screen opacity-60 bg-[radial-gradient(circle,rgba(255,215,0,0.85)_0%,transparent_70%)] animate-pulse select-none z-30" />
+          )}
+        </div>
+
+        {/* ------------------------------------------------------------------
+            B. BACK SHELL (rotateY(180deg) translateZ(1px))
+            Japanese TCG Back: Barcode, Kodansha copyright, drop rates, center seal
+            ------------------------------------------------------------------ */}
+        <div
+          className="absolute inset-0 w-full h-full rounded-3xl overflow-hidden flex flex-col justify-between select-none pointer-events-none border border-zinc-700/80 bg-[#0d0e15]"
+          style={{
+            transform: 'rotateY(180deg) translateZ(1px)',
+            backfaceVisibility: 'hidden',
+            WebkitBackfaceVisibility: 'hidden',
+            boxShadow:
+              'inset 18px 0 25px -10px rgba(0,0,0,0.8), inset -18px 0 25px -10px rgba(0,0,0,0.8)',
+          }}
+        >
+          {/* Top Corrugated Crimp (28px) */}
+          <div className="z-30 shrink-0 bg-[#16161f] shadow-md pointer-events-none select-none">
+            {renderCrimpedSeal(true)}
+          </div>
+
+          {/* Back Body Content */}
+          <div className="relative flex-1 p-5 flex flex-col justify-between overflow-hidden pointer-events-none select-none">
+            {/* Center Back-Seal Flap (w-6 h-full bg-[#181820] shadow-md) */}
+            <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-6 bg-[#181820] border-x border-white/10 shadow-[0_0_12px_rgba(0,0,0,0.6)] z-10 pointer-events-none select-none flex items-center justify-center">
+              <div className="w-[1px] h-full bg-white/15" />
+            </div>
+
+            {/* Pillow shading on back shell */}
+            <div
+              className="pointer-events-none absolute inset-0 select-none z-20"
+              style={{
+                boxShadow:
+                  'inset 18px 0 25px -10px rgba(0,0,0,0.8), inset -18px 0 25px -10px rgba(0,0,0,0.8)',
+              }}
+            />
+
+            {/* Back Header: Title & Packaging Info */}
+            <div className="relative z-20 flex flex-col items-center text-center mt-1">
+              <div className="text-[11px] font-serif font-bold text-zinc-300 tracking-wider">
+                五等分の花嫁 トレーディングカードゲーム
+              </div>
+              <div className="text-[9px] font-mono text-zinc-500 uppercase tracking-widest mt-0.5">
+                BOOSTER PACK • 5 CARDS INCLUDED
               </div>
             </div>
 
-            <span
-              className="px-2.5 py-0.5 rounded-full text-[10px] font-black tracking-wider uppercase border shadow-md font-mono backdrop-blur-xs select-none pointer-events-none"
-              style={{
-                backgroundColor: `${theme.primaryColor}30`,
-                borderColor: theme.primaryColor,
-                color: theme.primaryColor,
-              }}
-            >
-              {theme.badge}
-            </span>
+            {/* Drop-Rate Distribution Summary Table */}
+            <div className="relative z-20 mx-auto max-w-[260px] w-full rounded-lg border border-white/15 bg-black/60 p-2.5 text-[9px] font-mono backdrop-blur-xs shadow-inner">
+              <div className="text-[10px] font-bold text-amber-400 border-b border-white/15 pb-1 mb-1.5 flex items-center justify-between">
+                <span>【 封入率 / DROP RATES 】</span>
+                <span className="text-[8px] text-zinc-400">1 PACK = 5 CARDS</span>
+              </div>
+              <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-zinc-300 text-[8.5px]">
+                <div className="flex justify-between">
+                  <span className="text-zinc-400">COMMON (C):</span>
+                  <span className="font-bold">70.0%</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-zinc-400">UNCOMMON (UC):</span>
+                  <span className="font-bold">20.0%</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-blue-400">RARE (R):</span>
+                  <span className="font-bold">7.0%</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-purple-400">SUPER RARE (SR):</span>
+                  <span className="font-bold">2.5%</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-amber-400">ULTRA RARE (UR):</span>
+                  <span className="font-bold">0.45%</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-pink-400">SECRET RARE (SEC):</span>
+                  <span className="font-bold">0.05%</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-red-400">MASTER RARE (MR):</span>
+                  <span className="font-bold">0.005%</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-yellow-300">GOD PACK:</span>
+                  <span className="font-bold">0.05%</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Caution & Safety Notice */}
+            <div className="relative z-20 text-[8px] text-zinc-400 text-center leading-tight max-w-[260px] mx-auto">
+              <p className="font-serif">
+                【注意】パックの端で手などを切らないようにご注意ください。開封後はすぐにお遊びください。対象年齢15才以上。
+              </p>
+            </div>
+
+            {/* JAN Barcode & Official Kodansha Copyright */}
+            <div className="relative z-20 flex flex-col items-center justify-center pt-2 border-t border-white/15">
+              {/* Authentic JAN-13 Barcode: 4573414718820 */}
+              <div className="bg-white px-3 py-1 rounded shadow-md flex flex-col items-center">
+                <svg
+                  className="w-40 h-7"
+                  viewBox="0 0 160 28"
+                  fill="black"
+                  preserveAspectRatio="none"
+                >
+                  {/* Outer guards */}
+                  <rect x="0" y="0" width="2" height="28" />
+                  <rect x="4" y="0" width="2" height="28" />
+
+                  {/* Encoded data bars */}
+                  <rect x="10" y="0" width="3" height="24" />
+                  <rect x="15" y="0" width="1" height="24" />
+                  <rect x="18" y="0" width="4" height="24" />
+                  <rect x="25" y="0" width="2" height="24" />
+                  <rect x="30" y="0" width="3" height="24" />
+                  <rect x="36" y="0" width="1" height="24" />
+                  <rect x="40" y="0" width="4" height="24" />
+                  <rect x="47" y="0" width="2" height="24" />
+                  <rect x="52" y="0" width="1" height="24" />
+                  <rect x="56" y="0" width="3" height="24" />
+                  <rect x="62" y="0" width="2" height="24" />
+                  <rect x="68" y="0" width="4" height="24" />
+                  <rect x="74" y="0" width="1" height="24" />
+
+                  {/* Center guard bars */}
+                  <rect x="78" y="0" width="2" height="28" />
+                  <rect x="82" y="0" width="2" height="28" />
+
+                  {/* Right data bars */}
+                  <rect x="88" y="0" width="3" height="24" />
+                  <rect x="94" y="0" width="1" height="24" />
+                  <rect x="98" y="0" width="4" height="24" />
+                  <rect x="105" y="0" width="2" height="24" />
+                  <rect x="110" y="0" width="3" height="24" />
+                  <rect x="116" y="0" width="1" height="24" />
+                  <rect x="120" y="0" width="4" height="24" />
+                  <rect x="127" y="0" width="2" height="24" />
+                  <rect x="132" y="0" width="1" height="24" />
+                  <rect x="136" y="0" width="3" height="24" />
+                  <rect x="142" y="0" width="2" height="24" />
+                  <rect x="148" y="0" width="4" height="24" />
+
+                  {/* End guard bars */}
+                  <rect x="154" y="0" width="2" height="28" />
+                  <rect x="158" y="0" width="2" height="28" />
+                </svg>
+                <span className="font-mono text-[9px] tracking-widest text-zinc-800 font-bold">
+                  4 573414 718820
+                </span>
+              </div>
+
+              {/* Kodansha Copyright Text */}
+              <div className="mt-2 text-[7.5px] font-mono text-zinc-400 text-center leading-tight">
+                <div>© 春場ねぎ・講談社／「五等分の花嫁」製作委員会</div>
+                <div className="text-zinc-500">
+                  © Negi Haruba, KODANSHA / TQQ Production Committee. MADE IN JAPAN.
+                </div>
+              </div>
+            </div>
           </div>
 
-          {/* CENTER ARTWORK / FALLBACK IDENTITY: Motif Emblem & Japanese Headers (z-10) */}
-          <div className="relative z-10 flex flex-col items-center justify-center text-center my-auto pointer-events-none select-none">
-            {/* If art file failed or not loaded, highlight the embossed emblem */}
-            <div
-              className="w-20 h-20 sm:w-24 sm:h-24 rounded-full flex items-center justify-center mb-2 shadow-2xl border border-white/40 backdrop-blur-sm pointer-events-none select-none"
-              style={{
-                background: `radial-gradient(circle at 35% 35%, ${theme.primaryColor}99, #09090b)`,
-                boxShadow: `0 0 35px ${theme.accentGlow}`,
-              }}
-            >
-              <span className="text-4xl sm:text-5xl filter drop-shadow-xl select-none">
-                {theme.motifIcon}
-              </span>
-            </div>
-
-            <span className="text-xs font-serif tracking-widest text-zinc-200 mb-0.5 opacity-95 drop-shadow font-bold select-none">
-              {theme.japaneseTitle}
-            </span>
-
-            <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white drop-shadow-md select-none">
-              {theme.name}
-            </h2>
-
-            <p className="text-[11px] text-zinc-300 mt-1 max-w-[220px] font-medium leading-tight drop-shadow select-none">
-              {theme.subtitle}
-            </p>
-          </div>
-
-          {/* FOOTER: Nakano Sister Icons & Card Count (z-10) */}
-          <div className="relative z-10 pt-2 border-t border-white/25 flex items-center justify-between text-[10px] text-zinc-300 pointer-events-none select-none">
-            <div className="flex items-center gap-1.5 text-sm select-none">
-              <span title="Ichika">💛</span>
-              <span title="Nino">🦋</span>
-              <span title="Miku">🎧</span>
-              <span title="Yotsuba">🍀</span>
-              <span title="Itsuki">⭐</span>
-            </div>
-
-            <div className="font-mono text-[9px] uppercase tracking-wider text-amber-400 font-bold select-none">
-              {config?.slots ?? 5} CARDS PER PACK
-            </div>
+          {/* Bottom Corrugated Crimp (28px) */}
+          <div className="z-30 shrink-0 bg-[#16161f] shadow-md pointer-events-none select-none">
+            {renderCrimpedSeal(false)}
           </div>
         </div>
-
-        {/* ============================================================
-            4. BOTTOM HEAT-SEALED CRIMP (Strictly 26px)
-            Z-INDEX: z-40 | POINTER-EVENTS-NONE
-            ============================================================ */}
-        <div className="z-40 bg-[#16161f] shadow-md shrink-0 pointer-events-none select-none">
-          {renderCrimpedSeal(false)}
-        </div>
-
-        {/* Specular Laminate Reflection Overlay (z-20) */}
-        <motion.div className="card-specular-glare pointer-events-none select-none z-20" style={glareStyle} />
-
-        {/* God Pack Divine Volumetric Rays (z-20) */}
-        {isGodPack && (
-          <div className="absolute inset-0 pointer-events-none mix-blend-screen opacity-55 bg-[radial-gradient(circle,rgba(255,215,0,0.85)_0%,transparent_70%)] animate-pulse select-none z-20" />
-        )}
       </motion.div>
 
-      {/* ============================================================
-          LAYER 3: FLAT 2D TEAR MECHANISM (IN STATIC SPACE, SIBLING TO 3D MOTION.DIV)
-          Z-INDEX: z-50 | Mounted only while pack is unopened
-          ============================================================ */}
-      {!effectiveIsTorn && interactive && onTearComplete && (
-        <TearMechanism
+      {/* ====================================================================
+          VECTOR PERFORATION TEAR CRIMP (Anchored along top crimp boundary)
+          Sits 44px below top edge in static coordinate plane.
+          ==================================================================== */}
+      {!effectiveIsTorn && interactive && (
+        <FoilTearCrimp
           packWidth={320}
-          onTearStart={() => {
-            setIsTearing(true);
-            onDragStateChange?.(true);
-          }}
-          onTearEnd={() => {
-            setIsTearing(false);
-            onDragStateChange?.(false);
-          }}
+          onTearStart={() => onDragStateChange?.(true)}
+          onTearProgress={onTearProgress}
+          onTearEnd={() => onDragStateChange?.(false)}
           onTearComplete={handleTearCompleteInternal}
+          onScreenShake={triggerScreenShake}
+          isBreached={effectiveIsTorn}
+          renderTopCrimpContent={() => (
+            <div className="w-full h-full bg-[#16161f] rounded-t-3xl overflow-hidden shadow-md">
+              {renderCrimpedSeal(true)}
+            </div>
+          )}
         />
       )}
 
-      {/* Optional passed children */}
-      {!effectiveIsTorn && children}
-    </div>
+      {/* Optional Children */}
+      {children}
+    </motion.div>
   );
 };
 
