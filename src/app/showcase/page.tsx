@@ -24,6 +24,7 @@ import {
 } from '../../config/economy';
 import { useGameStore } from '../../store/useGameStore';
 import { CardRenderer, CHARACTER_THEMES, FINISH_LABELS } from '../../components/card/CardRenderer';
+import { RealisticCardRenderer } from '../../components/card/RealisticCardRenderer';
 import { GradingSlab } from '../../components/card/GradingSlab';
 import { BoosterPack3D, PACK_THEMES } from '../../components/pack/BoosterPack3D';
 import { PackOpeningModal } from '../../components/pack/PackOpeningModal';
@@ -41,6 +42,8 @@ export default function ShowcasePage() {
   const [openingPackId, setOpeningPackId] = useState<PackId | null>(null);
   const [selectedFitMode, setSelectedFitMode] = useState<'auto' | 'exact' | 'top' | 'contain'>('auto');
   const [activeTab, setActiveTab] = useState<'vault' | 'workshop' | 'packs' | 'shaders'>('vault');
+  const [renderEngine, setRenderEngine] = useState<'realistic_5layer' | 'slab'>('realistic_5layer');
+  const [enabledLayers, setEnabledLayers] = useState<number[]>([0, 1, 2, 3, 4]);
 
   const yen = useGameStore((state) => state.yen);
   const stardust = useGameStore((state) => state.stardust);
@@ -358,15 +361,92 @@ export default function ShowcasePage() {
               }}
             />
 
-            <div className="relative z-10 flex flex-col items-center justify-center">
+            <div className="relative z-10 flex flex-col items-center justify-center w-full">
+              {/* Engine Mode Selector */}
+              <div className="flex items-center gap-2 mb-4 p-1 rounded-xl bg-black/60 border border-zinc-800">
+                <button
+                  onClick={() => setRenderEngine('realistic_5layer')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+                    renderEngine === 'realistic_5layer'
+                      ? 'bg-amber-500 text-black shadow'
+                      : 'text-zinc-400 hover:text-white'
+                  }`}
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>5-Layer Weiss Schwarz SP Engine</span>
+                </button>
+                <button
+                  onClick={() => setRenderEngine('slab')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+                    renderEngine === 'slab'
+                      ? 'bg-amber-500 text-black shadow'
+                      : 'text-zinc-400 hover:text-white'
+                  }`}
+                >
+                  <Award className="w-3.5 h-3.5" />
+                  <span>BGS Grading Slab</span>
+                </button>
+              </div>
+
+              {/* 5-Layer Inspection Filter Bar (when in realistic_5layer mode) */}
+              {renderEngine === 'realistic_5layer' && (
+                <div className="flex flex-wrap items-center justify-center gap-1.5 mb-6 max-w-lg">
+                  {[
+                    { id: 0, label: 'L0: 350gsm Base' },
+                    { id: 1, label: 'L1: Artwork' },
+                    { id: 2, label: 'L2: Micro-Relief' },
+                    { id: 3, label: 'L3: Rainbow Conic' },
+                    { id: 4, label: 'L4: Gold Foil & Stamp' },
+                  ].map((layer) => {
+                    const isActive = enabledLayers.includes(layer.id);
+                    return (
+                      <button
+                        key={layer.id}
+                        onClick={() => {
+                          setEnabledLayers((prev) =>
+                            prev.includes(layer.id)
+                              ? prev.filter((id) => id !== layer.id)
+                              : [...prev, layer.id]
+                          );
+                        }}
+                        className={`px-2.5 py-1 rounded-md text-[10px] font-mono font-bold transition border ${
+                          isActive
+                            ? 'bg-amber-500/20 text-amber-300 border-amber-500/50 shadow-sm'
+                            : 'bg-zinc-950 text-zinc-500 border-zinc-800 hover:text-zinc-400'
+                        }`}
+                      >
+                        {layer.label}
+                      </button>
+                    );
+                  })}
+                  <button
+                    onClick={() => setEnabledLayers([0, 1, 2, 3, 4])}
+                    className="px-2 py-1 rounded-md text-[9px] font-mono uppercase bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition"
+                  >
+                    Reset All
+                  </button>
+                </div>
+              )}
+
               {/* The 3D Rendered Card / Slab */}
-              <GradingSlab
-                card={activeCardInstance}
-                mockGrade={activeMockGrade}
-                size="md"
-                interactive={true}
-                showMarketValue={true}
-              />
+              {renderEngine === 'realistic_5layer' ? (
+                <RealisticCardRenderer
+                  card={activeCardInstance}
+                  finishOverride={selectedFinish}
+                  size="md"
+                  interactive={true}
+                  showMarketValue={true}
+                  activeLayers={enabledLayers}
+                />
+              ) : (
+                <GradingSlab
+                  card={activeCardInstance}
+                  mockGrade={activeMockGrade}
+                  size="md"
+                  interactive={true}
+                  showMarketValue={true}
+                />
+              )}
 
               {/* Hint Badge */}
               <div className="mt-8 flex items-center gap-2 px-4 py-1.5 rounded-full bg-black/60 border border-zinc-700/80 text-zinc-400 text-xs shadow-lg backdrop-blur">

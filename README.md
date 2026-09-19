@@ -441,6 +441,25 @@ $$\text{Market Value} = \text{Base Value}(\text{Rarity}) \times \text{Multiplier
   - **Ultra (UR / SEC, Rainbow / Gold-Etched):** `#f59e0b`, secondary `#ec4899`, blur 38px, spread 12px, pulse 0.9s, 24 particles.
   - **God / Master / Signed SP (MR or Signed SP finish):** `#ffd700`, secondary `#06b6d4`, blur 52px, spread 20px, pulse 0.5s, 48 particles (with chromatic dispersion).
 
+### 10. 5-Layer Composite Weiss Schwarz & Pokémon Foil Shader Engine (v2.6.2 Phase 1 - Stage 3)
+
+The ultimate collectible card visual renderer (`RealisticCardRenderer.tsx`), replicating authentic Bushiroad Weiss Schwarz SP/SSP and Pokémon Secret Rare cards at standard geometry (`w-[320px] sm:w-[360px] aspect-[63/88] rounded-[18px]`):
+
+- **Layer 0 (Substrate Core):** Dark premium 350gsm cardstock base (`#0c0d12`) with embedded SVG `<feTurbulence>` filter generating authentic micro paper tooth texture at $4\%$ opacity.
+- **Layer 1 (Full-Bleed Artwork):** High-res character illustration (`object-cover object-top`) masked inside an authentic collectible frame with character name banner, rarity badge, and serial code (`TQQ-XXX`).
+- **Layer 2 (Micro-Etched Relief Map):** Procedural SVG filter simulating the tactile fingerprint ridges and concentric guilloché security lines found on Weiss Schwarz SP cards. Employs `<feTurbulence>`, `<feDisplacementMap>`, and `<feSpecularLighting>` with directional azimuth derived from `activeShaderUniforms.holographicAngle` so specular light catches only on embossed ridges.
+- **Layer 3 (Prismatic Rainbow Hologram):** Enabled on `finish === 'rainbow' | 'gold_etched' | 'signed_sp'`. Formula-driven conic gradient layer shifting around dynamic specular coordinates `(--specular-x, --specular-y)` with dynamic refraction angle `(--holo-angle)` and `mix-blend-mode: color-dodge`:
+  $$\text{ConicGradient}\big(\text{from } \theta_{\text{holo}} \text{ at } S_x, S_y\big)$$
+- **Layer 4 (Hot-Stamped Gold Foil Mask & VA Signature):** Character Voice Actress Signature SVGs (`FoilSignatureOverlay.tsx`) stamped in high-luster metallic gold leaf with authentic red Japanese Hanko seals:
+  - **Ichika:** 花澤 香菜 (*Kana Hanazawa*) 💛 | Accent: `#F59E0B`
+  - **Nino:** 竹達 彩奈 (*Ayana Taketatsu*) 🦋 | Accent: `#EC4899`
+  - **Miku:** 伊藤 美来 (*Miku Itō*) 🎧 | Accent: `#06B6D4`
+  - **Yotsuba:** 佐倉 綾音 (*Ayane Sakura*) 🍀 | Accent: `#10B981`
+  - **Itsuki:** 水瀬 いのり (*Inori Minase*) ⭐ | Accent: `#EF4444`
+  - Hot-Stamp Foil Shader:
+    $$\text{linear-gradient}(135^\circ, \text{\#bf953f } 0\%, \text{\#fcf6ba } 25\%, \text{\#b38728 } 50\%, \text{\#fbf5b7 } 75\%, \text{\#aa771c } 100\%)$$
+- **Dynamic Tilt & Gyro Engine (`useCardFoilTilt.ts`):** Bridges mouse pointer motion and mobile `DeviceOrientation` gyroscope to normalized $[-1.0, 1.0]$ tilt vectors. Updates CSS variables directly onto the GPU without React re-render cascades, guaranteeing buttery-smooth 60fps performance.
+
 ---
 
 ## 🏗️ Project Architecture
@@ -486,8 +505,10 @@ tqqtcg/
 │   │   │   ├── CardActionModal.tsx  # Rebalanced two-column inspect modal with responsive unclipped slab stage
 │   │   │   └── GrandBinder.tsx      # Main hub with Showcase / Collection / Card-Dex / Battle view switcher
 │   │   ├── card/
-│   │   │   ├── CardRenderer.tsx     # Holographic foil shader engine & card frame
-│   │   │   └── GradingSlab.tsx      # Acrylic BGS-style grading slab with subgrade plates
+│   │   │   ├── CardRenderer.tsx          # Holographic foil shader engine & card frame
+│   │   │   ├── FoilSignatureOverlay.tsx  # Hot-stamped vector gold leaf voice actress signature
+│   │   │   ├── GradingSlab.tsx           # Acrylic BGS-style grading slab with subgrade plates
+│   │   │   └── RealisticCardRenderer.tsx # 5-layer composite Weiss Schwarz & Pokémon foil engine
 │   │   ├── catalog/
 │   │   │   ├── CardDex.tsx          # 42-card master catalog with unified single toolbar & silhouettes
 │   │   │   ├── DexFilterTabs.tsx    # High-density sister filter tabs with character badges
@@ -534,6 +555,7 @@ tqqtcg/
 │   │   ├── suspenseProfiles.ts  # Volumetric suspense edge-glow profiles & particle configurations
 │   │   └── version.ts           # Semantic APP_VERSION and CURRENT_PATCH_NOTE contract
 │   ├── hooks/
+│   │   ├── useCardFoilTilt.ts   # Real-time pointer & gyro 3D tilt tracking with shader uniforms
 │   │   ├── useIdleRevenue.ts    # Background-safe idle yield calculator with 12h offline cap
 │   │   └── useSmoothTilt.ts     # Overdamped 3D spring tilt hook with dynamic lighting
 │   ├── store/
