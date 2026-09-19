@@ -14,6 +14,9 @@ export * from './components/pack/PackOpeningModal';
 export * from './components/pack/SelectBoosterModal';
 export * from './components/pack/TearMechanism';
 export * from './components/pack/FoilTearCrimp';
+export * from './components/pack/SuspenseCardStack';
+export * from './components/card/TqqCardBack';
+export * from './utils/audioPackCeremony';
 export * from './utils/haptics';
 export * from './components/workshop/RestorationWorkbenchModal';
 

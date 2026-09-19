@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import {
   CharacterId,
   Finish,
@@ -30,7 +30,30 @@ import { BoosterPack3D, PACK_THEMES } from '../../components/pack/BoosterPack3D'
 import { PackOpeningModal } from '../../components/pack/PackOpeningModal';
 import { GradingStation } from '../../components/vault/GradingStation';
 import { DustingWorkshop } from '../../components/dusting/DustingWorkshop';
-import { Sparkles, Layers, Award, Eye, PackageOpen, Coins, Plus, RotateCcw, Flame } from 'lucide-react';
+import { SuspenseCardStack } from '../../components/pack/SuspenseCardStack';
+import {
+  playFoilCrease,
+  playFoilTearRip,
+  playCardSlideDeck,
+  startSuspenseHum,
+  playSignedFanfare,
+  SuspenseHumController,
+} from '../../utils/audioPackCeremony';
+import {
+  Sparkles,
+  Layers,
+  Award,
+  Eye,
+  PackageOpen,
+  Coins,
+  Plus,
+  RotateCcw,
+  Flame,
+  Volume2,
+  Play,
+  Square,
+  Music,
+} from 'lucide-react';
 
 type SlabViewMode = 'raw' | 'poor' | 'used' | 'crisp' | 'mint9' | 'gem10' | 'black_label';
 
@@ -55,6 +78,77 @@ export default function ShowcasePage() {
   const addFunds = (amount: number) => {
     useGameStore.setState((prev) => ({ yen: prev.yen + amount }));
   };
+
+  const [humActive, setHumActive] = useState(false);
+  const humRef = useRef<SuspenseHumController | null>(null);
+  const [showSuspenseDemo, setShowSuspenseDemo] = useState(false);
+  const [demoKey, setDemoKey] = useState(0);
+
+  const demoStackCards: CardInstance[] = useMemo(
+    () => [
+      {
+        id: 'demo-card-1',
+        cardDefId: 'ichika_c_01',
+        characterId: 'ichika',
+        rarity: 'C',
+        finish: 'raw',
+        obtainedAt: Date.now(),
+        imageUrl: '/cards/TQQ/Ichika/Ichika Tier ONE.jpg',
+        cardNumber: 'TQQ-001',
+        name: 'Ichika Nakano',
+        title: 'First Bloom',
+      },
+      {
+        id: 'demo-card-2',
+        cardDefId: 'nino_r_01',
+        characterId: 'nino',
+        rarity: 'R',
+        finish: 'holo',
+        obtainedAt: Date.now(),
+        imageUrl: '/cards/TQQ/Nino/nino 3.jpg',
+        cardNumber: 'TQQ-010',
+        name: 'Nino Nakano',
+        title: 'Passionate Cook',
+      },
+      {
+        id: 'demo-card-3',
+        cardDefId: 'miku_sr_01',
+        characterId: 'miku',
+        rarity: 'SR',
+        finish: 'sparkle',
+        obtainedAt: Date.now(),
+        imageUrl: '/cards/TQQ/Miku/miku 4.jpg',
+        cardNumber: 'TQQ-018',
+        name: 'Miku Nakano',
+        title: 'Sengoku Tactician',
+      },
+      {
+        id: 'demo-card-4',
+        cardDefId: 'yotsuba_ur_01',
+        characterId: 'yotsuba',
+        rarity: 'UR',
+        finish: 'rainbow',
+        obtainedAt: Date.now(),
+        imageUrl: '/cards/TQQ/Yotsuba/yotsu 5.jpg',
+        cardNumber: 'TQQ-026',
+        name: 'Yotsuba Nakano',
+        title: 'Boundless Energy',
+      },
+      {
+        id: 'demo-card-5',
+        cardDefId: 'itsuki_mr_01',
+        characterId: 'itsuki',
+        rarity: 'MR',
+        finish: 'signed',
+        obtainedAt: Date.now(),
+        imageUrl: '/cards/TQQ/Itsuki/itsu 7.jpg',
+        cardNumber: 'TQQ-035',
+        name: 'Itsuki Nakano',
+        title: 'Starlight Scholar',
+      },
+    ],
+    []
+  );
 
   // Find candidate card from catalog matching character and rarity
   const candidateCards = useMemo(() => {
@@ -326,6 +420,114 @@ export default function ShowcasePage() {
               </div>
             );
           })}
+        </div>
+
+        {/* PROCEDURAL AUDIO & SUSPENSE STACK TEST BENCH */}
+        <div className="mt-10 p-6 rounded-3xl bg-zinc-900/60 border border-zinc-800">
+          <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+            <div>
+              <h3 className="text-lg font-black text-white flex items-center gap-2">
+                <Volume2 className="w-5 h-5 text-amber-400" />
+                Zero-MP3 Procedural Web Audio Synthesizer & Suspense Stack Test Bench
+              </h3>
+              <p className="text-xs text-zinc-400 font-mono mt-1">
+                Audition native browser AudioContext sound nodes and test the face-down suspense stack interactively.
+              </p>
+            </div>
+
+            <button
+              onClick={() => {
+                setShowSuspenseDemo(!showSuspenseDemo);
+                setDemoKey((k) => k + 1);
+              }}
+              className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-black font-black text-xs uppercase tracking-wider flex items-center gap-2 shadow transition active:scale-95"
+            >
+              <Sparkles className="w-4 h-4" />
+              <span>{showSuspenseDemo ? 'Reset / Hide Suspense Stack' : 'Test Suspense Stack Live'}</span>
+            </button>
+          </div>
+
+          {/* Audio Synthesizer Triggers */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 mb-6">
+            <button
+              onClick={() => playFoilCrease(0.7)}
+              className="p-3 rounded-xl bg-zinc-950 border border-zinc-800 hover:border-amber-400 text-left flex flex-col gap-1 transition active:scale-95 group"
+            >
+              <span className="text-xs font-black text-amber-300 group-hover:text-amber-200">1. playFoilCrease()</span>
+              <span className="text-[10px] text-zinc-500 font-mono">800Hz &rarr; 2600Hz Bandpass</span>
+            </button>
+
+            <button
+              onClick={() => playFoilTearRip(0.65, 1.4, 0.8)}
+              className="p-3 rounded-xl bg-zinc-950 border border-zinc-800 hover:border-amber-400 text-left flex flex-col gap-1 transition active:scale-95 group"
+            >
+              <span className="text-xs font-black text-amber-300 group-hover:text-amber-200">2. playFoilTearRip()</span>
+              <span className="text-[10px] text-zinc-500 font-mono">Sawtooth + Crackle Mod</span>
+            </button>
+
+            <button
+              onClick={() => playCardSlideDeck(0.8)}
+              className="p-3 rounded-xl bg-zinc-950 border border-zinc-800 hover:border-amber-400 text-left flex flex-col gap-1 transition active:scale-95 group"
+            >
+              <span className="text-xs font-black text-amber-300 group-hover:text-amber-200">3. playCardSlideDeck()</span>
+              <span className="text-[10px] text-zinc-500 font-mono">3400Hz Highpass Burst</span>
+            </button>
+
+            <button
+              onClick={() => {
+                if (humActive) {
+                  humRef.current?.stop(60);
+                  humRef.current = null;
+                  setHumActive(false);
+                } else {
+                  humRef.current = startSuspenseHum('ultra', 0.6);
+                  setHumActive(true);
+                }
+              }}
+              className={`p-3 rounded-xl border text-left flex flex-col gap-1 transition active:scale-95 ${
+                humActive
+                  ? 'bg-amber-500/20 border-amber-400 text-amber-200'
+                  : 'bg-zinc-950 border-zinc-800 hover:border-amber-400 text-zinc-400'
+              }`}
+            >
+              <span className="text-xs font-black text-amber-300">
+                {humActive ? 'Stop Suspense Hum' : '4. startSuspenseHum()'}
+              </span>
+              <span className="text-[10px] text-zinc-500 font-mono">55Hz + 110Hz Dual Sine</span>
+            </button>
+
+            <button
+              onClick={() => playSignedFanfare(0.9)}
+              className="p-3 rounded-xl bg-zinc-950 border border-zinc-800 hover:border-amber-400 text-left flex flex-col gap-1 transition active:scale-95 group"
+            >
+              <span className="text-xs font-black text-amber-300 group-hover:text-amber-200">5. playSignedFanfare()</span>
+              <span className="text-[10px] text-zinc-500 font-mono">5-Bell Concert Chimes</span>
+            </button>
+          </div>
+
+          {/* Inline Suspense Card Stack Live Demo */}
+          {showSuspenseDemo && (
+            <div className="p-4 rounded-2xl bg-black/70 border border-amber-500/30 flex flex-col items-center">
+              <div className="text-center mb-3">
+                <span className="text-xs font-mono font-bold text-amber-400 uppercase tracking-widest">
+                  ★ Interactive Face-Down Suspense Stack Demo ★
+                </span>
+                <p className="text-[11px] text-zinc-400">
+                  Drag the top card right or swipe (&gt;120px) to trigger pitch-rising hum, 3D flip, and predictive edge glow.
+                </p>
+              </div>
+
+              <div className="w-full max-w-lg h-[520px]">
+                <SuspenseCardStack
+                  key={demoKey}
+                  cards={demoStackCards}
+                  onCeremonyComplete={() => {
+                    setDemoKey((k) => k + 1);
+                  }}
+                />
+              </div>
+            </div>
+          )}
         </div>
       </section>
       )}

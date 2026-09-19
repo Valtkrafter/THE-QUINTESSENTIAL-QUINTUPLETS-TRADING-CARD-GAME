@@ -7,7 +7,13 @@ import { PACKS_CONFIG, calculateCardMarketValue } from '../../config/economy';
 import { useGameStore } from '../../store/useGameStore';
 import { BoosterPack3D, PACK_THEMES } from './BoosterPack3D';
 import { CardRenderer, CHARACTER_THEMES, RARITY_BADGES } from '../card/CardRenderer';
+import { SuspenseCardStack } from './SuspenseCardStack';
 import { soundEngine } from '../../utils/audio';
+import {
+  audioPackCeremony,
+  playFoilTearRip,
+  stopAllCeremonyAudio,
+} from '../../utils/audioPackCeremony';
 import {
   Sparkles,
   Volume2,
@@ -85,6 +91,7 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
       setPackKey((prev) => prev + 1);
     } else {
       soundEngine.stopAll();
+      stopAllCeremonyAudio();
       isPeelingRef.current = false;
       setIsPeeling(false);
       cardX.set(0);
@@ -97,6 +104,7 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
   useEffect(() => {
     return () => {
       soundEngine.stopAll();
+      stopAllCeremonyAudio();
     };
   }, []);
 
@@ -117,6 +125,7 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
   const handleTearComplete = useCallback(() => {
     setIsDragging(false);
     setIsTorn(true);
+    playFoilTearRip(1.0, 1.5);
 
     // Screen impact shake for 160ms
     setScreenShake(true);
@@ -198,6 +207,7 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
     try {
       // 1. Terminate running audio
       soundEngine.stopAll();
+      stopAllCeremonyAudio();
 
       // 2. Pre-roll new card batch from store (Option B)
       const result = openPackStore(packId);
@@ -450,9 +460,12 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
               onClick={() => {
                 if (isMuted) {
                   setIsMuted(false);
+                  audioPackCeremony.setMuted(false);
                 } else {
                   soundEngine.stopAll();
+                  stopAllCeremonyAudio();
                   setIsMuted(true);
+                  audioPackCeremony.setMuted(true);
                 }
               }}
               className="flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-black/40 text-zinc-300 hover:bg-white/10 hover:text-white transition shadow"
@@ -464,6 +477,7 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
             <button
               onClick={() => {
                 soundEngine.stopAll();
+                stopAllCeremonyAudio();
                 onClose();
               }}
               className="flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-black/40 text-zinc-300 hover:bg-white/10 hover:text-white transition shadow"
@@ -577,148 +591,34 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
           )}
 
           {/* ============================================================
-              STAGE 3: 360PX PRESENTATION CARD-STACK & RIGHT-SWIPE PEEL
+              STAGE 3: FACE-DOWN SUSPENSE CARD STACK & 3D FLIP PEEL
               ============================================================ */}
-          {stage === 'PEELING' && currentCardIndex < pulledCards.length && activeCard && (
+          {stage === 'PEELING' && pulledCards.length > 0 && (
             <motion.div
               key="stage-peeling"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className="flex-1 flex flex-col items-center justify-center relative z-20 my-auto w-full max-w-lg"
+              className="flex-1 flex flex-col items-center justify-center relative z-20 my-auto w-full max-w-2xl"
             >
-              {/* Card-Specific Anticipation Auras */}
-              {cardAnticipationTell === 'ULTRA' && (
-                <div className="fixed inset-0 pointer-events-none z-10 bg-black/75 flex items-center justify-center transition-all duration-300">
-                  <div
-                    className="w-[370px] h-[516px] rounded-2xl border-2 animate-pulse"
-                    style={{
-                      borderColor: CHARACTER_THEMES[activeCard.characterId]?.accent ?? '#F59E0B',
-                      boxShadow: `0 0 75px ${CHARACTER_THEMES[activeCard.characterId]?.accent ?? '#F59E0B'}`,
-                    }}
-                  />
-                </div>
-              )}
-
-              {cardAnticipationTell === 'SUPER' && (
-                <div className="fixed inset-0 pointer-events-none z-10 bg-purple-950/30 flex items-center justify-center transition-all duration-300">
-                  <div className="w-[365px] h-[510px] rounded-2xl border border-purple-400 shadow-[0_0_50px_rgba(168,85,247,0.7)] animate-pulse" />
-                </div>
-              )}
-
-              {cardAnticipationTell === 'GOD_PACK' && (
-                <div className="fixed inset-0 pointer-events-none z-10 flex items-center justify-center">
-                  <div className="w-[650px] h-[650px] rounded-full bg-[radial-gradient(circle,rgba(255,215,0,0.5)_0%,transparent_70%)] animate-spin" />
-                </div>
-              )}
-
-              {/* PRESENTATION CARD STACK CONTAINER (360px x 502px, max-h 65vh) */}
-              <div className="relative z-20 flex flex-col items-center">
-                {/* Deck Stack Anchor (Presentation Aspect Ratio 63:88) */}
-                <div className="relative w-[360px] max-w-[90vw] max-h-[65vh] aspect-[63/88]">
-                  {currentCardIndex < pulledCards.length &&
-                    pulledCards.slice(currentCardIndex).map((card, offsetIdx) => {
-                      const isTop = offsetIdx === 0;
-                      const yOffset = offsetIdx * 2;
-                      const xOffset = offsetIdx * 1;
-                      const scale = 1 - offsetIdx * 0.005;
-                      const zElevation = (pulledCards.length - offsetIdx) * 10;
-
-                      if (isTop) {
-                        return (
-                          <motion.div
-                            key={`${card.id}-${currentCardIndex}`}
-                            drag={!isPeeling ? 'x' : false}
-                            dragConstraints={{ left: 0, right: 600 }}
-                            dragElastic={0.2}
-                            style={{
-                              x: cardX,
-                              rotate: cardRotate,
-                              opacity: cardOpacity,
-                              zIndex: zElevation,
-                            }}
-                            onDrag={(_, info) => {
-                              if (isPeelingRef.current) return;
-                              cardRotate.set(Math.min(Math.max(info.offset.x * 0.035, -8), 20));
-                            }}
-                            onDragEnd={handleTopCardDragEnd}
-                            className={`absolute inset-0 select-none rounded-2xl shadow-[0_8px_24px_rgba(0,0,0,0.7)] touch-none w-full h-full flex items-center justify-center ${
-                              isPeeling ? 'pointer-events-none cursor-default' : 'cursor-grab active:cursor-grabbing'
-                            }`}
-                          >
-                            <CardRenderer
-                              card={card}
-                              size="full"
-                              interactive={false}
-                              showMarketValue={true}
-                            />
-                          </motion.div>
-                        );
-                      }
-
-                      // Backing cards stacked tightly underneath
-                      return (
-                        <div
-                          key={`backing-${card.id}-${currentCardIndex + offsetIdx}`}
-                          style={{
-                            transform: `translate3d(${xOffset}px, ${yOffset}px, 0px) scale(${scale})`,
-                            zIndex: zElevation,
-                          }}
-                          className="absolute inset-0 pointer-events-none rounded-2xl shadow-[0_8px_24px_rgba(0,0,0,0.7)] transition-transform duration-200 w-full h-full flex items-center justify-center"
-                        >
-                          <CardRenderer
-                            card={card}
-                            size="full"
-                            interactive={false}
-                            showMarketValue={true}
-                          />
-                        </div>
-                      );
-                    })}
-                </div>
-
-                {/* Peel Gesture Hint & Action Buttons */}
-                <div className="mt-6 flex flex-col items-center gap-3 z-30">
-                  <div className="flex items-center gap-3">
-                    <button
-                      onClick={executePeel}
-                      disabled={isPeeling}
-                      className="px-6 py-2.5 rounded-full bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-black font-black text-xs uppercase tracking-wider flex items-center gap-2 shadow-lg transition active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
-                    >
-                      <span>{currentCardIndex < pulledCards.length - 1 ? 'Peel Card' : 'View Summary'}</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </button>
-
-                    <button
-                      onClick={handleRevealAll}
-                      className="px-4 py-2 rounded-full bg-zinc-900/80 border border-white/10 hover:bg-zinc-800 text-zinc-400 hover:text-white text-xs font-semibold transition"
-                    >
-                      Skip All
-                    </button>
-                  </div>
-
-                  <span className="text-[11px] text-zinc-400 font-mono flex items-center gap-1">
-                    <span>👉 Drag top card to the right to peel & discard</span>
-                  </span>
-                </div>
-
-                {/* Deck Stack Progression Pips */}
-                <div className="flex items-center gap-2 mt-3">
-                  {pulledCards.map((_, idx) => (
-                    <div
-                      key={idx}
-                      className={`h-1.5 rounded-full transition-all duration-300 ${
-                        idx === currentCardIndex
-                          ? 'w-7 bg-amber-400 shadow-[0_0_8px_rgba(245,158,11,0.8)]'
-                          : idx < currentCardIndex
-                          ? 'w-2 bg-zinc-600'
-                          : 'w-2 bg-zinc-800'
-                      }`}
-                    />
-                  ))}
-                </div>
-              </div>
+              <SuspenseCardStack
+                cards={pulledCards}
+                initialIndex={currentCardIndex}
+                isMuted={isMuted}
+                onCardPeel={(_card, idx) => {
+                  setCurrentCardIndex(idx);
+                }}
+                onCardRevealed={(_card, idx) => {
+                  setCurrentCardIndex(idx);
+                }}
+                onCeremonyComplete={() => {
+                  setCurrentCardIndex(pulledCards.length);
+                  setStage('SUMMARY');
+                  soundEngine.play('reveal_rare', 0.6);
+                }}
+                onSkipAll={handleRevealAll}
+              />
             </motion.div>
           )}
 

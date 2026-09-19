@@ -460,6 +460,32 @@ The ultimate collectible card visual renderer (`RealisticCardRenderer.tsx`), rep
     $$\text{linear-gradient}(135^\circ, \text{\#bf953f } 0\%, \text{\#fcf6ba } 25\%, \text{\#b38728 } 50\%, \text{\#fbf5b7 } 75\%, \text{\#aa771c } 100\%)$$
 - **Dynamic Tilt & Gyro Engine (`useCardFoilTilt.ts`):** Bridges mouse pointer motion and mobile `DeviceOrientation` gyroscope to normalized $[-1.0, 1.0]$ tilt vectors. Updates CSS variables directly onto the GPU without React re-render cascades, guaranteeing buttery-smooth 60fps performance.
 
+### 11. Face-Down Suspense Stack, Volumetric Edge-Glow & Zero-MP3 Procedural Web Audio (v2.6.3 Phase 1 - Stage 4)
+
+- **Luxury Dark Velvet Card Mat (`#08090d`):** 5 extracted cards sit face-down in a compact stack on a textured velvet surface with deep ambient drop shadows (`shadow-[0_25px_60px_rgba(0,0,0,0.9)]`) and dual gold-threaded boundary stitching.
+- **Stacking Geometry & 2px Vertical Cascade:** Cards sit face-down with tight $2\text{px}$ vertical offsets (`translate3d(i*1px, i*2px, 0) scale(1 - i*0.005)`).
+- **Official High-Resolution TQQ Vault Card Back (`TqqCardBack.tsx`):** Bushiroad/Weiss Schwarz inspired card back featuring obsidian dark velvet cardstock (`#08090f`), 24K gold foil embossed filigree borders, concentric guilloché sacred geometry rosette, and the 5 Nakano Sisters color gem crest (Ichika Yellow, Nino Magenta, Miku Cyan, Yotsuba Emerald, Itsuki Ruby) with Japanese calligraphy (五等分の花嫁).
+- **Predictive Volumetric Edge-Glow System (`src/config/suspenseProfiles.ts`):** Ambient light leaks from beneath the borders of the top face-down card to foreshadow card rarity:
+  - *Standard (C / UC, Raw):* Thin faint white rim light (`rgba(255, 255, 255, 0.1)`, 12px blur, 2px spread, 2.4s pulse, 0 particles).
+  - *Rare (R / SR, Holo / Sparkle):* Pulsing Violet halo (`#8b5cf6`, secondary `#3b82f6`, 24px blur, 6px spread, 1.6s breath, 8 motes).
+  - *Ultra (UR / SEC, Rainbow / Gold-Etched):* High-energy Amber flare (`#f59e0b`, secondary `#ec4899`, 38px blur, 12px spread, 0.9s pulse, 24 particle sparks).
+  - *God / Master / Signed SP (MR or Signed SP finish):* Multi-spectral chromatic aurora with spinning radial rays (`#ffd700`, `#06b6d4`, `#ec4899`, 52px blur, 20px spread, 0.5s pulse, 48 particles with chromatic dispersion).
+- **Touch & Pointer Swipe-to-Peel Gesture Engine (`SuspenseCardStack.tsx`):**
+  - Framer Motion `drag="x"`, `dragConstraints={{ left: 0, right: 600 }}`, `dragElastic={0.25}`.
+  - Peel threshold: $\Delta x > 120\text{px}$ or velocity $v_x > 400\text{px/s}$.
+  - Real-time Z-axis tilt proportional to drag offset (`rotateZ` up to $18^\circ$).
+  - Low-frequency suspense hum rises in pitch as the card is dragged toward threshold:
+    $$\text{Pitch}(p) = f_{\text{base}} \times (1.0 + p \times 0.95), \quad p = \operatorname{clamp}\left(\frac{\Delta x}{120}, 0.0, 1.0\right)$$
+  - Sub-threshold releases trigger spring snap-back to resting stack position (`stiffness: 400, damping: 28`).
+  - Breach threshold triggers authentic 3D card flip animation (`rotateY: 180deg`, 0.35s) with sleeve friction sound (`playCardSlideDeck()`).
+  - High-tier pulls (UR/SEC/SP) engage a brief 0.3s slow-motion blur (`filter: blur(12px) -> blur(0px)`) before full foil artwork bursts into view, accompanied by the pristine 5-bell signed fanfare.
+- **Zero-MP3 Procedural Web Audio API Synthesizer Suite (`src/utils/audioPackCeremony.ts`):** 100% native browser AudioContext synthesizer with zero external `.mp3` or `.wav` dependencies:
+  1. `playFoilCrease()`: Granular bandpass noise sweep ($800\text{Hz} \to 2600\text{Hz}$, $Q = 3.0$, duration $90\text{ms}$) triggered on 3D booster rotation.
+  2. `playFoilTearRip(progress, velocity)`: Sawtooth oscillator through amplitude crackle modulation with variable bandpass filter shifting from $1200\text{Hz} \to 3800\text{Hz}$ proportional to tear velocity.
+  3. `playCardSlideDeck()`: Highpass-filtered white noise burst ($3400\text{Hz}$, duration $65\text{ms}$, fast decay gain envelope) simulating sleeve friction.
+  4. `startSuspenseHum(suspenseTier)`: Dual sine oscillators ($55\text{Hz}$ root + $110\text{Hz}$ overtone) run through a subtle chorus filter (18ms delay modulated by 1.5Hz LFO). Frequency glides smoothly upward as the card is dragged toward reveal. Returns a controller with `updatePitch(progress)` and `stop()`.
+  5. `playSignedFanfare()`: Pristine 5-bell chime arpeggio (C6: $1046.5\text{Hz}$, E6: $1318.5\text{Hz}$, G6: $1567.9\text{Hz}$, B6: $1975.5\text{Hz}$, E7: $2637.0\text{Hz}$) with stereo panning ($-0.6 \to +0.6$) and $2.2\text{s}$ exponential concert hall reverb decay.
+
 ---
 
 ## 🏗️ Project Architecture
@@ -484,7 +510,7 @@ tqqtcg/
 ├── rules.md                     # Strict development protocol & architectural standards
 ├── scripts/
 │   ├── test-battle-engine.ts    # 1,000-match Monte Carlo battle audit verifying win rates & invariants
-│   ├── test-engine.ts           # Comprehensive test suite (13 sections covering all game systems)
+│   ├── test-engine.ts           # Comprehensive test suite (19 sections covering all game systems)
 │   └── verify-tqq-assets.ts     # Strict Linux/Vercel case-sensitivity & asset taxonomy audit
 ├── src/
 │   ├── app/
@@ -508,7 +534,8 @@ tqqtcg/
 │   │   │   ├── CardRenderer.tsx          # Holographic foil shader engine & card frame
 │   │   │   ├── FoilSignatureOverlay.tsx  # Hot-stamped vector gold leaf voice actress signature
 │   │   │   ├── GradingSlab.tsx           # Acrylic BGS-style grading slab with subgrade plates
-│   │   │   └── RealisticCardRenderer.tsx # 5-layer composite Weiss Schwarz & Pokémon foil engine
+│   │   │   ├── RealisticCardRenderer.tsx # 5-layer composite Weiss Schwarz & Pokémon foil engine
+│   │   │   └── TqqCardBack.tsx           # Official luxury TQQ Vault collectible card back with 5-sister crest
 │   │   ├── catalog/
 │   │   │   ├── CardDex.tsx          # 42-card master catalog with unified single toolbar & silhouettes
 │   │   │   ├── DexFilterTabs.tsx    # High-density sister filter tabs with character badges
@@ -525,6 +552,7 @@ tqqtcg/
 │   │   │   ├── FoilTearCrimp.tsx    # Vector laser perforation tear crimp with jagged SVG foil physics
 │   │   │   ├── PackOpeningModal.tsx # Ceremony modal: tear, suspense, peel & summary
 │   │   │   ├── SelectBoosterModal.tsx # Portal-mounted pack kiosk with live drop odds & kiosk tab
+│   │   │   ├── SuspenseCardStack.tsx # Face-down 3D stack with predictive edge-glow & swipe-to-peel
 │   │   │   └── TearMechanism.tsx    # Direct HTML5 window pointer tear engine
 │   │   ├── showcase/
 │   │   │   ├── SocketDrawer.tsx          # Full-art pedestal selection drawer with 3-col grid & status badges
@@ -569,6 +597,7 @@ tqqtcg/
 │   └── utils/
 │       ├── audio.ts             # Native Web Audio API procedural synthesis engine (6 combat SFX)
 │       ├── audioEngine.ts       # Sound synthesizer client instance with coin & receipt pulses
+│       ├── audioPackCeremony.ts # Zero-MP3 procedural sound suite (crease, tear, slide, hum, fanfare)
 │       ├── battleEngine.ts      # 3-phase combat turn execution engine (Pressure, Action, Resolution)
 │       ├── haptics.ts           # Tactile vibration API utility for tear friction & snaps
 │       ├── shaderMath.ts        # Dynamic holographic refraction, specular hotspot & tear mathematics
@@ -612,10 +641,10 @@ tqqtcg/
 
 ## 🧪 Verification & Testing
 
-The repository contains an automated Monte Carlo test suite (`scripts/test-engine.ts`) across 17 complete sections as well as the specialized 1,000-match combat audit (`scripts/test-battle-engine.ts`):
+The repository contains an automated Monte Carlo test suite (`scripts/test-engine.ts`) across 19 complete sections as well as the specialized 1,000-match combat audit (`scripts/test-battle-engine.ts`):
 
 ```bash
-# Run the complete test suite (Sections 1 through 13 + 1,000-match Monte Carlo combat audit)
+# Run the complete test suite (Sections 1 through 19 + 1,000-match Monte Carlo combat audit)
 npm test
 
 # Run only the 1,000-match Exam Showdown Monte Carlo combat audit
