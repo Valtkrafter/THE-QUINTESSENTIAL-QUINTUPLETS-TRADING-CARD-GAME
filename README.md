@@ -403,6 +403,27 @@ $$\text{Market Value} = \text{Base Value}(\text{Rarity}) \times \text{Multiplier
   - `focus_charge_hum`: 110Hz to 220Hz rising triangle wave charging hum.
   - `focus_charge_burst`: Golden dual-tone ping (1760Hz & 2637Hz) upon charge completion.
 
+### 9. Native AAA 3D Booster Pack Opening Ceremony Engine (v2.6.0 Phase 1)
+
+- **Decoupled 6-Phase Ceremony State Machine (`src/store/usePackCeremonyStore.ts`):**
+  Governs the unboxing lifecycle across discrete physical states inspired by Pokémon TCG Pocket & Weiss Schwarz SP:
+  $$\text{IDLE} \longrightarrow \text{INSPECTING\_PACK} \longrightarrow \text{TEARING\_CRIMP} \longrightarrow \text{EXTRACTING\_CARDS} \longrightarrow \text{PEELING\_REVEAL} \longrightarrow \text{CEREMONY\_SUMMARY}$$
+- **Holographic Dynamic Refraction Angle:**
+  $$H(\theta_x, \theta_y) = \left( \operatorname{atan2}(\theta_y, \theta_x) \times \frac{180}{\pi} + 360 \right) \bmod 360$$
+- **Specular Hotspot Projection:**
+  $$S_x(\theta_x) = \operatorname{clamp}\left(50 + (\theta_x \times 40), 0, 100\right)$$
+  $$S_y(\theta_y) = \operatorname{clamp}\left(50 + (\theta_y \times 40), 0, 100\right)$$
+- **Glare Intensity Envelope:**
+  $$G(\theta_x, \theta_y) = \operatorname{clamp}\left(\sqrt{\theta_x^2 + \theta_y^2} \times 0.75, 0.0, 1.0\right)$$
+- **Perforation Tear Breach Threshold:**
+  $$\text{progress} = \operatorname{clamp}\left(\frac{\Delta x}{W_{\text{pack}} \times 0.85}, 0.0, 1.0\right)$$
+  Perforation breach triggers strictly at $\text{progress} \ge 0.82$, locking progress to $1.0$ and immediately transitioning to card extraction.
+- **Volumetric Suspense Edge Glow Profiles (`src/config/suspenseProfiles.ts`):**
+  - **Standard (Common / Uncommon, Raw):** `#ffffff15`, secondary `#94a3b8`, blur 12px, spread 2px, pulse 2.4s, 0 particles.
+  - **Rare (R / SR, Holo / Sparkle):** `#8b5cf6`, secondary `#3b82f6`, blur 24px, spread 6px, pulse 1.6s, 8 particles.
+  - **Ultra (UR / SEC, Rainbow / Gold-Etched):** `#f59e0b`, secondary `#ec4899`, blur 38px, spread 12px, pulse 0.9s, 24 particles.
+  - **God / Master / Signed SP (MR or Signed SP finish):** `#ffd700`, secondary `#06b6d4`, blur 52px, spread 20px, pulse 0.5s, 48 particles (with chromatic dispersion).
+
 ---
 
 ## 🏗️ Project Architecture
@@ -492,20 +513,24 @@ tqqtcg/
 │   │   ├── examQuestions.ts     # Subject exam questions catalog, formulas, and examiner taunts
 │   │   ├── patchNotes.ts        # Active single-release patch notes configuration & re-exports
 │   │   ├── supportBuffs.ts      # Support buff dictionary, Grade 9/10 scaling, & active buff resolver
+│   │   ├── suspenseProfiles.ts  # Volumetric suspense edge-glow profiles & particle configurations
 │   │   └── version.ts           # Semantic APP_VERSION and CURRENT_PATCH_NOTE contract
 │   ├── hooks/
 │   │   ├── useIdleRevenue.ts    # Background-safe idle yield calculator with 12h offline cap
 │   │   └── useSmoothTilt.ts     # Overdamped 3D spring tilt hook with dynamic lighting
 │   ├── store/
-│   │   ├── useBattleStore.ts    # Battle store managing deck construction, combat turns & round flow
-│   │   └── useGameStore.ts      # Persistent Zustand store (currencies, inventory, showcase, dex, stats)
+│   │   ├── useBattleStore.ts        # Battle store managing deck construction, combat turns & round flow
+│   │   ├── useGameStore.ts          # Persistent Zustand store (currencies, inventory, showcase, dex, stats)
+│   │   └── usePackCeremonyStore.ts  # 3D Pack Opening Ceremony state machine (Zustand)
 │   ├── types/
 │   │   ├── battle.ts            # Battle interfaces (SubjectType, BattleStats, Examiner, BattleDeck)
-│   │   └── card.ts              # Strict TypeScript interfaces, enums, and types
+│   │   ├── card.ts              # Strict TypeScript interfaces, enums, and types
+│   │   └── packCeremony.ts      # Ceremony phase, finish tiers, shader uniforms & session models
 │   └── utils/
 │       ├── audio.ts             # Native Web Audio API procedural synthesis engine (6 combat SFX)
 │       ├── audioEngine.ts       # Sound synthesizer client instance with coin & receipt pulses
 │       ├── battleEngine.ts      # 3-phase combat turn execution engine (Pressure, Action, Resolution)
+│       ├── shaderMath.ts        # Dynamic holographic refraction, specular hotspot & tear mathematics
 │       └── tqqAssetResolver.ts  # Deterministic case mapper & self-healing legacy path migrator
 ├── package.json
 ├── tsconfig.json

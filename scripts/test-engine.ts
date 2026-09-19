@@ -67,6 +67,36 @@ import { SISTER_ARTS_TEMPLATES, generateArtsCard } from '../src/config/artsCards
 import { useBattleStore } from '../src/store/useBattleStore';
 import { EXAM_QUESTIONS, getExamQuestion } from '../src/config/examQuestions';
 import type { BattleState, ArtsCard, CombatState } from '../src/types/battle';
+import type {
+  PackOpeningPhase,
+  CardFinishTier,
+  CardShaderUniforms,
+  SuspenseTier,
+  EdgeGlowProfile,
+  PackOpeningSession,
+} from '../src/types/packCeremony';
+import {
+  clamp,
+  calculateHolographicAngle,
+  calculateSpecularX,
+  calculateSpecularY,
+  calculateSpecularHotspot,
+  calculateGlareIntensity,
+  calculateTearProgress,
+  calculateTearProgressFromPointer,
+  isTearBreached,
+  TEAR_BREACH_THRESHOLD,
+  calculateCardShaderUniforms,
+  DEFAULT_CARD_SHADER_UNIFORMS,
+} from '../src/utils/shaderMath';
+import {
+  SUSPENSE_PROFILES,
+  mapFinishToCardFinishTier,
+  resolveSuspenseTier,
+  resolveSuspenseProfile,
+  resolveCardSuspenseProfile,
+} from '../src/config/suspenseProfiles';
+import { usePackCeremonyStore } from '../src/store/usePackCeremonyStore';
 
 function assert(condition: boolean, message: string): void {
   if (!condition) {
@@ -1860,6 +1890,205 @@ async function runTests() {
   console.log('✅ Examiner Counter-Pressure attack with active shield completely absorbed (0 damage).');
 
   battleStore.resetBattle();
+
+  // ==========================================
+  // SECTION 16: 3D PACK OPENING CEREMONY ARCHITECTURE & STATE MACHINE (v2.6.0)
+  // ==========================================
+  testSection('16. 3D Pack Opening Ceremony: Shader Math, Suspense Profiles & State Machine');
+
+  // 1. Mathematical Utility Functions & Bounds Checking (shaderMath.ts)
+  assert(clamp(5, 0, 10) === 5, 'clamp within bounds');
+  assert(clamp(-5, 0, 10) === 0, 'clamp lower bound');
+  assert(clamp(15, 0, 10) === 10, 'clamp upper bound');
+
+  // Holographic dynamic refraction angle H(θx, θy)
+  const angleRight = calculateHolographicAngle(1, 0);
+  assert(Math.abs(angleRight - 0) < 1e-6, `Angle (1, 0) is 0° (got ${angleRight})`);
+  const angleUp = calculateHolographicAngle(0, 1);
+  assert(Math.abs(angleUp - 90) < 1e-6, `Angle (0, 1) is 90° (got ${angleUp})`);
+  const angleLeft = calculateHolographicAngle(-1, 0);
+  assert(Math.abs(angleLeft - 180) < 1e-6, `Angle (-1, 0) is 180° (got ${angleLeft})`);
+  const angleDown = calculateHolographicAngle(0, -1);
+  assert(Math.abs(angleDown - 270) < 1e-6, `Angle (0, -1) is 270° (got ${angleDown})`);
+  const angleDiag = calculateHolographicAngle(1, 1);
+  assert(Math.abs(angleDiag - 45) < 1e-6, `Angle (1, 1) is 45° (got ${angleDiag})`);
+
+  // Specular hotspot projection Sx(θx) & Sy(θy)
+  assert(calculateSpecularX(0) === 50, 'Specular X at neutral tilt (0) is 50%');
+  assert(calculateSpecularY(0) === 50, 'Specular Y at neutral tilt (0) is 50%');
+  assert(calculateSpecularX(1.0) === 90, 'Specular X at max positive tilt (1.0) is 90%');
+  assert(calculateSpecularX(-1.0) === 10, 'Specular X at max negative tilt (-1.0) is 10%');
+  assert(calculateSpecularX(2.0) === 100, 'Specular X clamps to 100% at tilt > 1.25');
+  assert(calculateSpecularX(-2.0) === 0, 'Specular X clamps to 0% at tilt < -1.25');
+  const hotspot = calculateSpecularHotspot(0.5, -0.5);
+  assert(hotspot.x === 70 && hotspot.y === 30, 'calculateSpecularHotspot computes { x: 70, y: 30 } for (0.5, -0.5)');
+
+  // Glare intensity envelope G(θx, θy)
+  assert(calculateGlareIntensity(0, 0) === 0, 'Glare intensity at rest (0, 0) is 0.0');
+  assert(calculateGlareIntensity(1, 0) === 0.75, 'Glare intensity at unit horizontal vector is 0.75');
+  assert(calculateGlareIntensity(1, 1) === 1.0, 'Glare intensity at (1, 1) is clamped to 1.0');
+
+  // Tear progress clamp & breach threshold
+  assert(TEAR_BREACH_THRESHOLD === 0.82, 'Strict breach threshold is 0.82');
+  const packWidth = 320; // 320px * 0.85 = 272px denominator
+  assert(calculateTearProgress(0, packWidth) === 0, 'Tear progress is 0.0 at deltaX = 0');
+  assert(calculateTearProgress(136, packWidth) === 0.5, 'Tear progress is 0.5 at midpoint (136px)');
+  assert(calculateTearProgress(272, packWidth) === 1.0, 'Tear progress is 1.0 at 272px');
+  assert(calculateTearProgress(400, packWidth) === 1.0, 'Tear progress clamps to 1.0 beyond denominator');
+  assert(calculateTearProgress(-20, packWidth) === 0.0, 'Tear progress clamps to 0.0 for negative deltaX');
+
+  assert(calculateTearProgressFromPointer(236, 100, packWidth) === 0.5, 'calculateTearProgressFromPointer correctly evaluates deltaX');
+  assert(isTearBreached(0.819) === false, '0.819 progress is not breached');
+  assert(isTearBreached(0.82) === true, '0.82 progress triggers breach');
+  assert(isTearBreached(0.95) === true, '0.95 progress triggers breach');
+
+  // Combined CardShaderUniforms aggregation
+  const uniforms = calculateCardShaderUniforms(0.5, 0.5);
+  assert(uniforms.tiltX === 0.5, 'Uniform tiltX matches');
+  assert(uniforms.tiltY === 0.5, 'Uniform tiltY matches');
+  assert(uniforms.specularX === 70, 'Uniform specularX matches');
+  assert(uniforms.specularY === 70, 'Uniform specularY matches');
+  assert(Math.abs(uniforms.holographicAngle - 45) < 1e-6, 'Uniform holographicAngle matches');
+  console.log('✅ Mathematical uniform & angle calculations verified.');
+
+  // 2. Suspense Profile Deterministic Resolvers (suspenseProfiles.ts)
+  assert(SUSPENSE_PROFILES.standard.colorHex === '#ffffff15', 'Standard profile colorHex verified');
+  assert(SUSPENSE_PROFILES.standard.spreadPx === 2, 'Standard profile spreadPx verified');
+  assert(SUSPENSE_PROFILES.standard.particleCount === 0, 'Standard profile particleCount is 0');
+
+  assert(SUSPENSE_PROFILES.rare.colorHex === '#8b5cf6', 'Rare profile colorHex verified');
+  assert(SUSPENSE_PROFILES.rare.secondaryHex === '#3b82f6', 'Rare profile secondaryHex verified');
+  assert(SUSPENSE_PROFILES.rare.particleCount === 8, 'Rare profile particleCount is 8');
+
+  assert(SUSPENSE_PROFILES.ultra.colorHex === '#f59e0b', 'Ultra profile colorHex verified');
+  assert(SUSPENSE_PROFILES.ultra.secondaryHex === '#ec4899', 'Ultra profile secondaryHex verified');
+  assert(SUSPENSE_PROFILES.ultra.particleCount === 24, 'Ultra profile particleCount is 24');
+
+  assert(SUSPENSE_PROFILES.god.colorHex === '#ffd700', 'God profile colorHex verified');
+  assert(SUSPENSE_PROFILES.god.secondaryHex === '#06b6d4', 'God profile secondaryHex verified');
+  assert(SUSPENSE_PROFILES.god.particleCount === 48, 'God profile particleCount is 48');
+
+  // Finish tier mapping
+  assert(mapFinishToCardFinishTier('signed') === 'signed_sp', 'signed maps to signed_sp');
+  assert(mapFinishToCardFinishTier('signed_sp') === 'signed_sp', 'signed_sp preserved');
+  assert(mapFinishToCardFinishTier('gold_etched') === 'gold_etched', 'gold_etched preserved');
+  assert(mapFinishToCardFinishTier('rainbow') === 'rainbow', 'rainbow preserved');
+  assert(mapFinishToCardFinishTier('sparkle') === 'sparkle', 'sparkle preserved');
+  assert(mapFinishToCardFinishTier('holo') === 'holo', 'holo preserved');
+  assert(mapFinishToCardFinishTier('raw') === 'raw', 'raw preserved');
+
+  // Rarity & finish tier resolution
+  assert(resolveSuspenseTier('C', 'raw') === 'standard', 'C + raw -> standard');
+  assert(resolveSuspenseTier('UC', 'raw') === 'standard', 'UC + raw -> standard');
+  assert(resolveSuspenseTier('R', 'raw') === 'rare', 'R + raw -> rare');
+  assert(resolveSuspenseTier('SR', 'raw') === 'rare', 'SR + raw -> rare');
+  assert(resolveSuspenseTier('C', 'holo') === 'rare', 'C + holo -> rare');
+  assert(resolveSuspenseTier('C', 'sparkle') === 'rare', 'C + sparkle -> rare');
+  assert(resolveSuspenseTier('UR', 'raw') === 'ultra', 'UR + raw -> ultra');
+  assert(resolveSuspenseTier('SEC', 'raw') === 'ultra', 'SEC + raw -> ultra');
+  assert(resolveSuspenseTier('C', 'rainbow') === 'ultra', 'C + rainbow -> ultra');
+  assert(resolveSuspenseTier('C', 'gold_etched') === 'ultra', 'C + gold_etched -> ultra');
+  assert(resolveSuspenseTier('MR', 'raw') === 'god', 'MR + raw -> god');
+  assert(resolveSuspenseTier('C', 'signed') === 'god', 'C + signed -> god');
+  assert(resolveSuspenseTier('C', 'signed_sp') === 'god', 'C + signed_sp -> god');
+
+  const godProfile = resolveSuspenseProfile('MR', 'raw');
+  assert(godProfile.suspenseTier === 'god', 'resolveSuspenseProfile returns god profile');
+  console.log('✅ Rarity-to-Suspense edge-glow profiles and resolver hierarchy verified.');
+
+  // 3. Pack Ceremony State Machine Full Lifecycle (usePackCeremonyStore.ts)
+  const ceremonyStore = usePackCeremonyStore.getState();
+  ceremonyStore.resetCeremony();
+
+  assert(usePackCeremonyStore.getState().phase === 'IDLE', 'Initial phase is IDLE');
+  assert(usePackCeremonyStore.getState().currentSession === null, 'Initial session is null');
+  assert(usePackCeremonyStore.getState().tearProgress === 0, 'Initial tear progress is 0');
+  assert(usePackCeremonyStore.getState().isBreached === false, 'Initial isBreached is false');
+
+  // Test error validation on empty batch
+  let threwEmpty = false;
+  try {
+    usePackCeremonyStore.getState().initCeremony('kiosk', []);
+  } catch (err) {
+    threwEmpty = true;
+  }
+  assert(threwEmpty, 'initCeremony threw error on empty card batch');
+
+  // Prepare test pulled cards
+  const mockCards: CardInstance[] = [
+    { id: 'card-1', cardDefId: 'nakano_ichika_c_01', characterId: 'ichika', rarity: 'C', finish: 'raw', obtainedAt: Date.now() },
+    { id: 'card-2', cardDefId: 'nakano_nino_uc_01', characterId: 'nino', rarity: 'UC', finish: 'holo', obtainedAt: Date.now() },
+    { id: 'card-3', cardDefId: 'nakano_miku_r_01', characterId: 'miku', rarity: 'R', finish: 'sparkle', obtainedAt: Date.now() },
+    { id: 'card-4', cardDefId: 'nakano_yotsuba_sr_01', characterId: 'yotsuba', rarity: 'SR', finish: 'rainbow', obtainedAt: Date.now() },
+    { id: 'card-5', cardDefId: 'nakano_itsuki_ur_01', characterId: 'itsuki', rarity: 'UR', finish: 'signed', obtainedAt: Date.now() },
+  ];
+
+  // Initialize ceremony
+  usePackCeremonyStore.getState().initCeremony('kiosk', mockCards);
+  const sessionAfterInit = usePackCeremonyStore.getState().currentSession;
+  assert(sessionAfterInit !== null, 'Session initialized');
+  if (!sessionAfterInit) throw new Error('Session is null');
+  assert(usePackCeremonyStore.getState().phase === 'INSPECTING_PACK', 'Phase transitioned to INSPECTING_PACK');
+  assert(sessionAfterInit.highestRarityFound === 'UR', 'Evaluated highestRarityFound as UR');
+  assert(sessionAfterInit.highestFinishFound === 'signed_sp', 'Evaluated highestFinishFound as signed_sp');
+  assert(sessionAfterInit.cards.length === 5, 'Session holds 5 cards');
+  assert(sessionAfterInit.currentCardIndex === 0, 'Current card index is 0');
+  assert(sessionAfterInit.revealedIndices.length === 0, 'Revealed indices is empty');
+
+  // Update tear (partial progress < 0.82)
+  usePackCeremonyStore.getState().updateTear(100, 320); // 100 / (320 * 0.85) = ~0.367
+  assert(usePackCeremonyStore.getState().phase === 'TEARING_CRIMP', 'Phase transitioned to TEARING_CRIMP');
+  assert(usePackCeremonyStore.getState().tearProgress > 0.3 && usePackCeremonyStore.getState().tearProgress < 0.4, 'Tear progress updated');
+  assert(usePackCeremonyStore.getState().isBreached === false, 'Not breached below 0.82');
+
+  // Update tear past breach threshold (>= 0.82)
+  usePackCeremonyStore.getState().updateTear(230, 320); // 230 / 272 = ~0.845 >= 0.82
+  assert(usePackCeremonyStore.getState().isBreached === true, 'Breached when progress >= 0.82');
+  assert(usePackCeremonyStore.getState().tearProgress === 1.0, 'Tear progress locked to 1.0 upon breach');
+  assert(usePackCeremonyStore.getState().phase === 'EXTRACTING_CARDS', 'Phase transitioned to EXTRACTING_CARDS');
+
+  // Complete card extraction
+  usePackCeremonyStore.getState().extractCardsComplete();
+  assert(usePackCeremonyStore.getState().phase === 'PEELING_REVEAL', 'Phase transitioned to PEELING_REVEAL');
+
+  // Peel cards one by one
+  for (let i = 0; i < 4; i++) {
+    const activeIndex = usePackCeremonyStore.getState().currentSession?.currentCardIndex;
+    assert(activeIndex === i, `Active card index is ${i} before peel`);
+    usePackCeremonyStore.getState().peelCurrentCard();
+    assert(usePackCeremonyStore.getState().phase === 'PEELING_REVEAL', 'Phase remains PEELING_REVEAL before last card');
+    assert(usePackCeremonyStore.getState().currentSession?.revealedIndices.includes(i) === true, `Card ${i} marked revealed`);
+  }
+
+  // Peel 5th (final) card -> should transition to CEREMONY_SUMMARY
+  assert(usePackCeremonyStore.getState().currentSession?.currentCardIndex === 4, 'Active card index is 4 (final card)');
+  usePackCeremonyStore.getState().peelCurrentCard();
+  assert(usePackCeremonyStore.getState().phase === 'CEREMONY_SUMMARY', 'Phase transitioned to CEREMONY_SUMMARY after 5th card');
+  assert(usePackCeremonyStore.getState().currentSession?.revealedIndices.length === 5, 'All 5 cards marked revealed');
+
+  // Tilt uniform updates
+  usePackCeremonyStore.getState().setTilt(0.6, -0.4);
+  const updatedUniforms = usePackCeremonyStore.getState().activeShaderUniforms;
+  assert(updatedUniforms.tiltX === 0.6, 'TiltX set to 0.6');
+  assert(updatedUniforms.tiltY === -0.4, 'TiltY set to -0.4');
+  assert(updatedUniforms.specularX === 74, 'SpecularX calculated as 74%');
+  assert(updatedUniforms.specularY === 34, 'SpecularY calculated as 34%');
+
+  // Test skipCeremony action on fresh session
+  usePackCeremonyStore.getState().initCeremony('kiosk', mockCards);
+  assert(usePackCeremonyStore.getState().phase === 'INSPECTING_PACK', 'New ceremony initialized');
+  usePackCeremonyStore.getState().skipCeremony();
+  assert(usePackCeremonyStore.getState().phase === 'CEREMONY_SUMMARY', 'skipCeremony immediately moved to CEREMONY_SUMMARY');
+  assert(usePackCeremonyStore.getState().isBreached === true, 'skipCeremony marked isBreached = true');
+  assert(usePackCeremonyStore.getState().currentSession?.revealedIndices.length === 5, 'skipCeremony revealed all cards');
+
+  // Reset ceremony
+  usePackCeremonyStore.getState().resetCeremony();
+  assert(usePackCeremonyStore.getState().phase === 'IDLE', 'resetCeremony wiped phase back to IDLE');
+  assert(usePackCeremonyStore.getState().currentSession === null, 'resetCeremony wiped currentSession to null');
+  assert(usePackCeremonyStore.getState().tearProgress === 0, 'resetCeremony reset tearProgress to 0');
+  assert(usePackCeremonyStore.getState().isBreached === false, 'resetCeremony reset isBreached to false');
+  console.log('✅ usePackCeremonyStore lifecycle and atomic actions verified.');
 
   testSection('🎉 ALL TESTS PASSED SUCCESSFULLY! 100% SPEC COMPLIANCE.');
 }
