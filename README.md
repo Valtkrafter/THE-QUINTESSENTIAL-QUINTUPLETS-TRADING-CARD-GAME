@@ -2,6 +2,7 @@
 
 <div align="center">
 
+![Version 3.0.0](https://img.shields.io/badge/Version-3.0.0-amber?style=for-the-badge)
 ![Next.js 15](https://img.shields.io/badge/Next.js-15.2.1-black?style=for-the-badge&logo=next.js)
 ![React 19](https://img.shields.io/badge/React-19.0.0-61DAFB?style=for-the-badge&logo=react)
 ![TypeScript 5.7](https://img.shields.io/badge/TypeScript-5.7.3-3178C6?style=for-the-badge&logo=typescript)
@@ -486,6 +487,33 @@ The ultimate collectible card visual renderer (`RealisticCardRenderer.tsx`), rep
   4. `startSuspenseHum(suspenseTier)`: Dual sine oscillators ($55\text{Hz}$ root + $110\text{Hz}$ overtone) run through a subtle chorus filter (18ms delay modulated by 1.5Hz LFO). Frequency glides smoothly upward as the card is dragged toward reveal. Returns a controller with `updatePitch(progress)` and `stop()`.
   5. `playSignedFanfare()`: Pristine 5-bell chime arpeggio (C6: $1046.5\text{Hz}$, E6: $1318.5\text{Hz}$, G6: $1567.9\text{Hz}$, B6: $1975.5\text{Hz}$, E7: $2637.0\text{Hz}$) with stereo panning ($-0.6 \to +0.6$) and $2.2\text{s}$ exponential concert hall reverb decay.
 
+### 12. Master Ceremony Orchestration Modal, Ergonomic Arc/Fan Summary & Monte Carlo Harness (v3.0.0 Phase 1 - Stage 5)
+
+- **Master Unboxing Modal (`PackOpeningModal.tsx`):**
+  - Fullscreen immersive portal overlay (`bg-[#06070a]/95 backdrop-blur-2xl`) strictly governed by `usePackCeremonyStore` across 6 physical phases:
+    $$\text{IDLE} \longrightarrow \text{INSPECTING\_PACK} \longrightarrow \text{TEARING\_CRIMP} \longrightarrow \text{EXTRACTING\_CARDS} \longrightarrow \text{PEELING\_REVEAL} \longrightarrow \text{CEREMONY\_SUMMARY}$$
+  - Dynamic top header displaying live $\yen$ Yen and ★ Stardust balances, centered pack title, procedural audio mute toggle, and close controls.
+  - Screen shake impact animation ($160\text{ms}$ duration) triggered upon perforation breach.
+- **Smooth Card Extraction Animation (`EXTRACTING_CARDS`):**
+  - Severed top foil crimp detaches and floats upwards (`y: -160, rotateZ: -12deg, opacity: 0`).
+  - 5-card face-down stack with luxury `TqqCardBack` artwork smoothly rises out of the severed bottom pouch (`y: [120, -30]`, 1.1s cubic-bezier ease), accompanied by procedural card sleeve friction acoustics (`playCardSlideDeck()`) and character/pack aura rays.
+- **Ergonomic Arc/Fan Summary Presentation (`PackSummaryGrid.tsx`):**
+  - **Desktop:** Displays all 5 revealed cards arranged in an ergonomic curved arc/fan (`rotateZ: [-10deg, -5deg, 0deg, 5deg, 10deg]`, `y: [16px, 4px, 0px, 4px, 16px]`, `x: [-20px, -10px, 0px, 10px, 20px]`). Features smooth spring hover elevation (`y: -24px, scale: 1.06, zIndex: 40`) with tier-specific glowing borders.
+  - **Mobile:** Horizontal smooth-scrolling snap row (`snap-x snap-mandatory flex gap-4 px-4 scrollbar-thin-dark`) optimized for one-hand touch swiping.
+- **Dynamic Per-Card Badging & 3D Shader Inspection Modal:**
+  - `NEW` animated badge: Pulsing golden badge (`from-amber-400 to-yellow-300`) dynamically displayed for any card definition not previously discovered in the Master Card-Dex.
+  - Tier-specific glowing borders: Ambient colored edge glow matching surface finish (Amber for Signed SP, Gold for Gold-Etched, Pink for Rainbow, Purple for Sparkle, Sky for Holo).
+  - One-Click "Inspect 3D": Opens an interactive 3D shader inspection modal rendering `RealisticCardRenderer` in high resolution with real-time mouse pointer/gyroscope tilt, procedural micro-etched relief maps, rainbow conic gradients, and voice actress gold signature stamps.
+- **Bottom Action Command Bar:**
+  - **Quick Dust Duplicates (♻️):** One-click button vaporizing duplicate non-rare (Common/Uncommon) cards directly into Stardust with procedural Web Audio chimes and live toast feedback.
+  - **Open Another (🎴):** Re-rolls a new booster batch immediately, smoothly resetting the ceremony state machine to Frame 0 without modal unmounting micro-stutters.
+  - **Done / View Binder (📖):** Closes ceremony modal and returns to the collection.
+- **1,000-Iteration Monte Carlo Pack Ceremony Test Suite (`scripts/test-pack-ceremony.ts`):**
+  - Automates 1,000 simulated unboxings validating strict state machine transitions.
+  - Confirms tear breach threshold is mathematically locked at $0.82 \pm 0.001$.
+  - Asserts zero memory leaks (Web Audio context nodes disconnect cleanly via `onended` handlers, pointer listeners unbind on unmount).
+  - Verifies that cards with `signed_sp` finish or `MR` rarity always receive the `god` suspense profile with celestial gold halo (`#ffd700`) and 48 particles.
+
 ---
 
 ## 🏗️ Project Architecture
@@ -511,6 +539,7 @@ tqqtcg/
 ├── scripts/
 │   ├── test-battle-engine.ts    # 1,000-match Monte Carlo battle audit verifying win rates & invariants
 │   ├── test-engine.ts           # Comprehensive test suite (19 sections covering all game systems)
+│   ├── test-pack-ceremony.ts    # 1,000-iteration Monte Carlo pack opening ceremony audit
 │   └── verify-tqq-assets.ts     # Strict Linux/Vercel case-sensitivity & asset taxonomy audit
 ├── src/
 │   ├── app/
@@ -551,6 +580,7 @@ tqqtcg/
 │   │   │   ├── BoosterPack3D.tsx    # 3D dual-sided foil booster with 360° gimbal & authentic Japanese back
 │   │   │   ├── FoilTearCrimp.tsx    # Vector laser perforation tear crimp with jagged SVG foil physics
 │   │   │   ├── PackOpeningModal.tsx # Ceremony modal: tear, suspense, peel & summary
+│   │   │   ├── PackSummaryGrid.tsx  # Post-opening 5-card arc/fan summary presentation & quick actions
 │   │   │   ├── SelectBoosterModal.tsx # Portal-mounted pack kiosk with live drop odds & kiosk tab
 │   │   │   ├── SuspenseCardStack.tsx # Face-down 3D stack with predictive edge-glow & swipe-to-peel
 │   │   │   └── TearMechanism.tsx    # Direct HTML5 window pointer tear engine
@@ -641,11 +671,14 @@ tqqtcg/
 
 ## 🧪 Verification & Testing
 
-The repository contains an automated Monte Carlo test suite (`scripts/test-engine.ts`) across 19 complete sections as well as the specialized 1,000-match combat audit (`scripts/test-battle-engine.ts`):
+The repository contains an automated Monte Carlo test suite (`scripts/test-engine.ts`) across 19 complete sections as well as the specialized 1,000-match combat audit (`scripts/test-battle-engine.ts`) and the 1,000-iteration pack ceremony audit (`scripts/test-pack-ceremony.ts`):
 
 ```bash
-# Run the complete test suite (Sections 1 through 19 + 1,000-match Monte Carlo combat audit)
+# Run the complete test suite (19 core sections + 1,000-match battle audit + 1,000-iteration ceremony audit)
 npm test
+
+# Run only the 1,000-iteration Monte Carlo pack opening ceremony audit
+npm run test:ceremony
 
 # Run only the 1,000-match Exam Showdown Monte Carlo combat audit
 npm run test:battle

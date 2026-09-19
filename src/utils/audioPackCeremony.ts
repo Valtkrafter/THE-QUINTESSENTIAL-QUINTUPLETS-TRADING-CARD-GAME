@@ -115,6 +115,16 @@ export class PackCeremonyAudioEngine {
       filter.connect(gain);
       gain.connect(ctx.destination);
 
+      noiseSource.onended = () => {
+        try {
+          noiseSource.disconnect();
+          filter.disconnect();
+          gain.disconnect();
+        } catch {
+          // Guard for detached audio nodes
+        }
+      };
+
       noiseSource.start(ctx.currentTime);
       noiseSource.stop(ctx.currentTime + duration + 0.01);
     } catch {
@@ -179,6 +189,17 @@ export class PackCeremonyAudioEngine {
       filter.connect(mainGain);
       mainGain.connect(ctx.destination);
 
+      crackleSource.onended = () => {
+        try {
+          osc.disconnect();
+          crackleSource.disconnect();
+          filter.disconnect();
+          mainGain.disconnect();
+        } catch {
+          // Guard for detached audio nodes
+        }
+      };
+
       osc.start(now);
       crackleSource.start(now);
       osc.stop(now + duration + 0.01);
@@ -227,6 +248,16 @@ export class PackCeremonyAudioEngine {
       noiseSource.connect(filter);
       filter.connect(gain);
       gain.connect(ctx.destination);
+
+      noiseSource.onended = () => {
+        try {
+          noiseSource.disconnect();
+          filter.disconnect();
+          gain.disconnect();
+        } catch {
+          // Guard for detached audio nodes
+        }
+      };
 
       noiseSource.start(ctx.currentTime);
       noiseSource.stop(ctx.currentTime + duration + 0.01);
@@ -455,6 +486,18 @@ export class PackCeremonyAudioEngine {
 
         oscFund.stop(noteStart + decayDuration + 0.05);
         oscOvertone.stop(noteStart + decayDuration + 0.05);
+
+        oscFund.onended = () => {
+          try {
+            oscFund.disconnect();
+            oscOvertone.disconnect();
+            overtoneGain.disconnect();
+            noteGain.disconnect();
+            if (pannerNode) pannerNode.disconnect();
+          } catch {
+            // Guard for detached audio nodes
+          }
+        };
       });
     } catch {
       // Fanfare fallback
