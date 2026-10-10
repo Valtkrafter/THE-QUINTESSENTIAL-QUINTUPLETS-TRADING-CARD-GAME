@@ -1,0 +1,122 @@
+.pack {
+  --a: #7e93ff;
+  --b: #b78cff;
+  --c: #ff9bc4;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 150px;
+  aspect-ratio: 3 / 4.5;
+  filter: drop-shadow(0 18px 24px rgba(4, 6, 14, 0.55));
+  transform: rotate(-3deg);
+  transition: transform var(--medium) var(--ease);
+}
+
+.pack:hover {
+  transform: rotate(0deg) translateY(-4px);
+}
+
+.halloween {
+  --a: #ff9a4a;
+  --b: #b24cc8;
+  --c: #3b2a78;
+}
+
+.body {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  overflow: hidden;
+  background:
+    radial-gradient(90% 60% at 30% 10%, rgba(255, 255, 255, 0.5), transparent 60%),
+    linear-gradient(160deg, var(--a), var(--b) 55%, var(--c));
+  color: #fff;
+  text-align: center;
+  text-shadow: 0 1px 8px rgba(20, 10, 50, 0.45);
+}
+
+.crimpTop,
+.crimpBottom {
+  height: 9px;
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.55) 0 3px, rgba(120, 130, 190, 0.65) 3px 6px),
+    var(--b);
+}
+
+.crimpTop {
+  border-radius: 4px 4px 0 0;
+}
+
+.crimpBottom {
+  border-radius: 0 0 4px 4px;
+}
+
+.hearts {
+  display: flex;
+  gap: 5px;
+  margin-bottom: 4px;
+}
+
+.hearts i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--heart);
+  box-shadow: 0 0 8px var(--heart);
+  animation: twinkle 2.6s ease-in-out infinite;
+  animation-delay: calc(var(--i) * 0.28s);
+}
+
+@keyframes twinkle {
+  50% {
+    transform: scale(1.35);
+    opacity: 0.75;
+  }
+}
+
+.top {
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+}
+
+.bottom {
+  font-size: var(--text-xs);
+  font-weight: 650;
+  letter-spacing: 0.34em;
+  opacity: 0.9;
+}
+
+.moon {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #fff6d8, #ffd77a);
+  box-shadow: 0 0 22px rgba(255, 220, 130, 0.7);
+}
+
+.shine {
+  position: absolute;
+  inset: -20% auto -20% -60%;
+  width: 45%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+  transform: skewX(-18deg);
+  animation: sweep 4.2s ease-in-out infinite;
+}
+
+@keyframes sweep {
+  0%,
+  55% {
+    left: -60%;
+  }
+  100% {
+    left: 130%;
+  }
+}

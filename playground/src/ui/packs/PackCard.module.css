@@ -1,0 +1,151 @@
+.card {
+  display: grid;
+  grid-template-columns: 190px minmax(0, 1fr);
+  gap: var(--space-5);
+  align-items: start;
+  padding: var(--space-5);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background:
+    radial-gradient(80% 60% at 0% 0%, rgba(150, 168, 255, 0.12), transparent 70%),
+    var(--surface);
+}
+
+.banner {
+  border-color: color-mix(in oklab, var(--horizon) 40%, transparent);
+  background:
+    radial-gradient(80% 70% at 0% 0%, rgba(255, 154, 74, 0.16), transparent 70%),
+    radial-gradient(70% 60% at 100% 100%, rgba(178, 76, 200, 0.14), transparent 70%),
+    var(--surface);
+}
+
+.art {
+  display: grid;
+  place-items: center;
+  padding-top: var(--space-3);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.body h2 {
+  font-size: var(--text-xl);
+}
+
+.blurb {
+  color: var(--text-soft);
+  font-size: var(--text-sm);
+  line-height: 1.55;
+}
+
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  color: var(--text-soft);
+  font-size: var(--text-sm);
+}
+
+.badge {
+  padding: 2px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--horizon);
+  color: #2a1612;
+  font-size: var(--text-xs);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.mains {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.mainsTitle {
+  color: var(--text-faint);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.mains ul {
+  display: flex;
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mains li {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 92px;
+  font-size: var(--text-xs);
+}
+
+.mainName {
+  font-weight: 600;
+  font-size: var(--text-sm);
+}
+
+.owned {
+  color: var(--ok);
+}
+
+.missing {
+  color: var(--horizon);
+  font-weight: 650;
+}
+
+.rule {
+  color: var(--text-soft);
+  font-size: var(--text-sm);
+}
+
+.meters {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--line);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}
+
+.missingYen {
+  color: var(--warn);
+  font-size: var(--text-sm);
+}
+
+.odds {
+  align-self: flex-start;
+  color: var(--accent);
+  font-size: var(--text-sm);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+@media (max-width: 640px) {
+  .card {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .art {
+    padding-top: 0;
+  }
+}

@@ -33,6 +33,9 @@ export default function BinderScreen() {
         <PageHeader title={text.binder.title} />
         <EmptyState title={text.binder.emptyTitle}>
           <p>{text.binder.emptyBody}</p>
+          <p>
+            <Link href="/packs">{text.binder.emptyAction}</Link>
+          </p>
           {import.meta.env.DEV && (
             <p>
               {text.binder.emptyDev} <Link href="/settings">{text.binder.emptyDevAction}</Link>

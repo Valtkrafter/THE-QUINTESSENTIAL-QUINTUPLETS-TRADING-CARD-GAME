@@ -9,6 +9,9 @@ import { FRAME_STYLE_IDS } from '../cards/frameStyle';
 export const GRAPHICS_LEVELS = ['high', 'normal', 'low'] as const;
 export type GraphicsLevel = (typeof GRAPHICS_LEVELS)[number];
 
+export const PULL_ANIMATIONS = ['full', 'short', 'off'] as const;
+export type PullAnimation = (typeof PULL_ANIMATIONS)[number];
+
 export const preferencesSchema = z.strictObject({
   version: z.literal(1),
   /** Frame design of every card face. */
@@ -17,10 +20,23 @@ export const preferencesSchema = z.strictObject({
   graphics: z.enum(GRAPHICS_LEVELS),
   /** The slow sway of a card that nobody touches. */
   idleMotion: z.boolean(),
+  /** How much show a pack opening gets: all of it, a short version, or none. */
+  pullAnimation: z.enum(PULL_ANIMATIONS).default('full'),
+  /** Sound volume from 0 to 1. */
+  volume: z.number().min(0).max(1).default(0.8),
+  muted: z.boolean().default(false),
 });
 export type Preferences = z.infer<typeof preferencesSchema>;
 
-export const DEFAULT_PREFERENCES: Preferences = { version: 1, frameStyle: 'classic', graphics: 'high', idleMotion: true };
+export const DEFAULT_PREFERENCES: Preferences = {
+  version: 1,
+  frameStyle: 'classic',
+  graphics: 'high',
+  idleMotion: true,
+  pullAnimation: 'full',
+  volume: 0.8,
+  muted: false,
+};
 
 /** Largest pixel ratio the 3D card is drawn at, per graphics level. */
 export const MAX_PIXEL_RATIO: Readonly<Record<GraphicsLevel, number>> = { high: 2, normal: 1.5, low: 1 };

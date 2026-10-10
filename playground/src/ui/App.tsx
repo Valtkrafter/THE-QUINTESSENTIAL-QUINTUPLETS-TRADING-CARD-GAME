@@ -7,6 +7,8 @@ import { ArrowLeftIcon } from './components/icons';
 import BinderScreen from './binder/BinderScreen';
 import DamagedScreen from './DamagedScreen';
 import DexScreen from './dex/DexScreen';
+import OddsScreen from './packs/OddsScreen';
+import PacksScreen from './packs/PacksScreen';
 import { AppShell } from './shell/AppShell';
 import SettingsScreen from './settings/SettingsScreen';
 import ShowcaseScreen from './showcase/ShowcaseScreen';
@@ -41,6 +43,8 @@ function Game() {
       <Suspense fallback={<Splash />}>
         <Switch>
           <Route path="/" component={BinderScreen} />
+          <Route path="/packs" component={PacksScreen} />
+          <Route path="/packs/odds" component={OddsScreen} />
           <Route path="/dex" component={DexScreen} />
           <Route path="/showcase" component={ShowcaseScreen} />
           <Route path="/settings" component={SettingsScreen} />

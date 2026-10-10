@@ -19,6 +19,7 @@ const RULES: readonly { readonly folder: string; readonly forbidden: readonly st
   { folder: 'cardface', forbidden: ['ui', 'scene'] },
   { folder: 'holo', forbidden: ['ui', 'scene'] },
   { folder: 'scene', forbidden: ['ui'] },
+  { folder: 'audio', forbidden: ['ui', 'scene', 'holo', 'cardface', 'state'] },
 ];
 
 /** The layers that hold game rules: they must stay deterministic. */

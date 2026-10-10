@@ -118,3 +118,24 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+.slider {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: min(420px, 100%);
+  color: var(--text-soft);
+  font-size: var(--text-sm);
+}
+
+.slider input {
+  flex: 1;
+  accent-color: var(--accent);
+}
+
+.slider output {
+  min-width: 3.5em;
+  text-align: right;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}

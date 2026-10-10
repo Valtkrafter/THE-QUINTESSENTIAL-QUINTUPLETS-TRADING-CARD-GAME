@@ -3,7 +3,7 @@ import { Link, useLocation } from 'wouter';
 import { buildDex, dexProgress } from '../../domain/collection';
 import { useGame, useSave } from '../../state/app';
 import { ProgressBar } from '../components/controls';
-import { BinderIcon, DexIcon, SettingsIcon, ShowcaseIcon } from '../components/icons';
+import { BinderIcon, DexIcon, PacksIcon, SettingsIcon, ShowcaseIcon } from '../components/icons';
 import { cx, formatYen } from '../format';
 import { text } from '../text';
 import styles from './AppShell.module.css';
@@ -15,6 +15,7 @@ interface NavItem {
 }
 
 const NAV: readonly NavItem[] = [
+  { href: '/packs', label: text.nav.packs, icon: <PacksIcon /> },
   { href: '/', label: text.nav.binder, icon: <BinderIcon /> },
   { href: '/dex', label: text.nav.dex, icon: <DexIcon /> },
   { href: '/showcase', label: text.nav.showcase, icon: <ShowcaseIcon /> },

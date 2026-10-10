@@ -135,3 +135,21 @@ export function SparkleIcon(props: IconProps) {
     </Icon>
   );
 }
+
+export function SkipIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="m5 6 7 6-7 6ZM13 6l7 6-7 6Z" />
+    </Icon>
+  );
+}
+
+export function PacksIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M7 3.5h10l1.5 3.2v13.8h-13V6.7Z" />
+      <path d="M5.5 6.7h13" />
+      <path d="m12 10.6.95 1.95 2.15.3-1.55 1.5.35 2.15L12 17.4l-1.9 1 .35-2.15-1.55-1.5 2.15-.3Z" />
+    </Icon>
+  );
+}

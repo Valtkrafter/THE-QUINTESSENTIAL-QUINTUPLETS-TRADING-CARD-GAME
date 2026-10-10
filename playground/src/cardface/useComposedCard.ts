@@ -12,6 +12,8 @@ import { loadImage } from './images';
 export interface ComposedCardTextures {
   readonly face: CardTexture;
   readonly mask: CardTexture;
+  /** The card these textures show, so a screen can tell when the textures belong to another card. */
+  readonly cardId: CardId;
 }
 
 function toTexture(canvas: HTMLCanvasElement, renderer: WebGLRenderer): CardTexture {
@@ -47,7 +49,7 @@ export function useComposedCard(card: Card | null, style: FrameStyle): ComposedC
         return;
       }
       const { face, mask } = composeCardFace(card, loadedImage, style);
-      const textures = { face: toTexture(face, renderer), mask: toTexture(mask, renderer) };
+      const textures: ComposedCardTextures = { face: toTexture(face, renderer), mask: toTexture(mask, renderer), cardId: card.id };
       const previous = shownRef.current;
       shownRef.current = textures;
       setCurrent({ id: card.id, textures });

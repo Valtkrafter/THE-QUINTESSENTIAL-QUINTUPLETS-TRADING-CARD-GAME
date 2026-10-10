@@ -7,11 +7,17 @@ describe('preferences', () => {
     expect(parsePreferences('not json')).toEqual(DEFAULT_PREFERENCES);
     expect(parsePreferences('{"version":1,"frameStyle":"neon","graphics":"high","idleMotion":true}')).toEqual(DEFAULT_PREFERENCES);
     expect(parsePreferences('{"version":1,"frameStyle":"paper","graphics":"low","idleMotion":false,"extra":1}')).toEqual(DEFAULT_PREFERENCES);
+    expect(parsePreferences('{"version":1,"frameStyle":"paper","graphics":"low","idleMotion":false,"volume":3}')).toEqual(DEFAULT_PREFERENCES);
+  });
+
+  it('keeps the old settings of a player and fills in what is new', () => {
+    const old = JSON.stringify({ version: 1, frameStyle: 'fade', graphics: 'normal', idleMotion: false });
+    expect(parsePreferences(old)).toEqual({ ...DEFAULT_PREFERENCES, frameStyle: 'fade', graphics: 'normal', idleMotion: false });
   });
 
   it('reads a valid value', () => {
-    const text = JSON.stringify({ version: 1, frameStyle: 'fade', graphics: 'low', idleMotion: false });
-    expect(parsePreferences(text)).toEqual({ version: 1, frameStyle: 'fade', graphics: 'low', idleMotion: false });
+    const text = JSON.stringify({ version: 1, frameStyle: 'fade', graphics: 'low', idleMotion: false, pullAnimation: 'short', volume: 0.3, muted: true });
+    expect(parsePreferences(text)).toEqual({ version: 1, frameStyle: 'fade', graphics: 'low', idleMotion: false, pullAnimation: 'short', volume: 0.3, muted: true });
   });
 
   it('loads, changes and stores', async () => {

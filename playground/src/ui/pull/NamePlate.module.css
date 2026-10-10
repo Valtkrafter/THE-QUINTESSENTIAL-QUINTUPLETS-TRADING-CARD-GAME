@@ -1,0 +1,175 @@
+.plate {
+  --tier: #ffc85a;
+  --tier-light: #fff0b8;
+  position: absolute;
+  left: clamp(20px, 5vw, 72px);
+  bottom: calc(clamp(36px, 5.2vw, 54px) * 1.4 + var(--space-7));
+  max-width: min(460px, 90vw);
+  padding-left: var(--space-5);
+  border-left: 2px solid var(--tier);
+  animation: slide-in 620ms var(--ease) both;
+  text-shadow: 0 2px 18px rgba(4, 6, 16, 0.85);
+  pointer-events: none;
+}
+
+@keyframes slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(-28px);
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+/* A line of light that sweeps across once, for the cards that matter. */
+.streak {
+  position: absolute;
+  left: 0;
+  right: -40px;
+  top: -10px;
+  height: 2px;
+  background: linear-gradient(90deg, var(--tier), transparent);
+  transform-origin: left;
+  animation: streak 900ms var(--ease) 120ms both;
+}
+
+@keyframes streak {
+  from {
+    transform: scaleX(0);
+    opacity: 1;
+  }
+  to {
+    transform: scaleX(1);
+    opacity: 0.55;
+  }
+}
+
+.mark {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  color: var(--tier);
+  font-size: var(--text-lg);
+  letter-spacing: 0.18em;
+  font-weight: 700;
+}
+
+.rarity {
+  color: var(--tier-light);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  opacity: 0.85;
+}
+
+.name {
+  margin-top: var(--space-1);
+  font-size: clamp(1.7rem, 4.2vw, 2.7rem);
+  font-weight: 750;
+  letter-spacing: -0.015em;
+  line-height: 1.05;
+  color: #fff;
+  text-shadow:
+    0 0 28px color-mix(in oklab, var(--tier) 55%, transparent),
+    0 2px 18px rgba(4, 6, 16, 0.85);
+}
+
+.ja {
+  margin-top: var(--space-1);
+  color: var(--text-soft);
+  font-size: var(--text-md);
+  letter-spacing: 0.08em;
+}
+
+.title {
+  margin-top: var(--space-2);
+  color: var(--horizon);
+  font-size: var(--text-lg);
+  font-style: italic;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: var(--radius-pill);
+  background: rgba(14, 17, 32, 0.55);
+  backdrop-filter: blur(6px);
+  color: var(--text);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-shadow: none;
+}
+
+.fresh {
+  border-color: transparent;
+  background: var(--horizon);
+  color: #2a1612;
+  letter-spacing: 0.1em;
+}
+
+.dupe {
+  color: var(--text-soft);
+}
+
+.reason {
+  border-color: color-mix(in oklab, var(--tier) 70%, transparent);
+  color: var(--tier-light);
+}
+
+.swatch {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.3);
+}
+
+.rainbow .mark {
+  background: linear-gradient(90deg, #ff9aa8, #ffd77a, #7affc0, #7ab0ff, #c88aff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: none;
+}
+
+.rainbow {
+  border-image: linear-gradient(180deg, #ff9aa8, #ffd77a, #7affc0, #7ab0ff, #c88aff) 1;
+}
+
+@media (max-width: 720px) {
+  .plate {
+    left: 50%;
+    bottom: 124px;
+    width: calc(100vw - 40px);
+    max-width: none;
+    padding-left: var(--space-4);
+    transform: translateX(-50%);
+    animation-name: slide-up;
+  }
+
+  @keyframes slide-up {
+    from {
+      opacity: 0;
+      transform: translate(-50%, 16px);
+    }
+    to {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+  }
+}

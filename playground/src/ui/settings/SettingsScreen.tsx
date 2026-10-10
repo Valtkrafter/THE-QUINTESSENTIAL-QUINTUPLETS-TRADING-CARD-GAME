@@ -2,10 +2,10 @@ import { useRef, useState, type ChangeEvent } from 'react';
 import { Link } from 'wouter';
 import { CATALOG } from '../../cards/catalog';
 import { FRAME_STYLE_IDS, type FrameStyle } from '../../cards/frameStyle';
-import { SaveError, parseSave, serializeSave, type SaveGame } from '../../domain/save';
+import { SaveError, earnYen, parseSave, serializeSave, type SaveGame } from '../../domain/save';
 import { gameStore, KNOWN_CARD_IDS, preferencesStore, usePreferences, useSave } from '../../state/app';
 import { grantRandomCards, grantWholeSet } from '../../state/devGrants';
-import { GRAPHICS_LEVELS, type GraphicsLevel } from '../../state/preferences';
+import { GRAPHICS_LEVELS, PULL_ANIMATIONS, type GraphicsLevel } from '../../state/preferences';
 import { CardFace } from '../components/CardFace';
 import { Button, Segmented, Toggle } from '../components/controls';
 import { Dialog } from '../components/Dialog';
@@ -14,6 +14,8 @@ import { downloadText, saveFileName } from '../download';
 import { cx } from '../format';
 import { text } from '../text';
 import styles from './SettingsScreen.module.css';
+import { ShowPreview } from './ShowPreview';
+import { SimulatorPanel } from './SimulatorPanel';
 
 /** A card that looks good in every frame, to show what each frame style is like. */
 const SAMPLE_CARD = CATALOG.find((card) => card.rarity === 'SAR') ?? CATALOG[0];
@@ -101,6 +103,38 @@ export default function SettingsScreen() {
         </section>
 
         <section className={styles.section}>
+          <h2>{text.settings.pullAnimation}</h2>
+          <div className={styles.block}>
+            <p className={styles.hint}>{text.settings.pullAnimationHint}</p>
+            <Segmented
+              value={preferences.pullAnimation}
+              options={PULL_ANIMATIONS.map((value) => ({ value, label: text.settings.pullAnimationNames[value] }))}
+              onChange={(pullAnimation) => preferencesStore.getState().update({ pullAnimation })}
+              label={text.settings.pullAnimation}
+            />
+          </div>
+          <div className={styles.block}>
+            <h3>{text.settings.sound}</h3>
+            <label className={styles.slider}>
+              <span>{text.settings.volume}</span>
+              <input
+                type="range"
+                min={0}
+                max={1}
+                step={0.05}
+                value={preferences.volume}
+                onChange={(event) => preferencesStore.getState().update({ volume: Number(event.target.value) })}
+                aria-label={text.settings.volume}
+              />
+              <output>{Math.round(preferences.volume * 100)} %</output>
+            </label>
+            <Toggle checked={preferences.muted} onChange={(muted) => preferencesStore.getState().update({ muted })}>
+              {text.settings.muted}
+            </Toggle>
+          </div>
+        </section>
+
+        <section className={styles.section}>
           <h2>{text.settings.saveGame}</h2>
           <p className={styles.hint}>{text.settings.saveHint}</p>
           <div className={styles.row}>
@@ -125,7 +159,17 @@ export default function SettingsScreen() {
             <div className={styles.row}>
               <Button onClick={() => grant((current, now) => grantRandomCards(current, 12, now), 12)}>{text.settings.grantRandom}</Button>
               <Button onClick={() => grant(grantWholeSet, CATALOG.length)}>{text.settings.grantSet}</Button>
+              <Button
+                onClick={() => {
+                  gameStore.getState().change((current) => earnYen(current, 10_000, Date.now()));
+                  setMessage(text.settings.grantYen);
+                }}
+              >
+                {text.settings.grantYen}
+              </Button>
             </div>
+            <ShowPreview />
+            <SimulatorPanel />
           </section>
         )}
 
