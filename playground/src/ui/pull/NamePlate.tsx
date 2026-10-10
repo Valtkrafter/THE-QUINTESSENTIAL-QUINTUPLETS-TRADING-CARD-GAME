@@ -26,7 +26,7 @@ export function NamePlate({ pull }: { readonly pull: Pull }) {
       </p>
       <h2 className={styles.name}>{card.name.en}</h2>
       <p className={styles.ja}>{character.name.ja}</p>
-      <p className={styles.title}>“{card.title}”</p>
+      <p className={styles.title}>„{card.title}“</p>
       <div className={styles.chips}>
         <span className={cx(styles.chip, pull.isNew ? styles.fresh : styles.dupe)}>{pull.isNew ? text.pull.isNew : text.pull.duplicate}</span>
         <span className={styles.chip}>

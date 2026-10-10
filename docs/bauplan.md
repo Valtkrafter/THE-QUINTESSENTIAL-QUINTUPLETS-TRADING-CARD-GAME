@@ -7,8 +7,8 @@ Stand: Oktober 2026. Das ist der Plan zum Bauen. Entscheidungen, die schon fests
 - Zuerst im Browser, danach als Desktop-App (Tauri).
 - Ruhiges, schönes Design um die Karten herum (nicht der dunkle Arcade-Look).
 - 79 Karten im ersten Set: 5 Schwestern × 12 (10 Stufen + 2 Halloween) + Fūtarō 6, Raiha 4, Isanari 3, Maruo 3, Yusuke 3.
-- Battle-System: 30er-Deck, aktiver Charakter + Bank (max. 3), 1 Gratis-Herz pro Zug, 1 Unterstützer pro Zug, Schwäche ×2, Resistenz −30, Sieg bei 6 Erinnerungen, Prime gibt 2.
-- Halloween-Karten: begrenzt (Event-Banner), eigene Funktion, mehr Power, 2 Erinnerungen beim K.O., nur 1× pro Deck.
+- Kampf: 30er-Deck, Bühnenfigur + Bank (max. 3), 1 Gratis-Herz pro Zug, 1 Gefährte pro Zug, Schwäche ×2, Resistenz −30, Sieg bei 6 Erinnerungen, Primus gibt 2. Die Wörter stehen in `wortschatz.md`.
+- Halloween-Karten: begrenzt (Halloween-Spuknacht), eigene Funktion, mehr Power, 2 Erinnerungen beim K.O., nur 1× pro Deck.
 - Strenge TypeScript-Regeln ohne `any`, Spiellogik als reine Funktionen mit festem Zufall (Seed), jede Regel mit Test.
 
 ## 2. Technik-Vorschlag (bitte bestätigen)
@@ -35,13 +35,13 @@ Größen: S = wenige Sitzungen, M = eine Woche, L = mehrere Wochen, XL = großes
 
 | Stufe | Ziel | Inhalt | Größe |
 |---|---|---|---|
-| 0 Fundament | Aus dem Playground wird ein Projekt | git, Skripte (typecheck, lint, test, build), Vitest, Ordnerstruktur, Bild-Import (Resize + Manifest, Bilder bleiben lokal und aus git), `docs/card-system.md` aktualisieren | S |
+| 0 Fundament | Aus dem Playground wird ein Projekt | git, Skripte (typecheck, lint, test, build), Vitest, Ordnerstruktur, Bild-Import (Resize + Manifest), `docs/card-system.md` aktualisieren | S |
 | 1 Daten & Speicher | Verlässliche Basis | Kartenschema + 79 Karten als Datendateien, Stufen-Zuordnung, Effekt-Vokabular, Besitz-Modell (Finish, versteckte Zustandswerte, Seriennummer), Seed-Zufall, Speicherstand mit Versionen | M |
-| 2 Sammelmappe & Ansicht | Du siehst, was du besitzt | App-Rahmen, ruhiges Theme, Sammelmappe (Vorschaubilder, keine 1000 WebGL-Fenster), Filter, Card-Dex x/79, Ansicht mit 3D-Holo, Vitrine | M |
-| 3 Packs ✅ | Der große Moment | Pack-Quoten (öffentlich), Finish-Würfe, Garantien, Halloween-Banner mit 50/50, Tagesbonus, Quoten-Simulator, die Pull-Animation (Sturm, Lichtnadel und Tor, Weißblitz, Sternen-Zeremonie, fünf Lichtfäden, Bloom) und Ton. Details in `packs-und-wirtschaft.md` | M |
+| 2 Sammelmappe & Ansicht | Du siehst, was du besitzt | App-Rahmen, ruhiges Theme, Sammelmappe (Vorschaubilder, keine 1000 WebGL-Fenster), Filter, Kartendex x/79, Ansicht mit 3D-Holo, Vitrine | M |
+| 3 Packs ✅ | Der große Moment | Booster-Quoten (öffentlich), Schimmer-Würfe, Garantien, Halloween-Spuknacht mit 50/50, Tagesbonus, Quoten-Simulator, die Pull-Animation (Sturm, Lichtnadel und Tor, Weißblitz, Sternen-Zeremonie, fünf Lichtfäden, Bloom) und Ton. Details in `packs-und-wirtschaft.md` | M |
 | 4 Deck & Kampf-System | Der Spielteil und die Geldquelle | 4a Regel-Engine mit Tests, 4b Starter-Deck + Deckbau + Legalitäts-Prüfung, 4c Kampf-Bildschirm (wie die Animation), 4d Computer-Gegner (Leicht/Normal/Schwer) + Belohnungen in Yen, Balance per KI-gegen-KI-Simulation (Ziel ~10 Minuten) | XL |
-| 5 Wirtschaft & Kiosk | Geld ausgeben und Dubletten nutzen | Kiosk (nur bis Double Rare), Dubletten verkaufen, Dex-Belohnungen, Preisformel, Balance-Simulator | M |
-| 6 Bewertung | Sammler-Belohnung | versteckte Teilnoten, sichtbare Abnutzung im Shader, Einsenden und Aufdecken, 3D-Slab, Bestandsbericht | L |
+| 5 Wirtschaft & Kiosk | Geld ausgeben und Dubletten nutzen | Kiosk (nur bis Superselten), Dubletten verkaufen, Dex-Belohnungen, Preisformel, Balance-Simulator | M |
+| 6 Siegel | Sammler-Belohnung | versteckte Teilnoten, sichtbare Abnutzung im Shader, Karte versiegeln lassen und aufdecken, Siegelkapsel in 3D, Bestandsbericht | L |
 | 7 Politur & Release | Es wird eine App | Tauri (Windows), Qualitätsstufen für schwache Grafik (Intel UHD), Ton (Feinschliff), Deutsch/Englisch/Japanisch, Bedienhilfen, Playwright-Tests, Mehrspieler-Vorbereitung | L |
 
 Reihenfolge: 0 → 1 → 2 → 3 → 4 (Kampf) → 5 (Kiosk) → 6 (Bewertung) → 7. Nach Stufe 3 kannst du schon Packs öffnen und deine Karten ansehen.
@@ -54,7 +54,7 @@ Reihenfolge: 0 → 1 → 2 → 3 → 4 (Kampf) → 5 (Kiosk) → 6 (Bewertung) �
 ## 6. Risiken
 | Risiko | Umgang |
 |---|---|
-| Bilder sind fremdes Fan-Art | bleiben lokal und aus git; vor einer öffentlichen Veröffentlichung ersetzen oder Rechte klären |
+| Bilder sind fremdes Fan-Art | liegen im öffentlichen Repository (so entschieden, Rechte sind dir egal); bei einer Löschforderung durch eigene Bilder ersetzen |
 | Schwache Grafik | früh auf der Intel-UHD testen, Qualitätsstufen, Vorschaubilder statt WebGL im Raster |
 | Battle zu groß | kleines Effekt-Vokabular, Computer-Gegner mit festen Decks, kein PvP in Version 1 |
 | Wirtschaft aus dem Gleichgewicht | alle Zahlen in einer Tabelle, Simulator vor dem Release |

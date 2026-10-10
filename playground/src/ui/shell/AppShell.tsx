@@ -62,7 +62,7 @@ export function AppShell({ children }: { readonly children: ReactNode }) {
         </nav>
         <div className={styles.footer}>
           <div className={styles.wallet}>
-            <span>Yen</span>
+            <span>{text.packs.yen}</span>
             <strong>{formatYen(save.player.yen)}</strong>
           </div>
           <div className={styles.dexMini}>

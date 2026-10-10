@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type RefObject } from 'react';
-import { requestThumbnail } from '../../cardface/thumbnails';
+import { requestThumbnail, type Thumbnail } from '../../cardface/thumbnails';
 import type { FrameStyle } from '../../cards/frameStyle';
 import type { Card } from '../../cards/model';
 import { usePreferences } from '../../state/app';
@@ -28,12 +28,12 @@ export function useNearScreen<T extends Element>(margin = 600): [RefObject<T | n
   return [ref, near];
 }
 
-/** The flat picture of a card face in the chosen frame style, or null while it is still being painted. */
-export function useThumbnail(card: Card, wanted: boolean, styleOverride?: FrameStyle): string | null {
+/** The flat picture of a card face in the chosen frame style (and its foil mask), or null while it is still being painted. */
+export function useThumbnail(card: Card, wanted: boolean, styleOverride?: FrameStyle): Thumbnail | null {
   const preferences = usePreferences();
   const frameStyle = styleOverride ?? preferences.frameStyle;
   const key = `${frameStyle}:${card.id}`;
-  const [loaded, setLoaded] = useState<{ readonly key: string; readonly url: string | null } | null>(null);
+  const [loaded, setLoaded] = useState<{ readonly key: string; readonly thumbnail: Thumbnail | null } | null>(null);
 
   useEffect(() => {
     if (!wanted) {
@@ -41,14 +41,14 @@ export function useThumbnail(card: Card, wanted: boolean, styleOverride?: FrameS
     }
     let cancelled = false;
     requestThumbnail(card, frameStyle).then(
-      (url) => {
+      (thumbnail) => {
         if (!cancelled) {
-          setLoaded({ key, url });
+          setLoaded({ key, thumbnail });
         }
       },
       () => {
         if (!cancelled) {
-          setLoaded({ key, url: null });
+          setLoaded({ key, thumbnail: null });
         }
       },
     );
@@ -57,5 +57,5 @@ export function useThumbnail(card: Card, wanted: boolean, styleOverride?: FrameS
     };
   }, [card, frameStyle, key, wanted]);
 
-  return loaded !== null && loaded.key === key ? loaded.url : null;
+  return loaded !== null && loaded.key === key ? loaded.thumbnail : null;
 }

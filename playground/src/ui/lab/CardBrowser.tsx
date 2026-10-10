@@ -2,7 +2,7 @@ import { useState, type ChangeEvent } from 'react';
 import { CATALOG, SET_CODE } from '../../cards/catalog';
 import { artUrlFor } from '../../cards/characterArt';
 import { AFFINITY_INFO, CHARACTERS } from '../../cards/characters';
-import { RARITIES, SISTERS, SUPPORTING_CAST, type CardId, type CharacterId } from '../../cards/model';
+import { RARITIES, SISTERS, STAGES, SUPPORTING_CAST, type CardId, type CharacterId } from '../../cards/model';
 
 type CharacterFilter = CharacterId | 'all';
 
@@ -33,12 +33,12 @@ export function CardBrowser({ selectedId, onSelect }: CardBrowserProps) {
   return (
     <section className="panel__section">
       <h2>
-        Cards · {SET_CODE} ({CATALOG.length})
+        Karten · {SET_CODE} ({CATALOG.length})
       </h2>
       <label className="field">
-        <span className="field__label">Character</span>
+        <span className="field__label">Figur</span>
         <select value={filter} onChange={handleFilter}>
-          <option value="all">All characters</option>
+          <option value="all">Alle Figuren</option>
           {FILTER_OPTIONS.map((id) => (
             <option key={id} value={id}>
               {CHARACTERS[id].name.en} · {CHARACTERS[id].name.ja}
@@ -60,7 +60,7 @@ export function CardBrowser({ selectedId, onSelect }: CardBrowserProps) {
               style={{ borderColor: card.id === selectedId ? undefined : `${accent}55` }}
               onClick={() => onSelect(card.id)}
             >
-              {url === null ? <span className="art-thumb__missing">no art</span> : <img src={url} alt={card.title} />}
+              {url === null ? <span className="art-thumb__missing">kein Bild</span> : <img src={url} alt={card.title} />}
               <span className="art-thumb__badge">{card.rarity}</span>
             </button>
           );
@@ -68,8 +68,8 @@ export function CardBrowser({ selectedId, onSelect }: CardBrowserProps) {
       </div>
       {selected !== null && (
         <p className="hint">
-          <strong>{selected.name.en}</strong> · “{selected.title}” · {selectedRarity?.label ?? selected.rarity}
-          {selected.kind === 'character' ? ` · ${selected.stage}${selected.prime ? ' · Prime' : ''}` : ' · Supporter'}
+          <strong>{selected.name.en}</strong> · „{selected.title}“ · {selectedRarity?.label ?? selected.rarity}
+          {selected.kind === 'character' ? ` · ${STAGES.find((stage) => stage.id === selected.stage)?.label ?? ''}${selected.prime ? ' · Primus' : ''}` : ' · Gefährte'}
         </p>
       )}
     </section>

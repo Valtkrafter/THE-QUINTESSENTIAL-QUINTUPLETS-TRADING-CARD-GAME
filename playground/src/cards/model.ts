@@ -40,13 +40,13 @@ export const RARITY_IDS = ['C', 'U', 'R', 'RR', 'AR', 'SAR', 'UR'] as const;
  * `mark` is drawn as vector shapes on the card face; `symbol` is the text form for lists and logs.
  */
 export const RARITIES = [
-  { id: 'C', label: 'Common', tier: 1, symbol: '●', mark: { shape: 'circle', count: 1 } },
-  { id: 'U', label: 'Uncommon', tier: 2, symbol: '◆', mark: { shape: 'diamond', count: 1 } },
-  { id: 'R', label: 'Rare', tier: 3, symbol: '★', mark: { shape: 'star', count: 1 } },
-  { id: 'RR', label: 'Double Rare', tier: 4, symbol: '★★', mark: { shape: 'star', count: 2 } },
-  { id: 'AR', label: 'Art Rare', tier: 5, symbol: '✦', mark: { shape: 'sparkle', count: 1 } },
-  { id: 'SAR', label: 'Special Art Rare', tier: 6, symbol: '✦✦', mark: { shape: 'sparkle', count: 2 } },
-  { id: 'UR', label: 'Ultra Rare', tier: 7, symbol: '✦✦✦', mark: { shape: 'sparkle', count: 3 } },
+  { id: 'C', label: 'Alltag', tier: 1, symbol: '●', mark: { shape: 'circle', count: 1 } },
+  { id: 'U', label: 'Besonders', tier: 2, symbol: '◆', mark: { shape: 'diamond', count: 1 } },
+  { id: 'R', label: 'Selten', tier: 3, symbol: '★', mark: { shape: 'star', count: 1 } },
+  { id: 'RR', label: 'Superselten', tier: 4, symbol: '★★', mark: { shape: 'star', count: 2 } },
+  { id: 'AR', label: 'Kunstwerk', tier: 5, symbol: '✦', mark: { shape: 'sparkle', count: 1 } },
+  { id: 'SAR', label: 'Meisterwerk', tier: 6, symbol: '✦✦', mark: { shape: 'sparkle', count: 2 } },
+  { id: 'UR', label: 'Legende', tier: 7, symbol: '✦✦✦', mark: { shape: 'sparkle', count: 3 } },
 ] as const satisfies readonly RarityDefinition[];
 export type Rarity = (typeof RARITIES)[number]['id'];
 
@@ -57,9 +57,9 @@ export const STAGE_IDS = ['basic', 'close', 'bride', 'event'] as const;
  * straight to the Bench like a Basic but nothing evolves from or into it.
  */
 export const STAGES = [
-  { id: 'basic', label: 'Basic', ja: 'たね' },
-  { id: 'close', label: 'Close', ja: '親密' },
-  { id: 'bride', label: 'Bride', ja: '花嫁' },
-  { id: 'event', label: 'Event', ja: '限定' },
+  { id: 'basic', label: 'Keim', ja: 'たね' },
+  { id: 'close', label: 'Nähe', ja: '親密' },
+  { id: 'bride', label: 'Braut', ja: '花嫁' },
+  { id: 'event', label: 'Fest', ja: '限定' },
 ] as const;
 export type Stage = (typeof STAGES)[number]['id'];

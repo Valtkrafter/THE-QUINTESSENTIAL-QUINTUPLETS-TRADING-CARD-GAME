@@ -67,6 +67,212 @@
   outline-offset: -1px;
 }
 
+/*
+ * The standing shimmer of a finish, always visible so a foil card can be told from a plain one at a glance. It lies over
+ * the picture and is cut to the foil mask of the card (the printed text stays clean, like the foil layer of the 3D card).
+ * Two moving layers per finish; they only move with transforms, which the graphics chip does by itself.
+ */
+.foil {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  opacity: 0.78;
+  pointer-events: none;
+  transition: opacity var(--medium) var(--ease);
+  -webkit-mask-image: var(--foil-mask);
+  mask-image: var(--foil-mask);
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+}
+
+.foil::before,
+.foil::after {
+  content: '';
+  position: absolute;
+  inset: -50%;
+}
+
+.interactive:hover .foil,
+.interactive:focus-visible .foil {
+  opacity: 1;
+}
+
+@keyframes drift {
+  from {
+    transform: translate(-16%, -16%);
+  }
+  to {
+    transform: translate(16%, 16%);
+  }
+}
+
+@keyframes turn {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes twinkle {
+  0%,
+  100% {
+    opacity: 0.1;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes glint {
+  from {
+    transform: translateX(-30%) rotate(8deg);
+  }
+  to {
+    transform: translateX(30%) rotate(8deg);
+  }
+}
+
+/* Regenbogen-Holo: bands of the whole spectrum sweep across the art. */
+.foilRainbow {
+  mix-blend-mode: hard-light;
+  opacity: 0.66;
+}
+
+.foilRainbow::before {
+  background: linear-gradient(
+    115deg,
+    transparent 14%,
+    rgba(255, 70, 140, 0.55) 26%,
+    rgba(255, 205, 80, 0.55) 36%,
+    rgba(90, 255, 170, 0.5) 46%,
+    rgba(80, 165, 255, 0.58) 56%,
+    rgba(190, 100, 255, 0.55) 66%,
+    transparent 80%
+  );
+  animation: drift 8s ease-in-out infinite alternate;
+}
+
+.foilRainbow::after {
+  background: linear-gradient(
+    115deg,
+    transparent 40%,
+    rgba(255, 255, 255, 0.22) 50%,
+    transparent 60%
+  );
+  animation: drift 8s ease-in-out infinite alternate-reverse;
+}
+
+/* Glitzer: tiny flakes that catch the light in turns. */
+.foilSparkle {
+  mix-blend-mode: screen;
+}
+
+.foilSparkle::before {
+  inset: 0;
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, 1) 0 0.9px, transparent 1.7px) 0 0 / 13px 13px,
+    radial-gradient(circle, rgba(200, 230, 255, 0.95) 0 0.8px, transparent 1.5px) 7px 4px / 19px 19px;
+  animation: twinkle 2.8s ease-in-out infinite;
+}
+
+.foilSparkle::after {
+  inset: 0;
+  background:
+    radial-gradient(circle, rgba(255, 245, 214, 1) 0 0.9px, transparent 1.7px) 4px 8px / 16px 16px,
+    radial-gradient(circle, rgba(255, 255, 255, 0.9) 0 0.8px, transparent 1.5px) 2px 11px / 23px 23px;
+  animation: twinkle 2.8s ease-in-out infinite;
+  animation-delay: -1.4s;
+}
+
+/* Kosmos: a nebula with stars, drifting slowly behind the print. */
+.foilCosmos {
+  mix-blend-mode: hard-light;
+  opacity: 0.7;
+}
+
+.foilCosmos::before {
+  background:
+    radial-gradient(52% 44% at 30% 30%, rgba(96, 58, 226, 0.92), transparent 72%),
+    radial-gradient(46% 50% at 76% 70%, rgba(58, 150, 255, 0.78), transparent 72%),
+    radial-gradient(38% 38% at 62% 22%, rgba(255, 90, 210, 0.62), transparent 72%),
+    rgba(46, 36, 110, 0.55);
+  animation: drift 14s ease-in-out infinite alternate;
+}
+
+.foilCosmos::after {
+  inset: 0;
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, 1) 0 0.9px, transparent 1.7px) 0 0 / 17px 17px,
+    radial-gradient(circle, rgba(200, 220, 255, 1) 0 0.8px, transparent 1.5px) 9px 6px / 25px 25px;
+  animation: twinkle 4s ease-in-out infinite;
+}
+
+/* Goldrausch: a sheet of hot-stamped gold with a glint that rolls across it. */
+.foilGold {
+  mix-blend-mode: overlay;
+  opacity: 0.88;
+}
+
+.foilGold::before {
+  inset: 0;
+  background: linear-gradient(135deg, #ffe7a1 0%, #f4b942 32%, #fff0b8 50%, #e2a02c 68%, #ffd36e 100%);
+}
+
+.foilGold::after {
+  background: linear-gradient(105deg, transparent 38%, rgba(255, 252, 232, 0.9) 50%, transparent 62%);
+  mix-blend-mode: soft-light;
+  animation: glint 5.5s ease-in-out infinite alternate;
+}
+
+/* Prisma-Kristall: cut facets that flash in colour. */
+.foilPrism {
+  mix-blend-mode: hard-light;
+  opacity: 0.72;
+}
+
+.foilPrism::before {
+  background: conic-gradient(
+    from 0deg at 50% 50%,
+    rgba(90, 190, 255, 0.85),
+    rgba(150, 150, 170, 0.5),
+    rgba(255, 110, 200, 0.85),
+    rgba(150, 150, 170, 0.5),
+    rgba(110, 240, 190, 0.85),
+    rgba(150, 150, 170, 0.5),
+    rgba(90, 190, 255, 0.85)
+  );
+  animation: turn 24s linear infinite;
+}
+
+.foilPrism::after {
+  inset: 0;
+  background:
+    repeating-linear-gradient(60deg, rgba(255, 255, 255, 0.5) 0 1px, rgba(60, 40, 120, 0.28) 1px 2px, transparent 2px 26px),
+    repeating-linear-gradient(-60deg, rgba(255, 255, 255, 0.4) 0 1px, rgba(60, 40, 120, 0.22) 1px 2px, transparent 2px 26px);
+}
+
+/* Strahlenkranz: rays and a warm centre that turn slowly. */
+.foilRadiant {
+  mix-blend-mode: screen;
+}
+
+.foilRadiant::before {
+  background: repeating-conic-gradient(from 0deg at 50% 50%, rgba(255, 255, 255, 0.34) 0 3.5deg, transparent 3.5deg 11deg);
+  animation: turn 46s linear infinite;
+}
+
+.foilRadiant::after {
+  inset: 0;
+  background: radial-gradient(52% 40% at 50% 38%, rgba(255, 238, 190, 0.6), transparent 70%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .foil::before,
+  .foil::after {
+    animation: none;
+  }
+}
+
 .sheen {
   position: absolute;
   inset: 0;

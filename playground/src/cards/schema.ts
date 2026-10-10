@@ -131,7 +131,7 @@ const baseFields = {
   /** Card-specific subtitle, e.g. "Summer Fireworks". */
   title: z.string().min(1),
   art: artRef,
-  illustrator: z.string().min(1).default('Unknown'),
+  illustrator: z.string().min(1).default('Unbekannt'),
   /** Carries a gold-foil signature (stylised, invented). */
   signed: z.boolean(),
   crop: artCrop.default(DEFAULT_CROP),

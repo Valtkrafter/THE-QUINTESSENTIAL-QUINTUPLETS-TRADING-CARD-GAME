@@ -6,14 +6,14 @@ export const LATIN_FAMILY = 'Inter Variable';
 export const JAPANESE_FAMILY = 'Noto Sans JP Variable';
 
 /** Characters every face can draw regardless of the card: labels, digits and typographic symbols. */
-const COMMON_TEXT = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 ×−—–“”’‘·•.,:;!?/()+-%《》LV.HP';
+const COMMON_TEXT = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzÄÖÜäöüß0123456789 ×−—–“”’‘„·•.,:;!?/()+-%《》';
 
 /** Every string a card face may draw: the card's own text plus the cast data and stage names it looks up. */
 function textOf(card: Card): string {
   const character = CHARACTERS[card.character];
   const stages = STAGES.map((stage) => `${stage.label}${stage.ja}`).join('');
   const traits = character.traits.map((trait) => `${trait.en}${trait.ja}`).join('');
-  return `${JSON.stringify(card)}${character.name.en}${character.name.ja}${traits}${stages}サポートSUPPORTER${COMMON_TEXT}`;
+  return `${JSON.stringify(card)}${character.name.en}${character.name.ja}${traits}${stages}サポート${COMMON_TEXT}`;
 }
 
 /**

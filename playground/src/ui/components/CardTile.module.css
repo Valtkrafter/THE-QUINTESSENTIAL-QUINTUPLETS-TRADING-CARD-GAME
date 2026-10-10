@@ -3,9 +3,6 @@
   flex-direction: column;
   gap: var(--space-3);
   min-width: 0;
-  /* Rows far off screen are skipped by the browser until they come near. */
-  content-visibility: auto;
-  contain-intrinsic-size: auto 320px;
 }
 
 .hit {
@@ -14,7 +11,7 @@
   border: 0;
   background: transparent;
   text-align: inherit;
-  /* The lift on hover needs room that the grid gap provides. */
+  /* The card lifts and grows a little on hover; nothing around it may clip that (no overflow, no containment). */
   border-radius: 5% / 3.6%;
 }
 

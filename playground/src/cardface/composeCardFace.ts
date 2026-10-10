@@ -49,12 +49,12 @@ export interface ComposedFace {
   readonly mask: HTMLCanvasElement;
 }
 
-function stageLabel(card: Card): { readonly en: string; readonly ja: string } {
+function stageLabel(card: Card): { readonly name: string; readonly ja: string } {
   if (card.kind === 'supporter') {
-    return { en: 'Supporter', ja: 'サポート' };
+    return { name: 'Gefährte', ja: 'サポート' };
   }
   const stage = STAGES.find((entry) => entry.id === card.stage);
-  return { en: stage?.label ?? '', ja: stage?.ja ?? '' };
+  return { name: stage?.label ?? '', ja: stage?.ja ?? '' };
 }
 
 // --- Paper, Fade and Glass share one bottom text area; Classic has its own layout in classicFrame.ts.
@@ -87,11 +87,11 @@ function titleRow(ctx: CanvasRenderingContext2D, card: Card, titleColor: string,
       const middle = y + height / 2;
       ctx.fillStyle = titleColor;
       ctx.font = `italic 600 ${TYPE.title}px ${LATIN}`;
-      ctx.fillText(`“${card.title}”`, x, centeredBaseline(middle, TYPE.title));
+      ctx.fillText(`„${card.title}“`, x, centeredBaseline(middle, TYPE.title));
       ctx.textAlign = 'right';
       ctx.fillStyle = ink.muted;
       ctx.font = `800 ${TYPE.label}px ${JAPANESE}`;
-      ctx.fillText(`${stage.en.toUpperCase()} · ${stage.ja}`, x + TEXT_WIDTH, centeredBaseline(middle, TYPE.label));
+      ctx.fillText(`${stage.name.toUpperCase()} · ${stage.ja}`, x + TEXT_WIDTH, centeredBaseline(middle, TYPE.label));
       ctx.textAlign = 'left';
     },
   };
@@ -191,7 +191,7 @@ interface Badge {
 function drawBadge(painter: Painter, card: Card): Badge {
   const { ctx, style, accent } = painter;
   const affinity = card.kind === 'character' ? card.affinity : 'study';
-  const label = card.kind === 'supporter' ? 'SUPPORT' : stageLabel(card).en.toUpperCase();
+  const label = card.kind === 'supporter' ? 'GEFÄHRTE' : stageLabel(card).name.toUpperCase();
 
   if (style === 'paper') {
     const radius = 64;
@@ -282,7 +282,7 @@ function drawHp(painter: Painter, card: CharacterCard, centerY: number): void {
     ctx.font = `900 58px ${LATIN}`;
     const numberWidth = ctx.measureText(String(card.hp)).width;
     ctx.font = `800 ${TYPE.stat}px ${LATIN}`;
-    const labelWidth = ctx.measureText('HP').width;
+    const labelWidth = ctx.measureText('LP').width;
     const width = 24 + labelWidth + 10 + numberWidth + 14 + coinRadius * 2 + 18;
     const rect = { x: right - width, y: centerY - 44, w: width, h: 88 };
     drawGlass(painter, rect, 44);
@@ -295,7 +295,7 @@ function drawHp(painter: Painter, card: CharacterCard, centerY: number): void {
     ctx.textAlign = 'left';
     ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
     ctx.font = `800 ${TYPE.stat}px ${LATIN}`;
-    ctx.fillText('HP', rect.x + 24, centeredBaseline(centerY, TYPE.stat) + 4);
+    ctx.fillText('LP', rect.x + 24, centeredBaseline(centerY, TYPE.stat) + 4);
     protect(painter, rect, 44);
     return;
   }
@@ -312,7 +312,7 @@ function drawHp(painter: Painter, card: CharacterCard, centerY: number): void {
   const numberWidth = ctx.measureText(number).width;
   ctx.textAlign = 'right';
   outlinedText(ctx, number, numberRight, centeredBaseline(centerY, size), numberFont, '#ffffff', style === 'paper' ? 9 : 6);
-  outlinedText(ctx, 'HP', numberRight - numberWidth - 10, centeredBaseline(centerY, 28) + 6, `900 28px ${LATIN}`, style === 'paper' ? '#ffffff' : SILVER.label, 6);
+  outlinedText(ctx, 'LP', numberRight - numberWidth - 10, centeredBaseline(centerY, 28) + 6, `900 28px ${LATIN}`, style === 'paper' ? '#ffffff' : SILVER.label, 6);
   ctx.textAlign = 'left';
   const left = numberRight - numberWidth - 60;
   protect(painter, { x: left, y: centerY - 50, w: right - left + 6, h: 100 }, RADIUS);

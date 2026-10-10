@@ -1,0 +1,251 @@
+{
+  "TQQ01-001": { "title": "Blazer & Zwinkern", "moves": [{ "name": "Bühnenlächeln" }] },
+  "TQQ01-002": { "title": "Gemütlicher Abend", "moves": [{ "name": "Ruhige Nacht", "text": "Heile 10 Schaden von dieser Figur." }] },
+  "TQQ01-003": {
+    "title": "Probentag",
+    "moves": [
+      { "name": "Aufwärmszene" },
+      { "name": "Generalprobe", "text": "Sieh dir die oberste Karte deines Decks an. Du darfst sie unter das Deck legen." }
+    ]
+  },
+  "TQQ01-004": { "title": "Herbststrick", "moves": [{ "name": "Großer Auftritt" }] },
+  "TQQ01-005": {
+    "title": "Festival-Feuerwerk",
+    "ability": { "name": "Hauptdarstellerin", "text": "Einmal pro Zug darfst du deine Bühnenfigur mit 1 Figur von deiner Bank tauschen." },
+    "moves": [{ "name": "Wunderkerzen-Hieb" }]
+  },
+  "TQQ01-006": {
+    "title": "Verschleiertes Lächeln",
+    "ability": { "name": "Entschlossenheit der Ältesten", "text": "Diese Figur erleidet durch Attacken 30 Schaden weniger." },
+    "moves": [{ "name": "Schlussvorhang" }]
+  },
+  "TQQ01-007": {
+    "title": "Kleines Schwarzes",
+    "moves": [{ "name": "Zugabe", "text": "Fügt für jedes an diese Figur angelegte Herz 30 Schaden mehr zu." }]
+  },
+  "TQQ01-008": {
+    "title": "Goldene Stunde",
+    "ability": { "name": "Rampenlicht", "text": "Einmal pro Zug: Sieh dir die oberste Karte deines Decks an. Du darfst sie unter das Deck legen." },
+    "moves": [{ "name": "Nahaufnahme" }]
+  },
+  "TQQ01-009": {
+    "title": "Gartengelübde",
+    "moves": [
+      { "name": "Sanftes Stichwort", "text": "Ziehe 1 Karte." },
+      { "name": "Schlussvorhang", "text": "Fügt für jedes an diese Figur angelegte Herz 30 Schaden mehr zu." }
+    ]
+  },
+  "TQQ01-010": {
+    "title": "Die Braut, die schwieg",
+    "ability": { "name": "Entschlossenheit der Ältesten", "text": "Diese Figur erleidet durch Attacken 30 Schaden weniger." },
+    "moves": [{ "name": "Letzter Akt" }]
+  },
+  "TQQ01-011": {
+    "title": "Halloween-Süßes: Kostümwechsel",
+    "ability": { "name": "Kostümwechsel", "text": "Einmal pro Zug darfst du deine Bühnenfigur kostenlos mit 1 Figur von deiner Bank tauschen." },
+    "moves": [{ "name": "Buh!" }]
+  },
+  "TQQ01-012": {
+    "title": "Halloween-Saures: Schwarze Katze",
+    "moves": [{ "name": "Katzenkratzer", "text": "Lege 1 Herz der verteidigenden Figur ab." }]
+  },
+
+  "TQQ01-013": { "title": "Uniform-Tag", "moves": [{ "name": "Spitze Zunge" }] },
+  "TQQ01-014": { "title": "Schlafanzug-Schmollen", "moves": [{ "name": "Mitternachtssnack", "text": "Heile 10 Schaden von dieser Figur." }] },
+  "TQQ01-015": {
+    "title": "Patissière",
+    "moves": [{ "name": "Schneebesen" }, { "name": "Selbstgebackenes", "text": "Heile 30 Schaden von 1 deiner Figuren." }]
+  },
+  "TQQ01-016": { "title": "Winterspaziergang", "moves": [{ "name": "Zuckerguss-Cupcake" }] },
+  "TQQ01-017": {
+    "title": "Schneeweißer Furisode",
+    "ability": { "name": "Fürsorge der großen Schwester", "text": "Einmal pro Zug darfst du bei jeder deiner Figuren auf der Bank 20 Schaden heilen." },
+    "moves": [{ "name": "Gebäck-Salve" }]
+  },
+  "TQQ01-018": {
+    "title": "Brautstrauß",
+    "moves": [{ "name": "Küchenkommando", "text": "Ziehe 2 Karten." }, { "name": "Ohne Zurückhaltung" }]
+  },
+  "TQQ01-019": { "title": "Schleifen-Gala", "moves": [{ "name": "Schmetterlings-Salve" }] },
+  "TQQ01-020": { "title": "Schmetterlingsschleifen", "moves": [{ "name": "Schleifenpeitsche", "text": "Heile 20 Schaden von dieser Figur." }] },
+  "TQQ01-021": {
+    "title": "Kapellenversprechen",
+    "moves": [{ "name": "Zuckerrausch", "text": "Ziehe 2 Karten." }, { "name": "Große Torte" }]
+  },
+  "TQQ01-022": {
+    "title": "Schleier der Schmetterlinge",
+    "moves": [{ "name": "Hochzeitstorten-Finale", "text": "Heile 30 Schaden von dieser Figur." }]
+  },
+  "TQQ01-023": {
+    "title": "Halloween-Süßes: Naschzeug",
+    "ability": { "name": "Naschzeug", "text": "Wenn du diese Figur aus deiner Hand spielst: Heile bei jeder deiner Figuren 30 Schaden." },
+    "moves": [{ "name": "Buh!" }]
+  },
+  "TQQ01-024": {
+    "title": "Halloween-Saures: Fieser Biss",
+    "moves": [{ "name": "Fieser Biss", "text": "Heile 30 Schaden von dieser Figur." }]
+  },
+
+  "TQQ01-025": { "title": "Kopfhörer auf", "moves": [{ "name": "Stiller Blick" }] },
+  "TQQ01-026": { "title": "Deckenkokon", "moves": [{ "name": "Schläfchen", "text": "Heile 10 Schaden von dieser Figur." }] },
+  "TQQ01-027": {
+    "title": "Sengoku-Gelehrte",
+    "moves": [
+      { "name": "Zeigestab-Tipp" },
+      { "name": "Sengoku-Wissen", "text": "Wirf eine Münze. Bei Kopf kann die verteidigende Figur im nächsten Zug deines Gegners nicht angreifen." }
+    ]
+  },
+  "TQQ01-028": { "title": "Winterweiß", "moves": [{ "name": "Kalte Schulter" }] },
+  "TQQ01-029": {
+    "title": "Festival-Fächer",
+    "ability": { "name": "Kopfhörer auf", "text": "Diese Figur erleidet durch Attacken 20 Schaden weniger." },
+    "moves": [{ "name": "Matcha-Soda-Pause" }]
+  },
+  "TQQ01-030": {
+    "title": "Blauer Strauß",
+    "ability": { "name": "Aller guten Dinge sind drei", "text": "Würde diese Figur besiegt, wirf eine Münze. Bei Kopf bleibt sie mit 10 LP im Spiel." },
+    "moves": [{ "name": "Stelldichein" }]
+  },
+  "TQQ01-031": {
+    "title": "Mitternachts-Maskerade",
+    "moves": [{ "name": "Maskierte Melodie", "text": "Wirf eine Münze. Bei Kopf kann die verteidigende Figur im nächsten Zug deines Gegners nicht angreifen." }]
+  },
+  "TQQ01-032": { "title": "Kirschblüten-Spaziergang", "moves": [{ "name": "Blütenflüstern" }] },
+  "TQQ01-033": {
+    "title": "Gang der Hortensien",
+    "ability": { "name": "Aller guten Dinge sind drei", "text": "Würde diese Figur besiegt, wirf eine Münze. Bei Kopf bleibt sie mit 10 LP im Spiel." },
+    "moves": [{ "name": "Stelldichein" }]
+  },
+  "TQQ01-034": {
+    "title": "Die ausgestreckte Hand",
+    "ability": { "name": "Kopfhörer auf", "text": "Diese Figur erleidet durch Attacken 20 Schaden weniger." },
+    "moves": [{ "name": "Hand in Hand", "text": "Fügt für jede deiner Figuren auf der Bank 30 Schaden mehr zu." }]
+  },
+  "TQQ01-035": {
+    "title": "Halloween-Süßes: Sengoku-Geist",
+    "ability": { "name": "Sengoku-Geist", "text": "Deine Figuren auf der Bank erleiden durch Attacken keinen Schaden." },
+    "moves": [{ "name": "Buh!" }]
+  },
+  "TQQ01-036": {
+    "title": "Halloween-Saures: Spukmelodie",
+    "moves": [{ "name": "Spukmelodie", "text": "Die verteidigende Figur kann im nächsten Zug deines Gegners nicht angreifen." }]
+  },
+
+  "TQQ01-037": { "title": "Startklar zum Sprint", "moves": [{ "name": "Aufwärmlauf" }] },
+  "TQQ01-038": { "title": "Hasenpuschen", "moves": [{ "name": "Hoppelhopp", "text": "Lege 1 Herz an 1 deiner Figuren auf der Bank an." }] },
+  "TQQ01-039": {
+    "title": "Jubel-Kapitänin",
+    "moves": [{ "name": "Pompon-Stups" }, { "name": "Helfende Hand", "text": "Lege 1 Herz an 1 deiner Figuren auf der Bank an." }]
+  },
+  "TQQ01-040": { "title": "Schalwetter", "moves": [{ "name": "Schneeball-Sprint" }] },
+  "TQQ01-041": {
+    "title": "Feuerwerksnacht",
+    "ability": { "name": "Band der Unterstützung", "text": "Die Attacken deiner Figuren auf der Bank kosten 1 Lernen-Herz weniger." },
+    "moves": [{ "name": "Staffelanker" }]
+  },
+  "TQQ01-042": {
+    "title": "Blumenkrone",
+    "moves": [
+      { "name": "Jubeltruppe", "text": "Lege bis zu 2 Herzen beliebig an deine Figuren an." },
+      { "name": "Versprechen am Schrein" }
+    ]
+  },
+  "TQQ01-043": {
+    "title": "Teddy-Fest",
+    "moves": [{ "name": "Teamsturm", "text": "Fügt für jede deiner Figuren auf der Bank 20 Schaden mehr zu." }]
+  },
+  "TQQ01-044": { "title": "Sonnenseite", "moves": [{ "name": "Sonnensprint" }] },
+  "TQQ01-045": {
+    "title": "Morgenlicht",
+    "moves": [
+      { "name": "Jubeltruppe", "text": "Lege bis zu 2 Herzen beliebig an deine Figuren an." },
+      { "name": "Versprechen am Schrein" }
+    ]
+  },
+  "TQQ01-046": {
+    "title": "In weißer Spitze",
+    "ability": { "name": "Band der Unterstützung", "text": "Die Attacken deiner Figuren auf der Bank kosten 1 Lernen-Herz weniger." },
+    "moves": [{ "name": "Ziellinie" }]
+  },
+  "TQQ01-047": {
+    "title": "Halloween-Süßes: Bonbon-Lauf",
+    "ability": { "name": "Bonbon-Lauf", "text": "Einmal pro Zug darfst du 1 Herz an diese Figur anlegen." },
+    "moves": [{ "name": "Buh!" }]
+  },
+  "TQQ01-048": {
+    "title": "Halloween-Saures: Kürbis-Flitzer",
+    "moves": [{ "name": "Kürbissprint", "text": "Ziehe 2 Karten." }]
+  },
+
+  "TQQ01-049": { "title": "Klassenbeste", "moves": [{ "name": "Nachschlag", "text": "Heile 10 Schaden von dieser Figur." }] },
+  "TQQ01-050": { "title": "Lernpause", "moves": [{ "name": "Naschpause", "text": "Ziehe 1 Karte." }] },
+  "TQQ01-051": { "title": "Würstchen-Krise", "moves": [{ "name": "Großer Happen" }, { "name": "Lernrunde" }] },
+  "TQQ01-052": { "title": "Schneespaziergang", "moves": [{ "name": "Warmes Brötchen", "text": "Heile 20 Schaden von dieser Figur." }] },
+  "TQQ01-053": {
+    "title": "Apfelbonbon-Fest",
+    "ability": { "name": "Zukünftige Lehrerin", "text": "Einmal pro Zug darfst du 1 Karte ziehen." },
+    "moves": [{ "name": "Fleischbrötchen-Ansturm" }]
+  },
+  "TQQ01-054": {
+    "title": "Brautblüte",
+    "moves": [{ "name": "Fünffaches Versprechen", "text": "Fügt für jede Fünflings-Figur, die du im Spiel hast, 30 Schaden zu." }]
+  },
+  "TQQ01-055": { "title": "Rubinrotes Ballkleid", "moves": [{ "name": "Schlemmerzorn", "text": "Heile 30 Schaden von dieser Figur." }] },
+  "TQQ01-056": { "title": "Sternspangen", "moves": [{ "name": "Wunschstern", "text": "Ziehe 1 Karte." }] },
+  "TQQ01-057": {
+    "title": "Kapellenglocken",
+    "ability": { "name": "Zukünftige Lehrerin", "text": "Einmal pro Zug darfst du 1 Karte ziehen." },
+    "moves": [{ "name": "Fünffaches Versprechen", "text": "Fügt für jede Fünflings-Figur, die du im Spiel hast, 40 Schaden zu." }]
+  },
+  "TQQ01-058": {
+    "title": "Versprechen der Fünf",
+    "moves": [{ "name": "Fünffaches Finale", "text": "Fügt für jede Fünflings-Figur, die du im Spiel hast, 50 Schaden zu." }]
+  },
+  "TQQ01-059": {
+    "title": "Halloween-Süßes: Bonbon-Festmahl",
+    "ability": { "name": "Bonbon-Festmahl", "text": "Wenn du diese Figur aus deiner Hand spielst: Ziehe so lange Karten, bis du 6 Karten auf der Hand hast." },
+    "moves": [{ "name": "Buh!" }]
+  },
+  "TQQ01-060": {
+    "title": "Halloween-Saures: Hungriger Geist",
+    "moves": [{ "name": "Hungriger Geist", "text": "Lege bis zu 2 Herzen der verteidigenden Figur ab." }]
+  },
+
+  "TQQ01-061": { "title": "Schaffner", "text": "Ziehe 2 Karten." },
+  "TQQ01-062": { "title": "Privatlehrer", "text": "Ziehe 3 Karten." },
+  "TQQ01-063": { "title": "Lern-Snack", "text": "Heile 30 Schaden von 1 deiner Figuren. Ziehe dann 1 Karte." },
+  "TQQ01-064": { "title": "Neujahrs-Hakama", "text": "Lege 2 Herzen an 1 deiner Figuren an." },
+  "TQQ01-065": {
+    "title": "Herbst in Kyoto",
+    "text": "Durchsuche dein Deck nach 1 Keim-Figur und lege sie auf deine Bank. Mische danach dein Deck."
+  },
+  "TQQ01-066": { "title": "Erinnerung an Kyoto", "text": "Mische deine Hand in dein Deck. Ziehe dann 6 Karten." },
+  "TQQ01-067": { "title": "Willkommen daheim", "text": "Heile 30 Schaden von 1 deiner Figuren." },
+  "TQQ01-068": { "title": "Bento der kleinen Schwester", "text": "Heile 60 Schaden von 1 deiner Figuren." },
+  "TQQ01-069": { "title": "Süße Überraschung", "text": "Heile bei jeder deiner Figuren 20 Schaden." },
+  "TQQ01-070": {
+    "title": "Festnacht",
+    "text": "Durchsuche dein Deck nach bis zu 2 Keim-Figuren und lege sie auf deine Bank. Mische danach dein Deck."
+  },
+  "TQQ01-071": { "title": "Der sorglose Vater", "text": "Jeder Spieler mischt seine Hand in sein Deck und zieht 4 Karten." },
+  "TQQ01-072": { "title": "Glückssträhne", "text": "Wirf eine Münze. Bei Kopf ziehst du 4 Karten, bei Zahl 1 Karte." },
+  "TQQ01-073": { "title": "Überraschungsbesuch", "text": "Dein Gegner mischt seine Hand in sein Deck und zieht 3 Karten." },
+  "TQQ01-074": {
+    "title": "Klinikdirektor",
+    "text": "Dein Gegner tauscht seine Bühnenfigur mit 1 Figur von seiner Bank. Du suchst aus, welche."
+  },
+  "TQQ01-075": { "title": "Ärztliche Anweisung", "text": "Heile 50 Schaden von 1 deiner Figuren." },
+  "TQQ01-076": {
+    "title": "Der überfürsorgliche Vater",
+    "text": "Deine Bühnenfigur erleidet im nächsten Zug deines Gegners keinen Schaden durch Attacken."
+  },
+  "TQQ01-077": {
+    "title": "Der Rivale",
+    "text": "Sieh dir die obersten 5 Karten deines Decks an. Nimm 1 davon auf die Hand und lege den Rest unter dein Deck."
+  },
+  "TQQ01-078": {
+    "title": "Bestnote",
+    "text": "Durchsuche dein Deck nach 1 Gefährten, zeige ihn und nimm ihn auf die Hand. Mische danach dein Deck."
+  },
+  "TQQ01-079": { "title": "Zweiter Platz", "text": "Ziehe 3 Karten. Heile dann 20 Schaden von 1 deiner Figuren." }
+}
