@@ -1,23 +1,40 @@
-# TQQ Holo Playground
+# TQQ TCG
 
-Throwaway spike for the card foil effects: Vite + React + TypeScript + React Three Fiber.
+A fan-made, offline-first trading card game: open packs, inspect foil cards in 3D, grade them into slabs, build a deck, battle. Vite + React + TypeScript (strict, no `any`) + React Three Fiber. The plan is in `../docs/bauplan.md`, the card rules in `../docs/card-system.md`.
 
 ```bash
 npm install
-npm run dev
+npm run dev        # dev server (http://localhost:5173)
+npm run check      # typecheck + lint + tests (run this before every commit)
+npm run build      # production build
 ```
 
-## Adding art
+Scripts: `typecheck`, `lint` (oxlint), `test` / `test:watch` (Vitest), `check`, `build`, `preview`.
 
-- Put images in `src/assets/cards/` (png, jpg, webp, avif). They load at start; the folder is git-ignored.
-- Or drop files onto the page, or use **Add images…** in the panel.
-- `name.mask.png` is the foil mask for `name.png`: white = foil, black = plain print. Use the "Custom mask image" foil region.
-- `back.png` replaces the card back.
-- Images are cover-fitted to the 63 × 88 mm card shape.
+## Layers
 
-## Layout
+Lower layers never import higher ones (enforced by `src/architecture.test.ts`); game rules never touch React or three.js and never use `Math.random`.
 
-- `src/holo/shaders/` — GLSL. `cardFront.frag.glsl` holds every finish; `common.glsl` holds shared helpers.
-- `src/holo/finishes.ts` — finish and foil-region catalog (indices must match the shader branches).
-- `src/holo/HoloCard.tsx` — card mesh, tilt and spin springs, pointer handling.
-- `src/scene/Stage.tsx` — canvas, gallery and inspect layouts, camera fit, FPS and GPU readout.
+| Folder | Role |
+|---|---|
+| `src/domain` | Game rules as pure code: seeded random, later packs, grading, economy, battle |
+| `src/cards`, `src/packs` | Card model, catalog, finish identity, pull weights |
+| `src/cardface` | Draws a card face on a 2D canvas (frames, text, signatures) |
+| `src/holo` | WebGL finishes and shaders |
+| `src/scene`, `src/ui` | Screens and controls |
+
+## Card art
+
+The art is fan material and stays on this machine (git-ignored). Put the chosen pictures in the art folder (`<Name> Tier NN.jpg`, `<Name> Halloween NN.jpg` per character) and run
+
+```bash
+python tools/import-art.py [art-folder]
+```
+
+It writes `src/assets/art/<character>/` and `src/data/art-manifest.json`. The old playground art loading (`src/assets/cards/`, drag and drop onto the page) still works for experiments.
+
+## Testing the effects
+
+- `name.mask.png` next to `name.png` in `src/assets/cards/` is a foil mask (white = foil). `back.png` replaces the card back.
+- `src/holo/shaders/` holds the GLSL; `cardFront.frag.glsl` has every finish, `common.glsl` the shared helpers.
+- `src/holo/finishes.ts` lists finishes and foil regions (indices must match the shader branches).

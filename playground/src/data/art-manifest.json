@@ -1,0 +1,417 @@
+{
+  "ichika": {
+    "h1": {
+      "width": 1080,
+      "height": 1350,
+      "source": "Ichika Halloween 01.jpg"
+    },
+    "h2": {
+      "width": 1239,
+      "height": 2200,
+      "source": "Ichika Halloween 02.png"
+    },
+    "t01": {
+      "width": 1366,
+      "height": 2048,
+      "source": "Ichika Tier 01.jpg"
+    },
+    "t02": {
+      "width": 1320,
+      "height": 2200,
+      "source": "Ichika Tier 02.jpg"
+    },
+    "t03": {
+      "width": 1375,
+      "height": 2052,
+      "source": "Ichika Tier 03.jpg"
+    },
+    "t04": {
+      "width": 1589,
+      "height": 2200,
+      "source": "Ichika Tier 04.jpg"
+    },
+    "t05": {
+      "width": 1536,
+      "height": 2047,
+      "source": "Ichika Tier 05.jpg"
+    },
+    "t06": {
+      "width": 1199,
+      "height": 1598,
+      "source": "Ichika Tier 06.jpg"
+    },
+    "t07": {
+      "width": 1000,
+      "height": 1414,
+      "source": "Ichika Tier 07.jpg"
+    },
+    "t08": {
+      "width": 1536,
+      "height": 2048,
+      "source": "Ichika Tier 08.jpg"
+    },
+    "t09": {
+      "width": 1329,
+      "height": 2200,
+      "source": "Ichika Tier 09.jpg"
+    },
+    "t10": {
+      "width": 1451,
+      "height": 2048,
+      "source": "Ichika Tier 10.jpg"
+    }
+  },
+  "nino": {
+    "h1": {
+      "width": 1152,
+      "height": 2048,
+      "source": "Nino Halloween 01.jpg"
+    },
+    "h2": {
+      "width": 1200,
+      "height": 2133,
+      "source": "Nino Halloween 02.jpg"
+    },
+    "t01": {
+      "width": 1006,
+      "height": 1416,
+      "source": "Nino Tier 01.jpg"
+    },
+    "t02": {
+      "width": 1760,
+      "height": 2200,
+      "source": "Nino Tier 02.jpg"
+    },
+    "t03": {
+      "width": 1024,
+      "height": 1486,
+      "source": "Nino Tier 03.jpg"
+    },
+    "t04": {
+      "width": 1440,
+      "height": 2160,
+      "source": "Nino Tier 04.jpg"
+    },
+    "t05": {
+      "width": 1000,
+      "height": 1401,
+      "source": "Nino Tier 05.jpg"
+    },
+    "t06": {
+      "width": 1450,
+      "height": 2048,
+      "source": "Nino Tier 06.jpg"
+    },
+    "t07": {
+      "width": 1200,
+      "height": 2133,
+      "source": "Nino Tier 07.jpg"
+    },
+    "t08": {
+      "width": 1479,
+      "height": 2200,
+      "source": "Nino Tier 08.jpg"
+    },
+    "t09": {
+      "width": 1200,
+      "height": 2133,
+      "source": "Nino Tier 09.jpg"
+    },
+    "t10": {
+      "width": 1080,
+      "height": 1526,
+      "source": "Nino Tier 10.jpg"
+    }
+  },
+  "miku": {
+    "h1": {
+      "width": 1200,
+      "height": 2133,
+      "source": "Miku Halloween 01.jpg"
+    },
+    "h2": {
+      "width": 1080,
+      "height": 1624,
+      "source": "Miku Halloween 02.jpg"
+    },
+    "t01": {
+      "width": 1200,
+      "height": 1423,
+      "source": "Miku Tier 01.jpg"
+    },
+    "t02": {
+      "width": 1320,
+      "height": 2200,
+      "source": "Miku Tier 02.jpg"
+    },
+    "t03": {
+      "width": 1212,
+      "height": 2156,
+      "source": "Miku Tier 03.jpg"
+    },
+    "t04": {
+      "width": 1200,
+      "height": 2133,
+      "source": "Miku Tier 04.jpg"
+    },
+    "t05": {
+      "width": 1363,
+      "height": 2048,
+      "source": "Miku Tier 05.jpg"
+    },
+    "t06": {
+      "width": 1135,
+      "height": 1828,
+      "source": "Miku Tier 06.jpg"
+    },
+    "t07": {
+      "width": 1421,
+      "height": 2200,
+      "source": "Miku Tier 07.jpg"
+    },
+    "t08": {
+      "width": 1200,
+      "height": 1600,
+      "source": "Miku Tier 08.jpg"
+    },
+    "t09": {
+      "width": 1214,
+      "height": 2048,
+      "source": "Miku Tier 09.jpg"
+    },
+    "t10": {
+      "width": 1080,
+      "height": 1529,
+      "source": "Miku Tier 10.jpg"
+    }
+  },
+  "yotsuba": {
+    "h1": {
+      "width": 1417,
+      "height": 2048,
+      "source": "Yotsuba Halloween 01.jpg"
+    },
+    "h2": {
+      "width": 1080,
+      "height": 1340,
+      "source": "Yotsuba Halloween 02.jpg"
+    },
+    "t01": {
+      "width": 1181,
+      "height": 1748,
+      "source": "Yotsuba Tier 01.jpg"
+    },
+    "t02": {
+      "width": 1320,
+      "height": 2200,
+      "source": "Yotsuba Tier 02.jpg"
+    },
+    "t03": {
+      "width": 1080,
+      "height": 1920,
+      "source": "Yotsuba Tier 03.jpg"
+    },
+    "t04": {
+      "width": 1382,
+      "height": 2048,
+      "source": "Yotsuba Tier 04.jpg"
+    },
+    "t05": {
+      "width": 1363,
+      "height": 2048,
+      "source": "Yotsuba Tier 05.jpg"
+    },
+    "t06": {
+      "width": 1080,
+      "height": 1439,
+      "source": "Yotsuba Tier 06.jpg"
+    },
+    "t07": {
+      "width": 1080,
+      "height": 1350,
+      "source": "Yotsuba Tier 07.png"
+    },
+    "t08": {
+      "width": 1080,
+      "height": 1350,
+      "source": "Yotsuba Tier 08.jpg"
+    },
+    "t09": {
+      "width": 1399,
+      "height": 2000,
+      "source": "Yotsuba Tier 09.jpg"
+    },
+    "t10": {
+      "width": 1138,
+      "height": 1500,
+      "source": "Yotsuba Tier 10.jpg"
+    }
+  },
+  "itsuki": {
+    "h1": {
+      "width": 1417,
+      "height": 2048,
+      "source": "Itsuki Halloween 01.jpg"
+    },
+    "h2": {
+      "width": 1200,
+      "height": 2133,
+      "source": "Itsuki Halloween 02.jpg"
+    },
+    "t01": {
+      "width": 1080,
+      "height": 1920,
+      "source": "Itsuki Tier 01.jpg"
+    },
+    "t02": {
+      "width": 1320,
+      "height": 2200,
+      "source": "Itsuki Tier 02.jpg"
+    },
+    "t03": {
+      "width": 1200,
+      "height": 1600,
+      "source": "Itsuki Tier 03.jpg"
+    },
+    "t04": {
+      "width": 1312,
+      "height": 2048,
+      "source": "Itsuki Tier 04.jpg"
+    },
+    "t05": {
+      "width": 1467,
+      "height": 2200,
+      "source": "Itsuki Tier 05.jpg"
+    },
+    "t06": {
+      "width": 1444,
+      "height": 2048,
+      "source": "Itsuki Tier 06.jpg"
+    },
+    "t07": {
+      "width": 1080,
+      "height": 1920,
+      "source": "Itsuki Tier 07.jpg"
+    },
+    "t08": {
+      "width": 1200,
+      "height": 2133,
+      "source": "Itsuki Tier 08.jpg"
+    },
+    "t09": {
+      "width": 1080,
+      "height": 1525,
+      "source": "Itsuki Tier 09.jpg"
+    },
+    "t10": {
+      "width": 1451,
+      "height": 2048,
+      "source": "Itsuki Tier 10.jpg"
+    }
+  },
+  "fuutarou": {
+    "t01": {
+      "width": 1238,
+      "height": 2200,
+      "source": "Futarou Tier 01.jpg"
+    },
+    "t02": {
+      "width": 2200,
+      "height": 2200,
+      "source": "Futarou Tier 02.jpg"
+    },
+    "t03": {
+      "width": 1159,
+      "height": 2200,
+      "source": "Futarou Tier 03.jpg"
+    },
+    "t04": {
+      "width": 1810,
+      "height": 2200,
+      "source": "Futarou Tier 04.jpg"
+    },
+    "t05": {
+      "width": 2200,
+      "height": 2200,
+      "source": "Futarou Tier 05.jpg"
+    },
+    "t06": {
+      "width": 2200,
+      "height": 2197,
+      "source": "Futarou Tier 06.jpg"
+    }
+  },
+  "raiha": {
+    "t01": {
+      "width": 1080,
+      "height": 2160,
+      "source": "Raiha Tier 01.jpg"
+    },
+    "t02": {
+      "width": 1697,
+      "height": 2200,
+      "source": "Raiha Tier 02.jpg"
+    },
+    "t03": {
+      "width": 2200,
+      "height": 2200,
+      "source": "Raiha Tier 03.jpg"
+    },
+    "t04": {
+      "width": 2200,
+      "height": 2200,
+      "source": "Raiha Tier 04.jpg"
+    }
+  },
+  "isanari": {
+    "t01": {
+      "width": 2200,
+      "height": 2200,
+      "source": "Isanari Tier 01.jpg"
+    },
+    "t02": {
+      "width": 2200,
+      "height": 2200,
+      "source": "Isanari Tier 02.jpg"
+    },
+    "t03": {
+      "width": 2200,
+      "height": 2200,
+      "source": "Isanari Tier 03.jpg"
+    }
+  },
+  "maruo": {
+    "t01": {
+      "width": 2200,
+      "height": 2200,
+      "source": "Maruo Tier 01.jpg"
+    },
+    "t02": {
+      "width": 2200,
+      "height": 2200,
+      "source": "Maruo Tier 02.jpg"
+    },
+    "t03": {
+      "width": 2196,
+      "height": 2200,
+      "source": "Maruo Tier 03.jpg"
+    }
+  },
+  "yusuke": {
+    "t01": {
+      "width": 2200,
+      "height": 2200,
+      "source": "Yusuke Tier 01.jpg"
+    },
+    "t02": {
+      "width": 1414,
+      "height": 2200,
+      "source": "Yusuke Tier 02.jpg"
+    },
+    "t03": {
+      "width": 1414,
+      "height": 2200,
+      "source": "Yusuke Tier 03.jpg"
+    }
+  }
+}

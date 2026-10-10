@@ -1,67 +1,75 @@
-# TQQ card system (draft v1)
+# TQQ card system (v2)
 
-A Pokémon-style structure themed around the Quintuplets. Source of truth for the types: `playground/src/cards/model.ts`; the 43-card starter set: `playground/src/cards/catalog.ts`.
+A Pokémon-style structure themed around the Quintuplets. Set code **TQQ01**, **79 cards**. Source of truth in code: `playground/src/cards/model.ts` (types) and, from Stage 1 on, the card data files. The Battle-System rules are summarised in `docs/game-vision-and-plan.md`, the build plan is `docs/bauplan.md`.
 
 ## Card kinds
 
 | Kind | Who | Role |
 |---|---|---|
-| **Character** | The five sisters | Your fighters. Have HP, moves, an optional ability, weakness, resistance and retreat cost. |
-| **Supporter** | Fūtarō, Raiha, Isanari, Maruo, Yūsuke | One per turn. Draw, search, heal, disrupt. |
-| *(planned)* Item, Location, Heart | — | Items and Locations are the "Trainer" family; Heart cards are the energy. |
+| **Character** | The five sisters | Your fighters: HP, moves, optional ability, weakness, resistance, retreat cost. |
+| **Supporter** | Fūtarō, Raiha, Isanari, Maruo, Yusuke | One per turn: draw, search, heal, disrupt. |
+| **Event Prime** | Two Halloween cards per sister | Limited, see below. |
 
 ## Hearts (types)
 
-Each sister owns a Heart type; Study is neutral (any Heart can pay a Study cost).
+Each sister owns a Heart type; Study is neutral (any Heart can pay a Study cost). Every turn you get **1 free Heart** of a type in your deck, there are no Heart cards.
 
 | Heart | Sister | Colour | Weak to | Resists |
 |---|---|---|---|---|
-| Heart ♥ | Ichika | gold | Butterfly | Star |
+| Heart | Ichika | gold | Butterfly | Star |
 | Butterfly | Nino | violet | Melody | Heart |
-| Melody 🎧 | Miku | blue | Clover | Butterfly |
-| Clover ☘ | Yotsuba | green | Star | Melody |
-| Star ★ | Itsuki | coral | Heart | Clover |
-| Study 📖 | supporting cast | grey | — | — |
+| Melody | Miku | blue | Clover | Butterfly |
+| Clover | Yotsuba | green | Star | Melody |
+| Star | Itsuki | coral | Heart | Clover |
+| Study | supporting cast | grey | none | none |
 
-Weakness doubles damage; resistance subtracts 30.
+Weakness doubles damage, resistance subtracts 30.
 
-## Stages and Prime
+## The ten tiers of a sister (art themes and card values)
 
-- **Basic → Close → Bride** (like Basic → Stage 1 → Stage 2).
-- **Prime** cards are stronger and have more HP, but give up **2 Memories** when knocked out (the "ex" rule).
-- Win by collecting **6 Memories** (prize cards).
+Every sister has the same ladder. Each tier has its own art theme, so no two cards of one sister feel alike. Rarity and play stage are a *draft mapping*; it is plain data from Stage 1 on and can change without touching code.
 
-## Rarity ladder (7 tiers)
-
-| Tier | Code | Name | Sister cards in TQQ01 |
+| Tier | Art theme | Rarity | Stage |
 |---|---|---|---|
-| 1 | C ● | Common | Basic |
-| 2 | U ◆ | Uncommon | Basic |
-| 3 | R ★ | Rare | Close |
-| 4 | RR ★★ | Double Rare | Close Prime |
-| 5 | AR ✦ | Art Rare | Basic, art-focused |
-| 6 | SAR ✦✦ | Special Art Rare | Bride Prime, gold signature |
-| 7 | UR ✦✦✦ | Ultra Rare | Bride Prime, gold signature |
+| 01 | School uniform | C | Basic |
+| 02 | Cozy at home | C | Basic |
+| 03 | Signature hobby | U | Basic |
+| 04 | Autumn / winter outfit | U | Close |
+| 05 | Festival / yukata | R | Close |
+| 06 | Bridal portrait | R | Bride |
+| 07 | Dress-up | RR | Close, Prime |
+| 08 | Full-art illustration | AR | Basic (special art) |
+| 09 | Wedding scene | SAR | Bride, Prime |
+| 10 | Wedding gown, full look | UR | Bride, Prime |
+| H1, H2 | Halloween | Event | Event Prime |
 
-Art file *n* in each sister's folder is used for tier *n*.
+HP guide: Basic 70, Close 110 (Prime 190), Bride 150 (Prime 260). Supporters: Fūtarō 6 cards, Raiha 4, Isanari 3, Maruo 3, Yusuke 3.
 
-**Finish is independent of rarity**: any printed copy can roll Standard, Rainbow, Sparkle, Cosmos, Gold, Cracked Ice or Radiant. Finish belongs to the owned copy, not the card design.
+## Halloween cards
 
-## Card face layout (our own, Weiß-Schwarz-inspired)
+Limited, only in the time-limited Halloween Banner (own pity counter). Own effect, more HP, can be played straight to the Bench, give up 2 Memories when knocked out, at most 1 per deck. Draft effects are listed in `docs/game-vision-and-plan.md`.
 
-1. Full-bleed artwork, framed per card (`crop`: position + zoom; zoomed-out art gets a blurred fill).
-2. Top left: level badge with the Heart glyph and stage, plus a gold **PRIME** pill. Top right: HP and type coin.
-3. Gold-foil signature (SAR/UR, invented autographs) just above the text area.
-4. Text area anchored to the bottom: name bar (English + Japanese), title and stage, ability, moves, and a footer row (weakness, resistance, retreat, set code, rarity, illustrator).
+## Rarity and finish
 
-**Classic** is the chosen direction (modelled on Weiß Schwarz foils): pearl border around full art, white level box (LV 1/2/3 = Basic/Close/Bride) with a Heart colour chip, translucent white text box, name band (HP chip, title, English name, large Japanese name) and an info strip (set code, rarity, 《traits》, weakness/resistance/retreat). All four frames (Classic, Paper, Fade, Glass) stay as in-game variants for variety; which print gets which frame is still to be decided.
+Rarity ladder: C, U, R, RR, AR, SAR, UR (vector marks on the card). **Finish is independent of rarity** and belongs to the owned copy: Standard, Rainbow Holo, Sparkle, Cosmos, Gold Foil, Prism Crystal, Radiant. `playground/src/packs/finishWeights.ts` makes premium finishes more likely on higher rarities (placeholder odds, Monte Carlo tested). SAR and UR also get an embossed foil layer.
 
-Layout rules shared by every frame (`playground/src/cardface/paint.ts`): 40px safe margin from the card edge (face is 1000×1400), 12px gap between panels, 16px corner radius, 24px panel padding. Type scale: rules text 26px, move names 34px, damage 46px, labels 20px, smallest text 18px. An audit over all 43 cards × 4 frames checks for overlapping text, safe-margin violations and undersized fonts.
+## Card face (own design, Weiß-Schwarz-inspired)
 
-The foil mask comes from the same layout: red = holo allowed, green = gold signature, blue = text areas, which never take foil in any finish or foil region.
+Card face is 1000 × 1400, drawn on a 2D canvas, then used as the texture of the WebGL card.
+
+- **Frame styles:** Classic (default, pearl border, white level box, translucent text box, name band, info strip), Paper, Fade (silver), Glass. All four stay as in-game variants.
+- **Two fixed print templates:** A for Characters (text area at y = 920, stats pinned to the bottom), B for Supporters (shorter box, larger centred effect text). Text areas never move; long text shrinks stepwise (`SCALE_STEPS`).
+- **Rules shared by every frame:** 40 px safe margin, 12 px gap, 16 px radius, 24 px padding, flat print (no blur shadows except the Glass glow), type tokens in `cardface/paint.ts`. Gold is reserved for signatures and Ichika's Heart colour; PRIME is an obsidian ribbon.
+- **Fonts:** Inter Variable and Noto Sans JP Variable, bundled and loaded before drawing.
+- **Signatures:** invented autographs as vector paths (`tools/generate-signatures.py`), drawn with a slanted nib, gold foil on SAR/UR.
+- **Foil mask:** red = holo allowed, green = gold signature, blue = text areas, which never take foil.
+
+## Art
+
+The pictures are fan art that stays on this machine. `playground/tools/import-art.py` copies the chosen pictures from the art folder into `src/assets/art/<character>/<slot>.jpg` (git-ignored) and writes `src/data/art-manifest.json` (sizes and source file names, tracked). Cast pictures that were small were upscaled with Real-ESRGAN first. Illustrator credits are still "Unknown".
 
 ## Open
 
-- Move and ability effects are display text only; a battle engine needs them as structured data.
-- Illustrator credits are "Unknown" until the art sources are known.
-- The numbers (HP, damage, costs) are first-pass and unbalanced.
+- Move and ability effects are display text only; the battle engine needs them as structured data (Stage 1 and 6).
+- All numbers (HP, damage, costs, odds) are first-pass and unbalanced; they get tuned with simulations.
+- Which print gets which frame style is not decided yet.
