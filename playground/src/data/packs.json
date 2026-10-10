@@ -1,0 +1,39 @@
+[
+  {
+    "id": "booster",
+    "name": "TQQ01 Booster",
+    "price": 500,
+    "slots": [
+      { "role": "basic", "table": { "C": 60, "U": 40 } },
+      { "role": "basic", "table": { "C": 60, "U": 40 } },
+      { "role": "basic", "table": { "C": 60, "U": 40 } },
+      { "role": "plus", "table": { "U": 40, "R": 44, "RR": 12, "AR": 4 } },
+      { "role": "hit", "table": { "R": 44, "RR": 28, "AR": 14, "SAR": 10, "UR": 4 } }
+    ],
+    "pity": { "sar": { "after": 30, "urShare": 0.25 }, "ur": { "after": 90 } }
+  },
+  {
+    "id": "halloween",
+    "name": "Halloween Wish",
+    "price": 500,
+    "slots": [
+      { "role": "basic", "table": { "C": 60, "U": 40 } },
+      { "role": "basic", "table": { "C": 60, "U": 40 } },
+      { "role": "basic", "table": { "C": 60, "U": 40 } },
+      { "role": "plus", "table": { "U": 40, "R": 44, "RR": 12, "AR": 4 } },
+      { "role": "hit", "table": { "R": 44, "RR": 28, "AR": 14, "SAR": 10, "UR": 4 } }
+    ],
+    "pity": { "sar": { "after": 30, "urShare": 0.25 }, "ur": { "after": 90 } },
+    "banner": {
+      "eventId": "halloween",
+      "from": "2026-10-10",
+      "to": "2026-11-04",
+      "hit": { "base": 0.016, "softFrom": 45, "softStep": 0.07, "hard": 70 },
+      "mainShare": 0.5,
+      "phases": [
+        { "from": "2026-10-10", "to": "2026-10-22", "mains": ["TQQ01-023", "TQQ01-036"] },
+        { "from": "2026-10-23", "to": "2026-11-04", "mains": ["TQQ01-011", "TQQ01-060"] }
+      ]
+    }
+  }
+]

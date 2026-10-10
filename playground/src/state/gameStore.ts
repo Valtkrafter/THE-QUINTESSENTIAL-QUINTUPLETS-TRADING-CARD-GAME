@@ -24,6 +24,11 @@ export interface GameActions {
   start(): Promise<void>;
   /** Applies a pure change to the save and stores the result. */
   change(update: (save: SaveGame) => SaveGame): void;
+  /**
+   * Runs a rule that gives back a result together with the new save, stores the new save and returns the result.
+   * When the rule throws nothing changes. Returns undefined while no game is loaded.
+   */
+  transact<T>(rule: (save: SaveGame) => { readonly save: SaveGame; readonly value: T }): T | undefined;
   /** Swaps in another save (an imported file) and stores it. */
   replace(save: SaveGame): void;
   /** Throws the stored game away and begins a new one. */
@@ -111,6 +116,17 @@ export function createGameStore(deps: GameDeps): GameStore {
         const next = update(save);
         set({ save: next });
         persist(next);
+      },
+
+      transact(rule) {
+        const { phase, save } = get();
+        if (phase !== 'ready' || save === null) {
+          return undefined;
+        }
+        const result = rule(save);
+        set({ save: result.save });
+        persist(result.save);
+        return result.value;
       },
 
       replace(save) {

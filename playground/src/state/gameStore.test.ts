@@ -61,6 +61,21 @@ describe('game store', () => {
     expect(reloaded.getState().save).toEqual(game.getState().save);
   });
 
+  it('returns the result of a rule and stores its save, or changes nothing when the rule throws', async () => {
+    const game = createGameStore(deps(rawStore(null)));
+    expect(game.getState().transact(() => ({ save: newSaveGame('x', NOW), value: 1 }))).toBeUndefined();
+    await game.getState().start();
+    const value = game.getState().transact((save) => ({ save: addOwnedCard(save, 'TQQ01-030', 'gold', 'pack', NOW).save, value: 'done' }));
+    expect(value).toBe('done');
+    expect(game.getState().save?.collection).toHaveLength(1);
+    expect(() =>
+      game.getState().transact(() => {
+        throw new Error('rule failed');
+      }),
+    ).toThrow('rule failed');
+    expect(game.getState().save?.collection).toHaveLength(1);
+  });
+
   it('ignores changes before the game is loaded', () => {
     const game = createGameStore(deps(rawStore(null)));
     game.getState().change((save) => ({ ...save, player: { yen: 5 } }));

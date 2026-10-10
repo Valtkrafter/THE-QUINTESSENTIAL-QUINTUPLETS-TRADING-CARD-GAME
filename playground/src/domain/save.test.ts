@@ -13,6 +13,8 @@ import {
   parseSave,
   saveGameSchema,
   serializeSave,
+  earnYen,
+  spendYen,
   withRng,
   withShowcase,
 } from './save';
@@ -111,7 +113,7 @@ describe('saving and loading', () => {
   });
 
   it('notices a file that was changed by hand', () => {
-    const text = serializeSave(game).replace('"yen\\":1000', '"yen\\":999999');
+    const text = serializeSave(game).replace(`"yen\\":${STARTING_YEN}`, '"yen\\":999999');
     expect(text).not.toBe(serializeSave(game));
     expect(() => parseSave(text, KNOWN)).toThrow(/damaged/);
   });
@@ -168,13 +170,50 @@ describe('showcase', () => {
 });
 
 describe('upgrading an old save', () => {
-  it('opens a version 1 save (before the showcase existed) and adds an empty showcase', () => {
-    const { showcase: _showcase, ...current } = addOwnedCard(newSaveGame('old', NOW), 'TQQ01-010', 'rainbow', 'starter', NOW).save;
-    const data = JSON.stringify({ ...current, version: 1 });
-    const text = JSON.stringify({ format: 'tqq-save', checksum: checksum(data), data });
-    const upgraded = parseSave(text, KNOWN);
+  function oldText(version: 1 | 2): string {
+    const current = addOwnedCard(newSaveGame('old', NOW), 'TQQ01-010', 'rainbow', 'starter', NOW).save;
+    const { showcase, daily: _daily, packHistory: _history, ...rest } = current;
+    const { flags: _flags, ...counters } = rest.counters;
+    const shape = version === 1 ? { ...rest, counters, version } : { ...rest, counters, showcase, version };
+    const data = JSON.stringify(shape);
+    return JSON.stringify({ format: 'tqq-save', checksum: checksum(data), data });
+  }
+
+  it('opens a version 1 save (before the showcase existed)', () => {
+    const upgraded = parseSave(oldText(1), KNOWN);
     expect(upgraded.version).toBe(SAVE_VERSION);
     expect(upgraded.showcase).toEqual([]);
+    expect(upgraded.daily).toEqual({ lastClaim: null });
+    expect(upgraded.packHistory).toEqual([]);
+    expect(upgraded.counters.flags).toEqual({});
     expect(upgraded.collection.map((card) => card.cardId)).toEqual(['TQQ01-010']);
+  });
+
+  it('opens a version 2 save (before the daily bonus and pack history existed)', () => {
+    const upgraded = parseSave(oldText(2), KNOWN);
+    expect(upgraded.version).toBe(SAVE_VERSION);
+    expect(upgraded.daily.lastClaim).toBeNull();
+    expect(upgraded.counters.flags).toEqual({});
+    expect(upgraded.collection).toHaveLength(1);
+  });
+});
+
+describe('yen', () => {
+  const save = newSaveGame('yen', NOW);
+
+  it('spends and earns without touching the old save', () => {
+    const less = spendYen(save, 500, NOW + 1);
+    const more = earnYen(less, 200, NOW + 2);
+    expect([save.player.yen, less.player.yen, more.player.yen]).toEqual([STARTING_YEN, STARTING_YEN - 500, STARTING_YEN - 300]);
+  });
+
+  it('never lets the purse go below zero', () => {
+    expect(() => spendYen(save, STARTING_YEN + 1, NOW)).toThrow(/Not enough yen/);
+    expect(spendYen(save, STARTING_YEN, NOW).player.yen).toBe(0);
+  });
+
+  it('refuses amounts that are negative or not whole', () => {
+    expect(() => spendYen(save, -1, NOW)).toThrow(RangeError);
+    expect(() => earnYen(save, 1.5, NOW)).toThrow(RangeError);
   });
 });

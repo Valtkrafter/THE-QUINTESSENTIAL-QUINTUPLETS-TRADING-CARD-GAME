@@ -5,15 +5,27 @@
 // and keep a test that loads a saved game of the old version.
 
 import { z } from 'zod';
-import type { FinishId } from '../cards/finish';
+import { FINISH_IDS, type FinishId } from '../cards/finish';
 import { ownedCardSchema, rollCondition, uidFor, type ObtainSource, type OwnedCard } from './ownership';
 import { createRng, restoreRng, type Rng } from './random';
 
-export const SAVE_VERSION = 2;
+export const SAVE_VERSION = 3;
 export const SAVE_FORMAT = 'tqq-save';
-export const STARTING_YEN = 1000;
+export const STARTING_YEN = 1500;
 /** How many copies fit in the showcase. */
 export const SHOWCASE_SLOTS = 6;
+/** How many of the latest pack openings the save remembers. */
+export const HISTORY_LIMIT = 50;
+
+const dayKeySchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+
+/** One opened pack, as shown in the history list. */
+export const packHistoryEntrySchema = z.strictObject({
+  at: z.number().int().min(0),
+  pack: z.string(),
+  cards: z.array(z.strictObject({ cardId: z.string(), finish: z.enum(FINISH_IDS) })),
+});
+export type PackHistoryEntry = z.infer<typeof packHistoryEntrySchema>;
 
 const rngStateSchema = z.tuple([z.number().int(), z.number().int(), z.number().int(), z.number().int()]);
 
@@ -29,9 +41,15 @@ export const saveGameSchema = z.strictObject({
     /** How many copies of each card design this player has ever received (the next copy gets count + 1 as serial). */
     prints: z.record(z.string(), z.number().int().min(1)),
     packsOpened: z.number().int().min(0),
-    /** Packs opened since the last big hit, per pack kind (for the visible pity counter). */
+    /** Packs opened since the last big hit, per kind of hit (for the visible pity counters). */
     pity: z.record(z.string(), z.number().int().min(0)),
+    /** Yes/no memories of the rules, for example "the next banner hit is sure to be a main card" (version 3). */
+    flags: z.record(z.string(), z.boolean()),
   }),
+  /** The day the daily bonus was last taken, or null when it never was (version 3). */
+  daily: z.strictObject({ lastClaim: dayKeySchema.nullable() }),
+  /** The latest opened packs, newest last (version 3). */
+  packHistory: z.array(packHistoryEntrySchema).max(HISTORY_LIMIT),
   /** Uids of the copies on display, in shelf order (version 2). */
   showcase: z.array(z.string()).max(SHOWCASE_SLOTS),
   /** Where the seeded random generator stopped, so pulls continue the same way after a reload. */
@@ -48,7 +66,9 @@ export function newSaveGame(seed: string | number, now: number): SaveGame {
     updatedAt: now,
     player: { yen: STARTING_YEN },
     collection: [],
-    counters: { nextUid: 1, prints: {}, packsOpened: 0, pity: {} },
+    counters: { nextUid: 1, prints: {}, packsOpened: 0, pity: {}, flags: {} },
+    daily: { lastClaim: null },
+    packHistory: [],
     showcase: [],
     rng: createRng(seed).state(),
   };
@@ -106,12 +126,35 @@ export function withShowcase(save: SaveGame, uids: readonly string[], now: numbe
   return { ...save, updatedAt: now, showcase: [...uids] };
 }
 
+/** Takes yen out of the purse. Throws when there is not enough, so the purse can never go below zero. */
+export function spendYen(save: SaveGame, amount: number, now: number): SaveGame {
+  if (!Number.isInteger(amount) || amount < 0) {
+    throw new RangeError(`Cannot spend ${amount} yen.`);
+  }
+  if (save.player.yen < amount) {
+    throw new RangeError(`Not enough yen: ${save.player.yen} of ${amount}.`);
+  }
+  return { ...save, updatedAt: now, player: { ...save.player, yen: save.player.yen - amount } };
+}
+
+export function earnYen(save: SaveGame, amount: number, now: number): SaveGame {
+  if (!Number.isInteger(amount) || amount < 0) {
+    throw new RangeError(`Cannot earn ${amount} yen.`);
+  }
+  return { ...save, updatedAt: now, player: { ...save.player, yen: save.player.yen + amount } };
+}
+
 // --- Saving and loading ----------------------------------------------------------------------------------------
 
 /** Turns a saved game of an older version into the next one. Index n upgrades version n to n + 1. */
 const MIGRATIONS: readonly ((data: Record<string, unknown>) => Record<string, unknown>)[] = [
   // 1 -> 2: the showcase was added.
   (data) => ({ ...data, showcase: [] }),
+  // 2 -> 3: the daily bonus, the pack history and the yes/no memories were added.
+  (data) => {
+    const counters = typeof data['counters'] === 'object' && data['counters'] !== null ? data['counters'] : {};
+    return { ...data, counters: { ...counters, flags: {} }, daily: { lastClaim: null }, packHistory: [] };
+  },
 ];
 
 /** Fast 32-bit checksum (FNV-1a). Catches a damaged or hand-edited file by accident; it is not a security feature. */
