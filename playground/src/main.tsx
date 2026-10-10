@@ -3,9 +3,10 @@ import '@fontsource-variable/inter/wght-italic.css';
 import '@fontsource-variable/noto-sans-jp';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import App from './App.tsx';
 import { ensureLabelFont } from './cardface/fonts';
-import './index.css';
+import App from './ui/App';
+import './ui/theme/tokens.css';
+import './ui/theme/base.css';
 
 const rootElement = document.getElementById('root');
 if (rootElement === null) {

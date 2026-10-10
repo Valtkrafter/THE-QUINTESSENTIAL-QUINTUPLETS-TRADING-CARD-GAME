@@ -2,7 +2,20 @@ import { describe, expect, it } from 'vitest';
 import { CATALOG } from '../cards/catalog';
 import { rollCondition } from './ownership';
 import { createRng } from './random';
-import { SAVE_VERSION, STARTING_YEN, SaveError, addOwnedCard, checksum, newSaveGame, parseSave, saveGameSchema, serializeSave, withRng } from './save';
+import {
+  SAVE_VERSION,
+  SHOWCASE_SLOTS,
+  STARTING_YEN,
+  SaveError,
+  addOwnedCard,
+  checksum,
+  newSaveGame,
+  parseSave,
+  saveGameSchema,
+  serializeSave,
+  withRng,
+  withShowcase,
+} from './save';
 
 const KNOWN = new Set(CATALOG.map((card) => card.id));
 const NOW = 1_760_000_000_000;
@@ -126,5 +139,42 @@ describe('saving and loading', () => {
     const data = JSON.stringify(twice);
     const text = JSON.stringify({ format: 'tqq-save', checksum: checksum(data), data });
     expect(() => parseSave(text, KNOWN)).toThrow(/same copy twice/);
+  });
+});
+
+describe('showcase', () => {
+  const start = addOwnedCard(addOwnedCard(newSaveGame('show', NOW), 'TQQ01-001', 'standard', 'pack', NOW).save, 'TQQ01-002', 'gold', 'pack', NOW).save;
+
+  it('keeps the shelf order and survives saving and loading', () => {
+    const shown = withShowcase(start, ['c000002', 'c000001'], NOW + 1);
+    expect(shown.showcase).toEqual(['c000002', 'c000001']);
+    expect(shown.updatedAt).toBe(NOW + 1);
+    expect(start.showcase).toEqual([]);
+    expect(parseSave(serializeSave(shown), KNOWN)).toEqual(shown);
+  });
+
+  it('refuses copies that are missing, doubled or too many', () => {
+    expect(() => withShowcase(start, ['c000099'], NOW)).toThrow(/not in the collection/);
+    expect(() => withShowcase(start, ['c000001', 'c000001'], NOW)).toThrow(/twice/);
+    const many = Array.from({ length: SHOWCASE_SLOTS + 1 }, (_, i) => `c${String(i + 1).padStart(6, '0')}`);
+    expect(() => withShowcase(start, many, NOW)).toThrow(/at most/);
+  });
+
+  it('refuses a stored showcase that points at a copy the player does not own', () => {
+    const data = JSON.stringify({ ...start, showcase: ['c000042'] });
+    const text = JSON.stringify({ format: 'tqq-save', checksum: checksum(data), data });
+    expect(() => parseSave(text, KNOWN)).toThrow(/showcase/);
+  });
+});
+
+describe('upgrading an old save', () => {
+  it('opens a version 1 save (before the showcase existed) and adds an empty showcase', () => {
+    const { showcase: _showcase, ...current } = addOwnedCard(newSaveGame('old', NOW), 'TQQ01-010', 'rainbow', 'starter', NOW).save;
+    const data = JSON.stringify({ ...current, version: 1 });
+    const text = JSON.stringify({ format: 'tqq-save', checksum: checksum(data), data });
+    const upgraded = parseSave(text, KNOWN);
+    expect(upgraded.version).toBe(SAVE_VERSION);
+    expect(upgraded.showcase).toEqual([]);
+    expect(upgraded.collection.map((card) => card.cardId)).toEqual(['TQQ01-010']);
   });
 });

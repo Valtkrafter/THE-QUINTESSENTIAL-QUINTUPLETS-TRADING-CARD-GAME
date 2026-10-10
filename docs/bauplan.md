@@ -29,7 +29,7 @@ Stand: Oktober 2026. Das ist der Plan zum Bauen. Entscheidungen, die schon fests
 `src/domain` (Regeln, Packs, Bewertung, Wirtschaft, Battle, kein React) → `src/data` (Karten als Daten, Zod) → `src/state` (Speicher, Einstellungen) → `src/render` (Karten-Gesicht und Holo, schon vorhanden) → `src/ui` (Bildschirme). Obere Schichten dürfen untere benutzen, nie umgekehrt.
 
 ## 4. Stufen
-Status: Stufe 0 ✅ fertig, Stufe 1 ✅ fertig, Stufe 2 als Nächstes.
+Status: Stufe 0 ✅ fertig, Stufe 1 ✅ fertig, Stufe 2 gebaut (wartet auf deine Prüfung), Stufe 3 als Nächstes.
 
 Größen: S = wenige Sitzungen, M = eine Woche, L = mehrere Wochen, XL = großes Projekt. Jede Stufe endet spielbar, mit grünen Tests und Build.
 

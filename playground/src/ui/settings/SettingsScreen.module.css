@@ -1,0 +1,120 @@
+.sections {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  max-width: 820px;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+
+.section h2 {
+  font-size: var(--text-lg);
+}
+
+.block {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.block + .block {
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--line);
+  width: 100%;
+}
+
+.block h3 {
+  font-size: var(--text-md);
+  font-weight: 600;
+}
+
+.hint {
+  max-width: 62ch;
+  color: var(--text-soft);
+  font-size: var(--text-sm);
+  line-height: 1.6;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.message {
+  color: var(--accent-strong);
+  font-size: var(--text-sm);
+}
+
+.link {
+  color: var(--accent);
+  font-size: var(--text-sm);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.frames {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 150px));
+  gap: var(--space-4);
+}
+
+.frame {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  color: var(--text-soft);
+  font-size: var(--text-sm);
+  transition:
+    border-color var(--fast) var(--ease),
+    background-color var(--fast) var(--ease);
+}
+
+.frame:hover {
+  border-color: var(--line-strong);
+  color: var(--text);
+}
+
+.chosen {
+  border-color: var(--accent);
+  background: var(--accent-wash);
+  color: var(--text);
+}
+
+.preview {
+  display: block;
+  width: 100%;
+}
+
+.dialogText {
+  color: var(--text-soft);
+  line-height: 1.6;
+}
+
+.dialogActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  margin-top: var(--space-5);
+}
+
+@media (max-width: 640px) {
+  .frames {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

@@ -9,9 +9,11 @@ import type { FinishId } from '../cards/finish';
 import { ownedCardSchema, rollCondition, uidFor, type ObtainSource, type OwnedCard } from './ownership';
 import { createRng, restoreRng, type Rng } from './random';
 
-export const SAVE_VERSION = 1;
+export const SAVE_VERSION = 2;
 export const SAVE_FORMAT = 'tqq-save';
 export const STARTING_YEN = 1000;
+/** How many copies fit in the showcase. */
+export const SHOWCASE_SLOTS = 6;
 
 const rngStateSchema = z.tuple([z.number().int(), z.number().int(), z.number().int(), z.number().int()]);
 
@@ -30,6 +32,8 @@ export const saveGameSchema = z.strictObject({
     /** Packs opened since the last big hit, per pack kind (for the visible pity counter). */
     pity: z.record(z.string(), z.number().int().min(0)),
   }),
+  /** Uids of the copies on display, in shelf order (version 2). */
+  showcase: z.array(z.string()).max(SHOWCASE_SLOTS),
   /** Where the seeded random generator stopped, so pulls continue the same way after a reload. */
   rng: rngStateSchema,
 });
@@ -45,6 +49,7 @@ export function newSaveGame(seed: string | number, now: number): SaveGame {
     player: { yen: STARTING_YEN },
     collection: [],
     counters: { nextUid: 1, prints: {}, packsOpened: 0, pity: {} },
+    showcase: [],
     rng: createRng(seed).state(),
   };
 }
@@ -85,11 +90,28 @@ export function withRng<T>(save: SaveGame, roll: (rng: Rng) => T): { readonly sa
   return { save: { ...save, rng: rng.state() }, value };
 }
 
+/** Puts the given copies on display, in order. Returns a new save; throws when a copy is missing or listed twice. */
+export function withShowcase(save: SaveGame, uids: readonly string[], now: number): SaveGame {
+  if (uids.length > SHOWCASE_SLOTS) {
+    throw new Error(`The showcase holds at most ${SHOWCASE_SLOTS} cards.`);
+  }
+  if (new Set(uids).size !== uids.length) {
+    throw new Error('The same copy cannot be on display twice.');
+  }
+  const owned = new Set(save.collection.map((card) => card.uid));
+  const missing = uids.filter((uid) => !owned.has(uid));
+  if (missing.length > 0) {
+    throw new Error(`These copies are not in the collection: ${missing.join(', ')}.`);
+  }
+  return { ...save, updatedAt: now, showcase: [...uids] };
+}
+
 // --- Saving and loading ----------------------------------------------------------------------------------------
 
 /** Turns a saved game of an older version into the next one. Index n upgrades version n to n + 1. */
 const MIGRATIONS: readonly ((data: Record<string, unknown>) => Record<string, unknown>)[] = [
-  // (empty: version 1 is the first version)
+  // 1 -> 2: the showcase was added.
+  (data) => ({ ...data, showcase: [] }),
 ];
 
 /** Fast 32-bit checksum (FNV-1a). Catches a damaged or hand-edited file by accident; it is not a security feature. */
@@ -171,6 +193,9 @@ export function parseSave(text: string, knownCardIds: ReadonlySet<string>): Save
   const uids = new Set(save.collection.map((card) => card.uid));
   if (uids.size !== save.collection.length) {
     throw new SaveError('The save contains the same copy twice.');
+  }
+  if (new Set(save.showcase).size !== save.showcase.length || save.showcase.some((uid) => !uids.has(uid))) {
+    throw new SaveError('The showcase lists a copy that is missing or listed twice.');
   }
   return save;
 }

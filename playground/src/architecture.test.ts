@@ -15,7 +15,14 @@ const RULES: readonly { readonly folder: string; readonly forbidden: readonly st
   { folder: 'cards', forbidden: [...UI_LIBRARIES, ...PRESENTATION_FOLDERS, 'domain', 'packs'] },
   { folder: 'domain', forbidden: [...UI_LIBRARIES, ...PRESENTATION_FOLDERS, 'packs'] },
   { folder: 'packs', forbidden: [...UI_LIBRARIES, ...PRESENTATION_FOLDERS] },
+  { folder: 'state', forbidden: ['ui', 'scene', 'holo', 'cardface'] },
+  { folder: 'cardface', forbidden: ['ui', 'scene'] },
+  { folder: 'holo', forbidden: ['ui', 'scene'] },
+  { folder: 'scene', forbidden: ['ui'] },
 ];
+
+/** The layers that hold game rules: they must stay deterministic. */
+const RULES_LAYERS = ['cards', 'domain', 'packs'];
 
 function sourceFiles(folder: string): string[] {
   const root = join(SRC, folder);
@@ -65,7 +72,7 @@ describe('layer rules', () => {
   }
 
   it('does not use Math.random in the rules layers (use the seeded Rng)', () => {
-    const offenders = RULES.flatMap((rule) => sourceFiles(rule.folder))
+    const offenders = RULES_LAYERS.flatMap((folder) => sourceFiles(folder))
       .filter((file) => /Math\.random\s*\(/.test(readFileSync(file, 'utf8')))
       .map((file) => relative(SRC, file));
     expect(offenders).toEqual([]);

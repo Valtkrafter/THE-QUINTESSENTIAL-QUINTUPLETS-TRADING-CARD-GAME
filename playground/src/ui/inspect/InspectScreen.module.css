@@ -1,0 +1,213 @@
+.page {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: var(--space-6);
+  /* Fills the window under the shell's padding so the 3D view gets real height. */
+  min-height: calc(100vh - 2 * var(--space-6) - var(--space-8));
+}
+
+.stage {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background:
+    radial-gradient(60% 55% at 50% 42%, rgba(150, 168, 255, 0.13), transparent 70%),
+    radial-gradient(70% 40% at 50% 100%, var(--horizon-wash), transparent 70%),
+    var(--surface-sunken);
+  overflow: hidden;
+}
+
+.back {
+  position: absolute;
+  top: var(--space-4);
+  left: var(--space-4);
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 8px 14px 8px 10px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: color-mix(in oklab, var(--surface) 70%, transparent);
+  color: var(--text-soft);
+  font-size: var(--text-sm);
+  backdrop-filter: blur(6px);
+}
+
+.back:hover {
+  color: var(--text);
+  background: var(--surface-raised);
+}
+
+.viewer {
+  position: relative;
+  flex: 1;
+  min-height: 460px;
+}
+
+.viewer canvas {
+  touch-action: none;
+}
+
+.preparing {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--text-faint);
+  font-size: var(--text-sm);
+  pointer-events: none;
+}
+
+.hint {
+  padding: var(--space-3);
+  color: var(--text-faint);
+  font-size: var(--text-xs);
+  text-align: center;
+}
+
+.steps {
+  position: absolute;
+  top: 50%;
+  left: var(--space-3);
+  right: var(--space-3);
+  display: flex;
+  justify-content: space-between;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.step {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: color-mix(in oklab, var(--surface) 62%, transparent);
+  color: var(--text-soft);
+  font-size: 26px;
+  line-height: 1;
+  pointer-events: auto;
+  opacity: 0.7;
+  transition:
+    opacity var(--fast) var(--ease),
+    background-color var(--fast) var(--ease);
+}
+
+.step:hover {
+  opacity: 1;
+  background: var(--surface-raised);
+}
+
+.flat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  height: 100%;
+  padding: var(--space-6);
+  color: var(--text-soft);
+  text-align: center;
+}
+
+.flatCard {
+  width: min(260px, 60%);
+}
+
+/* Info column */
+
+.info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.eyebrow {
+  color: var(--text-faint);
+  font-size: var(--text-xs);
+  letter-spacing: 0.1em;
+  font-variant-numeric: tabular-nums;
+}
+
+.info h1 {
+  font-size: var(--text-2xl);
+  letter-spacing: -0.02em;
+}
+
+.ja {
+  margin-top: calc(-1 * var(--space-2));
+  color: var(--text-soft);
+}
+
+.title {
+  color: var(--horizon);
+  font-size: var(--text-lg);
+  font-style: italic;
+}
+
+.pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: var(--space-2) 0;
+}
+
+.swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.25);
+}
+
+.facts {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  border-top: 1px solid var(--line);
+}
+
+.facts > div {
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr);
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--line);
+  font-size: var(--text-sm);
+}
+
+.facts dt {
+  color: var(--text-faint);
+}
+
+.facts dd {
+  margin: 0;
+  color: var(--text);
+  line-height: 1.5;
+}
+
+.muted {
+  color: var(--text-soft);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+}
+
+@media (max-width: 1000px) {
+  .page {
+    grid-template-columns: minmax(0, 1fr);
+    min-height: 0;
+  }
+
+  .viewer {
+    min-height: 62vh;
+  }
+}

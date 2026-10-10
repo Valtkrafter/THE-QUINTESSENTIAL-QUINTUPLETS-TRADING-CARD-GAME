@@ -1,6 +1,5 @@
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { useEffect, useMemo, useRef, useState, type RefObject } from 'react';
-import { MathUtils, PerspectiveCamera, Vector3 } from 'three';
+import { useEffect, useMemo, useRef, type RefObject } from 'react';
 import { useComposedCard } from '../cardface/useComposedCard';
 import type { Card } from '../cards/model';
 import { CARD_HEIGHT, CARD_WIDTH } from '../holo/cardGeometry';
@@ -15,6 +14,7 @@ import {
   createShadowTexture,
   useCardTexture,
 } from '../holo/textures';
+import { DEFAULT_LIGHT, useCameraFit, useSceneLight } from './sceneKit';
 
 /** What goes on the card face: a composed catalog card, or a raw image (with an optional mask). */
 export type FaceSource =
@@ -48,8 +48,6 @@ interface GalleryLayout {
 const GALLERY_GAP_X = 0.55;
 /** Includes room for the finish label under each card. */
 const GALLERY_GAP_Y = 1.05;
-const FIT_MARGIN = 1.15;
-const DEFAULT_LIGHT = new Vector3(-3.5, 4.5, 9);
 
 export function Stage(props: StageProps) {
   return (
@@ -80,22 +78,6 @@ function createGalleryLayout(aspect: number): GalleryLayout {
   return { items, width: columns * stepX - GALLERY_GAP_X, height: rows * stepY - GALLERY_GAP_Y * 0.5 };
 }
 
-/** Eases the camera distance so the content box fits the viewport. */
-function useCameraFit(contentWidth: number, contentHeight: number): void {
-  useFrame((state, delta) => {
-    const { camera, size } = state;
-    if (!(camera instanceof PerspectiveCamera)) {
-      return;
-    }
-    const tanHalfFov = Math.tan(MathUtils.degToRad(camera.fov / 2));
-    const aspect = size.width / Math.max(size.height, 1);
-    const fitHeight = contentHeight / 2 / tanHalfFov;
-    const fitWidth = contentWidth / 2 / (tanHalfFov * aspect);
-    const distance = Math.max(fitHeight, fitWidth) * FIT_MARGIN;
-    camera.position.z = MathUtils.damp(camera.position.z, distance, 5, delta);
-  });
-}
-
 function Scene({
   mode,
   finishId,
@@ -115,8 +97,7 @@ function Scene({
   const emptyArt = useMemo(() => createEmptyArtTexture(), []);
   const shadowTexture = useMemo(() => createShadowTexture(), []);
   const labels = useMemo(() => new Map(FINISHES.map((finish) => [finish.id, createLabelTexture(finish.label)])), []);
-  const [light] = useState(() => DEFAULT_LIGHT.clone());
-  const [lightTarget] = useState(() => new Vector3());
+  const light = useSceneLight(settings.lightFollowsPointer);
 
   useEffect(
     () => () => {
@@ -142,19 +123,6 @@ function Scene({
     mode === 'gallery' ? gallery.width : CARD_WIDTH * 1.5,
     mode === 'gallery' ? gallery.height : CARD_HEIGHT * 1.18,
   );
-
-  useFrame((state, delta) => {
-    if (settings.lightFollowsPointer) {
-      lightTarget.set(state.pointer.x * 7, state.pointer.y * 5, DEFAULT_LIGHT.z);
-    } else {
-      lightTarget.copy(DEFAULT_LIGHT);
-    }
-    light.set(
-      MathUtils.damp(light.x, lightTarget.x, 5, delta),
-      MathUtils.damp(light.y, lightTarget.y, 5, delta),
-      MathUtils.damp(light.z, lightTarget.z, 5, delta),
-    );
-  });
 
   return (
     <>

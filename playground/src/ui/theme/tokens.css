@@ -1,0 +1,85 @@
+/*
+ * Design tokens of the theme "Dämmerung" (dusk): a calm blue-grey ground, soft light, and pastel accents that take
+ * the colour of each sister's Heart. Every screen reads these variables; nothing else holds a colour or a size.
+ * First proposal: change the values here and the whole game follows.
+ */
+:root {
+  color-scheme: dark;
+
+  /* Ground, darkest to lightest */
+  --bg-deep: #0f121a;
+  --bg: #141821;
+  --surface: #1a1f2b;
+  --surface-raised: #222937;
+  --surface-hover: #2a3243;
+  --surface-sunken: #12161e;
+
+  --line: rgba(176, 192, 228, 0.12);
+  --line-strong: rgba(176, 192, 228, 0.24);
+
+  /* Text */
+  --text: #e8ebf4;
+  --text-soft: #aab2c6;
+  --text-faint: #7d869c;
+
+  /* Accent: dusk periwinkle for actions and selection, a warm horizon peach for small highlights */
+  --accent: #a9b8f2;
+  --accent-strong: #c4cffa;
+  --accent-ink: #141a2d;
+  --accent-wash: rgba(169, 184, 242, 0.14);
+  --horizon: #f0b9a8;
+  --horizon-wash: rgba(240, 185, 168, 0.12);
+
+  /* Messages */
+  --ok: #90d5b2;
+  --warn: #f1d08e;
+  --danger: #f2a3a3;
+
+  /* Heart colours as soft pastels (the printed card keeps its stronger colours) */
+  --affinity-heart: #f3cf8f;
+  --affinity-butterfly: #d0a4ee;
+  --affinity-melody: #92bdf5;
+  --affinity-clover: #8ad9a9;
+  --affinity-star: #f49d8e;
+  --affinity-study: #bbb8cf;
+
+  /* Space, 4px steps */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 72px;
+
+  /* Corners */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-pill: 999px;
+
+  /* Depth */
+  --shadow-soft: 0 10px 30px -12px rgba(5, 7, 12, 0.6);
+  --shadow-card: 0 14px 28px -14px rgba(4, 6, 12, 0.75), 0 2px 6px rgba(4, 6, 12, 0.35);
+  --shadow-lift: 0 22px 40px -16px rgba(4, 6, 12, 0.85), 0 4px 10px rgba(4, 6, 12, 0.4);
+
+  /* Type */
+  --font: 'Inter Variable', 'Noto Sans JP Variable', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --text-xs: 0.75rem;
+  --text-sm: 0.8125rem;
+  --text-md: 0.9375rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.5rem;
+  --text-2xl: 2rem;
+
+  /* Motion */
+  --ease: cubic-bezier(0.22, 0.7, 0.2, 1);
+  --fast: 140ms;
+  --medium: 260ms;
+
+  /* Layout */
+  --rail-width: 232px;
+  --content-max: 1280px;
+  --card-ratio: 5 / 7;
+}

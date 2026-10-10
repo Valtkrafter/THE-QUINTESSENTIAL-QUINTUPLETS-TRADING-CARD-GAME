@@ -1,0 +1,146 @@
+/*
+ * A flat card picture with a light show on top. The real finishes are shaders in the 3D view; here a cheap CSS layer
+ * hints at them while the pointer moves over the card, so the binder feels alive without a WebGL view per card.
+ */
+
+.face {
+  --mx: 50%;
+  --my: 30%;
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: var(--card-ratio);
+  overflow: hidden;
+  isolation: isolate;
+  border-radius: 5% / 3.6%;
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-card);
+  transition:
+    transform var(--medium) var(--ease),
+    box-shadow var(--medium) var(--ease),
+    filter var(--medium) var(--ease);
+}
+
+.interactive:hover,
+.interactive:focus-visible {
+  transform: translateY(-5px) scale(1.018);
+  box-shadow: var(--shadow-lift);
+}
+
+.picture {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  animation: appear var(--medium) var(--ease) both;
+}
+
+@keyframes appear {
+  from {
+    opacity: 0;
+  }
+}
+
+.skeleton {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(90% 70% at 50% 25%, color-mix(in oklab, var(--tint, var(--accent)) 22%, transparent), transparent 70%),
+    var(--surface-raised);
+  color: var(--text-faint);
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+}
+
+.locked .picture {
+  filter: grayscale(1) brightness(0.55) contrast(0.9);
+  opacity: 0.55;
+}
+
+.locked {
+  box-shadow: none;
+  outline: 1px dashed var(--line-strong);
+  outline-offset: -1px;
+}
+
+.sheen {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--medium) var(--ease);
+  mix-blend-mode: screen;
+}
+
+.interactive:hover .sheen,
+.interactive:focus-visible .sheen {
+  opacity: 1;
+}
+
+.glare {
+  background: radial-gradient(circle at var(--mx) var(--my), rgba(255, 255, 255, 0.3), transparent 46%);
+}
+
+.rainbow {
+  background:
+    radial-gradient(circle at var(--mx) var(--my), rgba(255, 255, 255, 0.22), transparent 40%),
+    linear-gradient(
+      115deg,
+      transparent 18%,
+      rgba(255, 110, 160, 0.38) 30%,
+      rgba(255, 214, 120, 0.4) 38%,
+      rgba(120, 255, 190, 0.38) 46%,
+      rgba(110, 170, 255, 0.4) 54%,
+      rgba(200, 130, 255, 0.38) 62%,
+      transparent 78%
+    );
+  background-size: 100% 100%, 260% 260%;
+  background-position: 0 0, var(--mx) var(--my);
+}
+
+.sparkle {
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, 0.95) 0 0.9px, transparent 1.6px) 0 0 / 13px 13px,
+    radial-gradient(circle, rgba(255, 245, 210, 0.9) 0 0.8px, transparent 1.5px) 6px 7px / 17px 17px,
+    radial-gradient(circle at var(--mx) var(--my), rgba(255, 255, 255, 0.26), transparent 44%);
+  -webkit-mask-image: radial-gradient(circle at var(--mx) var(--my), #000 0%, rgba(0, 0, 0, 0.35) 55%, transparent 80%);
+  mask-image: radial-gradient(circle at var(--mx) var(--my), #000 0%, rgba(0, 0, 0, 0.35) 55%, transparent 80%);
+}
+
+.cosmos {
+  background:
+    radial-gradient(circle at var(--mx) var(--my), rgba(150, 120, 255, 0.34), transparent 52%),
+    radial-gradient(circle at calc(100% - var(--mx)) calc(100% - var(--my)), rgba(90, 190, 255, 0.28), transparent 55%),
+    radial-gradient(circle, rgba(255, 255, 255, 0.9) 0 0.8px, transparent 1.4px) 0 0 / 19px 19px;
+}
+
+.gold {
+  background:
+    radial-gradient(circle at var(--mx) var(--my), rgba(255, 233, 170, 0.4), transparent 46%),
+    linear-gradient(120deg, transparent 28%, rgba(255, 205, 100, 0.34) 48%, transparent 68%);
+}
+
+.prism {
+  background:
+    conic-gradient(
+      from 25deg at var(--mx) var(--my),
+      rgba(120, 200, 255, 0.3),
+      rgba(255, 255, 255, 0.1),
+      rgba(255, 140, 210, 0.3),
+      rgba(255, 255, 255, 0.1),
+      rgba(150, 255, 200, 0.3),
+      rgba(255, 255, 255, 0.1),
+      rgba(120, 200, 255, 0.3)
+    );
+}
+
+.radiant {
+  background:
+    repeating-conic-gradient(from 0deg at var(--mx) var(--my), rgba(255, 255, 255, 0.2) 0 5deg, transparent 5deg 13deg),
+    radial-gradient(circle at var(--mx) var(--my), rgba(255, 244, 200, 0.4), transparent 42%);
+}

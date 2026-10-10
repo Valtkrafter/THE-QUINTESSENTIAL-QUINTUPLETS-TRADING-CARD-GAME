@@ -1,8 +1,8 @@
 import { useState, type ChangeEvent } from 'react';
-import { CATALOG, SET_CODE } from '../cards/catalog';
-import { artUrlFor } from '../cards/characterArt';
-import { AFFINITY_INFO, CHARACTERS } from '../cards/characters';
-import { RARITIES, SISTERS, SUPPORTING_CAST, type CardId, type CharacterId } from '../cards/model';
+import { CATALOG, SET_CODE } from '../../cards/catalog';
+import { artUrlFor } from '../../cards/characterArt';
+import { AFFINITY_INFO, CHARACTERS } from '../../cards/characters';
+import { RARITIES, SISTERS, SUPPORTING_CAST, type CardId, type CharacterId } from '../../cards/model';
 
 type CharacterFilter = CharacterId | 'all';
 

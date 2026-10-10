@@ -1,9 +1,9 @@
+import type { FrameStyle } from '../cards/frameStyle';
 import type { MaskSetting } from './finishes';
 
-export type ViewMode = 'gallery' | 'inspect';
+export type { FrameStyle } from '../cards/frameStyle';
 
-/** Card frame design for composed cards; three directions to compare before one is locked in. */
-export type FrameStyle = 'classic' | 'paper' | 'fade' | 'glass';
+export type ViewMode = 'gallery' | 'inspect';
 
 /** `cover` fills the card and crops the overflow; `contain` shows the whole image with a backdrop around it. */
 export type ArtFit = 'cover' | 'contain';

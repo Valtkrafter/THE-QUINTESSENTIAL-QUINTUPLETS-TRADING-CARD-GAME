@@ -1,11 +1,11 @@
 import { useRef, type ChangeEvent, type RefObject } from 'react';
-import type { CardId } from '../cards/model';
-import type { Selection } from '../cards/selection';
+import type { CardId } from '../../cards/model';
+import type { Selection } from '../../cards/selection';
 import { CardBrowser } from './CardBrowser';
-import type { ArtLibrary } from '../cards/artLibrary';
-import { hasFrame } from '../holo/frames';
-import { FINISHES, LAYOUT_MASK_MODES, MASK_MODES, findFinish, isMaskSetting, type FinishId } from '../holo/finishes';
-import type { FrameStyle, HoloSettings, ViewMode } from '../holo/settings';
+import type { ArtLibrary } from '../../cards/artLibrary';
+import { hasFrame } from '../../holo/frames';
+import { FINISHES, LAYOUT_MASK_MODES, MASK_MODES, findFinish, isMaskSetting, type FinishId } from '../../holo/finishes';
+import type { FrameStyle, HoloSettings, ViewMode } from '../../holo/settings';
 
 const FRAME_STYLES: readonly { readonly id: FrameStyle; readonly label: string; readonly description: string }[] = [
   { id: 'classic', label: 'Classic', description: 'Weiß Schwarz look: pearl border, white level box, translucent text box, name band and trait strip.' },

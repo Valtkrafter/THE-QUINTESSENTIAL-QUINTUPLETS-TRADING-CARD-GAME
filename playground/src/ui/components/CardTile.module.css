@@ -1,0 +1,67 @@
+.tile {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+  /* Rows far off screen are skipped by the browser until they come near. */
+  content-visibility: auto;
+  contain-intrinsic-size: auto 320px;
+}
+
+.hit {
+  display: block;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-align: inherit;
+  /* The lift on hover needs room that the grid gap provides. */
+  border-radius: 5% / 3.6%;
+}
+
+.selected .hit {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+}
+
+.caption {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  padding: 0 var(--space-1);
+}
+
+.name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-sm);
+  font-weight: 580;
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  color: var(--text-faint);
+  font-size: var(--text-xs);
+}
+
+.swatch {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.22);
+}
+
+.rarity {
+  margin-left: auto;
+  padding-left: var(--space-2);
+  color: var(--text-soft);
+  font-weight: 620;
+  letter-spacing: 0.03em;
+}

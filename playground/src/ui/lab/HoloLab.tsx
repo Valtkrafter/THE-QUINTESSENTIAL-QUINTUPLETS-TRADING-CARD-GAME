@@ -1,14 +1,15 @@
 import { useRef, useState, type DragEvent } from 'react';
-import { addFilesToLibrary, loadFolderLibrary, type ArtLibrary } from './cards/artLibrary';
-import { CATALOG } from './cards/catalog';
-import type { CardId } from './cards/model';
-import type { Selection } from './cards/selection';
-import type { FinishId } from './holo/finishes';
-import { DEFAULT_SETTINGS, type HoloSettings, type ViewMode } from './holo/settings';
-import { Stage, type FaceSource } from './scene/Stage';
-import { ControlPanel } from './ui/ControlPanel';
+import { addFilesToLibrary, loadFolderLibrary, type ArtLibrary } from '../../cards/artLibrary';
+import { CATALOG } from '../../cards/catalog';
+import type { CardId } from '../../cards/model';
+import type { Selection } from '../../cards/selection';
+import type { FinishId } from '../../holo/finishes';
+import { DEFAULT_SETTINGS, type HoloSettings, type ViewMode } from '../../holo/settings';
+import { Stage, type FaceSource } from '../../scene/Stage';
+import './lab.css';
+import { ControlPanel } from './ControlPanel';
 
-export default function App() {
+export default function HoloLab() {
   const [mode, setMode] = useState<ViewMode>('gallery');
   const [finishId, setFinishId] = useState<FinishId>('rainbow');
   const [settings, setSettings] = useState<HoloSettings>(DEFAULT_SETTINGS);
@@ -70,7 +71,7 @@ export default function App() {
   };
 
   return (
-    <div className="app" onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop}>
+    <div className="app lab" onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop}>
       <ControlPanel
         mode={mode}
         onModeChange={setMode}

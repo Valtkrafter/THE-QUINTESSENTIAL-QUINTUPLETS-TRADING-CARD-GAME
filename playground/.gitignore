@@ -32,3 +32,6 @@ src/assets/characters/
 
 # Vitest report folder
 .vitest/
+
+# Typed class names generated from the CSS Modules (tools/css-module-types.ts)
+*.module.d.css.ts

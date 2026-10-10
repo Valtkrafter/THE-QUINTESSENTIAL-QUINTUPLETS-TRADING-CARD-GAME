@@ -1,6 +1,5 @@
-/* Playground chrome only. These are not the game's design tokens, which are still undecided. */
-:root {
-  color-scheme: dark;
+/* Holo Lab only (route #/lab). Its colours are its own and are not the game's design tokens (see ui/theme/tokens.css). */
+.lab {
   --bg: #0b0b12;
   --bg-stage-glow: #1d1b2e;
   --panel: #12121b;
@@ -16,37 +15,6 @@
   font-size: 14px;
   line-height: 1.45;
   -webkit-font-smoothing: antialiased;
-}
-
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-}
-
-html,
-body,
-#root {
-  height: 100%;
-  margin: 0;
-}
-
-body {
-  background: var(--bg);
-  color: var(--text);
-}
-
-button,
-select,
-input {
-  font: inherit;
-  color: inherit;
-}
-
-code {
-  font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
-  font-size: 0.9em;
-  color: var(--accent);
 }
 
 .app {

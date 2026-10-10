@@ -9,6 +9,8 @@ export interface SaveStore {
   load(): Promise<SaveGame | null>;
   save(game: SaveGame): Promise<void>;
   clear(): Promise<void>;
+  /** The stored text exactly as it is, even when it is damaged. Lets the player keep a copy before starting over. */
+  readRaw(): Promise<string | null>;
 }
 
 const DEFAULT_KEY = 'tqq-save-v1';
@@ -25,6 +27,9 @@ export function createIdbSaveStore(knownCardIds: ReadonlySet<string>, key: strin
     },
     async clear() {
       await del(key);
+    },
+    async readRaw() {
+      return (await get<string>(key)) ?? null;
     },
   };
 }
@@ -43,6 +48,9 @@ export function createMemorySaveStore(knownCardIds: ReadonlySet<string>): SaveSt
     clear() {
       text = null;
       return Promise.resolve();
+    },
+    readRaw() {
+      return Promise.resolve(text);
     },
   };
 }

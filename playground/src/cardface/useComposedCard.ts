@@ -7,29 +7,11 @@ import type { FrameStyle } from '../holo/settings';
 import type { CardTexture } from '../holo/textures';
 import { composeCardFace, FACE_HEIGHT, FACE_WIDTH } from './composeCardFace';
 import { ensureCardFonts } from './fonts';
+import { loadImage } from './images';
 
 export interface ComposedCardTextures {
   readonly face: CardTexture;
   readonly mask: CardTexture;
-}
-
-const images = new Map<string, Promise<HTMLImageElement | null>>();
-
-function loadImage(url: string): Promise<HTMLImageElement | null> {
-  let pending = images.get(url);
-  if (pending === undefined) {
-    pending = new Promise((resolve) => {
-      const image = new Image();
-      image.onload = () => resolve(image);
-      image.onerror = () => {
-        console.warn(`Could not load card art: ${url}`);
-        resolve(null);
-      };
-      image.src = url;
-    });
-    images.set(url, pending);
-  }
-  return pending;
 }
 
 function toTexture(canvas: HTMLCanvasElement, renderer: WebGLRenderer): CardTexture {
