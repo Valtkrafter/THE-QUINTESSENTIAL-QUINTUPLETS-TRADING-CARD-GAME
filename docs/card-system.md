@@ -66,7 +66,7 @@ Card face is 1000 × 1400, drawn on a 2D canvas, then used as the texture of the
 
 ## Art
 
-The pictures are fan art that stays on this machine. `playground/tools/import-art.py` copies the chosen pictures from the art folder into `src/assets/art/<character>/<slot>.jpg` (git-ignored) and writes `src/data/art-manifest.json` (sizes and source file names, tracked). Cast pictures that were small were upscaled with Real-ESRGAN first. Illustrator credits are still "Unknown".
+The pictures are fan art. They are committed so the deployed game can show them, which makes them public together with the repository. `playground/tools/import-art.py` copies the chosen pictures from the art folder into `src/assets/art/<character>/<slot>.jpg` and writes `src/data/art-manifest.json` (sizes and source file names). Cast pictures that were small were upscaled with Real-ESRGAN first. Illustrator credits are still "Unknown".
 
 ## Open
 

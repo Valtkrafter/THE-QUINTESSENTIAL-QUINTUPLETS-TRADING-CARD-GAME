@@ -1,6 +1,6 @@
 import type { ArtRef } from './schema';
 
-// Art lives in src/assets/art/<character>/<slot>.jpg (git-ignored, written by tools/import-art.py).
+// Art lives in src/assets/art/<character>/<slot>.jpg (committed, written by tools/import-art.py).
 const files = import.meta.glob<string>('../assets/art/*/*.jpg', {
   eager: true,
   query: '?url',

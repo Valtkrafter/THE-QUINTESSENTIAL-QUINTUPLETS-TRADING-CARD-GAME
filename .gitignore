@@ -4,8 +4,5 @@
 # Claude Code local settings
 .claude/settings.local.json
 
-# Card art is fan material kept on this machine only (see tools/import-art.py)
-playground/src/assets/art/
-
 # Contains embedded fan art thumbnails (local demo only)
 docs/battle-demo/battle-demo.html

@@ -1,0 +1,8 @@
+{
+  "name": "tqq-tcg-repository",
+  "private": true,
+  "description": "Repository root. The game lives in playground/; this file only pins the Node version for the Vercel build (see vercel.json).",
+  "engines": {
+    "node": "24.x"
+  }
+}

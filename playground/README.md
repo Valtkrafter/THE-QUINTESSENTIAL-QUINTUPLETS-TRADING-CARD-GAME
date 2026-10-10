@@ -31,7 +31,7 @@ Styling is CSS Modules plus the theme variables. `tools/css-module-types.ts` wri
 
 ## Card art
 
-The art is fan material and stays on this machine (git-ignored). Put the chosen pictures in the art folder (`<Name> Tier NN.jpg`, `<Name> Halloween NN.jpg` per character) and run
+The art is fan material. It is committed (`src/assets/art/`), so it is public together with the repository and is served by the deployed game. To change it, put the chosen pictures in the art folder (`<Name> Tier NN.jpg`, `<Name> Halloween NN.jpg` per character) and run
 
 ```bash
 python tools/import-art.py [art-folder]

@@ -2,7 +2,7 @@
 
 Reads the picked pictures from the art folder (default: C:/Users/valen/Downloads/TQQ CHARS), where each file is
 named "<Name> Tier NN.<ext>" or "<Name> Halloween NN.<ext>", shrinks anything bigger than MAX_LONG_SIDE and writes
-  src/assets/art/<character>/t01.jpg ... h1.jpg   (git-ignored, the art stays on this machine)
+  src/assets/art/<character>/t01.jpg ... h1.jpg   (committed, the deployed game serves them)
   src/data/art-manifest.json                        (sizes and source names, tracked in git)
 
 Run from the playground folder:  python tools/import-art.py [source-folder]
