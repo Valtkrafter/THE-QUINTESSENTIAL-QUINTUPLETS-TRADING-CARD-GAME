@@ -129,10 +129,16 @@ export function serializeSave(save: SaveGame): string {
   return JSON.stringify({ format: SAVE_FORMAT, checksum: checksum(data), data });
 }
 
+/** What went wrong when reading a save, so the screens can say it in the player's language. */
+export type SaveErrorCode = 'not-a-save' | 'damaged' | 'newer-version' | 'incomplete' | 'unknown-cards' | 'inconsistent';
+
 export class SaveError extends Error {
-  constructor(message: string) {
+  readonly code: SaveErrorCode;
+
+  constructor(code: SaveErrorCode, message: string) {
     super(message);
     this.name = 'SaveError';
+    this.code = code;
   }
 }
 
@@ -147,55 +153,55 @@ export function parseSave(text: string, knownCardIds: ReadonlySet<string>): Save
   try {
     envelopeRaw = JSON.parse(text);
   } catch {
-    throw new SaveError('This is not a save file.');
+    throw new SaveError('not-a-save', 'This is not a save file.');
   }
   const envelope = envelopeSchema.safeParse(envelopeRaw);
   if (!envelope.success) {
-    throw new SaveError('This is not a TQQ save file.');
+    throw new SaveError('not-a-save', 'This is not a TQQ save file.');
   }
   if (checksum(envelope.data.data) !== envelope.data.checksum) {
-    throw new SaveError('The save file is damaged (the checksum does not match).');
+    throw new SaveError('damaged', 'The save file is damaged (the checksum does not match).');
   }
   let data: unknown;
   try {
     data = JSON.parse(envelope.data.data);
   } catch {
-    throw new SaveError('The save file is damaged.');
+    throw new SaveError('damaged', 'The save file is damaged.');
   }
   const record = z.record(z.string(), z.unknown()).safeParse(data);
   if (!record.success) {
-    throw new SaveError('The save file is damaged.');
+    throw new SaveError('damaged', 'The save file is damaged.');
   }
   const version = record.data['version'];
   if (typeof version !== 'number' || !Number.isInteger(version) || version < 1) {
-    throw new SaveError('The save file has no version.');
+    throw new SaveError('incomplete', 'The save file has no version.');
   }
   if (version > SAVE_VERSION) {
-    throw new SaveError('This save was made by a newer version of the game. Update the game to open it.');
+    throw new SaveError('newer-version', 'This save was made by a newer version of the game. Update the game to open it.');
   }
   let current = record.data;
   for (let v = version; v < SAVE_VERSION; v += 1) {
     const step = MIGRATIONS[v - 1];
     if (step === undefined) {
-      throw new SaveError(`No way to upgrade a version ${v} save.`);
+      throw new SaveError('incomplete', `No way to upgrade a version ${v} save.`);
     }
     current = { ...step(current), version: v + 1 };
   }
   const parsed = saveGameSchema.safeParse(current);
   if (!parsed.success) {
-    throw new SaveError('The save file is damaged or incomplete.');
+    throw new SaveError('incomplete', 'The save file is damaged or incomplete.');
   }
   const save = parsed.data;
   const unknown = save.collection.filter((card) => !knownCardIds.has(card.cardId)).map((card) => card.cardId);
   if (unknown.length > 0) {
-    throw new SaveError(`The save contains cards this game does not know: ${[...new Set(unknown)].join(', ')}.`);
+    throw new SaveError('unknown-cards', `The save contains cards this game does not know: ${[...new Set(unknown)].join(', ')}.`);
   }
   const uids = new Set(save.collection.map((card) => card.uid));
   if (uids.size !== save.collection.length) {
-    throw new SaveError('The save contains the same copy twice.');
+    throw new SaveError('inconsistent', 'The save contains the same copy twice.');
   }
   if (new Set(save.showcase).size !== save.showcase.length || save.showcase.some((uid) => !uids.has(uid))) {
-    throw new SaveError('The showcase lists a copy that is missing or listed twice.');
+    throw new SaveError('inconsistent', 'The showcase lists a copy that is missing or listed twice.');
   }
   return save;
 }

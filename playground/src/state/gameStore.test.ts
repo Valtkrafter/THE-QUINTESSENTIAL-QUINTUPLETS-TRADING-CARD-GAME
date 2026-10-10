@@ -72,7 +72,7 @@ describe('game store', () => {
     const game = createGameStore(deps(store));
     await game.getState().start();
     expect(game.getState().phase).toBe('damaged');
-    expect(game.getState().problem).toMatch(/damaged/);
+    expect(game.getState().problem).toBe('damaged');
     expect(await game.getState().damagedText()).toBe(store.text);
     expect(store.text).not.toBeNull();
     await game.getState().startOver();

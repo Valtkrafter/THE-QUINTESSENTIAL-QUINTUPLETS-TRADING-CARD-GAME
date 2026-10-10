@@ -2,7 +2,7 @@
 // they never touch storage. Built by a factory so tests can bring their own store, clock and seed.
 
 import { createStore, type StoreApi } from 'zustand/vanilla';
-import { SaveError, newSaveGame, type SaveGame } from '../domain/save';
+import { SaveError, newSaveGame, type SaveErrorCode, type SaveGame } from '../domain/save';
 import type { SaveStore } from './saveStore';
 
 /** `device`: saved in the browser. `memory`: the browser refused storage, so progress is lost when the page closes. */
@@ -12,8 +12,8 @@ export interface GameState {
   /** `damaged`: a stored game exists but cannot be read; nothing is overwritten until the player decides. */
   readonly phase: 'loading' | 'ready' | 'damaged';
   readonly save: SaveGame | null;
-  /** Why the stored game cannot be read (shown to the player). */
-  readonly problem: string | null;
+  /** Why the stored game cannot be read. */
+  readonly problem: SaveErrorCode | null;
   readonly persistence: Persistence;
   /** True while the last attempt to write the save failed. */
   readonly writeFailed: boolean;
@@ -78,7 +78,7 @@ export function createGameStore(deps: GameDeps): GameStore {
         loaded = await active.load();
       } catch (error) {
         if (error instanceof SaveError) {
-          set({ phase: 'damaged', problem: error.message });
+          set({ phase: 'damaged', problem: error.code });
           return;
         }
         active = deps.fallback();

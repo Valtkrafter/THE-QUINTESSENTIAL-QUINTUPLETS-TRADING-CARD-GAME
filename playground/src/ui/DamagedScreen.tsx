@@ -28,7 +28,7 @@ export default function DamagedScreen() {
         <p>{text.damaged.body}</p>
         {problem !== null && (
           <p className={styles.reason}>
-            <strong>{text.damaged.reason}:</strong> {problem}
+            <strong>{text.damaged.reason}:</strong> {text.saveErrors[problem]}
           </p>
         )}
         <div className={styles.actions}>

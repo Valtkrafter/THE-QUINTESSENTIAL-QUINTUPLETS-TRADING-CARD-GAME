@@ -82,3 +82,9 @@
 .emptyArt i:nth-child(3) {
   transform: translateX(-8%) rotate(11deg);
 }
+
+.empty a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}

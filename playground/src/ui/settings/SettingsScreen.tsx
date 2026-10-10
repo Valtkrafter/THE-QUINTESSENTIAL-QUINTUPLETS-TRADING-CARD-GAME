@@ -56,7 +56,7 @@ export default function SettingsScreen() {
         try {
           setConfirm({ kind: 'import', save: parseSave(content, KNOWN_CARD_IDS) });
         } catch (error) {
-          setMessage(`${text.settings.importFailed}: ${error instanceof SaveError ? error.message : String(error)}`);
+          setMessage(`${text.settings.importFailed}: ${error instanceof SaveError ? text.saveErrors[error.code] : String(error)}`);
         }
       },
       () => setMessage(text.settings.importFailed),

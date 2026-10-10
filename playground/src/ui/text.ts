@@ -4,6 +4,7 @@
 
 import type { FrameStyle } from '../cards/frameStyle';
 import type { SortKey } from '../domain/collection';
+import type { SaveErrorCode } from '../domain/save';
 import type { GraphicsLevel } from '../state/preferences';
 
 function plural(count: number, one: string, many: string): string {
@@ -29,6 +30,15 @@ export const text = {
     memoryOnly: 'Dein Browser erlaubt kein Speichern. Dein Fortschritt geht verloren, sobald du die Seite schließt.',
     writeFailed: 'Das Speichern hat gerade nicht geklappt. Das Spiel versucht es bei der nächsten Änderung noch einmal.',
   },
+
+  saveErrors: {
+    'not-a-save': 'Das ist keine TQQ-Sicherung.',
+    damaged: 'Die Datei ist beschädigt (die Prüfsumme stimmt nicht).',
+    'newer-version': 'Dieser Spielstand stammt aus einer neueren Version des Spiels. Aktualisiere das Spiel, um ihn zu öffnen.',
+    incomplete: 'Der Spielstand ist beschädigt oder unvollständig.',
+    'unknown-cards': 'Der Spielstand enthält Karten, die dieses Spiel nicht kennt.',
+    inconsistent: 'Der Spielstand widerspricht sich selbst (eine Karte doppelt oder eine falsche Vitrine).',
+  } satisfies Record<SaveErrorCode, string>,
 
   damaged: {
     title: 'Dein Spielstand lässt sich nicht lesen',
