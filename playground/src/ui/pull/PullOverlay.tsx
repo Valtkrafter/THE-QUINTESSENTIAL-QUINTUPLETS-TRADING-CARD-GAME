@@ -66,6 +66,15 @@ export default function PullOverlay({ openings, preview = false, onClose, onAgai
     }
   }, [runner]);
 
+  // The page behind must not scroll while the show is open.
+  useEffect(() => {
+    const previous = document.documentElement.style.overflow;
+    document.documentElement.style.overflow = 'hidden';
+    return () => {
+      document.documentElement.style.overflow = previous;
+    };
+  }, []);
+
   const opening = openings[snapshot.pack];
   const order = orders[snapshot.pack] ?? [];
   const current = opening?.pulls[order[snapshot.card] ?? -1];

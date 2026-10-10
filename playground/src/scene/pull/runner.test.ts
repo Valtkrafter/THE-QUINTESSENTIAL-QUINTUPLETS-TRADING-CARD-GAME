@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { Rarity } from '../../cards/model';
 import type { DirectorEvent } from './director';
 import { PullRunner } from './runner';
@@ -39,6 +39,20 @@ describe('the runner', () => {
     runner.tap();
     runner.tap();
     expect(seen).toHaveLength(count);
+  });
+
+  it('keeps going when a listener breaks, and still tells the other listeners', () => {
+    const runner = new PullRunner([pack('C', 'C', 'U', 'U', 'R')], 'full');
+    const seen: DirectorEvent[] = [];
+    runner.onEvent(() => {
+      throw new Error('a sound failed');
+    });
+    runner.onEvent((event) => seen.push(event));
+    const quiet = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    runner.step(6);
+    quiet.mockRestore();
+    expect(seen.some((event) => event.type === 'impact')).toBe(true);
+    expect(runner.state.phase).not.toBe('intro');
   });
 
   it('plays a pack from the first tap to the summary, and a skip ends it at once', () => {

@@ -36,8 +36,8 @@ function History() {
         <p className={styles.empty}>{text.packs.historyEmpty}</p>
       ) : (
         <ul>
-          {entries.map((entry) => (
-            <li key={`${entry.at}-${entry.pack}`}>
+          {entries.map((entry, position) => (
+            <li key={`${entry.at}-${entry.pack}-${position}`}>
               <span className={styles.when}>{TIME.format(entry.at)}</span>
               <span className={styles.packName}>{packById(entry.pack)?.name ?? entry.pack}</span>
               <span className={styles.cards}>

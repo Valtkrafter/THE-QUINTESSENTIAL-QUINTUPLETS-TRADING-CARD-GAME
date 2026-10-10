@@ -1,130 +1,96 @@
-# Packs, Geld und Preise: Entwurf (Deutsch)
+# Packs, Geld und Preise (Deutsch)
 
-Stand: 10. Oktober 2026. Das ist ein Vorschlag. Nichts davon ist gebaut, bevor du es bestätigt hast. Alle Zahlen stehen später in einer einzigen Tabelle (Daten, kein Code), damit man sie ohne Programmieren ändern kann.
+Stand: 10. Oktober 2026. Stufe 3 ist gebaut, diese Zahlen laufen so im Spiel. Alles steht als Daten in `playground/src/data/packs.json`, die Zahlen lassen sich also ohne Programmieren ändern.
 
-Die Zahlen für die Packs sind mit einer Simulation geprüft (Zufallsspiel mit je 3000 bis 5000 Durchläufen). Die Zahlen für Kiosk, Verkauf und Bewertung sind Entwürfe und werden in Stufe 4 und 5 nochmal besprochen.
+## 1. Was du entschieden hast ✅
+- **5 Karten pro Pack.**
+- **Es soll ein echter Grind sein.** Gute Karten bekommt man nur mit viel Spielen. Wir haben die Stufe "Hart" gewählt.
+- **Nie stuck.** Es gibt immer einen Weg, an Geld zu kommen.
+- **Halloween** läuft ab sofort bis zum 4. November (nicht erst ab dem 15.), **ohne Gratis-Packs**, mit einem eigenen **Banner** wie bei Genshin oder WuWa: Hauptkarten, 50/50, Garantie.
+- **Kampf direkt nach den Packs.** Er ist die Haupt-Geldquelle.
+- **Animation:** richtig stark, Sternschnuppe und fünf Lichtfäden kombiniert, mit Ton. Der Ton wird im Browser erzeugt (Tone.js).
 
-## 1. Die Grundidee
-
-- Das Spiel ist für immer kostenlos. Yen (¥) ist nur Spielgeld, es gibt keinen Weg, echtes Geld auszugeben.
-- Nichts drängt dich: keine Zeitlimits außer dem Halloween-Fenster, keine Strafen fürs Auslassen, keine versteckten Quoten.
-- Die Quoten sind für dich einsehbar und stammen aus denselben Daten wie das echte Verfahren. Die Seite kann also nicht von der Wirklichkeit abweichen.
-- Jede Ziehung ist wiederholbar (fester Startwert im Spielstand). Schließt du das Fenster mitten in der Animation, sind die Karten trotzdem schon in deiner Mappe.
-
-## 2. Geld (Yen)
-
-| | Vorschlag |
-|---|---|
-| Startgeld | ¥1.500 (3 Packs, damit du sofort etwas öffnen kannst) |
-| Tagesbonus | ¥400 pro Tag. Verpasste Tage sammeln sich bis zu 3 Tage an, du verlierst also nichts, wenn du mal fehlst |
-| Kämpfe (Stufe 6) | Sieg ¥150 / ¥250 / ¥400 (Leicht / Normal / Schwer), Niederlage ¥50, erster Sieg des Tages +¥200 |
-| Dubletten verkaufen (Stufe 4) | siehe Abschnitt 8 |
-| Dex-Belohnungen (Stufe 4) | alle 10 neuen Motive 1 Gratis-Pack, ¥2.000 für jede komplette Figur |
-| Halloween | während des Events 1 Gratis-Halloween-Pack pro Tag |
-
-Ziel: Wer täglich etwa 15 Minuten spielt, bekommt ungefähr ¥1.000 am Tag, also 2 Packs.
-
-## 3. Die Packs
-
-Es gibt zwei Packs, beide zu ¥500:
-
-- **TQQ01 Booster**: das normale Pack, immer da. Enthält die 69 normalen Motive.
-- **Halloween Booster**: nur im Event-Zeitraum, siehe Abschnitt 5.
-
-**5 Karten pro Pack.** Fünf Karten lassen sich einzeln und spannend aufdecken, und mit nur 69 Motiven wären 10 Karten pro Pack fast nur Dubletten.
+## 2. Das normale Pack: TQQ01 Booster
+**¥500 für 5 Karten.**
 
 | Slot | Was darin liegen kann |
 |---|---|
-| Slot 1 bis 3 | Common 60 % · Uncommon 40 % |
-| Slot 4 ("Plus") | Uncommon 35 % · Rare 40 % · Double Rare 15 % · Art Rare 10 % |
-| Slot 5 ("Treffer") | Rare 32 % · Double Rare 24 % · Art Rare 22 % · Special Art Rare 16 % · Ultra Rare 6 % |
+| 1 bis 3 | Common 60 % · Uncommon 40 % |
+| 4 (Plus) | Uncommon 40 % · Rare 44 % · Double Rare 12 % · Art Rare 4 % |
+| 5 (Treffer) | Rare 44 % · Double Rare 28 % · Art Rare 14 % · Special Art Rare 10 % · Ultra Rare 4 % |
 
-Innerhalb einer Seltenheit hat jedes Motiv die gleiche Chance.
+Pro Pack im Schnitt (nachgerechnet mit 100.000 Packs): 1,8 Common · 1,6 Uncommon · 0,88 Rare · 0,40 Double Rare · 0,18 Art Rare · 0,10 Special Art Rare · 0,042 Ultra Rare.
+63 % der Packs haben mindestens eine Double Rare oder besser, 14 % eine Special Art Rare oder Ultra Rare, 4 % eine Ultra Rare.
+Etwa 65 % der Packs haben mindestens eine Karte mit Sonderfinish, etwa 15 % eine mit Premium-Finish (Cosmos, Gold Foil, Prism Crystal, Radiant).
 
-**Was das im Durchschnitt pro Pack heißt:** 1,8 Common, 1,5 Uncommon, 0,7 Rare, 0,4 Double Rare, 0,3 Art Rare, 0,16 Special Art Rare, 0,06 Ultra Rare.
-Mit 76 % Chance ist mindestens eine Double Rare oder besser dabei, mit 22 % eine Special Art Rare oder Ultra Rare, mit 6 % eine Ultra Rare.
+**Garantien (Pity):**
+- Nach 29 Packs ohne Special Art Rare oder Ultra Rare ist das 30. Pack garantiert eine (75 % Special Art Rare, 25 % Ultra Rare).
+- Nach 89 Packs ohne Ultra Rare ist das 90. Pack garantiert eine.
+- **Dublettenschutz:** Eine garantierte Karte ist immer ein Motiv, das du noch nicht hast (solange es noch eines gibt).
+- Die Garantien lösen selten aus (Special Art Rare in 0,17 % der Packs, Ultra Rare in 0,09 %): sie sind das Sicherheitsnetz, nicht der Normalfall.
 
-**Finish (Holo-Look):** Das Finish wird für jede Karte extra gewürfelt, unabhängig von der Seltenheit. Je seltener die Karte, desto eher ist es ein besonderes Finish.
+## 3. Wie lange dauert das Sammeln?
+Simulation mit 400 Spielern, Mitte der Spieler und "9 von 10 Spielern sind spätestens hier fertig". Bei 3 Packs pro Tag (etwa 30 Minuten Spielen) in Klammern.
 
-| Seltenheit | normal | Foil (Rainbow, Sparkle) | Premium (Cosmos, Gold, Prism, Radiant) |
-|---|---|---|---|
-| Common | 94 % | 6 % | 0 % |
-| Uncommon | 88 % | 12 % | 0 % |
-| Rare | 78 % | 20 % | 2 % |
-| Double Rare | 60 % | 34 % | 6 % |
-| Art Rare | 40 % | 45 % | 15 % |
-| Special Art Rare | 15 % | 35 % | 50 % |
-| Ultra Rare | 5 % | 25 % | 70 % |
+| Ziel | Mitte | 9 von 10 spätestens |
+|---|---|---|
+| Erste Special Art Rare | 7 Packs (2 Tage) | 23 Packs |
+| Erste Ultra Rare | 17 Packs (6 Tage) | 52 Packs |
+| Alle Common bis Double Rare (44 Motive) | 56 Packs (19 Tage) | 85 Packs |
+| Alle Art Rare (9) | 131 Packs | 221 Packs |
+| Alle Special Art Rare (6) | 127 Packs | 234 Packs |
+| Alle Ultra Rare (5) | 233 Packs | 397 Packs |
+| **Das ganze Set (69 Motive)** | **243 Packs (81 Tage)** | **400 Packs (133 Tage)** |
 
-Im Schnitt hat etwa jede Packung 1 Karte mit Sonderfinish, und etwa jedes fünfte Pack eine mit Premium-Finish. Diese Zahlen stammen aus dem alten Entwurf und sind unverändert.
+Schlimmster Fall durch die Garantien: höchstens 5 × 90 = 450 Packs allein für die Ultra Rare, also nie unbegrenzt.
 
-## 4. Schutz gegen Pech (Pity)
+## 4. Halloween Wish (Banner)
+**¥500 pro Pack, 10. Oktober bis 4. November 2026.** Es gibt keine Gratis-Packs.
 
-- **Garantie auf Special Art Rare oder besser:** Hattest du 19 Packs in Folge keine, ist das 20. Pack garantiert eine (zu 75 % Special Art Rare, zu 25 % Ultra Rare).
-- **Garantie auf Ultra Rare:** Nach 59 Packs ohne Ultra Rare ist das 60. Pack garantiert eine.
-- **Dublettenschutz:** Eine garantierte Karte ist immer ein Motiv, das du noch nicht hast (solange es noch eines gibt). Die Garantie wird also nie verschwendet.
-- Beide Zähler siehst du in der Pack-Ansicht als Balken ("Garantie in 7 Packs").
+- **Aufbau:** Karte 1 bis 4 wie im normalen Pack. In Slot 4 (Plus) kann statt der normalen Karte eine der 10 Halloween-Karten stehen. Slot 5 (Treffer) ist wie normal, mit den normalen Garantien.
+- **Chance auf eine Banner-Karte:** 1,6 % pro Pack. Nach 44 Packs ohne Banner-Karte steigt die Chance mit jedem Pack um 7 Prozentpunkte. Im 70. Pack ist eine Banner-Karte sicher.
+- **Hauptkarten und 50/50:** Pro Phase gibt es 2 Hauptkarten. Eine Banner-Karte ist zu 50 % eine Hauptkarte, sonst eine der anderen 8 Halloween-Karten. Verlierst du das 50/50, ist die nächste Banner-Karte sicher eine Hauptkarte.
+- **Phasen:** Phase 1 (10. bis 22. Oktober): Nino Treat (Sweet Treats) und Miku Trick (Haunting Melody). Phase 2 (23. Oktober bis 4. November): Ichika Treat (Costume Change) und Itsuki Trick (Starving Ghost). Garantie und 50/50-Stand bleiben beim Phasenwechsel erhalten. Yotsuba hat diesmal keine Hauptkarte; das lässt sich in den Daten ändern.
+- **Dublettenschutz** gilt auch hier: die Banner-Karte ist wenn möglich eine, die du noch nicht hast.
+- **Was das heißt:** Eine Banner-Karte kostet im Schnitt etwa 34 Packs (¥17.000). Wer 25 Tage lang 3 Packs pro Tag öffnet (75 Packs), hat im Schnitt 1,8 Banner-Karten und 1,1 Hauptkarten. 80 % haben mindestens eine Hauptkarte. Alle 10 Karten schafft niemand in einem Event: sie kommen im nächsten Jahr wieder.
+- Halloween-Karten stecken weder in normalen Packs noch im Kiosk.
+- Eine Banner-Karte (Special Art Rare) setzt auch die Special-Art-Rare-Garantie zurück.
 
-## 5. Halloween-Event
-
-| | Vorschlag |
+## 5. Geld (Yen)
+| | |
 |---|---|
-| Zeitraum | 15. Oktober bis 4. November, jedes Jahr wieder (Datum kommt aus der Uhr des Geräts) |
-| Karten | die 10 Halloween-Karten (2 pro Schwester, Special Art Rare, 2 Erinnerungen beim K.O.) |
-| Preis | ¥500, genauso wie das normale Pack |
-| Gratis | 1 Halloween-Pack pro Tag während des Events |
-| Inhalt | Slot 1 bis 4 wie normal. Slot 5: mit 15 % eine der 10 Halloween-Karten, sonst der normale Treffer-Slot |
-| Garantie | Spätestens jedes 5. Halloween-Pack enthält eine Halloween-Karte, die du noch nicht hast |
+| Startgeld | ¥1.500 (3 Packs) |
+| Tagesbonus | ¥400 pro Tag. Verpasste Tage sammeln sich bis zu 3 Tage an. Wird heute schon abgeholt über die Packs-Seite |
+| Kämpfe (Stufe 4) | Sieg ¥150 / ¥250 / ¥400 (Leicht / Normal / Schwer), Niederlage ¥50, erster Sieg des Tages +¥200. Das ist die Haupt-Geldquelle |
+| Dubletten verkaufen (Stufe 5) | siehe Abschnitt 8 |
+| Dex-Belohnungen (Stufe 5) | alle 10 neuen Motive 1 Gratis-Pack, ¥2.000 für jede komplette Figur |
 
-Nach der Simulation hat man alle 10 Karten nach etwa 48 Packs (nie mehr als 50). Mit 21 Gratis-Packs sind das nur etwa 27 gekaufte, also ¥13.500 in 3 Wochen. Wer jeden Tag kurz spielt, schafft alle 10.
-Halloween-Karten stecken nicht in normalen Packs und nicht im Kiosk. Verpasst du das Event, kommen sie nächstes Jahr wieder. Zum Testen gibt es in der Entwicklungsversion einen Schalter, der das Event ein- und ausschaltet.
+Ziel: Wer täglich etwa 30 Minuten spielt, bekommt ungefähr ¥1.500 am Tag, also 3 Packs. Die genauen Kampf-Belohnungen werden in Stufe 4 mit einer Simulation geprüft und gegebenenfalls angepasst.
 
-## 6. Wie lange dauert das Sammeln?
+## 6. Nie stuck
+- **Starter-Deck** (Stufe 4): Jeder neue Spielstand bekommt ein spielbares 30er-Deck. Du kannst also immer kämpfen und Geld verdienen, auch ohne ein einziges Pack.
+- **Jeder Kampf zahlt etwas,** auch eine Niederlage.
+- **Der Tagesbonus kommt immer.**
+- **Verkauft wird nur, was übrig ist:** nie die letzte Kopie eines Motivs, nie Karten aus dem Deck, nie eine bewertete Karte.
+- **Das Geld kann nie unter null fallen.**
+- **Die Garantien begrenzen das Pech nach oben** (Abschnitt 3).
 
-Ergebnis der Simulation für das normale Pack (69 Motive), mit Garantie und Dublettenschutz:
+## 7. Der Ablauf beim Öffnen (so ist es gebaut)
+1. **Packs-Bildschirm:** zwei Packs (Banner oben, wenn er läuft), Preis, Garantie-Balken, "1 Pack" oder "5 Packs" öffnen, Quoten-Seite, die letzten Packs, Tagesbonus.
+2. **Das Ergebnis steht sofort fest und ist gespeichert,** noch bevor die Animation beginnt. Überspringen, Abbrechen oder Fenster schließen ändert nichts.
+3. **Die Show:**
+   - **Dämmerungshimmel** mit Sternen. Eine **Sternschnuppe** fällt von links oben. Ihre **Farbe** verrät die beste Karte im Pack: blau (Common bis Rare), violett (Double Rare), rosa (Art Rare), gold (Special Art Rare), Regenbogen (Ultra Rare). Bei besseren Packs wechselt sie unterwegs die Farbe nach oben (blau, violett, gold).
+   - Bei **Special Art Rare** und **Ultra Rare** weben sich zusätzlich **fünf Lichtfäden** in den Herz-Farben der Schwestern um die Sternschnuppe. Der Stern hängt kurz in der Luft, die Fäden ziehen sich zu, dann stürzt er herab.
+   - **Aufschlag:** Blitz, Druckwellen, Lichtstrahlen und ein Funkenregen. Je besser die Karte, desto größer.
+   - **Aufdecken:** Die Karten kommen verdeckt herein, die schlechteren zuerst und die beste zuletzt. Hinter der Karte drehen sich Lichtstrahlen in der Farbe der Seltenheit. Bei Special Art Rare und Ultra Rare hält die Karte auf der Kante an, der Hintergrund wird dunkel und die Kamera fährt heran, dann dreht sie sich mit ihrem echten 3D-Finish auf.
+   - **Namensschild:** Seltenheit, Name, Titel, "NEU" oder "Dublette", Finish und ob es eine Garantie oder Hauptkarte war.
+   - **Ergebnis:** alle Karten, was neu ist und dein Card-Dex-Stand.
+   - Tippen, Leertaste oder Pfeil rechts geht weiter, Escape oder "Überspringen" springt zum Ergebnis.
+4. **Einstellungen:** Pack-Animation Ausführlich, Kurz oder Aus. Lautstärke und Ton aus. Bei "Verringerte Bewegung" im Betriebssystem läuft automatisch die kurze Version.
+5. **Ton (Tone.js):** Aufstieg beim Flug, Herzschlag, Aufschlag mit tiefem Schlag und Rauschen, Glockenklänge die mit der Seltenheit wachsen, Funkeln bei neuen Karten.
 
-| Ziel | Packs (Mitte) | Packs (9 von 10 Spielern sind spätestens hier fertig) | Ungefähr in Tagen (2 Packs pro Tag) |
-|---|---|---|---|
-| Erste Double Rare | 2 | | am ersten Tag |
-| Erste Special Art Rare | 4 | | am ersten Tag |
-| Erste Ultra Rare | 11 | | etwa 1 Woche |
-| Alle Common, Uncommon, Rare, Double Rare | 66 | 101 | gut 1 Monat |
-| Alle Art Rare | 74 | 125 | |
-| Alle Special Art Rare | 81 | 146 | |
-| Alle Ultra Rare | 157 | 279 | |
-| **Komplettes Set (69 Motive)** | **167** | **280** | etwa 3 Monate |
-
-Mit dem Kiosk (Abschnitt 8) kann man fehlende Motive auch kaufen. Dann sind Finish, Seriennummer und Zustand der Teil, für den man Glück braucht.
-
-## 7. Der Ablauf beim Öffnen
-
-1. **Packs-Bildschirm:** Du siehst die Packs, den Preis, deine Garantie-Zähler und einen Link "Quoten ansehen". Ein Klick auf "Öffnen" bucht das Geld ab.
-2. **Ergebnis wird sofort festgelegt und gespeichert.** Die Animation zeigt nur, was schon feststeht. Abbrechen, Überspringen oder Fenster schließen ändert nichts.
-3. **Animation (ruhig, nicht grell):** Das Pack liegt im Licht. Du ziehst darüber, um es aufzureißen (oder klickst). Die 5 Karten gleiten verdeckt heraus. Du deckst sie nacheinander auf, oder klickst "Alle aufdecken".
-   - Common und Uncommon: schnelles Umdrehen.
-   - Rare: kurzer sanfter Glanz.
-   - Double Rare und Art Rare: Schein in der Herz-Farbe der Figur, langsameres Umdrehen.
-   - Special Art Rare und Ultra Rare: der Hintergrund wird dunkler, kurze Pause, dann dreht sich die Karte mit ihrem echten 3D-Finish auf.
-4. **Ergebnis-Seite:** Alle 5 Karten, mit Marken "NEU" oder "Dublette", Finish-Name und wie sich dein Card-Dex verändert hat ("+2 neue Motive, 31/79"). Knöpfe: "Noch ein Pack", "Dubletten verkaufen" (ab Stufe 4), "Zur Sammelmappe".
-5. **Einstellung "Animation":** Ausführlich, Kurz oder Aus. Standard: Ausführlich.
-
-## 8. Was später kommt (Entwurf)
-
-**Verkaufen (Stufe 4):** Es werden nur Dubletten verkauft, nie die letzte Kopie eines Motivs und nie eine bewertete Karte.
-
-| Seltenheit | Verkaufswert (normales Finish) |
-|---|---|
-| Common | ¥3 |
-| Uncommon | ¥8 |
-| Rare | ¥25 |
-| Double Rare | ¥70 |
-| Art Rare | ¥120 |
-| Special Art Rare | ¥250 |
-| Ultra Rare | ¥600 |
-
-Das Finish multipliziert den Wert: normal ×1, Foil ×1,6, Premium ×3. Würdest du den Inhalt eines Packs komplett verkaufen, bekämst du etwa 40 % des Preises zurück. Das Spiel gibt dir also Geld zurück, aber Packs bleiben ein echter Posten.
-
-**Kiosk (Stufe 4):** Täglich wechselnde Angebote (8 Karten, höchstens 1 Art Rare oder besser). Gekauft wird immer die Karte mit normalem Finish. Das Finish ist also weiterhin das Glück beim Packs-Öffnen.
+## 8. Später (Entwurf, ich frage dann nochmal)
+**Kiosk (Stufe 5):** Damit gute Karten ein Grind bleiben, verkauft der Kiosk nur bis **Double Rare**, immer mit normalem Finish. Art Rare, Special Art Rare, Ultra Rare und die Halloween-Karten gibt es nur aus Packs. Täglich wechselnde Angebote.
 
 | Seltenheit | Kiosk-Preis |
 |---|---|
@@ -132,30 +98,14 @@ Das Finish multipliziert den Wert: normal ×1, Foil ×1,6, Premium ×3. Würdest
 | Uncommon | ¥80 |
 | Rare | ¥250 |
 | Double Rare | ¥800 |
-| Art Rare | ¥3.000 |
-| Special Art Rare | ¥8.000 |
-| Ultra Rare | ¥20.000 |
 
-Halloween-Karten gibt es nicht im Kiosk.
+**Verkaufen (Stufe 5):** Nur Dubletten. Common ¥3, Uncommon ¥8, Rare ¥25, Double Rare ¥70, Art Rare ¥120, Special Art Rare ¥250, Ultra Rare ¥600. Finish multipliziert: Foil ×1,6, Premium ×3. Das sind etwa 35 bis 40 % des Packpreises, wenn man einen ganzen Pack verkauft.
 
-**Bewertung (Stufe 5):** Keine Wartezeit, nur eine kleine Zeremonie beim Aufdecken. Gebühr ¥200 (Common bis Rare), ¥500 (Double Rare und Art Rare), ¥1.000 (Special Art Rare und Ultra Rare). Die Note ist der Durchschnitt der vier versteckten Teilnoten und verändert den Wert: 10 ×6, 9,5 ×4, 9 ×2,5, 8,5 ×1,8, 8 ×1,4, 7 ×1,1, 6,5 oder weniger ×0,8. Nach den heutigen Würfen (nachgerechnet) ist etwa jede zweite Karte eine 9 oder besser, etwa jede achte eine 9,5 oder besser, und eine 10 kommt nur bei etwa 1 von 60 Karten vor.
+**Bewertung (Stufe 6):** Keine Wartezeit, nur eine kleine Zeremonie beim Aufdecken. Gebühr ¥200 (Common bis Rare), ¥500 (Double Rare und Art Rare), ¥1.000 (Special Art Rare und Ultra Rare). Die Note ist der Durchschnitt der vier versteckten Teilnoten und verändert den Wert: 10 ×6, 9,5 ×4, 9 ×2,5, 8,5 ×1,8, 8 ×1,4, 7 ×1,1, 6,5 oder weniger ×0,8. Etwa jede zweite Karte ist eine 9 oder besser, etwa jede achte eine 9,5 oder besser, und eine 10 kommt nur bei etwa 1 von 60 Karten vor.
 
-## 9. Wie ich es technisch bauen würde (Stufe 3)
-
-- **Packs als Daten:** Jedes Pack ist eine Datei mit Preis, Slots, Tabellen, Garantien und Zeitfenster. Eine Prüfung stoppt das Spiel, wenn eine Tabelle nicht auf 100 % kommt.
-- **Reine Regel-Funktion:** `Pack öffnen (Spielstand, Pack, Zeitpunkt) → neuer Spielstand + Ergebnis`. Sie nutzt den Zufall aus dem Spielstand, bucht Geld und Karten und die Garantie-Zähler in einem Schritt. Die gleiche Eingabe gibt immer das gleiche Ergebnis.
-- **Spielstand Version 3:** Dazu kommen der Tagesanspruch für das Gratis-Halloween-Pack und ein kurzer Verlauf der letzten Packs. Alte Spielstände werden automatisch aufgewertet.
-- **Quoten-Seite:** Wird aus den gleichen Pack-Daten erzeugt.
-- **Tests:** Quoten werden mit sehr vielen simulierten Packs gegen die Tabellen geprüft, Garantien dürfen nie überschritten werden, der Dublettenschutz wird geprüft, das Event-Fenster und die Wiederholbarkeit auch.
-- **Simulator:** Ein Befehl öffnet z. B. 100.000 Packs und gibt die Zahlen aus. So kann man später die Werte feinjustieren.
-- **Animation:** Eine einzige 3D-Fläche mit Pack und 5 Karten (nicht 5 getrennte). Dafür muss der Karten-Painter mehrere Karten auf einmal können. Wo es schwach läuft (Intel UHD), gibt es die Stufe "Kurz" oder "Aus".
-
-## 10. Was ich von dir brauche
-
-1. **5 Karten für ¥500 pro Pack** (oder lieber 10 Karten für ¥1.000?)
-2. **Startgeld ¥1.500** und **Tagesbonus ¥400** (mit Ansparen bis 3 Tage)
-3. **Die Quoten aus Abschnitt 3**: Ultra Rare 6 % pro Pack, Special Art Rare oder besser 22 %
-4. **Garantie** nach 20 Packs (Special Art Rare oder besser) und 60 Packs (Ultra Rare), mit Dublettenschutz
-5. **Halloween**: 15. Oktober bis 4. November, jedes Jahr wieder, 1 Gratis-Pack pro Tag, Garantie alle 5 Packs
-6. **Animation**: ruhig, mit Ausführlich, Kurz und Aus
-7. Die Entwürfe in Abschnitt 8 (Verkauf, Kiosk, Bewertung) sind nur zur Information, ich frage in Stufe 4 und 5 nochmal.
+## 9. Technik
+- `src/data/packs.json`: Preise, Slots, Garantien, Banner. Eine Prüfung stoppt das Spiel mit einer klaren Meldung, wenn etwas nicht stimmt (Tabellen, Phasen, Hauptkarten).
+- `src/packs/rollPack.ts`: die Würfe. `src/packs/openPack.ts`: bezahlt, würfelt, legt die Karten ab, zählt die Garantien, in einem Schritt.
+- Spielstand Version 3: Garantie-Zähler, Tagesbonus, Pack-Verlauf.
+- Tests: Quoten gegen die Tabellen (Monte Carlo), Garantien, Dublettenschutz, Banner-Fenster, 50/50, Wiederholbarkeit. Ein **Simulator** in den Einstellungen (Entwicklungsversion) öffnet viele Packs und zeigt die Zahlen aus Abschnitt 3 und 4.
+- Show: `src/scene/pull/` (Ablauf als reiner Code, Lichteffekte, Shader, Bloom nur für den Hintergrund) und `src/ui/pull/` (Oberfläche). Ton: `src/audio/`.

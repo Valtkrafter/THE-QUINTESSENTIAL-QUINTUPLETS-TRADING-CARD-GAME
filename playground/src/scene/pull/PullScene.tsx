@@ -148,8 +148,11 @@ function Stage({ runner, packs, graphics, frameStyle, idleMotion, running }: Pul
     const pushTarget = look?.spotlight === true && (state.phase === 'flip' || state.phase === 'show') ? 1 : 0;
     push.current = MathUtils.damp(push.current, pushTarget, 2.6, dt);
     fx.cameraShake(clock.current, shake);
-    camera.position.set(shake.x, 0.2 + shake.y, CAMERA_Z - push.current * 1.7);
-    camera.lookAt(0, CARD_HOME_Y * 0.6, 0);
+    // On a tall, narrow screen (a phone held upright) the card moves up, leaving room for the name below it.
+    const aspect = size.width / Math.max(size.height, 1);
+    const lift = MathUtils.clamp((0.95 - aspect) * 2.4, 0, 1.1);
+    camera.position.set(shake.x, 0.2 + shake.y - lift, CAMERA_Z - push.current * 1.7);
+    camera.lookAt(0, CARD_HOME_Y * 0.6 - lift, 0);
 
     // The card on show.
     const group = cardGroup.current;

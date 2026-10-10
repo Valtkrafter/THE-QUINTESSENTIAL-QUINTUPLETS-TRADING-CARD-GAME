@@ -75,7 +75,12 @@ export class PullRunner {
     }
     for (const event of result.events) {
       for (const listener of this.#listeners) {
-        listener(event);
+        try {
+          listener(event);
+        } catch (error) {
+          // A broken listener (a sound, an effect) must not stop the show.
+          console.error('A listener of the pull show failed.', error);
+        }
       }
     }
   }

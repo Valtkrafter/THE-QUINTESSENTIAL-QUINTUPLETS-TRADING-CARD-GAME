@@ -88,7 +88,7 @@ export async function createPullAudio(): Promise<PullAudio> {
     modulation: { type: 'square' },
     modulationEnvelope: { attack: 0.002, decay: 0.35, sustain: 0, release: 0.6 },
   });
-  bell.maxPolyphony = 24;
+  bell.maxPolyphony = 48;
   bell.volume.value = -9;
   bell.connect(bus);
 
@@ -98,30 +98,35 @@ export async function createPullAudio(): Promise<PullAudio> {
     oscillator: { type: 'fatsawtooth', count: 3, spread: 28 },
     envelope: { attack: 0.5, decay: 0.6, sustain: 0.7, release: 2.4 },
   });
-  pad.maxPolyphony = 16;
+  pad.maxPolyphony = 32;
   pad.volume.value = -19;
   pad.chain(padFilter, chorus, bus);
 
-  const boom = new Tone.MembraneSynth({ pitchDecay: 0.12, octaves: 7, envelope: { attack: 0.001, decay: 0.9, sustain: 0, release: 0.6 } });
+  // Every instrument is polyphonic: a single voice refuses a note that starts before the one it played last, and cues
+  // of the show overlap all the time.
+  const boom = new Tone.PolySynth(Tone.MembraneSynth, { pitchDecay: 0.12, octaves: 7, envelope: { attack: 0.001, decay: 0.9, sustain: 0, release: 0.6 } });
+  boom.maxPolyphony = 12;
   boom.volume.value = -3;
   boom.connect(master);
 
-  const metal = new Tone.MetalSynth({
+  const metal = new Tone.PolySynth(Tone.MetalSynth, {
     envelope: { attack: 0.001, decay: 1.4, release: 0.9 },
     harmonicity: 5.1,
     modulationIndex: 30,
     resonance: 4200,
     octaves: 1.6,
   });
-  metal.frequency.value = 380;
+  metal.maxPolyphony = 6;
   metal.volume.value = -26;
   metal.connect(bus);
 
-  const sparkle = new Tone.Synth({ oscillator: { type: 'triangle' }, envelope: { attack: 0.001, decay: 0.12, sustain: 0, release: 0.2 } });
+  const sparkle = new Tone.PolySynth(Tone.Synth, { oscillator: { type: 'triangle' }, envelope: { attack: 0.001, decay: 0.12, sustain: 0, release: 0.2 } });
+  sparkle.maxPolyphony = 32;
   sparkle.volume.value = -20;
   sparkle.connect(bus);
 
-  const tick = new Tone.Synth({ oscillator: { type: 'sine' }, envelope: { attack: 0.001, decay: 0.06, sustain: 0, release: 0.05 } });
+  const tick = new Tone.PolySynth(Tone.Synth, { oscillator: { type: 'sine' }, envelope: { attack: 0.001, decay: 0.06, sustain: 0, release: 0.05 } });
+  tick.maxPolyphony = 6;
   tick.volume.value = -22;
   tick.connect(master);
 
@@ -193,7 +198,7 @@ export async function createPullAudio(): Promise<PullAudio> {
     });
   }
 
-  const instrument: PullAudio = {
+  const raw: PullAudio = {
     flight({ seconds, tier, threads }) {
       cutFlight();
       active = { gains: [], timers: [] };
@@ -313,5 +318,23 @@ export async function createPullAudio(): Promise<PullAudio> {
       }
     },
   };
-  return instrument;
+  // A sound problem must never break the show, so every cue is guarded.
+  const attempt = (run: () => void): void => {
+    try {
+      run();
+    } catch (error) {
+      console.warn('A sound of the pull show failed.', error);
+    }
+  };
+  return {
+    flight: (cue) => attempt(() => raw.flight(cue)),
+    impact: (tier) => attempt(() => raw.impact(tier)),
+    flip: (tier, seconds) => attempt(() => raw.flip(tier, seconds)),
+    reveal: (rarity, tier, isNew) => attempt(() => raw.reveal(rarity, tier, isNew)),
+    tap: () => attempt(() => raw.tap()),
+    summary: () => attempt(() => raw.summary()),
+    stop: () => attempt(() => raw.stop()),
+    setVolume: (volume, muted) => attempt(() => raw.setVolume(volume, muted)),
+    dispose: () => attempt(() => raw.dispose()),
+  };
 }
