@@ -1,7 +1,7 @@
 [
   {
     "id": "booster",
-    "name": "TQQ01-Booster",
+    "name": "TQQ01 Booster",
     "price": 500,
     "slots": [
       { "role": "basic", "table": { "C": 60, "U": 40 } },
@@ -14,7 +14,7 @@
   },
   {
     "id": "halloween",
-    "name": "Halloween-Spuknacht",
+    "name": "Halloween Wish",
     "price": 500,
     "slots": [
       { "role": "basic", "table": { "C": 60, "U": 40 } },

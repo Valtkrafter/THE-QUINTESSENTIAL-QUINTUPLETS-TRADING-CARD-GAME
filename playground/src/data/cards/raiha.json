@@ -16,7 +16,7 @@
       "slot": "t01"
     },
     "signed": false,
-    "text": "Heal 30 damage from 1 of your Characters.",
+    "text": "Heal 30 HP on one of your Characters.",
     "effects": [
       {
         "type": "heal",
@@ -47,7 +47,7 @@
       "slot": "t02"
     },
     "signed": false,
-    "text": "Heal 60 damage from 1 of your Characters.",
+    "text": "Heal 60 HP on one of your Characters.",
     "effects": [
       {
         "type": "heal",
@@ -73,7 +73,7 @@
       "slot": "t03"
     },
     "signed": false,
-    "text": "Heal 20 damage from each of your Characters.",
+    "text": "Heal 20 HP on each of your Characters.",
     "effects": [
       {
         "type": "heal",
@@ -99,7 +99,7 @@
       "slot": "t04"
     },
     "signed": false,
-    "text": "Search your deck for up to 2 Basic Characters and put them onto your Bench. Then, shuffle your deck.",
+    "text": "Find up to 2 Basic Characters in your deck and put them on your Bench. Then shuffle your deck.",
     "effects": [
       {
         "type": "searchBasicToBench",

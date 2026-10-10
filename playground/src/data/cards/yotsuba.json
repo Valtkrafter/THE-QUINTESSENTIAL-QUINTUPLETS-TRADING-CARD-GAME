@@ -62,7 +62,7 @@
           "clover"
         ],
         "damage": 10,
-        "text": "Attach 1 Heart to 1 of your Benched Characters.",
+        "text": "Give 1 Heart to one of your Benched Characters.",
         "effects": [
           {
             "type": "attachHeart",
@@ -113,7 +113,7 @@
           "study"
         ],
         "damage": 30,
-        "text": "Attach 1 Heart to 1 of your Benched Characters.",
+        "text": "Give 1 Heart to one of your Benched Characters.",
         "effects": [
           {
             "type": "attachHeart",
@@ -188,7 +188,7 @@
     "ability": {
       "name": "Ribbon of Support",
       "timing": "passive",
-      "text": "Your Benched Characters’ moves cost 1 less Study Heart.",
+      "text": "While this Character is on your Bench, your Active Character’s moves need 1 fewer grey Heart.",
       "effects": [
         {
           "type": "reduceStudyCost",
@@ -241,7 +241,7 @@
           "clover"
         ],
         "damage": null,
-        "text": "Attach up to 2 Hearts to your Characters in any way you like.",
+        "text": "Give up to 2 Hearts to your Characters. Split them any way you like.",
         "effects": [
           {
             "type": "attachHeart",
@@ -296,7 +296,7 @@
         ],
         "damage": 110,
         "damageSuffix": "+",
-        "text": "Does 20 more damage for each of your Benched Characters.",
+        "text": "+20 damage for each Character on your Bench.",
         "effects": [
           {
             "type": "damagePerCount",
@@ -374,7 +374,7 @@
           "clover"
         ],
         "damage": null,
-        "text": "Attach up to 2 Hearts to your Characters in any way you like.",
+        "text": "Give up to 2 Hearts to your Characters. Split them any way you like.",
         "effects": [
           {
             "type": "attachHeart",
@@ -422,7 +422,7 @@
     "ability": {
       "name": "Ribbon of Support",
       "timing": "passive",
-      "text": "Your Benched Characters’ moves cost 1 less Study Heart.",
+      "text": "While this Character is on your Bench, your Active Character’s moves need 1 fewer grey Heart.",
       "effects": [
         {
           "type": "reduceStudyCost",
@@ -471,7 +471,7 @@
     "ability": {
       "name": "Candy Run",
       "timing": "onceDuringTurn",
-      "text": "Once during your turn, you may attach 1 Heart to this Character.",
+      "text": "Once per turn: give 1 Heart to this Character.",
       "effects": [
         {
           "type": "attachHeart",

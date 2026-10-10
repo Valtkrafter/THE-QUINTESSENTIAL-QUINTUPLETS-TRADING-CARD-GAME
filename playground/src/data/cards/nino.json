@@ -62,7 +62,7 @@
           "butterfly"
         ],
         "damage": 10,
-        "text": "Heal 10 damage from this Character.",
+        "text": "Heal 10 HP.",
         "effects": [
           {
             "type": "heal",
@@ -113,7 +113,7 @@
           "study"
         ],
         "damage": 30,
-        "text": "Heal 30 damage from 1 of your Characters.",
+        "text": "Heal 30 HP on one of your Characters.",
         "effects": [
           {
             "type": "heal",
@@ -188,7 +188,7 @@
     "ability": {
       "name": "Big Sister’s Care",
       "timing": "onceDuringTurn",
-      "text": "Once during your turn, you may heal 20 damage from each of your Benched Characters.",
+      "text": "Once per turn: heal 20 HP on each Character on your Bench.",
       "effects": [
         {
           "type": "heal",
@@ -330,7 +330,7 @@
           "study"
         ],
         "damage": 50,
-        "text": "Heal 20 damage from this Character.",
+        "text": "Heal 20 HP.",
         "effects": [
           {
             "type": "heal",
@@ -425,7 +425,7 @@
           "butterfly"
         ],
         "damage": 240,
-        "text": "Heal 30 damage from this Character.",
+        "text": "Heal 30 HP.",
         "effects": [
           {
             "type": "heal",
@@ -463,7 +463,7 @@
     "ability": {
       "name": "Sweet Treats",
       "timing": "onPlay",
-      "text": "When you play this Character from your hand, heal 30 damage from each of your Characters.",
+      "text": "When you play this from your hand: heal 30 HP on each of your Characters.",
       "effects": [
         {
           "type": "heal",
@@ -519,7 +519,7 @@
           "butterfly"
         ],
         "damage": 80,
-        "text": "Heal 30 damage from this Character.",
+        "text": "Heal 30 HP.",
         "effects": [
           {
             "type": "heal",

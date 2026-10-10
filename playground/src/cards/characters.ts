@@ -7,12 +7,12 @@ export interface AffinityInfo {
 }
 
 export const AFFINITY_INFO: Readonly<Record<Affinity, AffinityInfo>> = {
-  heart: { label: 'Herz', color: '#f2b84b' },
-  butterfly: { label: 'Schmetterling', color: '#c06ef0' },
-  melody: { label: 'Melodie', color: '#4f9dff' },
-  clover: { label: 'Kleeblatt', color: '#3fcf7a' },
-  star: { label: 'Stern', color: '#ff6a55' },
-  study: { label: 'Lernen', color: '#a9a7bd' },
+  heart: { label: 'Heart', color: '#f2b84b' },
+  butterfly: { label: 'Butterfly', color: '#c06ef0' },
+  melody: { label: 'Melody', color: '#4f9dff' },
+  clover: { label: 'Clover', color: '#3fcf7a' },
+  star: { label: 'Star', color: '#ff6a55' },
+  study: { label: 'Study', color: '#a9a7bd' },
 };
 
 /** Weakness follows the cycle Heart → Butterfly → Melody → Clover → Star → Heart; resistance runs backwards. */

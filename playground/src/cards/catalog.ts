@@ -9,9 +9,7 @@ import nino from '../data/cards/nino.json';
 import raiha from '../data/cards/raiha.json';
 import yotsuba from '../data/cards/yotsuba.json';
 import yusuke from '../data/cards/yusuke.json';
-import textsDe from '../data/cards.de.json';
 import { cardSchema, type Card } from './schema';
-import { applyTexts } from './texts';
 
 export const SET_CODE = 'TQQ01';
 
@@ -46,8 +44,7 @@ export function parseCatalog(raw: readonly unknown[]): readonly Card[] {
   return cards;
 }
 
-/** The cards with their original English text (the rules and the base of every translation). */
-export const CATALOG_ORIGINAL: readonly Card[] = parseCatalog([
+export const CATALOG: readonly Card[] = parseCatalog([
   ...ichika,
   ...nino,
   ...miku,
@@ -59,9 +56,6 @@ export const CATALOG_ORIGINAL: readonly Card[] = parseCatalog([
   ...maruo,
   ...yusuke,
 ]);
-
-/** The cards as the game shows them: the German text laid over the originals (see texts.ts). */
-export const CATALOG: readonly Card[] = applyTexts(CATALOG_ORIGINAL, textsDe);
 export const SET_SIZE = CATALOG.length;
 
 const BY_ID = new Map<string, Card>(CATALOG.map((card) => [card.id, card]));

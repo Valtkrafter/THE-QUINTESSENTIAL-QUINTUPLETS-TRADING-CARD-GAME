@@ -32,7 +32,7 @@ All colours, spacing, corners, shadows, type sizes and motion are variables in `
 
 ## Text
 
-Every sentence is in `ui/text.ts`, and everything is German: the names of the rarities, finishes, stages and Hearts live next to their data (`cards/model.ts`, `holo/finishes.ts`, `cards/characters.ts`), the printed card text in `data/cards.de.json`. Only the proper names of the figures (Ichika Nakano, 中野 一花) are kept. The words follow `docs/wortschatz.md`. Stage 7 turns this into German / English / Japanese (the English card text still lives in `data/cards/*.json`).
+Every sentence is in `ui/text.ts`, in English and in plain words (the game words are listed in `docs/glossary.md`); the names of the rarities, finishes and stages live next to their data. The language of numbers and dates is one constant in `ui/locale.ts`.
 
 ## The pull show (Stage 3)
 

@@ -22,7 +22,7 @@ import {
 import { LIGHT_INK, STATS_SLOT, drawArea, fitArea, metaRow, rulesRows, statsRow } from './rules';
 
 // Classic frame, modelled on the Weiß Schwarz look: a pearl border, art filling the card, a white
-// level box top left, a white LP (hit points) box top right, a translucent white text box and a rounded name
+// level box top left, a white HP box top right, a translucent white text box and a rounded name
 // panel, all inset by SAFE. Everything is flat print: solid fills and crisp keylines, no shadows.
 
 const BORDER = FRAME_BORDER_PX.classic;
@@ -129,7 +129,7 @@ function drawLevelCluster(painter: Painter, card: Card): void {
   if (card.kind === 'character') {
     ctx.fillStyle = INK.muted;
     ctx.font = `800 ${TYPE.label}px ${LATIN}`;
-    ctx.fillText('STUFE', box.x + 14, box.y + 30);
+    ctx.fillText('LV.', box.x + 14, box.y + 30);
     ctx.fillStyle = INK.text;
     ctx.textAlign = 'center';
     ctx.font = `900 ${TYPE.level}px ${LATIN}`;
@@ -140,7 +140,7 @@ function drawLevelCluster(painter: Painter, card: Card): void {
   }
 
   const chip = { x: box.x, y: box.y + box.h + CHIP_GAP, w: CORNER_W, h: CHIP_H };
-  drawChip(painter, chip, card.kind === 'character' ? stageName(card.stage) : 'GEFÄHRTE', null);
+  drawChip(painter, chip, card.kind === 'character' ? stageName(card.stage) : 'SUPPORT', null);
   protect(painter, { x: box.x - 4, y: box.y - 4, w: box.w + 8, h: box.h + CHIP_GAP + CHIP_H + 8 }, RADIUS);
 
   if (card.kind === 'character' && card.prime) {
@@ -159,7 +159,7 @@ function drawHpCluster(painter: Painter, card: Card): void {
 
   ctx.fillStyle = INK.muted;
   ctx.font = `800 ${TYPE.label}px ${LATIN}`;
-  ctx.fillText('LP', box.x + 14, box.y + 30);
+  ctx.fillText('HP', box.x + 14, box.y + 30);
 
   // Three-digit HP must fit the box: shrink the numeral rather than overflow.
   const number = String(card.hp);
@@ -201,7 +201,7 @@ function drawFooter(painter: Painter, card: Card, panel: Rect): void {
   // Title in a darkened accent: 0.45 keeps every Heart colour above 4.5:1 on the panel.
   ctx.fillStyle = darken(accent, 0.45);
   ctx.font = `italic 600 ${TYPE.title}px ${LATIN}`;
-  ctx.fillText(`„${card.title}“`, left, centeredBaseline(rowTop + 24, TYPE.title));
+  ctx.fillText(`“${card.title}”`, left, centeredBaseline(rowTop + 24, TYPE.title));
   ctx.fillStyle = INK.text;
   ctx.font = `800 ${TYPE.heading}px ${LATIN}`;
   ctx.fillText(card.name.en, left, centeredBaseline(rowTop + 60, TYPE.heading));

@@ -16,7 +16,7 @@
       "slot": "t01"
     },
     "signed": false,
-    "text": "Your opponent switches their Active Character with 1 of their Benched Characters. You choose which one.",
+    "text": "Your opponent swaps their Active Character with one from their Bench. You pick which one.",
     "effects": [
       {
         "type": "forceOpponentSwitch"
@@ -40,7 +40,7 @@
       "slot": "t02"
     },
     "signed": false,
-    "text": "Heal 50 damage from 1 of your Characters.",
+    "text": "Heal 50 HP on one of your Characters.",
     "effects": [
       {
         "type": "heal",
@@ -66,7 +66,7 @@
       "slot": "t03"
     },
     "signed": false,
-    "text": "During your opponent’s next turn, prevent all damage done to your Active Character by attacks.",
+    "text": "During your opponent’s next turn, your Active Character takes no damage from attacks.",
     "effects": [
       {
         "type": "shieldActiveNextTurn"

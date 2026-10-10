@@ -27,7 +27,7 @@
           "star"
         ],
         "damage": 20,
-        "text": "Heal 10 damage from this Character.",
+        "text": "Heal 10 HP.",
         "effects": [
           {
             "type": "heal",
@@ -69,7 +69,7 @@
           "star"
         ],
         "damage": 10,
-        "text": "Draw a card.",
+        "text": "Draw 1 card.",
         "effects": [
           {
             "type": "draw",
@@ -156,7 +156,7 @@
           "study"
         ],
         "damage": 70,
-        "text": "Heal 20 damage from this Character.",
+        "text": "Heal 20 HP.",
         "effects": [
           {
             "type": "heal",
@@ -194,7 +194,7 @@
     "ability": {
       "name": "Future Teacher",
       "timing": "onceDuringTurn",
-      "text": "Once during your turn, you may draw a card.",
+      "text": "Once per turn: draw 1 card.",
       "effects": [
         {
           "type": "draw",
@@ -247,9 +247,9 @@
           "star",
           "study"
         ],
-        "damage": 90,
+        "damage": 30,
         "damageSuffix": "×",
-        "text": "Does 30 damage for each of the Quintuplets you have in play.",
+        "text": "30 damage for each Nakano sister you have in play.",
         "effects": [
           {
             "type": "damagePerCount",
@@ -293,7 +293,7 @@
           "study"
         ],
         "damage": 120,
-        "text": "Heal 30 damage from this Character.",
+        "text": "Heal 30 HP.",
         "effects": [
           {
             "type": "heal",
@@ -336,7 +336,7 @@
           "study"
         ],
         "damage": 50,
-        "text": "Draw a card.",
+        "text": "Draw 1 card.",
         "effects": [
           {
             "type": "draw",
@@ -373,7 +373,7 @@
     "ability": {
       "name": "Future Teacher",
       "timing": "onceDuringTurn",
-      "text": "Once during your turn, you may draw a card.",
+      "text": "Once per turn: draw 1 card.",
       "effects": [
         {
           "type": "draw",
@@ -389,9 +389,9 @@
           "star",
           "study"
         ],
-        "damage": 70,
+        "damage": 40,
         "damageSuffix": "×",
-        "text": "Does 40 damage for each of the Quintuplets you have in play.",
+        "text": "40 damage for each Nakano sister you have in play.",
         "effects": [
           {
             "type": "damagePerCount",
@@ -434,9 +434,9 @@
           "star",
           "star"
         ],
-        "damage": 100,
+        "damage": 50,
         "damageSuffix": "×",
-        "text": "Does 50 damage for each of the Quintuplets you have in play.",
+        "text": "50 damage for each Nakano sister you have in play.",
         "effects": [
           {
             "type": "damagePerCount",
@@ -474,7 +474,7 @@
     "ability": {
       "name": "Candy Feast",
       "timing": "onPlay",
-      "text": "When you play this Character from your hand, draw cards until you have 6 cards in your hand.",
+      "text": "When you play this from your hand: draw until you hold 6 cards.",
       "effects": [
         {
           "type": "drawUntilHandSize",
@@ -529,7 +529,7 @@
           "star"
         ],
         "damage": 60,
-        "text": "Discard up to 2 Hearts from the Defending Character.",
+        "text": "Remove up to 2 Hearts from the enemy Active Character.",
         "effects": [
           {
             "type": "discardHearts",

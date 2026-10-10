@@ -16,7 +16,7 @@
       "slot": "t01"
     },
     "signed": false,
-    "text": "Each player shuffles their hand into their deck and draws 4 cards.",
+    "text": "Both players shuffle their hand into their deck and draw 4 cards.",
     "effects": [
       {
         "type": "bothShuffleHandDraw",
@@ -41,7 +41,7 @@
       "slot": "t02"
     },
     "signed": false,
-    "text": "Flip a coin. If heads, draw 4 cards. If tails, draw 1 card.",
+    "text": "Flip a coin. Heads: draw 4 cards. Tails: draw 1 card.",
     "effects": [
       {
         "type": "coinFlip",

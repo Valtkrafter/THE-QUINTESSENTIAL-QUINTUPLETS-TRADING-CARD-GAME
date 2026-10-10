@@ -227,7 +227,7 @@ export function outlinedText(ctx: CanvasRenderingContext2D, text: string, x: num
 }
 
 /**
- * PRIMUS marker (the Prime card): a dark obsidian ribbon with a swallowtail end and a thin silver rim. It is deliberately
+ * PRIME marker: a dark obsidian ribbon with a swallowtail end and a thin silver rim. It is deliberately
  * not gold, so true gold stays reserved for hot-stamped signatures and Ichika's Heart colour.
  */
 export function drawPrimePill(ctx: CanvasRenderingContext2D, x: number, y: number): Rect {
@@ -255,8 +255,8 @@ export function drawPrimePill(ctx: CanvasRenderingContext2D, x: number, y: numbe
   ctx.fillStyle = '#eceaf4';
   ctx.textAlign = 'center';
   ctx.font = `900 ${TYPE.label}px ${LATIN}`;
-  ctx.letterSpacing = '2px';
-  ctx.fillText('PRIMUS', x + (width - notch) / 2 + 2, centeredBaseline(y + height / 2, TYPE.label));
+  ctx.letterSpacing = '3px';
+  ctx.fillText('PRIME', x + (width - notch) / 2 + 2, centeredBaseline(y + height / 2, TYPE.label));
   ctx.restore();
   return { x, y, w: width, h: height };
 }

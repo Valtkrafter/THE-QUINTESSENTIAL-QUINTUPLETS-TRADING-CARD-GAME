@@ -13,6 +13,7 @@ import {
   type PackStatistics,
 } from '../../packs/simulate';
 import { Button } from '../components/controls';
+import { LOCALE } from '../locale';
 import { text } from '../text';
 import styles from './SimulatorPanel.module.css';
 
@@ -22,8 +23,8 @@ interface Report {
   readonly banner: BannerReport | null;
 }
 
-const PERCENT = new Intl.NumberFormat('de-DE', { maximumFractionDigits: 1 });
-const DECIMAL = new Intl.NumberFormat('de-DE', { maximumFractionDigits: 2 });
+const PERCENT = new Intl.NumberFormat(LOCALE, { maximumFractionDigits: 1 });
+const DECIMAL = new Intl.NumberFormat(LOCALE, { maximumFractionDigits: 2 });
 const BANNER_PACKS = 75;
 
 function percent(share: number): string {

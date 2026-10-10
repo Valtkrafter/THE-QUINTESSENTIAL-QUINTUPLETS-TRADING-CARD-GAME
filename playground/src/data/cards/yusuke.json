@@ -16,7 +16,7 @@
       "slot": "t01"
     },
     "signed": false,
-    "text": "Look at the top 5 cards of your deck. Put 1 of them into your hand and the rest on the bottom of your deck.",
+    "text": "Look at your top 5 cards. Take 1 into your hand. Put the rest on the bottom of your deck.",
     "effects": [
       {
         "type": "lookTopTakeOne",
@@ -41,7 +41,7 @@
       "slot": "t02"
     },
     "signed": false,
-    "text": "Search your deck for a Supporter, reveal it, and put it into your hand. Then, shuffle your deck.",
+    "text": "Find a Supporter in your deck, show it, and put it in your hand. Then shuffle your deck.",
     "effects": [
       {
         "type": "searchSupporter",
@@ -66,7 +66,7 @@
       "slot": "t03"
     },
     "signed": false,
-    "text": "Draw 3 cards. Then, heal 20 damage from 1 of your Characters.",
+    "text": "Draw 3 cards, then heal 20 HP on one of your Characters.",
     "effects": [
       {
         "type": "draw",

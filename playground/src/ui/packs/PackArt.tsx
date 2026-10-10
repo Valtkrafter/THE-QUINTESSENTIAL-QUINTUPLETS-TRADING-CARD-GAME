@@ -5,7 +5,7 @@ export type PackArtKind = 'booster' | 'halloween';
 
 const LABELS: Readonly<Record<PackArtKind, { readonly top: string; readonly bottom: string }>> = {
   booster: { top: 'TQQ01', bottom: 'BOOSTER' },
-  halloween: { top: 'HALLOWEEN', bottom: 'SPUKNACHT' },
+  halloween: { top: 'HALLOWEEN', bottom: 'WISH' },
 };
 
 const HEARTS = ['var(--affinity-heart)', 'var(--affinity-butterfly)', 'var(--affinity-melody)', 'var(--affinity-clover)', 'var(--affinity-star)'];

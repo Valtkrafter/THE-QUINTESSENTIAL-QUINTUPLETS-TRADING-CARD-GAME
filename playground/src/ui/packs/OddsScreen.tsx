@@ -9,11 +9,12 @@ import { normalPool } from '../../packs/rollPack';
 import type { PackDefinition, RarityTable, SlotRole } from '../../packs/schema';
 import { ArrowLeftIcon } from '../components/icons';
 import { PageHeader } from '../components/PageHeader';
+import { LOCALE } from '../locale';
 import { text } from '../text';
 import styles from './OddsScreen.module.css';
 
-const PERCENT = new Intl.NumberFormat('de-DE', { maximumFractionDigits: 2 });
-const DATE = new Intl.DateTimeFormat('de-DE', { day: 'numeric', month: 'long' });
+const PERCENT = new Intl.NumberFormat(LOCALE, { maximumFractionDigits: 2 });
+const DATE = new Intl.DateTimeFormat(LOCALE, { day: 'numeric', month: 'long' });
 
 function percent(value: number): string {
   return `${PERCENT.format(value)} %`;

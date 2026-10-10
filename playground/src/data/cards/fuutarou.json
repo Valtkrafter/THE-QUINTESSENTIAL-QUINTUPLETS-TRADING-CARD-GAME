@@ -66,7 +66,7 @@
       "slot": "t03"
     },
     "signed": false,
-    "text": "Heal 30 damage from 1 of your Characters. Then, draw a card.",
+    "text": "Heal 30 HP on one of your Characters, then draw 1 card.",
     "effects": [
       {
         "type": "heal",
@@ -96,7 +96,7 @@
       "slot": "t04"
     },
     "signed": false,
-    "text": "Attach 2 Hearts to 1 of your Characters.",
+    "text": "Give 2 Hearts to one of your Characters.",
     "effects": [
       {
         "type": "attachHeart",
@@ -122,7 +122,7 @@
       "slot": "t05"
     },
     "signed": false,
-    "text": "Search your deck for a Basic Character and put it onto your Bench. Then, shuffle your deck.",
+    "text": "Find a Basic Character in your deck and put it on your Bench. Then shuffle your deck.",
     "effects": [
       {
         "type": "searchBasicToBench",
@@ -147,7 +147,7 @@
       "slot": "t06"
     },
     "signed": true,
-    "text": "Shuffle your hand into your deck. Then, draw 6 cards.",
+    "text": "Shuffle your hand into your deck, then draw 6 cards.",
     "effects": [
       {
         "type": "shuffleHandDraw",

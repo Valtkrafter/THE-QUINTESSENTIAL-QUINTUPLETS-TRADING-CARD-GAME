@@ -17,50 +17,50 @@ export interface FinishDefinition {
 export const FINISHES = [
   {
     id: 'standard',
-    label: 'Schlicht',
-    description: 'Glänzender Druck ohne Folie. Daran werden alle anderen Schimmer gemessen.',
+    label: 'Standard',
+    description: 'Gloss-laminated print with no foil. The baseline the other finishes are judged against.',
     shaderIndex: 0,
     defaultMask: 'full',
   },
   {
     id: 'rainbow',
-    label: 'Regenbogen-Holo',
-    description: 'Regenbogen wie von einem Beugungsgitter. Die Farbe folgt dem Blickwinkel, die Bänder wandern, wenn du die Karte kippst.',
+    label: 'Rainbow Holo',
+    description: 'Diffraction-grating rainbow. Hue follows the viewing angle, so the bands sweep as the card tilts.',
     shaderIndex: 1,
     defaultMask: 'full',
   },
   {
     id: 'sparkle',
-    label: 'Glitzer',
-    description: 'Glitzerflocken, die jede für sich im Licht stehen. Nur die Flocken, die zum Licht zeigen, blitzen auf, deshalb funkelt es an und aus.',
+    label: 'Sparkle',
+    description: 'Glitter flakes with individual normals. Only the flakes facing the light catch it, so they twinkle in and out.',
     shaderIndex: 2,
     defaultMask: 'full',
   },
   {
     id: 'cosmos',
-    label: 'Kosmos',
-    description: 'Nebel und drei Sternenschichten in verschiedener Tiefe. Beim Kippen verschieben sie sich, als wäre hinter dem Druck das Weltall.',
+    label: 'Cosmos',
+    description: 'Nebula and three star layers at different depths. Parallax makes them read as space behind the print.',
     shaderIndex: 3,
     defaultMask: 'highlights',
   },
   {
     id: 'gold',
-    label: 'Goldrausch',
-    description: 'Glatt heißgeprägtes Gold mit sanftem Wellenglanz, der beim Kippen rollt. Das Bild bleibt als geprägter Ton erhalten.',
+    label: 'Gold Foil',
+    description: 'Smooth hot-stamped gold with a gentle ripple that rolls the reflections as you tilt. The art survives as an embossed tone.',
     shaderIndex: 4,
     defaultMask: 'full',
   },
   {
     id: 'prism',
-    label: 'Prisma-Kristall',
-    description: 'Eine Edelstein-Oberfläche aus schrägen Dreiecksflächen. Beim Kippen blitzt eine Fläche nach der anderen auf, mit farbig gespaltenem Licht und hellen Kanten.',
+    label: 'Prism Crystal',
+    description: 'A cut-gem surface of tilted triangular facets. Facets flash in turn as you tilt, with colour-split highlights and bright bevel lines.',
     shaderIndex: 5,
     defaultMask: 'full',
   },
   {
     id: 'radiant',
-    label: 'Strahlenkranz',
-    description: 'Lichtstrahlen und eingeätzte Ringe um einen Mittelpunkt. Beides dreht sich und wellt sich mit dem Kippen.',
+    label: 'Radiant',
+    description: 'Starburst rays and etched rings around a focal point. Both rotate and ripple with the tilt.',
     shaderIndex: 6,
     defaultMask: 'full',
   },
@@ -76,12 +76,12 @@ export interface MaskModeDefinition {
 }
 
 export const MASK_MODES = [
-  { id: 'full', label: 'Ganze Karte', shaderIndex: 0 },
-  { id: 'artBox', label: 'Bildfeld', shaderIndex: 1 },
-  { id: 'reverse', label: 'Außerhalb des Bildfelds (Reverse-Holo)', shaderIndex: 2 },
-  { id: 'frame', label: 'Rahmenkante', shaderIndex: 3 },
-  { id: 'highlights', label: 'Nur helle Stellen', shaderIndex: 4 },
-  { id: 'custom', label: 'Eigene Maske', shaderIndex: 5 },
+  { id: 'full', label: 'Whole card', shaderIndex: 0 },
+  { id: 'artBox', label: 'Art box', shaderIndex: 1 },
+  { id: 'reverse', label: 'Outside art box (reverse holo)', shaderIndex: 2 },
+  { id: 'frame', label: 'Frame edge', shaderIndex: 3 },
+  { id: 'highlights', label: 'Bright areas only', shaderIndex: 4 },
+  { id: 'custom', label: 'Custom mask image', shaderIndex: 5 },
 ] as const satisfies readonly MaskModeDefinition[];
 
 export type MaskSetting = MaskModeId | 'auto';

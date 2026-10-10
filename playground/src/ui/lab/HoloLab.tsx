@@ -19,7 +19,7 @@ export default function HoloLab() {
     return first === undefined ? null : { kind: 'card', id: first.id };
   });
   const [flipRequest, setFlipRequest] = useState(0);
-  const [gpuName, setGpuName] = useState('Wird erkannt …');
+  const [gpuName, setGpuName] = useState('Detecting…');
   const [isDraggingFiles, setIsDraggingFiles] = useState(false);
   const fpsRef = useRef<HTMLSpanElement>(null);
 
@@ -102,9 +102,9 @@ export default function HoloLab() {
           fpsRef={fpsRef}
         />
         <p className="stage__hint">
-          {mode === 'gallery' ? 'Fahr über eine Karte, um sie zu kippen. Klick zum Ansehen.' : 'Ziehen zum Drehen. Doppelklick zum Umdrehen.'}
+          {mode === 'gallery' ? 'Hover a card to tilt it. Click to inspect.' : 'Drag to spin. Double-click to flip.'}
         </p>
-        {isDraggingFiles && <div className="drop-overlay">Bilder hier loslassen</div>}
+        {isDraggingFiles && <div className="drop-overlay">Drop images to add them</div>}
       </main>
     </div>
   );

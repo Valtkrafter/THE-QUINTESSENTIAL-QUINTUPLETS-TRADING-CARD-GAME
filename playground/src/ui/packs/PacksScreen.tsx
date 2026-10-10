@@ -12,6 +12,7 @@ import { FINISH_SWATCH } from '../finishStyle';
 import { formatYen } from '../format';
 import { useToday } from '../hooks/useToday';
 import { startAudio } from '../pull/audioSession';
+import { LOCALE } from '../locale';
 import { text } from '../text';
 import { PackCard } from './PackCard';
 import styles from './PacksScreen.module.css';
@@ -24,7 +25,7 @@ interface Session {
   readonly openings: readonly PackOpening[];
 }
 
-const TIME = new Intl.DateTimeFormat('de-DE', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+const TIME = new Intl.DateTimeFormat(LOCALE, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 
 function History() {
   const save = useSave();

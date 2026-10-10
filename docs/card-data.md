@@ -36,10 +36,6 @@ A card can only do what is on this list (Stage 6 builds the engine that runs it)
 | `damagePerHeart {amount}`, `damagePerCount {amount, count}` | extra damage (`count`: `ownSisters`, `ownBenched`) |
 | `reduceDamageTaken {amount}`, `preventBenchDamage`, `coinSurvive {hp}`, `reduceStudyCost {amount, scope: bench}` | passive rules |
 
-## Card text in other languages
-
-The JSON files in `src/data/cards/` hold the rules and the original English text. The words printed on a card (title, move names, ability names and the rule texts) come from a text file per language, `src/data/cards.de.json` for German, keyed by card id. `cards/texts.ts` lays it over the cards once at start-up (`CATALOG` is the German cards, `CATALOG_ORIGINAL` the English ones). A text file must fit its cards exactly (same number of moves, a rule text exactly where the card has one); a mismatch stops the game at start-up with a list of every problem, and `cards/texts.test.ts` checks all 79 cards. The names of the rarities, finishes, stages and Hearts are translated where they are defined (`cards/model.ts`, `holo/finishes.ts`, `cards/characters.ts`), the words themselves are listed in `docs/wortschatz.md`. The illustrator credit defaults to "Unbekannt".
-
 ## Owned copies and the save game
 
 A card you own is a printed copy (`domain/ownership.ts`): `uid`, `cardId`, `finish`, a hidden `condition` (centering, corners, edges, surface, 1.0 to 10.0), `serial` (the n-th copy of that design you received), where and when it was obtained, and `grade` (empty until graded).

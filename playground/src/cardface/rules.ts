@@ -88,7 +88,7 @@ function abilityRow(ctx: CanvasRenderingContext2D, ability: Ability, width: numb
     height: head + 4 + body.height,
     ruleBefore: false,
     draw(x, y) {
-      const tagWidth = drawTag(ctx, 'FÄHIGKEIT', x, y + head / 2, ABILITY_RED, px(TYPE.label, scale));
+      const tagWidth = drawTag(ctx, 'ABILITY', x, y + head / 2, ABILITY_RED, px(TYPE.label, scale));
       ctx.fillStyle = ink.abilityName;
       ctx.font = `800 ${nameSize}px ${LATIN}`;
       ctx.fillText(ability.name, x + tagWidth + 12, centeredBaseline(y + head / 2, nameSize));
@@ -134,10 +134,10 @@ function supporterRows(ctx: CanvasRenderingContext2D, effect: string, width: num
       height: head,
       ruleBefore: false,
       draw(x, y) {
-        const tagWidth = drawTag(ctx, 'GEFÄHRTE', x, y + head / 2, SUPPORTER_ORANGE, labelSize);
+        const tagWidth = drawTag(ctx, 'SUPPORTER', x, y + head / 2, SUPPORTER_ORANGE, labelSize);
         ctx.fillStyle = ink.muted;
         ctx.font = `italic 500 ${labelSize}px ${LATIN}`;
-        ctx.fillText('Pro Zug darf nur 1 Gefährte gespielt werden.', x + tagWidth + 12, centeredBaseline(y + head / 2, labelSize));
+        ctx.fillText('Only 1 Supporter per turn.', x + tagWidth + 12, centeredBaseline(y + head / 2, labelSize));
       },
     },
     paragraphRow(ctx, effect, width, ink.text, TYPE.effect, 600, scale),
@@ -185,21 +185,21 @@ export function statsRow(ctx: CanvasRenderingContext2D, card: CharacterCard, ink
         cursor += ctx.measureText(text).width + 30;
       };
 
-      label('SCHWÄCHE');
+      label('WEAKNESS');
       if (card.weakness === null) {
         value('—');
       } else {
         coin(card.weakness, 17);
         value('×2');
       }
-      label('RESISTENZ');
+      label('RESISTANCE');
       if (card.resistance === null) {
         value('—');
       } else {
         coin(card.resistance, 17);
         value('−30');
       }
-      label('RÜCKZUG');
+      label('RETREAT');
       for (let index = 0; index < card.retreat; index += 1) {
         coin('study', 16);
       }
@@ -226,7 +226,7 @@ export function metaRow(ctx: CanvasRenderingContext2D, card: Card, width: number
       }
       ctx.fillStyle = ink.muted;
       ctx.font = `600 ${TYPE.credit}px ${LATIN}`;
-      ctx.fillText(`Illu. ${card.illustrator}`, cursor, centeredBaseline(middle, TYPE.credit));
+      ctx.fillText(`Illus. ${card.illustrator}`, cursor, centeredBaseline(middle, TYPE.credit));
 
       ctx.textAlign = 'right';
       ctx.fillStyle = ink.text;

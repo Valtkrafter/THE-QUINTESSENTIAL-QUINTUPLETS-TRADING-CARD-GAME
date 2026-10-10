@@ -138,10 +138,10 @@ export function createEmptyArtTexture(): CardTexture {
   context.fillStyle = '#f3f1fa';
   context.textAlign = 'center';
   context.font = `600 46px ${LATIN}`;
-  context.fillText('Kein Kartenbild geladen', EMPTY_WIDTH / 2, 760);
+  context.fillText('No card art loaded', EMPTY_WIDTH / 2, 760);
   context.font = `500 30px ${LATIN}`;
-  context.fillText('Zieh Bilder auf die Seite', EMPTY_WIDTH / 2, 815);
-  context.fillText('oder lege sie in src/assets/cards ab', EMPTY_WIDTH / 2, 855);
+  context.fillText('Drop images onto the page', EMPTY_WIDTH / 2, 815);
+  context.fillText('or add them to src/assets/cards', EMPTY_WIDTH / 2, 855);
 
   const texture = new CanvasTexture(canvas);
   texture.colorSpace = NoColorSpace;

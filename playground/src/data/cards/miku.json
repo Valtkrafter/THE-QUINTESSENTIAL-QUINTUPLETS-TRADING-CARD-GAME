@@ -62,7 +62,7 @@
           "melody"
         ],
         "damage": 10,
-        "text": "Heal 10 damage from this Character.",
+        "text": "Heal 10 HP.",
         "effects": [
           {
             "type": "heal",
@@ -113,7 +113,7 @@
           "study"
         ],
         "damage": 40,
-        "text": "Flip a coin. If heads, the Defending Character can’t attack during your opponent’s next turn.",
+        "text": "Flip a coin. Heads: the enemy Active Character can’t attack next turn.",
         "effects": [
           {
             "type": "coinFlip",
@@ -192,7 +192,7 @@
     "ability": {
       "name": "Headphones On",
       "timing": "passive",
-      "text": "This Character takes 20 less damage from attacks.",
+      "text": "Attacks do 20 less damage to this Character.",
       "effects": [
         {
           "type": "reduceDamageTaken",
@@ -240,7 +240,7 @@
     "ability": {
       "name": "Third Time’s the Charm",
       "timing": "passive",
-      "text": "If this Character would be Knocked Out, flip a coin. If heads, it stays in play with 10 HP.",
+      "text": "If this Character would be knocked out, flip a coin. Heads: it survives with 10 HP.",
       "effects": [
         {
           "type": "coinSurvive",
@@ -294,7 +294,7 @@
           "study"
         ],
         "damage": 120,
-        "text": "Flip a coin. If heads, the Defending Character can’t attack during your opponent’s next turn.",
+        "text": "Flip a coin. Heads: the enemy Active Character can’t attack next turn.",
         "effects": [
           {
             "type": "coinFlip",
@@ -372,7 +372,7 @@
     "ability": {
       "name": "Third Time’s the Charm",
       "timing": "passive",
-      "text": "If this Character would be Knocked Out, flip a coin. If heads, it stays in play with 10 HP.",
+      "text": "If this Character would be knocked out, flip a coin. Heads: it survives with 10 HP.",
       "effects": [
         {
           "type": "coinSurvive",
@@ -420,7 +420,7 @@
     "ability": {
       "name": "Headphones On",
       "timing": "passive",
-      "text": "This Character takes 20 less damage from attacks.",
+      "text": "Attacks do 20 less damage to this Character.",
       "effects": [
         {
           "type": "reduceDamageTaken",
@@ -438,7 +438,7 @@
         ],
         "damage": 130,
         "damageSuffix": "+",
-        "text": "Does 30 more damage for each of your Benched Characters.",
+        "text": "+30 damage for each Character on your Bench.",
         "effects": [
           {
             "type": "damagePerCount",
@@ -530,7 +530,7 @@
           "melody"
         ],
         "damage": 50,
-        "text": "The Defending Character can’t attack during your opponent’s next turn.",
+        "text": "The enemy Active Character can’t attack next turn.",
         "effects": [
           {
             "type": "preventAttackNextTurn"

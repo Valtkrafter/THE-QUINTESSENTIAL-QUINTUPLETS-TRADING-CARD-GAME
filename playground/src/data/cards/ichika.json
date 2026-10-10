@@ -62,7 +62,7 @@
           "heart"
         ],
         "damage": 10,
-        "text": "Heal 10 damage from this Character.",
+        "text": "Heal 10 HP.",
         "effects": [
           {
             "type": "heal",
@@ -113,7 +113,7 @@
           "study"
         ],
         "damage": 40,
-        "text": "Look at the top card of your deck. You may put it on the bottom.",
+        "text": "Peek at your top card. You can move it to the bottom of your deck.",
         "effects": [
           {
             "type": "peekTopMayBottom",
@@ -187,7 +187,7 @@
     "ability": {
       "name": "Leading Lady",
       "timing": "onceDuringTurn",
-      "text": "Once during your turn, you may switch your Active Character with 1 of your Benched Characters.",
+      "text": "Once per turn: swap your Active Character with one from your Bench.",
       "effects": [
         {
           "type": "switchOwnActive",
@@ -235,7 +235,7 @@
     "ability": {
       "name": "Eldest’s Resolve",
       "timing": "passive",
-      "text": "This Character takes 30 less damage from attacks.",
+      "text": "Attacks do 30 less damage to this Character.",
       "effects": [
         {
           "type": "reduceDamageTaken",
@@ -290,7 +290,7 @@
         ],
         "damage": 70,
         "damageSuffix": "+",
-        "text": "Does 30 more damage for each Heart attached to this Character.",
+        "text": "+30 damage for each Heart on this Character.",
         "effects": [
           {
             "type": "damagePerHeart",
@@ -327,7 +327,7 @@
     "ability": {
       "name": "Spotlight",
       "timing": "onceDuringTurn",
-      "text": "Once during your turn, look at the top card of your deck. You may put it on the bottom.",
+      "text": "Once per turn: peek at your top card. You can move it to the bottom of your deck.",
       "effects": [
         {
           "type": "peekTopMayBottom",
@@ -378,7 +378,7 @@
           "heart"
         ],
         "damage": 40,
-        "text": "Draw a card.",
+        "text": "Draw 1 card.",
         "effects": [
           {
             "type": "draw",
@@ -395,7 +395,7 @@
         ],
         "damage": 150,
         "damageSuffix": "+",
-        "text": "Does 30 more damage for each Heart attached to this Character.",
+        "text": "+30 damage for each Heart on this Character.",
         "effects": [
           {
             "type": "damagePerHeart",
@@ -432,7 +432,7 @@
     "ability": {
       "name": "Eldest’s Resolve",
       "timing": "passive",
-      "text": "This Character takes 30 less damage from attacks.",
+      "text": "Attacks do 30 less damage to this Character.",
       "effects": [
         {
           "type": "reduceDamageTaken",
@@ -480,7 +480,7 @@
     "ability": {
       "name": "Costume Change",
       "timing": "onceDuringTurn",
-      "text": "Once during your turn, you may switch your Active Character with 1 of your Benched Characters for free.",
+      "text": "Once per turn: swap your Active Character with one from your Bench. It costs nothing.",
       "effects": [
         {
           "type": "switchOwnActive",
@@ -535,7 +535,7 @@
           "heart"
         ],
         "damage": 70,
-        "text": "Discard 1 Heart from the Defending Character.",
+        "text": "Remove 1 Heart from the enemy Active Character.",
         "effects": [
           {
             "type": "discardHearts",

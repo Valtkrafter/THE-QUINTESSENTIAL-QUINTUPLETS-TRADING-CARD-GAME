@@ -178,7 +178,7 @@ interface PerfProbeProps {
 function readGpuName(context: WebGLRenderingContext | WebGL2RenderingContext): string {
   const debugInfo = context.getExtension('WEBGL_debug_renderer_info');
   const name: unknown = context.getParameter(debugInfo === null ? context.RENDERER : debugInfo.UNMASKED_RENDERER_WEBGL);
-  return typeof name === 'string' && name.length > 0 ? name : 'Unbekannter Grafikchip';
+  return typeof name === 'string' && name.length > 0 ? name : 'Unknown GPU';
 }
 
 /** Reports the GPU once and writes the frame rate straight to the DOM, so measuring never re-renders React. */

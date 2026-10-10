@@ -1,15 +1,17 @@
+import { LOCALE } from './locale';
+
 /** Joins class names, skipping the ones that are off. */
 export function cx(...parts: readonly (string | false | null | undefined)[]): string {
   return parts.filter((part): part is string => typeof part === 'string' && part !== '').join(' ');
 }
 
-const YEN = new Intl.NumberFormat('de-DE');
+const YEN = new Intl.NumberFormat(LOCALE);
 
 export function formatYen(amount: number): string {
   return `¥${YEN.format(amount)}`;
 }
 
-const DATE = new Intl.DateTimeFormat('de-DE', { day: 'numeric', month: 'long', year: 'numeric' });
+const DATE = new Intl.DateTimeFormat(LOCALE, { day: 'numeric', month: 'long', year: 'numeric' });
 
 export function formatDate(timestamp: number): string {
   return DATE.format(timestamp);
