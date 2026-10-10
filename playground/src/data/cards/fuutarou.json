@@ -1,0 +1,158 @@
+[
+  {
+    "id": "TQQ01-061",
+    "set": "TQQ01",
+    "number": 61,
+    "rarity": "C",
+    "kind": "supporter",
+    "character": "fuutarou",
+    "name": {
+      "en": "Fūtarō Uesugi",
+      "ja": "上杉 風太郎"
+    },
+    "title": "Train Conductor",
+    "art": {
+      "character": "fuutarou",
+      "slot": "t01"
+    },
+    "signed": false,
+    "text": "Draw 2 cards.",
+    "effects": [
+      {
+        "type": "draw",
+        "count": 2
+      }
+    ]
+  },
+  {
+    "id": "TQQ01-062",
+    "set": "TQQ01",
+    "number": 62,
+    "rarity": "U",
+    "kind": "supporter",
+    "character": "fuutarou",
+    "name": {
+      "en": "Fūtarō Uesugi",
+      "ja": "上杉 風太郎"
+    },
+    "title": "Private Tutor",
+    "art": {
+      "character": "fuutarou",
+      "slot": "t02"
+    },
+    "signed": false,
+    "text": "Draw 3 cards.",
+    "effects": [
+      {
+        "type": "draw",
+        "count": 3
+      }
+    ]
+  },
+  {
+    "id": "TQQ01-063",
+    "set": "TQQ01",
+    "number": 63,
+    "rarity": "U",
+    "kind": "supporter",
+    "character": "fuutarou",
+    "name": {
+      "en": "Fūtarō Uesugi",
+      "ja": "上杉 風太郎"
+    },
+    "title": "Study Snack",
+    "art": {
+      "character": "fuutarou",
+      "slot": "t03"
+    },
+    "signed": false,
+    "text": "Heal 30 damage from 1 of your Characters. Then, draw a card.",
+    "effects": [
+      {
+        "type": "heal",
+        "amount": 30,
+        "target": "chosenOwn"
+      },
+      {
+        "type": "draw",
+        "count": 1
+      }
+    ]
+  },
+  {
+    "id": "TQQ01-064",
+    "set": "TQQ01",
+    "number": 64,
+    "rarity": "R",
+    "kind": "supporter",
+    "character": "fuutarou",
+    "name": {
+      "en": "Fūtarō Uesugi",
+      "ja": "上杉 風太郎"
+    },
+    "title": "New Year Hakama",
+    "art": {
+      "character": "fuutarou",
+      "slot": "t04"
+    },
+    "signed": false,
+    "text": "Attach 2 Hearts to 1 of your Characters.",
+    "effects": [
+      {
+        "type": "attachHeart",
+        "count": 2,
+        "target": "chosenOwn"
+      }
+    ]
+  },
+  {
+    "id": "TQQ01-065",
+    "set": "TQQ01",
+    "number": 65,
+    "rarity": "AR",
+    "kind": "supporter",
+    "character": "fuutarou",
+    "name": {
+      "en": "Fūtarō Uesugi",
+      "ja": "上杉 風太郎"
+    },
+    "title": "Autumn in Kyoto",
+    "art": {
+      "character": "fuutarou",
+      "slot": "t05"
+    },
+    "signed": false,
+    "text": "Search your deck for a Basic Character and put it onto your Bench. Then, shuffle your deck.",
+    "effects": [
+      {
+        "type": "searchBasicToBench",
+        "count": 1
+      }
+    ]
+  },
+  {
+    "id": "TQQ01-066",
+    "set": "TQQ01",
+    "number": 66,
+    "rarity": "SAR",
+    "kind": "supporter",
+    "character": "fuutarou",
+    "name": {
+      "en": "Fūtarō Uesugi",
+      "ja": "上杉 風太郎"
+    },
+    "title": "Kyoto Memory",
+    "art": {
+      "character": "fuutarou",
+      "slot": "t06"
+    },
+    "signed": true,
+    "text": "Shuffle your hand into your deck. Then, draw 6 cards.",
+    "effects": [
+      {
+        "type": "shuffleHandDraw",
+        "count": 6
+      }
+    ]
+  }
+]

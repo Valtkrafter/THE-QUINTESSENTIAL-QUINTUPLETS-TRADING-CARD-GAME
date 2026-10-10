@@ -1,0 +1,88 @@
+[
+  {
+    "id": "TQQ01-071",
+    "set": "TQQ01",
+    "number": 71,
+    "rarity": "U",
+    "kind": "supporter",
+    "character": "isanari",
+    "name": {
+      "en": "Isanari Uesugi",
+      "ja": "上杉 勇也"
+    },
+    "title": "Carefree Father",
+    "art": {
+      "character": "isanari",
+      "slot": "t01"
+    },
+    "signed": false,
+    "text": "Each player shuffles their hand into their deck and draws 4 cards.",
+    "effects": [
+      {
+        "type": "bothShuffleHandDraw",
+        "count": 4
+      }
+    ]
+  },
+  {
+    "id": "TQQ01-072",
+    "set": "TQQ01",
+    "number": 72,
+    "rarity": "R",
+    "kind": "supporter",
+    "character": "isanari",
+    "name": {
+      "en": "Isanari Uesugi",
+      "ja": "上杉 勇也"
+    },
+    "title": "Lucky Streak",
+    "art": {
+      "character": "isanari",
+      "slot": "t02"
+    },
+    "signed": false,
+    "text": "Flip a coin. If heads, draw 4 cards. If tails, draw 1 card.",
+    "effects": [
+      {
+        "type": "coinFlip",
+        "heads": [
+          {
+            "type": "draw",
+            "count": 4
+          }
+        ],
+        "tails": [
+          {
+            "type": "draw",
+            "count": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "TQQ01-073",
+    "set": "TQQ01",
+    "number": 73,
+    "rarity": "AR",
+    "kind": "supporter",
+    "character": "isanari",
+    "name": {
+      "en": "Isanari Uesugi",
+      "ja": "上杉 勇也"
+    },
+    "title": "Surprise Visit",
+    "art": {
+      "character": "isanari",
+      "slot": "t03"
+    },
+    "signed": false,
+    "text": "Your opponent shuffles their hand into their deck and draws 3 cards.",
+    "effects": [
+      {
+        "type": "opponentShuffleHandDraw",
+        "count": 3
+      }
+    ]
+  }
+]

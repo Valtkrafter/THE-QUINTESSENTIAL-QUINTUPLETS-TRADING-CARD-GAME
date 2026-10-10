@@ -147,7 +147,7 @@ function supporterRows(ctx: CanvasRenderingContext2D, effect: string, width: num
 /** Ability and moves for characters, rule line and effect for Supporters. `scale` shrinks fonts and row heights. */
 export function rulesRows(ctx: CanvasRenderingContext2D, card: Card, width: number, ink: Ink, scale = 1): Row[] {
   if (card.kind === 'supporter') {
-    return supporterRows(ctx, card.effect, width, ink, scale);
+    return supporterRows(ctx, card.text, width, ink, scale);
   }
   const rows: Row[] = [];
   if (card.ability !== undefined) {

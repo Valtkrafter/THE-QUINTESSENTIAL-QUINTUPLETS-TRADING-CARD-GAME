@@ -1,0 +1,547 @@
+[
+  {
+    "id": "TQQ01-037",
+    "set": "TQQ01",
+    "number": 37,
+    "rarity": "C",
+    "kind": "character",
+    "character": "yotsuba",
+    "name": {
+      "en": "Yotsuba Nakano",
+      "ja": "中野 四葉"
+    },
+    "title": "Ready to Run",
+    "art": {
+      "character": "yotsuba",
+      "slot": "t01"
+    },
+    "signed": false,
+    "stage": "basic",
+    "prime": false,
+    "hp": 70,
+    "affinity": "clover",
+    "moves": [
+      {
+        "name": "Warm-Up Jog",
+        "cost": [
+          "clover"
+        ],
+        "damage": 20,
+        "effects": []
+      }
+    ],
+    "weakness": "star",
+    "resistance": "melody",
+    "retreat": 1
+  },
+  {
+    "id": "TQQ01-038",
+    "set": "TQQ01",
+    "number": 38,
+    "rarity": "C",
+    "kind": "character",
+    "character": "yotsuba",
+    "name": {
+      "en": "Yotsuba Nakano",
+      "ja": "中野 四葉"
+    },
+    "title": "Bunny Slippers",
+    "art": {
+      "character": "yotsuba",
+      "slot": "t02"
+    },
+    "signed": false,
+    "stage": "basic",
+    "prime": false,
+    "hp": 70,
+    "affinity": "clover",
+    "moves": [
+      {
+        "name": "Hop Along",
+        "cost": [
+          "clover"
+        ],
+        "damage": 10,
+        "text": "Attach 1 Heart to 1 of your Benched Characters.",
+        "effects": [
+          {
+            "type": "attachHeart",
+            "count": 1,
+            "target": "chosenBenched"
+          }
+        ]
+      }
+    ],
+    "weakness": "star",
+    "resistance": "melody",
+    "retreat": 1
+  },
+  {
+    "id": "TQQ01-039",
+    "set": "TQQ01",
+    "number": 39,
+    "rarity": "U",
+    "kind": "character",
+    "character": "yotsuba",
+    "name": {
+      "en": "Yotsuba Nakano",
+      "ja": "中野 四葉"
+    },
+    "title": "Cheer Captain",
+    "art": {
+      "character": "yotsuba",
+      "slot": "t03"
+    },
+    "signed": false,
+    "stage": "basic",
+    "prime": false,
+    "hp": 70,
+    "affinity": "clover",
+    "moves": [
+      {
+        "name": "Pom-Pom Poke",
+        "cost": [
+          "clover"
+        ],
+        "damage": 20,
+        "effects": []
+      },
+      {
+        "name": "Helping Hand",
+        "cost": [
+          "clover",
+          "study"
+        ],
+        "damage": 30,
+        "text": "Attach 1 Heart to 1 of your Benched Characters.",
+        "effects": [
+          {
+            "type": "attachHeart",
+            "count": 1,
+            "target": "chosenBenched"
+          }
+        ]
+      }
+    ],
+    "weakness": "star",
+    "resistance": "melody",
+    "retreat": 1
+  },
+  {
+    "id": "TQQ01-040",
+    "set": "TQQ01",
+    "number": 40,
+    "rarity": "U",
+    "kind": "character",
+    "character": "yotsuba",
+    "name": {
+      "en": "Yotsuba Nakano",
+      "ja": "中野 四葉"
+    },
+    "title": "Scarf Weather",
+    "art": {
+      "character": "yotsuba",
+      "slot": "t04"
+    },
+    "signed": false,
+    "stage": "close",
+    "prime": false,
+    "hp": 100,
+    "affinity": "clover",
+    "moves": [
+      {
+        "name": "Snowball Sprint",
+        "cost": [
+          "clover",
+          "clover",
+          "study"
+        ],
+        "damage": 80,
+        "effects": []
+      }
+    ],
+    "weakness": "star",
+    "resistance": "melody",
+    "retreat": 2
+  },
+  {
+    "id": "TQQ01-041",
+    "set": "TQQ01",
+    "number": 41,
+    "rarity": "R",
+    "kind": "character",
+    "character": "yotsuba",
+    "name": {
+      "en": "Yotsuba Nakano",
+      "ja": "中野 四葉"
+    },
+    "title": "Firework Night",
+    "art": {
+      "character": "yotsuba",
+      "slot": "t05"
+    },
+    "signed": false,
+    "stage": "close",
+    "prime": false,
+    "hp": 110,
+    "affinity": "clover",
+    "ability": {
+      "name": "Ribbon of Support",
+      "timing": "passive",
+      "text": "Your Benched Characters’ moves cost 1 less Study Heart.",
+      "effects": [
+        {
+          "type": "reduceStudyCost",
+          "amount": 1,
+          "scope": "bench"
+        }
+      ]
+    },
+    "moves": [
+      {
+        "name": "Relay Anchor",
+        "cost": [
+          "clover",
+          "clover",
+          "study"
+        ],
+        "damage": 110,
+        "effects": []
+      }
+    ],
+    "weakness": "star",
+    "resistance": "melody",
+    "retreat": 2
+  },
+  {
+    "id": "TQQ01-042",
+    "set": "TQQ01",
+    "number": 42,
+    "rarity": "R",
+    "kind": "character",
+    "character": "yotsuba",
+    "name": {
+      "en": "Yotsuba Nakano",
+      "ja": "中野 四葉"
+    },
+    "title": "Flower Crown",
+    "art": {
+      "character": "yotsuba",
+      "slot": "t06"
+    },
+    "signed": false,
+    "stage": "bride",
+    "prime": false,
+    "hp": 150,
+    "affinity": "clover",
+    "moves": [
+      {
+        "name": "Cheer Squad",
+        "cost": [
+          "clover"
+        ],
+        "damage": null,
+        "text": "Attach up to 2 Hearts to your Characters in any way you like.",
+        "effects": [
+          {
+            "type": "attachHeart",
+            "count": 2,
+            "target": "splitAnyOwn"
+          }
+        ]
+      },
+      {
+        "name": "Promise at the Shrine",
+        "cost": [
+          "clover",
+          "clover",
+          "study"
+        ],
+        "damage": 150,
+        "effects": []
+      }
+    ],
+    "weakness": "star",
+    "resistance": "melody",
+    "retreat": 2
+  },
+  {
+    "id": "TQQ01-043",
+    "set": "TQQ01",
+    "number": 43,
+    "rarity": "RR",
+    "kind": "character",
+    "character": "yotsuba",
+    "name": {
+      "en": "Yotsuba Nakano",
+      "ja": "中野 四葉"
+    },
+    "title": "Teddy Party",
+    "art": {
+      "character": "yotsuba",
+      "slot": "t07"
+    },
+    "signed": false,
+    "stage": "close",
+    "prime": true,
+    "hp": 190,
+    "affinity": "clover",
+    "moves": [
+      {
+        "name": "Team Charge",
+        "cost": [
+          "clover",
+          "clover",
+          "study"
+        ],
+        "damage": 110,
+        "damageSuffix": "+",
+        "text": "Does 20 more damage for each of your Benched Characters.",
+        "effects": [
+          {
+            "type": "damagePerCount",
+            "amount": 20,
+            "count": "ownBenched"
+          }
+        ]
+      }
+    ],
+    "weakness": "star",
+    "resistance": "melody",
+    "retreat": 2
+  },
+  {
+    "id": "TQQ01-044",
+    "set": "TQQ01",
+    "number": 44,
+    "rarity": "AR",
+    "kind": "character",
+    "character": "yotsuba",
+    "name": {
+      "en": "Yotsuba Nakano",
+      "ja": "中野 四葉"
+    },
+    "title": "Sunny Side Up",
+    "art": {
+      "character": "yotsuba",
+      "slot": "t08"
+    },
+    "signed": false,
+    "stage": "basic",
+    "prime": false,
+    "hp": 80,
+    "affinity": "clover",
+    "moves": [
+      {
+        "name": "Sunny Dash",
+        "cost": [
+          "clover",
+          "study"
+        ],
+        "damage": 50,
+        "effects": []
+      }
+    ],
+    "weakness": "star",
+    "resistance": "melody",
+    "retreat": 1
+  },
+  {
+    "id": "TQQ01-045",
+    "set": "TQQ01",
+    "number": 45,
+    "rarity": "SAR",
+    "kind": "character",
+    "character": "yotsuba",
+    "name": {
+      "en": "Yotsuba Nakano",
+      "ja": "中野 四葉"
+    },
+    "title": "Morning Light",
+    "art": {
+      "character": "yotsuba",
+      "slot": "t09"
+    },
+    "signed": true,
+    "stage": "bride",
+    "prime": true,
+    "hp": 260,
+    "affinity": "clover",
+    "moves": [
+      {
+        "name": "Cheer Squad",
+        "cost": [
+          "clover"
+        ],
+        "damage": null,
+        "text": "Attach up to 2 Hearts to your Characters in any way you like.",
+        "effects": [
+          {
+            "type": "attachHeart",
+            "count": 2,
+            "target": "splitAnyOwn"
+          }
+        ]
+      },
+      {
+        "name": "Promise at the Shrine",
+        "cost": [
+          "clover",
+          "clover",
+          "study"
+        ],
+        "damage": 200,
+        "effects": []
+      }
+    ],
+    "weakness": "star",
+    "resistance": "melody",
+    "retreat": 2
+  },
+  {
+    "id": "TQQ01-046",
+    "set": "TQQ01",
+    "number": 46,
+    "rarity": "UR",
+    "kind": "character",
+    "character": "yotsuba",
+    "name": {
+      "en": "Yotsuba Nakano",
+      "ja": "中野 四葉"
+    },
+    "title": "Laced in White",
+    "art": {
+      "character": "yotsuba",
+      "slot": "t10"
+    },
+    "signed": true,
+    "stage": "bride",
+    "prime": true,
+    "hp": 260,
+    "affinity": "clover",
+    "ability": {
+      "name": "Ribbon of Support",
+      "timing": "passive",
+      "text": "Your Benched Characters’ moves cost 1 less Study Heart.",
+      "effects": [
+        {
+          "type": "reduceStudyCost",
+          "amount": 1,
+          "scope": "bench"
+        }
+      ]
+    },
+    "moves": [
+      {
+        "name": "Finish Line",
+        "cost": [
+          "clover",
+          "clover",
+          "clover"
+        ],
+        "damage": 230,
+        "effects": []
+      }
+    ],
+    "weakness": "star",
+    "resistance": "melody",
+    "retreat": 2
+  },
+  {
+    "id": "TQQ01-047",
+    "set": "TQQ01",
+    "number": 47,
+    "rarity": "SAR",
+    "kind": "character",
+    "character": "yotsuba",
+    "name": {
+      "en": "Yotsuba Nakano",
+      "ja": "中野 四葉"
+    },
+    "title": "Halloween Treat: Candy Run",
+    "art": {
+      "character": "yotsuba",
+      "slot": "h1"
+    },
+    "signed": true,
+    "stage": "event",
+    "prime": true,
+    "hp": 130,
+    "affinity": "clover",
+    "ability": {
+      "name": "Candy Run",
+      "timing": "onceDuringTurn",
+      "text": "Once during your turn, you may attach 1 Heart to this Character.",
+      "effects": [
+        {
+          "type": "attachHeart",
+          "count": 1,
+          "target": "self"
+        }
+      ]
+    },
+    "moves": [
+      {
+        "name": "Boo!",
+        "cost": [
+          "clover"
+        ],
+        "damage": 30,
+        "effects": []
+      }
+    ],
+    "weakness": "star",
+    "resistance": "melody",
+    "retreat": 1,
+    "limited": {
+      "eventId": "halloween",
+      "maxPerDeck": 1
+    }
+  },
+  {
+    "id": "TQQ01-048",
+    "set": "TQQ01",
+    "number": 48,
+    "rarity": "SAR",
+    "kind": "character",
+    "character": "yotsuba",
+    "name": {
+      "en": "Yotsuba Nakano",
+      "ja": "中野 四葉"
+    },
+    "title": "Halloween Trick: Pumpkin Dash",
+    "art": {
+      "character": "yotsuba",
+      "slot": "h2"
+    },
+    "signed": true,
+    "stage": "event",
+    "prime": true,
+    "hp": 130,
+    "affinity": "clover",
+    "moves": [
+      {
+        "name": "Pumpkin Dash",
+        "cost": [
+          "clover",
+          "clover"
+        ],
+        "damage": 50,
+        "text": "Draw 2 cards.",
+        "effects": [
+          {
+            "type": "draw",
+            "count": 2
+          }
+        ]
+      }
+    ],
+    "weakness": "star",
+    "resistance": "melody",
+    "retreat": 1,
+    "limited": {
+      "eventId": "halloween",
+      "maxPerDeck": 1
+    }
+  }
+]

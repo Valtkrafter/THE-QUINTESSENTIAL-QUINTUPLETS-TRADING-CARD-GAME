@@ -1,0 +1,550 @@
+[
+  {
+    "id": "TQQ01-049",
+    "set": "TQQ01",
+    "number": 49,
+    "rarity": "C",
+    "kind": "character",
+    "character": "itsuki",
+    "name": {
+      "en": "Itsuki Nakano",
+      "ja": "中野 五月"
+    },
+    "title": "Top of the Class",
+    "art": {
+      "character": "itsuki",
+      "slot": "t01"
+    },
+    "signed": false,
+    "stage": "basic",
+    "prime": false,
+    "hp": 70,
+    "affinity": "star",
+    "moves": [
+      {
+        "name": "Second Helping",
+        "cost": [
+          "star"
+        ],
+        "damage": 20,
+        "text": "Heal 10 damage from this Character.",
+        "effects": [
+          {
+            "type": "heal",
+            "amount": 10,
+            "target": "self"
+          }
+        ]
+      }
+    ],
+    "weakness": "heart",
+    "resistance": "clover",
+    "retreat": 1
+  },
+  {
+    "id": "TQQ01-050",
+    "set": "TQQ01",
+    "number": 50,
+    "rarity": "C",
+    "kind": "character",
+    "character": "itsuki",
+    "name": {
+      "en": "Itsuki Nakano",
+      "ja": "中野 五月"
+    },
+    "title": "Study Break",
+    "art": {
+      "character": "itsuki",
+      "slot": "t02"
+    },
+    "signed": false,
+    "stage": "basic",
+    "prime": false,
+    "hp": 70,
+    "affinity": "star",
+    "moves": [
+      {
+        "name": "Snack Time",
+        "cost": [
+          "star"
+        ],
+        "damage": 10,
+        "text": "Draw a card.",
+        "effects": [
+          {
+            "type": "draw",
+            "count": 1
+          }
+        ]
+      }
+    ],
+    "weakness": "heart",
+    "resistance": "clover",
+    "retreat": 1
+  },
+  {
+    "id": "TQQ01-051",
+    "set": "TQQ01",
+    "number": 51,
+    "rarity": "U",
+    "kind": "character",
+    "character": "itsuki",
+    "name": {
+      "en": "Itsuki Nakano",
+      "ja": "中野 五月"
+    },
+    "title": "Corn Dog Crisis",
+    "art": {
+      "character": "itsuki",
+      "slot": "t03"
+    },
+    "signed": false,
+    "stage": "basic",
+    "prime": false,
+    "hp": 70,
+    "affinity": "star",
+    "moves": [
+      {
+        "name": "Big Bite",
+        "cost": [
+          "star"
+        ],
+        "damage": 20,
+        "effects": []
+      },
+      {
+        "name": "Study Session",
+        "cost": [
+          "star",
+          "study"
+        ],
+        "damage": 40,
+        "effects": []
+      }
+    ],
+    "weakness": "heart",
+    "resistance": "clover",
+    "retreat": 1
+  },
+  {
+    "id": "TQQ01-052",
+    "set": "TQQ01",
+    "number": 52,
+    "rarity": "U",
+    "kind": "character",
+    "character": "itsuki",
+    "name": {
+      "en": "Itsuki Nakano",
+      "ja": "中野 五月"
+    },
+    "title": "Snowfall Walk",
+    "art": {
+      "character": "itsuki",
+      "slot": "t04"
+    },
+    "signed": false,
+    "stage": "close",
+    "prime": false,
+    "hp": 100,
+    "affinity": "star",
+    "moves": [
+      {
+        "name": "Warm Bun",
+        "cost": [
+          "star",
+          "star",
+          "study"
+        ],
+        "damage": 70,
+        "text": "Heal 20 damage from this Character.",
+        "effects": [
+          {
+            "type": "heal",
+            "amount": 20,
+            "target": "self"
+          }
+        ]
+      }
+    ],
+    "weakness": "heart",
+    "resistance": "clover",
+    "retreat": 2
+  },
+  {
+    "id": "TQQ01-053",
+    "set": "TQQ01",
+    "number": 53,
+    "rarity": "R",
+    "kind": "character",
+    "character": "itsuki",
+    "name": {
+      "en": "Itsuki Nakano",
+      "ja": "中野 五月"
+    },
+    "title": "Apple Candy Festival",
+    "art": {
+      "character": "itsuki",
+      "slot": "t05"
+    },
+    "signed": false,
+    "stage": "close",
+    "prime": false,
+    "hp": 110,
+    "affinity": "star",
+    "ability": {
+      "name": "Future Teacher",
+      "timing": "onceDuringTurn",
+      "text": "Once during your turn, you may draw a card.",
+      "effects": [
+        {
+          "type": "draw",
+          "count": 1
+        }
+      ]
+    },
+    "moves": [
+      {
+        "name": "Meat Bun Rush",
+        "cost": [
+          "star",
+          "star",
+          "study"
+        ],
+        "damage": 100,
+        "effects": []
+      }
+    ],
+    "weakness": "heart",
+    "resistance": "clover",
+    "retreat": 2
+  },
+  {
+    "id": "TQQ01-054",
+    "set": "TQQ01",
+    "number": 54,
+    "rarity": "R",
+    "kind": "character",
+    "character": "itsuki",
+    "name": {
+      "en": "Itsuki Nakano",
+      "ja": "中野 五月"
+    },
+    "title": "Bridal Bloom",
+    "art": {
+      "character": "itsuki",
+      "slot": "t06"
+    },
+    "signed": false,
+    "stage": "bride",
+    "prime": false,
+    "hp": 150,
+    "affinity": "star",
+    "moves": [
+      {
+        "name": "Five-Way Promise",
+        "cost": [
+          "star",
+          "star",
+          "study"
+        ],
+        "damage": 90,
+        "damageSuffix": "×",
+        "text": "Does 30 damage for each of the Quintuplets you have in play.",
+        "effects": [
+          {
+            "type": "damagePerCount",
+            "amount": 30,
+            "count": "ownSisters"
+          }
+        ]
+      }
+    ],
+    "weakness": "heart",
+    "resistance": "clover",
+    "retreat": 2
+  },
+  {
+    "id": "TQQ01-055",
+    "set": "TQQ01",
+    "number": 55,
+    "rarity": "RR",
+    "kind": "character",
+    "character": "itsuki",
+    "name": {
+      "en": "Itsuki Nakano",
+      "ja": "中野 五月"
+    },
+    "title": "Ruby Ball Gown",
+    "art": {
+      "character": "itsuki",
+      "slot": "t07"
+    },
+    "signed": false,
+    "stage": "close",
+    "prime": true,
+    "hp": 190,
+    "affinity": "star",
+    "moves": [
+      {
+        "name": "Feast Fury",
+        "cost": [
+          "star",
+          "star",
+          "study"
+        ],
+        "damage": 120,
+        "text": "Heal 30 damage from this Character.",
+        "effects": [
+          {
+            "type": "heal",
+            "amount": 30,
+            "target": "self"
+          }
+        ]
+      }
+    ],
+    "weakness": "heart",
+    "resistance": "clover",
+    "retreat": 2
+  },
+  {
+    "id": "TQQ01-056",
+    "set": "TQQ01",
+    "number": 56,
+    "rarity": "AR",
+    "kind": "character",
+    "character": "itsuki",
+    "name": {
+      "en": "Itsuki Nakano",
+      "ja": "中野 五月"
+    },
+    "title": "Star Clips",
+    "art": {
+      "character": "itsuki",
+      "slot": "t08"
+    },
+    "signed": false,
+    "stage": "basic",
+    "prime": false,
+    "hp": 80,
+    "affinity": "star",
+    "moves": [
+      {
+        "name": "Wishing Star",
+        "cost": [
+          "star",
+          "study"
+        ],
+        "damage": 50,
+        "text": "Draw a card.",
+        "effects": [
+          {
+            "type": "draw",
+            "count": 1
+          }
+        ]
+      }
+    ],
+    "weakness": "heart",
+    "resistance": "clover",
+    "retreat": 1
+  },
+  {
+    "id": "TQQ01-057",
+    "set": "TQQ01",
+    "number": 57,
+    "rarity": "SAR",
+    "kind": "character",
+    "character": "itsuki",
+    "name": {
+      "en": "Itsuki Nakano",
+      "ja": "中野 五月"
+    },
+    "title": "Chapel Bells",
+    "art": {
+      "character": "itsuki",
+      "slot": "t09"
+    },
+    "signed": true,
+    "stage": "bride",
+    "prime": true,
+    "hp": 260,
+    "affinity": "star",
+    "ability": {
+      "name": "Future Teacher",
+      "timing": "onceDuringTurn",
+      "text": "Once during your turn, you may draw a card.",
+      "effects": [
+        {
+          "type": "draw",
+          "count": 1
+        }
+      ]
+    },
+    "moves": [
+      {
+        "name": "Five-Way Promise",
+        "cost": [
+          "star",
+          "star",
+          "study"
+        ],
+        "damage": 70,
+        "damageSuffix": "×",
+        "text": "Does 40 damage for each of the Quintuplets you have in play.",
+        "effects": [
+          {
+            "type": "damagePerCount",
+            "amount": 40,
+            "count": "ownSisters"
+          }
+        ]
+      }
+    ],
+    "weakness": "heart",
+    "resistance": "clover",
+    "retreat": 2
+  },
+  {
+    "id": "TQQ01-058",
+    "set": "TQQ01",
+    "number": 58,
+    "rarity": "UR",
+    "kind": "character",
+    "character": "itsuki",
+    "name": {
+      "en": "Itsuki Nakano",
+      "ja": "中野 五月"
+    },
+    "title": "Promise of Five",
+    "art": {
+      "character": "itsuki",
+      "slot": "t10"
+    },
+    "signed": true,
+    "stage": "bride",
+    "prime": true,
+    "hp": 260,
+    "affinity": "star",
+    "moves": [
+      {
+        "name": "Five-Way Finale",
+        "cost": [
+          "star",
+          "star",
+          "star"
+        ],
+        "damage": 100,
+        "damageSuffix": "×",
+        "text": "Does 50 damage for each of the Quintuplets you have in play.",
+        "effects": [
+          {
+            "type": "damagePerCount",
+            "amount": 50,
+            "count": "ownSisters"
+          }
+        ]
+      }
+    ],
+    "weakness": "heart",
+    "resistance": "clover",
+    "retreat": 2
+  },
+  {
+    "id": "TQQ01-059",
+    "set": "TQQ01",
+    "number": 59,
+    "rarity": "SAR",
+    "kind": "character",
+    "character": "itsuki",
+    "name": {
+      "en": "Itsuki Nakano",
+      "ja": "中野 五月"
+    },
+    "title": "Halloween Treat: Candy Feast",
+    "art": {
+      "character": "itsuki",
+      "slot": "h1"
+    },
+    "signed": true,
+    "stage": "event",
+    "prime": true,
+    "hp": 130,
+    "affinity": "star",
+    "ability": {
+      "name": "Candy Feast",
+      "timing": "onPlay",
+      "text": "When you play this Character from your hand, draw cards until you have 6 cards in your hand.",
+      "effects": [
+        {
+          "type": "drawUntilHandSize",
+          "size": 6
+        }
+      ]
+    },
+    "moves": [
+      {
+        "name": "Boo!",
+        "cost": [
+          "star"
+        ],
+        "damage": 30,
+        "effects": []
+      }
+    ],
+    "weakness": "heart",
+    "resistance": "clover",
+    "retreat": 1,
+    "limited": {
+      "eventId": "halloween",
+      "maxPerDeck": 1
+    }
+  },
+  {
+    "id": "TQQ01-060",
+    "set": "TQQ01",
+    "number": 60,
+    "rarity": "SAR",
+    "kind": "character",
+    "character": "itsuki",
+    "name": {
+      "en": "Itsuki Nakano",
+      "ja": "中野 五月"
+    },
+    "title": "Halloween Trick: Starving Ghost",
+    "art": {
+      "character": "itsuki",
+      "slot": "h2"
+    },
+    "signed": true,
+    "stage": "event",
+    "prime": true,
+    "hp": 130,
+    "affinity": "star",
+    "moves": [
+      {
+        "name": "Starving Ghost",
+        "cost": [
+          "star",
+          "star"
+        ],
+        "damage": 60,
+        "text": "Discard up to 2 Hearts from the Defending Character.",
+        "effects": [
+          {
+            "type": "discardHearts",
+            "count": 2,
+            "target": "defender"
+          }
+        ]
+      }
+    ],
+    "weakness": "heart",
+    "resistance": "clover",
+    "retreat": 1,
+    "limited": {
+      "eventId": "halloween",
+      "maxPerDeck": 1
+    }
+  }
+]

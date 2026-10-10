@@ -1,0 +1,556 @@
+[
+  {
+    "id": "TQQ01-001",
+    "set": "TQQ01",
+    "number": 1,
+    "rarity": "C",
+    "kind": "character",
+    "character": "ichika",
+    "name": {
+      "en": "Ichika Nakano",
+      "ja": "中野 一花"
+    },
+    "title": "Blazer & Wink",
+    "art": {
+      "character": "ichika",
+      "slot": "t01"
+    },
+    "signed": false,
+    "stage": "basic",
+    "prime": false,
+    "hp": 70,
+    "affinity": "heart",
+    "moves": [
+      {
+        "name": "Stage Smile",
+        "cost": [
+          "heart"
+        ],
+        "damage": 20,
+        "effects": []
+      }
+    ],
+    "weakness": "butterfly",
+    "resistance": "star",
+    "retreat": 1
+  },
+  {
+    "id": "TQQ01-002",
+    "set": "TQQ01",
+    "number": 2,
+    "rarity": "C",
+    "kind": "character",
+    "character": "ichika",
+    "name": {
+      "en": "Ichika Nakano",
+      "ja": "中野 一花"
+    },
+    "title": "Cozy Evening",
+    "art": {
+      "character": "ichika",
+      "slot": "t02"
+    },
+    "signed": false,
+    "stage": "basic",
+    "prime": false,
+    "hp": 70,
+    "affinity": "heart",
+    "moves": [
+      {
+        "name": "Quiet Night",
+        "cost": [
+          "heart"
+        ],
+        "damage": 10,
+        "text": "Heal 10 damage from this Character.",
+        "effects": [
+          {
+            "type": "heal",
+            "amount": 10,
+            "target": "self"
+          }
+        ]
+      }
+    ],
+    "weakness": "butterfly",
+    "resistance": "star",
+    "retreat": 1
+  },
+  {
+    "id": "TQQ01-003",
+    "set": "TQQ01",
+    "number": 3,
+    "rarity": "U",
+    "kind": "character",
+    "character": "ichika",
+    "name": {
+      "en": "Ichika Nakano",
+      "ja": "中野 一花"
+    },
+    "title": "Rehearsal Day",
+    "art": {
+      "character": "ichika",
+      "slot": "t03"
+    },
+    "signed": false,
+    "stage": "basic",
+    "prime": false,
+    "hp": 70,
+    "affinity": "heart",
+    "moves": [
+      {
+        "name": "Warm-Up Scene",
+        "cost": [
+          "heart"
+        ],
+        "damage": 20,
+        "effects": []
+      },
+      {
+        "name": "Rehearsal",
+        "cost": [
+          "heart",
+          "study"
+        ],
+        "damage": 40,
+        "text": "Look at the top card of your deck. You may put it on the bottom.",
+        "effects": [
+          {
+            "type": "peekTopMayBottom",
+            "count": 1
+          }
+        ]
+      }
+    ],
+    "weakness": "butterfly",
+    "resistance": "star",
+    "retreat": 1
+  },
+  {
+    "id": "TQQ01-004",
+    "set": "TQQ01",
+    "number": 4,
+    "rarity": "U",
+    "kind": "character",
+    "character": "ichika",
+    "name": {
+      "en": "Ichika Nakano",
+      "ja": "中野 一花"
+    },
+    "title": "Autumn Knit",
+    "art": {
+      "character": "ichika",
+      "slot": "t04"
+    },
+    "signed": false,
+    "stage": "close",
+    "prime": false,
+    "hp": 100,
+    "affinity": "heart",
+    "moves": [
+      {
+        "name": "Dramatic Entrance",
+        "cost": [
+          "heart",
+          "heart",
+          "study"
+        ],
+        "damage": 80,
+        "effects": []
+      }
+    ],
+    "weakness": "butterfly",
+    "resistance": "star",
+    "retreat": 2
+  },
+  {
+    "id": "TQQ01-005",
+    "set": "TQQ01",
+    "number": 5,
+    "rarity": "R",
+    "kind": "character",
+    "character": "ichika",
+    "name": {
+      "en": "Ichika Nakano",
+      "ja": "中野 一花"
+    },
+    "title": "Festival Fireworks",
+    "art": {
+      "character": "ichika",
+      "slot": "t05"
+    },
+    "signed": false,
+    "stage": "close",
+    "prime": false,
+    "hp": 110,
+    "affinity": "heart",
+    "ability": {
+      "name": "Leading Lady",
+      "timing": "onceDuringTurn",
+      "text": "Once during your turn, you may switch your Active Character with 1 of your Benched Characters.",
+      "effects": [
+        {
+          "type": "switchOwnActive",
+          "free": true
+        }
+      ]
+    },
+    "moves": [
+      {
+        "name": "Sparkler Strike",
+        "cost": [
+          "heart",
+          "heart",
+          "study"
+        ],
+        "damage": 90,
+        "effects": []
+      }
+    ],
+    "weakness": "butterfly",
+    "resistance": "star",
+    "retreat": 2
+  },
+  {
+    "id": "TQQ01-006",
+    "set": "TQQ01",
+    "number": 6,
+    "rarity": "R",
+    "kind": "character",
+    "character": "ichika",
+    "name": {
+      "en": "Ichika Nakano",
+      "ja": "中野 一花"
+    },
+    "title": "Veiled Smile",
+    "art": {
+      "character": "ichika",
+      "slot": "t06"
+    },
+    "signed": false,
+    "stage": "bride",
+    "prime": false,
+    "hp": 150,
+    "affinity": "heart",
+    "ability": {
+      "name": "Eldest’s Resolve",
+      "timing": "passive",
+      "text": "This Character takes 30 less damage from attacks.",
+      "effects": [
+        {
+          "type": "reduceDamageTaken",
+          "amount": 30
+        }
+      ]
+    },
+    "moves": [
+      {
+        "name": "Curtain Call",
+        "cost": [
+          "heart",
+          "heart",
+          "study"
+        ],
+        "damage": 110,
+        "effects": []
+      }
+    ],
+    "weakness": "butterfly",
+    "resistance": "star",
+    "retreat": 2
+  },
+  {
+    "id": "TQQ01-007",
+    "set": "TQQ01",
+    "number": 7,
+    "rarity": "RR",
+    "kind": "character",
+    "character": "ichika",
+    "name": {
+      "en": "Ichika Nakano",
+      "ja": "中野 一花"
+    },
+    "title": "Little Black Dress",
+    "art": {
+      "character": "ichika",
+      "slot": "t07"
+    },
+    "signed": false,
+    "stage": "close",
+    "prime": true,
+    "hp": 190,
+    "affinity": "heart",
+    "moves": [
+      {
+        "name": "Encore",
+        "cost": [
+          "heart",
+          "heart",
+          "study"
+        ],
+        "damage": 70,
+        "damageSuffix": "+",
+        "text": "Does 30 more damage for each Heart attached to this Character.",
+        "effects": [
+          {
+            "type": "damagePerHeart",
+            "amount": 30
+          }
+        ]
+      }
+    ],
+    "weakness": "butterfly",
+    "resistance": "star",
+    "retreat": 2
+  },
+  {
+    "id": "TQQ01-008",
+    "set": "TQQ01",
+    "number": 8,
+    "rarity": "AR",
+    "kind": "character",
+    "character": "ichika",
+    "name": {
+      "en": "Ichika Nakano",
+      "ja": "中野 一花"
+    },
+    "title": "Golden Hour",
+    "art": {
+      "character": "ichika",
+      "slot": "t08"
+    },
+    "signed": false,
+    "stage": "basic",
+    "prime": false,
+    "hp": 80,
+    "affinity": "heart",
+    "ability": {
+      "name": "Spotlight",
+      "timing": "onceDuringTurn",
+      "text": "Once during your turn, look at the top card of your deck. You may put it on the bottom.",
+      "effects": [
+        {
+          "type": "peekTopMayBottom",
+          "count": 1
+        }
+      ]
+    },
+    "moves": [
+      {
+        "name": "Close-Up",
+        "cost": [
+          "heart",
+          "study"
+        ],
+        "damage": 50,
+        "effects": []
+      }
+    ],
+    "weakness": "butterfly",
+    "resistance": "star",
+    "retreat": 1
+  },
+  {
+    "id": "TQQ01-009",
+    "set": "TQQ01",
+    "number": 9,
+    "rarity": "SAR",
+    "kind": "character",
+    "character": "ichika",
+    "name": {
+      "en": "Ichika Nakano",
+      "ja": "中野 一花"
+    },
+    "title": "Garden Vows",
+    "art": {
+      "character": "ichika",
+      "slot": "t09"
+    },
+    "signed": true,
+    "stage": "bride",
+    "prime": true,
+    "hp": 260,
+    "affinity": "heart",
+    "moves": [
+      {
+        "name": "Gentle Cue",
+        "cost": [
+          "heart"
+        ],
+        "damage": 40,
+        "text": "Draw a card.",
+        "effects": [
+          {
+            "type": "draw",
+            "count": 1
+          }
+        ]
+      },
+      {
+        "name": "Curtain Call",
+        "cost": [
+          "heart",
+          "heart",
+          "study"
+        ],
+        "damage": 150,
+        "damageSuffix": "+",
+        "text": "Does 30 more damage for each Heart attached to this Character.",
+        "effects": [
+          {
+            "type": "damagePerHeart",
+            "amount": 30
+          }
+        ]
+      }
+    ],
+    "weakness": "butterfly",
+    "resistance": "star",
+    "retreat": 2
+  },
+  {
+    "id": "TQQ01-010",
+    "set": "TQQ01",
+    "number": 10,
+    "rarity": "UR",
+    "kind": "character",
+    "character": "ichika",
+    "name": {
+      "en": "Ichika Nakano",
+      "ja": "中野 一花"
+    },
+    "title": "The Bride Who Kept Quiet",
+    "art": {
+      "character": "ichika",
+      "slot": "t10"
+    },
+    "signed": true,
+    "stage": "bride",
+    "prime": true,
+    "hp": 260,
+    "affinity": "heart",
+    "ability": {
+      "name": "Eldest’s Resolve",
+      "timing": "passive",
+      "text": "This Character takes 30 less damage from attacks.",
+      "effects": [
+        {
+          "type": "reduceDamageTaken",
+          "amount": 30
+        }
+      ]
+    },
+    "moves": [
+      {
+        "name": "Final Act",
+        "cost": [
+          "heart",
+          "heart",
+          "heart"
+        ],
+        "damage": 220,
+        "effects": []
+      }
+    ],
+    "weakness": "butterfly",
+    "resistance": "star",
+    "retreat": 2
+  },
+  {
+    "id": "TQQ01-011",
+    "set": "TQQ01",
+    "number": 11,
+    "rarity": "SAR",
+    "kind": "character",
+    "character": "ichika",
+    "name": {
+      "en": "Ichika Nakano",
+      "ja": "中野 一花"
+    },
+    "title": "Halloween Treat: Costume Change",
+    "art": {
+      "character": "ichika",
+      "slot": "h1"
+    },
+    "signed": true,
+    "stage": "event",
+    "prime": true,
+    "hp": 130,
+    "affinity": "heart",
+    "ability": {
+      "name": "Costume Change",
+      "timing": "onceDuringTurn",
+      "text": "Once during your turn, you may switch your Active Character with 1 of your Benched Characters for free.",
+      "effects": [
+        {
+          "type": "switchOwnActive",
+          "free": true
+        }
+      ]
+    },
+    "moves": [
+      {
+        "name": "Boo!",
+        "cost": [
+          "heart"
+        ],
+        "damage": 30,
+        "effects": []
+      }
+    ],
+    "weakness": "butterfly",
+    "resistance": "star",
+    "retreat": 1,
+    "limited": {
+      "eventId": "halloween",
+      "maxPerDeck": 1
+    }
+  },
+  {
+    "id": "TQQ01-012",
+    "set": "TQQ01",
+    "number": 12,
+    "rarity": "SAR",
+    "kind": "character",
+    "character": "ichika",
+    "name": {
+      "en": "Ichika Nakano",
+      "ja": "中野 一花"
+    },
+    "title": "Halloween Trick: Black Cat",
+    "art": {
+      "character": "ichika",
+      "slot": "h2"
+    },
+    "signed": true,
+    "stage": "event",
+    "prime": true,
+    "hp": 130,
+    "affinity": "heart",
+    "moves": [
+      {
+        "name": "Black Cat Scratch",
+        "cost": [
+          "heart",
+          "heart"
+        ],
+        "damage": 70,
+        "text": "Discard 1 Heart from the Defending Character.",
+        "effects": [
+          {
+            "type": "discardHearts",
+            "count": 1,
+            "target": "defender"
+          }
+        ]
+      }
+    ],
+    "weakness": "butterfly",
+    "resistance": "star",
+    "retreat": 1,
+    "limited": {
+      "eventId": "halloween",
+      "maxPerDeck": 1
+    }
+  }
+]

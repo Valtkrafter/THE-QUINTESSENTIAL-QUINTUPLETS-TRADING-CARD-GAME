@@ -1,0 +1,549 @@
+[
+  {
+    "id": "TQQ01-025",
+    "set": "TQQ01",
+    "number": 25,
+    "rarity": "C",
+    "kind": "character",
+    "character": "miku",
+    "name": {
+      "en": "Miku Nakano",
+      "ja": "中野 三玖"
+    },
+    "title": "Headphones On",
+    "art": {
+      "character": "miku",
+      "slot": "t01"
+    },
+    "signed": false,
+    "stage": "basic",
+    "prime": false,
+    "hp": 70,
+    "affinity": "melody",
+    "moves": [
+      {
+        "name": "Quiet Glance",
+        "cost": [
+          "melody"
+        ],
+        "damage": 10,
+        "effects": []
+      }
+    ],
+    "weakness": "clover",
+    "resistance": "butterfly",
+    "retreat": 1
+  },
+  {
+    "id": "TQQ01-026",
+    "set": "TQQ01",
+    "number": 26,
+    "rarity": "C",
+    "kind": "character",
+    "character": "miku",
+    "name": {
+      "en": "Miku Nakano",
+      "ja": "中野 三玖"
+    },
+    "title": "Quilt Cocoon",
+    "art": {
+      "character": "miku",
+      "slot": "t02"
+    },
+    "signed": false,
+    "stage": "basic",
+    "prime": false,
+    "hp": 70,
+    "affinity": "melody",
+    "moves": [
+      {
+        "name": "Nap Time",
+        "cost": [
+          "melody"
+        ],
+        "damage": 10,
+        "text": "Heal 10 damage from this Character.",
+        "effects": [
+          {
+            "type": "heal",
+            "amount": 10,
+            "target": "self"
+          }
+        ]
+      }
+    ],
+    "weakness": "clover",
+    "resistance": "butterfly",
+    "retreat": 1
+  },
+  {
+    "id": "TQQ01-027",
+    "set": "TQQ01",
+    "number": 27,
+    "rarity": "U",
+    "kind": "character",
+    "character": "miku",
+    "name": {
+      "en": "Miku Nakano",
+      "ja": "中野 三玖"
+    },
+    "title": "Sengoku Scholar",
+    "art": {
+      "character": "miku",
+      "slot": "t03"
+    },
+    "signed": false,
+    "stage": "basic",
+    "prime": false,
+    "hp": 70,
+    "affinity": "melody",
+    "moves": [
+      {
+        "name": "Pointer Tap",
+        "cost": [
+          "melody"
+        ],
+        "damage": 20,
+        "effects": []
+      },
+      {
+        "name": "Sengoku Trivia",
+        "cost": [
+          "melody",
+          "study"
+        ],
+        "damage": 40,
+        "text": "Flip a coin. If heads, the Defending Character can’t attack during your opponent’s next turn.",
+        "effects": [
+          {
+            "type": "coinFlip",
+            "heads": [
+              {
+                "type": "preventAttackNextTurn"
+              }
+            ],
+            "tails": []
+          }
+        ]
+      }
+    ],
+    "weakness": "clover",
+    "resistance": "butterfly",
+    "retreat": 1
+  },
+  {
+    "id": "TQQ01-028",
+    "set": "TQQ01",
+    "number": 28,
+    "rarity": "U",
+    "kind": "character",
+    "character": "miku",
+    "name": {
+      "en": "Miku Nakano",
+      "ja": "中野 三玖"
+    },
+    "title": "Winter White",
+    "art": {
+      "character": "miku",
+      "slot": "t04"
+    },
+    "signed": false,
+    "stage": "close",
+    "prime": false,
+    "hp": 100,
+    "affinity": "melody",
+    "moves": [
+      {
+        "name": "Cold Shoulder",
+        "cost": [
+          "melody",
+          "melody",
+          "study"
+        ],
+        "damage": 80,
+        "effects": []
+      }
+    ],
+    "weakness": "clover",
+    "resistance": "butterfly",
+    "retreat": 2
+  },
+  {
+    "id": "TQQ01-029",
+    "set": "TQQ01",
+    "number": 29,
+    "rarity": "R",
+    "kind": "character",
+    "character": "miku",
+    "name": {
+      "en": "Miku Nakano",
+      "ja": "中野 三玖"
+    },
+    "title": "Festival Fan",
+    "art": {
+      "character": "miku",
+      "slot": "t05"
+    },
+    "signed": false,
+    "stage": "close",
+    "prime": false,
+    "hp": 110,
+    "affinity": "melody",
+    "ability": {
+      "name": "Headphones On",
+      "timing": "passive",
+      "text": "This Character takes 20 less damage from attacks.",
+      "effects": [
+        {
+          "type": "reduceDamageTaken",
+          "amount": 20
+        }
+      ]
+    },
+    "moves": [
+      {
+        "name": "Matcha Soda Break",
+        "cost": [
+          "melody",
+          "melody",
+          "study"
+        ],
+        "damage": 90,
+        "effects": []
+      }
+    ],
+    "weakness": "clover",
+    "resistance": "butterfly",
+    "retreat": 2
+  },
+  {
+    "id": "TQQ01-030",
+    "set": "TQQ01",
+    "number": 30,
+    "rarity": "R",
+    "kind": "character",
+    "character": "miku",
+    "name": {
+      "en": "Miku Nakano",
+      "ja": "中野 三玖"
+    },
+    "title": "Blue Bouquet",
+    "art": {
+      "character": "miku",
+      "slot": "t06"
+    },
+    "signed": false,
+    "stage": "bride",
+    "prime": false,
+    "hp": 150,
+    "affinity": "melody",
+    "ability": {
+      "name": "Third Time’s the Charm",
+      "timing": "passive",
+      "text": "If this Character would be Knocked Out, flip a coin. If heads, it stays in play with 10 HP.",
+      "effects": [
+        {
+          "type": "coinSurvive",
+          "hp": 10
+        }
+      ]
+    },
+    "moves": [
+      {
+        "name": "Rendezvous",
+        "cost": [
+          "melody",
+          "melody",
+          "study"
+        ],
+        "damage": 130,
+        "effects": []
+      }
+    ],
+    "weakness": "clover",
+    "resistance": "butterfly",
+    "retreat": 2
+  },
+  {
+    "id": "TQQ01-031",
+    "set": "TQQ01",
+    "number": 31,
+    "rarity": "RR",
+    "kind": "character",
+    "character": "miku",
+    "name": {
+      "en": "Miku Nakano",
+      "ja": "中野 三玖"
+    },
+    "title": "Midnight Masquerade",
+    "art": {
+      "character": "miku",
+      "slot": "t07"
+    },
+    "signed": false,
+    "stage": "close",
+    "prime": true,
+    "hp": 190,
+    "affinity": "melody",
+    "moves": [
+      {
+        "name": "Masked Melody",
+        "cost": [
+          "melody",
+          "melody",
+          "study"
+        ],
+        "damage": 120,
+        "text": "Flip a coin. If heads, the Defending Character can’t attack during your opponent’s next turn.",
+        "effects": [
+          {
+            "type": "coinFlip",
+            "heads": [
+              {
+                "type": "preventAttackNextTurn"
+              }
+            ],
+            "tails": []
+          }
+        ]
+      }
+    ],
+    "weakness": "clover",
+    "resistance": "butterfly",
+    "retreat": 2
+  },
+  {
+    "id": "TQQ01-032",
+    "set": "TQQ01",
+    "number": 32,
+    "rarity": "AR",
+    "kind": "character",
+    "character": "miku",
+    "name": {
+      "en": "Miku Nakano",
+      "ja": "中野 三玖"
+    },
+    "title": "Cherry Blossom Walk",
+    "art": {
+      "character": "miku",
+      "slot": "t08"
+    },
+    "signed": false,
+    "stage": "basic",
+    "prime": false,
+    "hp": 80,
+    "affinity": "melody",
+    "moves": [
+      {
+        "name": "Petal Whisper",
+        "cost": [
+          "melody",
+          "study"
+        ],
+        "damage": 50,
+        "effects": []
+      }
+    ],
+    "weakness": "clover",
+    "resistance": "butterfly",
+    "retreat": 1
+  },
+  {
+    "id": "TQQ01-033",
+    "set": "TQQ01",
+    "number": 33,
+    "rarity": "SAR",
+    "kind": "character",
+    "character": "miku",
+    "name": {
+      "en": "Miku Nakano",
+      "ja": "中野 三玖"
+    },
+    "title": "Aisle of Hydrangeas",
+    "art": {
+      "character": "miku",
+      "slot": "t09"
+    },
+    "signed": true,
+    "stage": "bride",
+    "prime": true,
+    "hp": 260,
+    "affinity": "melody",
+    "ability": {
+      "name": "Third Time’s the Charm",
+      "timing": "passive",
+      "text": "If this Character would be Knocked Out, flip a coin. If heads, it stays in play with 10 HP.",
+      "effects": [
+        {
+          "type": "coinSurvive",
+          "hp": 10
+        }
+      ]
+    },
+    "moves": [
+      {
+        "name": "Rendezvous",
+        "cost": [
+          "melody",
+          "melody",
+          "study"
+        ],
+        "damage": 190,
+        "effects": []
+      }
+    ],
+    "weakness": "clover",
+    "resistance": "butterfly",
+    "retreat": 2
+  },
+  {
+    "id": "TQQ01-034",
+    "set": "TQQ01",
+    "number": 34,
+    "rarity": "UR",
+    "kind": "character",
+    "character": "miku",
+    "name": {
+      "en": "Miku Nakano",
+      "ja": "中野 三玖"
+    },
+    "title": "Reaching Out",
+    "art": {
+      "character": "miku",
+      "slot": "t10"
+    },
+    "signed": true,
+    "stage": "bride",
+    "prime": true,
+    "hp": 260,
+    "affinity": "melody",
+    "ability": {
+      "name": "Headphones On",
+      "timing": "passive",
+      "text": "This Character takes 20 less damage from attacks.",
+      "effects": [
+        {
+          "type": "reduceDamageTaken",
+          "amount": 20
+        }
+      ]
+    },
+    "moves": [
+      {
+        "name": "Hand in Hand",
+        "cost": [
+          "melody",
+          "melody",
+          "melody"
+        ],
+        "damage": 130,
+        "damageSuffix": "+",
+        "text": "Does 30 more damage for each of your Benched Characters.",
+        "effects": [
+          {
+            "type": "damagePerCount",
+            "amount": 30,
+            "count": "ownBenched"
+          }
+        ]
+      }
+    ],
+    "weakness": "clover",
+    "resistance": "butterfly",
+    "retreat": 2
+  },
+  {
+    "id": "TQQ01-035",
+    "set": "TQQ01",
+    "number": 35,
+    "rarity": "SAR",
+    "kind": "character",
+    "character": "miku",
+    "name": {
+      "en": "Miku Nakano",
+      "ja": "中野 三玖"
+    },
+    "title": "Halloween Treat: Sengoku Ghost",
+    "art": {
+      "character": "miku",
+      "slot": "h1"
+    },
+    "signed": true,
+    "stage": "event",
+    "prime": true,
+    "hp": 130,
+    "affinity": "melody",
+    "ability": {
+      "name": "Sengoku Ghost",
+      "timing": "passive",
+      "text": "Your Benched Characters take no damage from attacks.",
+      "effects": [
+        {
+          "type": "preventBenchDamage"
+        }
+      ]
+    },
+    "moves": [
+      {
+        "name": "Boo!",
+        "cost": [
+          "melody"
+        ],
+        "damage": 30,
+        "effects": []
+      }
+    ],
+    "weakness": "clover",
+    "resistance": "butterfly",
+    "retreat": 1,
+    "limited": {
+      "eventId": "halloween",
+      "maxPerDeck": 1
+    }
+  },
+  {
+    "id": "TQQ01-036",
+    "set": "TQQ01",
+    "number": 36,
+    "rarity": "SAR",
+    "kind": "character",
+    "character": "miku",
+    "name": {
+      "en": "Miku Nakano",
+      "ja": "中野 三玖"
+    },
+    "title": "Halloween Trick: Haunting Melody",
+    "art": {
+      "character": "miku",
+      "slot": "h2"
+    },
+    "signed": true,
+    "stage": "event",
+    "prime": true,
+    "hp": 130,
+    "affinity": "melody",
+    "moves": [
+      {
+        "name": "Haunting Melody",
+        "cost": [
+          "melody",
+          "melody"
+        ],
+        "damage": 50,
+        "text": "The Defending Character can’t attack during your opponent’s next turn.",
+        "effects": [
+          {
+            "type": "preventAttackNextTurn"
+          }
+        ]
+      }
+    ],
+    "weakness": "clover",
+    "resistance": "butterfly",
+    "retreat": 1,
+    "limited": {
+      "eventId": "halloween",
+      "maxPerDeck": 1
+    }
+  }
+]

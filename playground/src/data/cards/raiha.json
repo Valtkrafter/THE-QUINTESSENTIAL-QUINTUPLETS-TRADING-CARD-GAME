@@ -1,0 +1,110 @@
+[
+  {
+    "id": "TQQ01-067",
+    "set": "TQQ01",
+    "number": 67,
+    "rarity": "C",
+    "kind": "supporter",
+    "character": "raiha",
+    "name": {
+      "en": "Raiha Uesugi",
+      "ja": "上杉 らいは"
+    },
+    "title": "Welcome Home",
+    "art": {
+      "character": "raiha",
+      "slot": "t01"
+    },
+    "signed": false,
+    "text": "Heal 30 damage from 1 of your Characters.",
+    "effects": [
+      {
+        "type": "heal",
+        "amount": 30,
+        "target": "chosenOwn"
+      }
+    ],
+    "crop": {
+      "x": 0.5,
+      "y": 1,
+      "zoom": 1
+    }
+  },
+  {
+    "id": "TQQ01-068",
+    "set": "TQQ01",
+    "number": 68,
+    "rarity": "U",
+    "kind": "supporter",
+    "character": "raiha",
+    "name": {
+      "en": "Raiha Uesugi",
+      "ja": "上杉 らいは"
+    },
+    "title": "Little Sister’s Bento",
+    "art": {
+      "character": "raiha",
+      "slot": "t02"
+    },
+    "signed": false,
+    "text": "Heal 60 damage from 1 of your Characters.",
+    "effects": [
+      {
+        "type": "heal",
+        "amount": 60,
+        "target": "chosenOwn"
+      }
+    ]
+  },
+  {
+    "id": "TQQ01-069",
+    "set": "TQQ01",
+    "number": 69,
+    "rarity": "R",
+    "kind": "supporter",
+    "character": "raiha",
+    "name": {
+      "en": "Raiha Uesugi",
+      "ja": "上杉 らいは"
+    },
+    "title": "Sweet Surprise",
+    "art": {
+      "character": "raiha",
+      "slot": "t03"
+    },
+    "signed": false,
+    "text": "Heal 20 damage from each of your Characters.",
+    "effects": [
+      {
+        "type": "heal",
+        "amount": 20,
+        "target": "allOwn"
+      }
+    ]
+  },
+  {
+    "id": "TQQ01-070",
+    "set": "TQQ01",
+    "number": 70,
+    "rarity": "AR",
+    "kind": "supporter",
+    "character": "raiha",
+    "name": {
+      "en": "Raiha Uesugi",
+      "ja": "上杉 らいは"
+    },
+    "title": "Festival Night",
+    "art": {
+      "character": "raiha",
+      "slot": "t04"
+    },
+    "signed": false,
+    "text": "Search your deck for up to 2 Basic Characters and put them onto your Bench. Then, shuffle your deck.",
+    "effects": [
+      {
+        "type": "searchBasicToBench",
+        "count": 2
+      }
+    ]
+  }
+]

@@ -48,7 +48,7 @@ const CORNER_BOX_H = 112;
 const CHIP_H = 44;
 const CHIP_GAP = 8;
 
-const STAGE_LEVEL: Readonly<Record<Stage, number>> = { basic: 1, close: 2, bride: 3 };
+const STAGE_LEVEL: Readonly<Record<Stage, number>> = { basic: 1, close: 2, bride: 3, event: 1 };
 const INK = LIGHT_INK;
 const KEYLINE = 'rgba(27, 24, 36, 0.8)';
 

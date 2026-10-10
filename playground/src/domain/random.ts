@@ -1,7 +1,7 @@
 // Seeded random numbers for everything that must be repeatable: pack pulls, finish rolls, AI decisions, tests.
 // Never use Math.random in game logic. The generator is sfc32 (four 32-bit words, fast, good quality).
 
-export type RngState = readonly [number, number, number, number];
+export type RngState = [number, number, number, number];
 
 export interface Rng {
   /** Float in [0, 1). */
@@ -37,7 +37,7 @@ function hashSeed(seed: string): RngState {
   return [nextWord(), nextWord(), nextWord(), nextWord()];
 }
 
-function fromState(initial: RngState): Rng {
+function fromState(initial: Readonly<RngState>): Rng {
   let [a, b, c, d] = initial;
 
   const next = (): number => {
@@ -91,7 +91,7 @@ function fromState(initial: RngState): Rng {
   return { next, int, pick, shuffle, fork, state };
 }
 
-function createFromWords(words: RngState): Rng {
+function createFromWords(words: Readonly<RngState>): Rng {
   const rng = fromState(words);
   for (let i = 0; i < WARM_UP_STEPS; i += 1) {
     rng.next();
@@ -105,6 +105,6 @@ export function createRng(seed: string | number): Rng {
 }
 
 /** Continues exactly where `Rng.state()` was taken (no warm-up, the state is already mixed). */
-export function restoreRng(state: RngState): Rng {
+export function restoreRng(state: Readonly<RngState>): Rng {
   return fromState(state);
 }

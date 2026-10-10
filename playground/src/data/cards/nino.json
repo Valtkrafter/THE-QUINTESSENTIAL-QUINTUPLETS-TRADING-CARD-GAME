@@ -1,0 +1,540 @@
+[
+  {
+    "id": "TQQ01-013",
+    "set": "TQQ01",
+    "number": 13,
+    "rarity": "C",
+    "kind": "character",
+    "character": "nino",
+    "name": {
+      "en": "Nino Nakano",
+      "ja": "中野 二乃"
+    },
+    "title": "Uniform Day",
+    "art": {
+      "character": "nino",
+      "slot": "t01"
+    },
+    "signed": false,
+    "stage": "basic",
+    "prime": false,
+    "hp": 70,
+    "affinity": "butterfly",
+    "moves": [
+      {
+        "name": "Sharp Tongue",
+        "cost": [
+          "butterfly"
+        ],
+        "damage": 20,
+        "effects": []
+      }
+    ],
+    "weakness": "melody",
+    "resistance": "heart",
+    "retreat": 1
+  },
+  {
+    "id": "TQQ01-014",
+    "set": "TQQ01",
+    "number": 14,
+    "rarity": "C",
+    "kind": "character",
+    "character": "nino",
+    "name": {
+      "en": "Nino Nakano",
+      "ja": "中野 二乃"
+    },
+    "title": "Pajama Pout",
+    "art": {
+      "character": "nino",
+      "slot": "t02"
+    },
+    "signed": false,
+    "stage": "basic",
+    "prime": false,
+    "hp": 70,
+    "affinity": "butterfly",
+    "moves": [
+      {
+        "name": "Midnight Snack",
+        "cost": [
+          "butterfly"
+        ],
+        "damage": 10,
+        "text": "Heal 10 damage from this Character.",
+        "effects": [
+          {
+            "type": "heal",
+            "amount": 10,
+            "target": "self"
+          }
+        ]
+      }
+    ],
+    "weakness": "melody",
+    "resistance": "heart",
+    "retreat": 1
+  },
+  {
+    "id": "TQQ01-015",
+    "set": "TQQ01",
+    "number": 15,
+    "rarity": "U",
+    "kind": "character",
+    "character": "nino",
+    "name": {
+      "en": "Nino Nakano",
+      "ja": "中野 二乃"
+    },
+    "title": "Pâtissière",
+    "art": {
+      "character": "nino",
+      "slot": "t03"
+    },
+    "signed": false,
+    "stage": "basic",
+    "prime": false,
+    "hp": 70,
+    "affinity": "butterfly",
+    "moves": [
+      {
+        "name": "Whisk",
+        "cost": [
+          "butterfly"
+        ],
+        "damage": 20,
+        "effects": []
+      },
+      {
+        "name": "Homemade Sweets",
+        "cost": [
+          "butterfly",
+          "study"
+        ],
+        "damage": 30,
+        "text": "Heal 30 damage from 1 of your Characters.",
+        "effects": [
+          {
+            "type": "heal",
+            "amount": 30,
+            "target": "chosenOwn"
+          }
+        ]
+      }
+    ],
+    "weakness": "melody",
+    "resistance": "heart",
+    "retreat": 1
+  },
+  {
+    "id": "TQQ01-016",
+    "set": "TQQ01",
+    "number": 16,
+    "rarity": "U",
+    "kind": "character",
+    "character": "nino",
+    "name": {
+      "en": "Nino Nakano",
+      "ja": "中野 二乃"
+    },
+    "title": "Winter Walk",
+    "art": {
+      "character": "nino",
+      "slot": "t04"
+    },
+    "signed": false,
+    "stage": "close",
+    "prime": false,
+    "hp": 100,
+    "affinity": "butterfly",
+    "moves": [
+      {
+        "name": "Frosted Cupcake",
+        "cost": [
+          "butterfly",
+          "butterfly",
+          "study"
+        ],
+        "damage": 80,
+        "effects": []
+      }
+    ],
+    "weakness": "melody",
+    "resistance": "heart",
+    "retreat": 2
+  },
+  {
+    "id": "TQQ01-017",
+    "set": "TQQ01",
+    "number": 17,
+    "rarity": "R",
+    "kind": "character",
+    "character": "nino",
+    "name": {
+      "en": "Nino Nakano",
+      "ja": "中野 二乃"
+    },
+    "title": "Snow-White Furisode",
+    "art": {
+      "character": "nino",
+      "slot": "t05"
+    },
+    "signed": false,
+    "stage": "close",
+    "prime": false,
+    "hp": 110,
+    "affinity": "butterfly",
+    "ability": {
+      "name": "Big Sister’s Care",
+      "timing": "onceDuringTurn",
+      "text": "Once during your turn, you may heal 20 damage from each of your Benched Characters.",
+      "effects": [
+        {
+          "type": "heal",
+          "amount": 20,
+          "target": "allBenched"
+        }
+      ]
+    },
+    "moves": [
+      {
+        "name": "Pastry Barrage",
+        "cost": [
+          "butterfly",
+          "butterfly",
+          "study"
+        ],
+        "damage": 100,
+        "effects": []
+      }
+    ],
+    "weakness": "melody",
+    "resistance": "heart",
+    "retreat": 2
+  },
+  {
+    "id": "TQQ01-018",
+    "set": "TQQ01",
+    "number": 18,
+    "rarity": "R",
+    "kind": "character",
+    "character": "nino",
+    "name": {
+      "en": "Nino Nakano",
+      "ja": "中野 二乃"
+    },
+    "title": "Bridal Bouquet",
+    "art": {
+      "character": "nino",
+      "slot": "t06"
+    },
+    "signed": false,
+    "stage": "bride",
+    "prime": false,
+    "hp": 150,
+    "affinity": "butterfly",
+    "moves": [
+      {
+        "name": "Kitchen Command",
+        "cost": [
+          "butterfly"
+        ],
+        "damage": 40,
+        "text": "Draw 2 cards.",
+        "effects": [
+          {
+            "type": "draw",
+            "count": 2
+          }
+        ]
+      },
+      {
+        "name": "No More Holding Back",
+        "cost": [
+          "butterfly",
+          "butterfly",
+          "study"
+        ],
+        "damage": 180,
+        "effects": []
+      }
+    ],
+    "weakness": "melody",
+    "resistance": "heart",
+    "retreat": 2
+  },
+  {
+    "id": "TQQ01-019",
+    "set": "TQQ01",
+    "number": 19,
+    "rarity": "RR",
+    "kind": "character",
+    "character": "nino",
+    "name": {
+      "en": "Nino Nakano",
+      "ja": "中野 二乃"
+    },
+    "title": "Ribbon Gala",
+    "art": {
+      "character": "nino",
+      "slot": "t07"
+    },
+    "signed": false,
+    "stage": "close",
+    "prime": true,
+    "hp": 190,
+    "affinity": "butterfly",
+    "moves": [
+      {
+        "name": "Butterfly Barrage",
+        "cost": [
+          "butterfly",
+          "butterfly",
+          "study"
+        ],
+        "damage": 130,
+        "effects": []
+      }
+    ],
+    "weakness": "melody",
+    "resistance": "heart",
+    "retreat": 2
+  },
+  {
+    "id": "TQQ01-020",
+    "set": "TQQ01",
+    "number": 20,
+    "rarity": "AR",
+    "kind": "character",
+    "character": "nino",
+    "name": {
+      "en": "Nino Nakano",
+      "ja": "中野 二乃"
+    },
+    "title": "Butterfly Ribbons",
+    "art": {
+      "character": "nino",
+      "slot": "t08"
+    },
+    "signed": false,
+    "stage": "basic",
+    "prime": false,
+    "hp": 80,
+    "affinity": "butterfly",
+    "moves": [
+      {
+        "name": "Ribbon Lash",
+        "cost": [
+          "butterfly",
+          "study"
+        ],
+        "damage": 50,
+        "text": "Heal 20 damage from this Character.",
+        "effects": [
+          {
+            "type": "heal",
+            "amount": 20,
+            "target": "self"
+          }
+        ]
+      }
+    ],
+    "weakness": "melody",
+    "resistance": "heart",
+    "retreat": 1
+  },
+  {
+    "id": "TQQ01-021",
+    "set": "TQQ01",
+    "number": 21,
+    "rarity": "SAR",
+    "kind": "character",
+    "character": "nino",
+    "name": {
+      "en": "Nino Nakano",
+      "ja": "中野 二乃"
+    },
+    "title": "Chapel Promise",
+    "art": {
+      "character": "nino",
+      "slot": "t09"
+    },
+    "signed": true,
+    "stage": "bride",
+    "prime": true,
+    "hp": 260,
+    "affinity": "butterfly",
+    "moves": [
+      {
+        "name": "Sugar Rush",
+        "cost": [
+          "butterfly"
+        ],
+        "damage": 50,
+        "text": "Draw 2 cards.",
+        "effects": [
+          {
+            "type": "draw",
+            "count": 2
+          }
+        ]
+      },
+      {
+        "name": "Grand Gâteau",
+        "cost": [
+          "butterfly",
+          "butterfly",
+          "study"
+        ],
+        "damage": 220,
+        "effects": []
+      }
+    ],
+    "weakness": "melody",
+    "resistance": "heart",
+    "retreat": 2
+  },
+  {
+    "id": "TQQ01-022",
+    "set": "TQQ01",
+    "number": 22,
+    "rarity": "UR",
+    "kind": "character",
+    "character": "nino",
+    "name": {
+      "en": "Nino Nakano",
+      "ja": "中野 二乃"
+    },
+    "title": "Veil of Butterflies",
+    "art": {
+      "character": "nino",
+      "slot": "t10"
+    },
+    "signed": true,
+    "stage": "bride",
+    "prime": true,
+    "hp": 260,
+    "affinity": "butterfly",
+    "moves": [
+      {
+        "name": "Wedding Cake Finale",
+        "cost": [
+          "butterfly",
+          "butterfly",
+          "butterfly"
+        ],
+        "damage": 240,
+        "text": "Heal 30 damage from this Character.",
+        "effects": [
+          {
+            "type": "heal",
+            "amount": 30,
+            "target": "self"
+          }
+        ]
+      }
+    ],
+    "weakness": "melody",
+    "resistance": "heart",
+    "retreat": 2
+  },
+  {
+    "id": "TQQ01-023",
+    "set": "TQQ01",
+    "number": 23,
+    "rarity": "SAR",
+    "kind": "character",
+    "character": "nino",
+    "name": {
+      "en": "Nino Nakano",
+      "ja": "中野 二乃"
+    },
+    "title": "Halloween Treat: Sweet Treats",
+    "art": {
+      "character": "nino",
+      "slot": "h1"
+    },
+    "signed": true,
+    "stage": "event",
+    "prime": true,
+    "hp": 130,
+    "affinity": "butterfly",
+    "ability": {
+      "name": "Sweet Treats",
+      "timing": "onPlay",
+      "text": "When you play this Character from your hand, heal 30 damage from each of your Characters.",
+      "effects": [
+        {
+          "type": "heal",
+          "amount": 30,
+          "target": "allOwn"
+        }
+      ]
+    },
+    "moves": [
+      {
+        "name": "Boo!",
+        "cost": [
+          "butterfly"
+        ],
+        "damage": 30,
+        "effects": []
+      }
+    ],
+    "weakness": "melody",
+    "resistance": "heart",
+    "retreat": 1,
+    "limited": {
+      "eventId": "halloween",
+      "maxPerDeck": 1
+    }
+  },
+  {
+    "id": "TQQ01-024",
+    "set": "TQQ01",
+    "number": 24,
+    "rarity": "SAR",
+    "kind": "character",
+    "character": "nino",
+    "name": {
+      "en": "Nino Nakano",
+      "ja": "中野 二乃"
+    },
+    "title": "Halloween Trick: Wicked Bite",
+    "art": {
+      "character": "nino",
+      "slot": "h2"
+    },
+    "signed": true,
+    "stage": "event",
+    "prime": true,
+    "hp": 130,
+    "affinity": "butterfly",
+    "moves": [
+      {
+        "name": "Wicked Bite",
+        "cost": [
+          "butterfly",
+          "butterfly"
+        ],
+        "damage": 80,
+        "text": "Heal 30 damage from this Character.",
+        "effects": [
+          {
+            "type": "heal",
+            "amount": 30,
+            "target": "self"
+          }
+        ]
+      }
+    ],
+    "weakness": "melody",
+    "resistance": "heart",
+    "retreat": 1,
+    "limited": {
+      "eventId": "halloween",
+      "maxPerDeck": 1
+    }
+  }
+]

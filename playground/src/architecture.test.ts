@@ -3,7 +3,7 @@ import { join, relative, sep } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 // Layer rule of the project: lower layers never import higher ones, and the rules layers never touch React or three.js.
-// `domain` and `packs` hold game rules; `cards` holds the card model and catalog.
+// `domain` and `packs` hold game rules; `cards` holds the card model, schema and catalog.
 
 const SRC = join(import.meta.dirname, '.');
 
@@ -11,8 +11,9 @@ const UI_LIBRARIES = ['react', 'react-dom', 'three', '@react-three/fiber', 'zust
 const PRESENTATION_FOLDERS = ['ui', 'scene', 'holo', 'cardface', 'state'];
 
 const RULES: readonly { readonly folder: string; readonly forbidden: readonly string[] }[] = [
-  { folder: 'domain', forbidden: [...UI_LIBRARIES, ...PRESENTATION_FOLDERS, 'cards', 'packs'] },
-  { folder: 'cards', forbidden: [...UI_LIBRARIES, ...PRESENTATION_FOLDERS, 'packs'] },
+  // Order, lowest first: cards (vocabulary + data) -> domain and packs (rules) -> state -> cardface/holo -> scene -> ui.
+  { folder: 'cards', forbidden: [...UI_LIBRARIES, ...PRESENTATION_FOLDERS, 'domain', 'packs'] },
+  { folder: 'domain', forbidden: [...UI_LIBRARIES, ...PRESENTATION_FOLDERS, 'packs'] },
   { folder: 'packs', forbidden: [...UI_LIBRARIES, ...PRESENTATION_FOLDERS] },
 ];
 

@@ -1,0 +1,76 @@
+[
+  {
+    "id": "TQQ01-074",
+    "set": "TQQ01",
+    "number": 74,
+    "rarity": "U",
+    "kind": "supporter",
+    "character": "maruo",
+    "name": {
+      "en": "Maruo Nakano",
+      "ja": "中野 マルオ"
+    },
+    "title": "Hospital Director",
+    "art": {
+      "character": "maruo",
+      "slot": "t01"
+    },
+    "signed": false,
+    "text": "Your opponent switches their Active Character with 1 of their Benched Characters. You choose which one.",
+    "effects": [
+      {
+        "type": "forceOpponentSwitch"
+      }
+    ]
+  },
+  {
+    "id": "TQQ01-075",
+    "set": "TQQ01",
+    "number": 75,
+    "rarity": "U",
+    "kind": "supporter",
+    "character": "maruo",
+    "name": {
+      "en": "Maruo Nakano",
+      "ja": "中野 マルオ"
+    },
+    "title": "Doctor’s Orders",
+    "art": {
+      "character": "maruo",
+      "slot": "t02"
+    },
+    "signed": false,
+    "text": "Heal 50 damage from 1 of your Characters.",
+    "effects": [
+      {
+        "type": "heal",
+        "amount": 50,
+        "target": "chosenOwn"
+      }
+    ]
+  },
+  {
+    "id": "TQQ01-076",
+    "set": "TQQ01",
+    "number": 76,
+    "rarity": "R",
+    "kind": "supporter",
+    "character": "maruo",
+    "name": {
+      "en": "Maruo Nakano",
+      "ja": "中野 マルオ"
+    },
+    "title": "Overprotective Father",
+    "art": {
+      "character": "maruo",
+      "slot": "t03"
+    },
+    "signed": false,
+    "text": "During your opponent’s next turn, prevent all damage done to your Active Character by attacks.",
+    "effects": [
+      {
+        "type": "shieldActiveNextTurn"
+      }
+    ]
+  }
+]

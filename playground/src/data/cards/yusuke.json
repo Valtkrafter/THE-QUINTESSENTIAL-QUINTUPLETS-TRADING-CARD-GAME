@@ -1,0 +1,82 @@
+[
+  {
+    "id": "TQQ01-077",
+    "set": "TQQ01",
+    "number": 77,
+    "rarity": "U",
+    "kind": "supporter",
+    "character": "yusuke",
+    "name": {
+      "en": "Yūsuke Takeda",
+      "ja": "武田 祐輔"
+    },
+    "title": "The Rival",
+    "art": {
+      "character": "yusuke",
+      "slot": "t01"
+    },
+    "signed": false,
+    "text": "Look at the top 5 cards of your deck. Put 1 of them into your hand and the rest on the bottom of your deck.",
+    "effects": [
+      {
+        "type": "lookTopTakeOne",
+        "count": 5
+      }
+    ]
+  },
+  {
+    "id": "TQQ01-078",
+    "set": "TQQ01",
+    "number": 78,
+    "rarity": "R",
+    "kind": "supporter",
+    "character": "yusuke",
+    "name": {
+      "en": "Yūsuke Takeda",
+      "ja": "武田 祐輔"
+    },
+    "title": "Top Marks",
+    "art": {
+      "character": "yusuke",
+      "slot": "t02"
+    },
+    "signed": false,
+    "text": "Search your deck for a Supporter, reveal it, and put it into your hand. Then, shuffle your deck.",
+    "effects": [
+      {
+        "type": "searchSupporter",
+        "count": 1
+      }
+    ]
+  },
+  {
+    "id": "TQQ01-079",
+    "set": "TQQ01",
+    "number": 79,
+    "rarity": "AR",
+    "kind": "supporter",
+    "character": "yusuke",
+    "name": {
+      "en": "Yūsuke Takeda",
+      "ja": "武田 祐輔"
+    },
+    "title": "Second Place",
+    "art": {
+      "character": "yusuke",
+      "slot": "t03"
+    },
+    "signed": false,
+    "text": "Draw 3 cards. Then, heal 20 damage from 1 of your Characters.",
+    "effects": [
+      {
+        "type": "draw",
+        "count": 3
+      },
+      {
+        "type": "heal",
+        "amount": 20,
+        "target": "chosenOwn"
+      }
+    ]
+  }
+]

@@ -29,3 +29,6 @@ src/assets/cards/*
 
 # Character art is copyrighted reference material, kept local only
 src/assets/characters/
+
+# Vitest report folder
+.vitest/
