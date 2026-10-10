@@ -2,12 +2,14 @@
 // the inspect view, so only the background (sky, star, threads, rays, particles) goes through the bloom.
 
 import { useFrame, useThree } from '@react-three/fiber';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { HalfFloatType, Mesh, PlaneGeometry, Scene, ShaderMaterial, Vector2, WebGLRenderTarget, type Texture, type WebGLRenderer } from 'three';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { compositeFragment, fullscreenVertex } from './shaders';
+import { SpeedMeter, smallerScale } from './speedMeter';
+import type { PostState } from './types';
 
 export interface GlowSettings {
   readonly strength: number;
@@ -23,8 +25,17 @@ function applyGlow(pass: UnrealBloomPass, glow: GlowSettings): void {
   pass.threshold = glow.threshold;
 }
 
-function showTexture(uniforms: { uTexture: { value: Texture | null } }, texture: Texture): void {
+interface CompositeUniforms {
+  [name: string]: { value: unknown };
+  uTexture: { value: Texture | null };
+  uBlur: { value: number };
+  uAberration: { value: number };
+}
+
+function showTexture(uniforms: CompositeUniforms, texture: Texture, post: PostState): void {
   uniforms.uTexture.value = texture;
+  uniforms.uBlur.value = post.blur;
+  uniforms.uAberration.value = post.aberration;
 }
 
 function configureComposer(composer: EffectComposer, pixelRatio: number): void {
@@ -45,10 +56,11 @@ interface Pipeline {
 }
 
 /**
- * Takes over the rendering of the canvas. `background` is drawn first (with bloom when `bloom` is on), then the canvas's own
- * scene on top. When the browser cannot do float render targets the bloom is skipped and everything is still drawn.
+ * Takes over the rendering of the canvas. `background` is drawn first (with bloom when `bloom` is on, and put through the
+ * blur and colour fringes of `post`), then the canvas's own scene on top. When the browser cannot do float render targets
+ * the bloom is skipped and everything is still drawn.
  */
-export function useGlowCompositor(background: Scene, bloom: boolean, glow: GlowSettings = DEFAULT_GLOW): void {
+export function useGlowCompositor(background: Scene, bloom: boolean, post: PostState, glow: GlowSettings = DEFAULT_GLOW): void {
   const gl = useThree((state) => state.gl);
   const camera = useThree((state) => state.camera);
   const scene = useThree((state) => state.scene);
@@ -56,7 +68,7 @@ export function useGlowCompositor(background: Scene, bloom: boolean, glow: GlowS
   const readSize = useThree((state) => state.get);
 
   const quad = useMemo(() => {
-    const uniforms: { uTexture: { value: Texture | null } } = { uTexture: { value: null } };
+    const uniforms: CompositeUniforms = { uTexture: { value: null }, uBlur: { value: 0 }, uAberration: { value: 0 } };
     const material = new ShaderMaterial({
       vertexShader: fullscreenVertex,
       fragmentShader: compositeFragment,
@@ -132,15 +144,23 @@ export function useGlowCompositor(background: Scene, bloom: boolean, glow: GlowS
     };
   }, [gl]);
 
+  // A show that runs too slowly draws its glowing background a little smaller (the cards on top stay sharp).
+  const meter = useMemo(() => new SpeedMeter(), []);
+  const scale = useRef(1);
+
   // Priority 1 switches off the canvas's own rendering: from here on this function draws every frame.
-  useFrame(() => {
+  useFrame((_, delta) => {
+    if (pipeline !== null && meter.push(delta) && scale.current > 0.5) {
+      scale.current = smallerScale(scale.current);
+      pipeline.composer.setPixelRatio(gl.getPixelRatio() * scale.current);
+    }
     gl.setRenderTarget(null);
     gl.clear();
     if (pipeline === null) {
       gl.render(background, camera);
     } else {
       pipeline.composer.render();
-      showTexture(quad.uniforms, pipeline.composer.readBuffer.texture);
+      showTexture(quad.uniforms, pipeline.composer.readBuffer.texture, post);
       gl.setRenderTarget(null);
       gl.render(quad.scene, camera);
     }

@@ -14,9 +14,22 @@ export interface FlightCue {
   readonly threads: boolean;
 }
 
+export interface CeremonyCue {
+  readonly stars: number;
+  readonly tier: SoundTier;
+  /** Seconds from the start of the ceremony until the first star lights, and between two stars. */
+  readonly firstStar: number;
+  readonly starGap: number;
+  readonly seconds: number;
+}
+
 export interface PullAudio {
+  /** The camera falls into the storm: wind and a low drone that swells for `seconds`. */
+  intro(seconds: number): void;
   flight(cue: FlightCue): void;
   impact(tier: SoundTier): void;
+  /** The black screen with the stars of a good card: one rising bell note for every star. */
+  ceremony(cue: CeremonyCue): void;
   /** A card starts to turn over. */
   flip(tier: SoundTier, flipSeconds: number): void;
   /** The card is face up: the chime that grows with the rarity. */
@@ -199,6 +212,29 @@ export async function createPullAudio(): Promise<PullAudio> {
   }
 
   const raw: PullAudio = {
+    intro(seconds) {
+      cutFlight();
+      active = { gains: [], timers: [] };
+      const flight = active;
+      oneShot(seconds, (start) => {
+        // Wind: brown noise that opens up from a low rumble.
+        const wind = noiseSweep(start, seconds, 140, 1700, 0.34, 'brown', 0.8);
+        flight.gains.push(wind.gain);
+        // A drone under it that climbs a little and swells.
+        const drone = new Tone.Oscillator({ type: 'sine', frequency: 46 });
+        const droneGain = new Tone.Gain(0);
+        drone.chain(droneGain, bus);
+        drone.frequency.setValueAtTime(46, start);
+        drone.frequency.exponentialRampToValueAtTime(74, start + seconds);
+        droneGain.gain.setValueAtTime(0, start);
+        droneGain.gain.linearRampToValueAtTime(0.2, start + seconds * 0.85);
+        droneGain.gain.linearRampToValueAtTime(0, start + seconds + 0.04);
+        drone.start(start).stop(start + seconds + 0.1);
+        flight.gains.push(droneGain);
+        return [...wind.nodes, drone, droneGain];
+      });
+    },
+
     flight({ seconds, tier, threads }) {
       cutFlight();
       active = { gains: [], timers: [] };
@@ -257,6 +293,36 @@ export async function createPullAudio(): Promise<PullAudio> {
         }
         arpeggio(ARPEGGIO[tier], start + 0.05, 0.06, 0.6 + rank * 0.07);
         return sweep.nodes;
+      });
+    },
+
+    ceremony({ stars, tier, firstStar, starGap, seconds }) {
+      cutFlight();
+      active = { gains: [], timers: [] };
+      const rank = tierRank(tier);
+      const notes = ARPEGGIO[tier].slice(0, stars);
+      oneShot(seconds, (start) => {
+        // A calm chord under the whole ceremony, and a thin shimmer while the line is drawn.
+        pad.triggerAttackRelease([...CHORD[tier]], seconds, start, 0.42);
+        return noiseSweep(start + 0.12, 0.7, 2600, 9000, 0.1, 'pink', 3).nodes;
+      });
+      inFlight(0.6, () => boom.triggerAttackRelease(ROOT[tier], 0.7, Tone.now(), 0.45));
+      notes.forEach((note, index) => {
+        inFlight(firstStar + index * starGap, () => {
+          const velocity = Math.min(1, 0.5 + index * 0.1 + rank * 0.04);
+          bell.triggerAttackRelease(note, 1.8, Tone.now(), velocity);
+          sparkle.triggerAttackRelease(note, 0.1, Tone.now() + 0.03, 0.5);
+        });
+      });
+      // The last star brings the whole chord and a shower of sparks.
+      inFlight(firstStar + (stars - 1) * starGap, () => {
+        const now = Tone.now();
+        boom.triggerAttackRelease(ROOT[tier], 1.1, now, 0.7);
+        metal.triggerAttackRelease(420 + rank * 40, '2n', now, 0.5);
+        arpeggio(ARPEGGIO[tier], now + 0.05, 0.05, 0.5 + rank * 0.07);
+        for (let i = 0; i < 6 + rank * 2; i += 1) {
+          sparkle.triggerAttackRelease(ARPEGGIO[tier][(i * 2) % ARPEGGIO[tier].length] ?? 'E6', 0.08, now + 0.25 + i * 0.07, 0.3);
+        }
       });
     },
 
@@ -327,8 +393,10 @@ export async function createPullAudio(): Promise<PullAudio> {
     }
   };
   return {
+    intro: (seconds) => attempt(() => raw.intro(seconds)),
     flight: (cue) => attempt(() => raw.flight(cue)),
     impact: (tier) => attempt(() => raw.impact(tier)),
+    ceremony: (cue) => attempt(() => raw.ceremony(cue)),
     flip: (tier, seconds) => attempt(() => raw.flip(tier, seconds)),
     reveal: (rarity, tier, isNew) => attempt(() => raw.reveal(rarity, tier, isNew)),
     tap: () => attempt(() => raw.tap()),

@@ -2,6 +2,14 @@ import type { FinishId } from '../../cards/finish';
 import type { Card } from '../../cards/model';
 import { revealOrder, type ShowPack } from './director';
 
+/** What the final picture is put through after the glowing background is drawn: a blur towards the middle and colour fringes. */
+export interface PostState {
+  /** 0..1, how strongly the picture is blurred towards the middle. */
+  blur: number;
+  /** 0..1, how far the red and blue channels drift apart towards the edges. */
+  aberration: number;
+}
+
 /** One card of a pack as the show needs it. */
 export interface ScenePull {
   readonly card: Card;

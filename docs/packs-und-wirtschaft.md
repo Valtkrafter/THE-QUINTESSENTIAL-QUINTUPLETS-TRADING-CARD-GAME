@@ -79,15 +79,17 @@ Ziel: Wer täglich etwa 30 Minuten spielt, bekommt ungefähr ¥1.500 am Tag, als
 1. **Packs-Bildschirm:** zwei Packs (Banner oben, wenn er läuft), Preis, Garantie-Balken, "1 Pack" oder "5 Packs" öffnen, Quoten-Seite, die letzten Packs, Tagesbonus.
 2. **Das Ergebnis steht sofort fest und ist gespeichert,** noch bevor die Animation beginnt. Überspringen, Abbrechen oder Fenster schließen ändert nichts.
 3. **Die Show:**
-   - **Dämmerungshimmel** mit Sternen. Eine **Sternschnuppe** fällt von links oben. Ihre **Farbe** verrät die beste Karte im Pack: blau (Common bis Rare), violett (Double Rare), rosa (Art Rare), gold (Special Art Rare), Regenbogen (Ultra Rare). Bei besseren Packs wechselt sie unterwegs die Farbe nach oben (blau, violett, gold).
-   - Bei **Special Art Rare** und **Ultra Rare** weben sich zusätzlich **fünf Lichtfäden** in den Herz-Farben der Schwestern um die Sternschnuppe. Der Stern hängt kurz in der Luft, die Fäden ziehen sich zu, dann stürzt er herab.
+   - **Sturm:** Die Kamera fällt aus großer Höhe in ein Sturmauge (Vorbild: die Gacha-Animation von Wuthering Waves, aber komplett selbst gebaut).
+   - **Nadel und Tor:** Im schwarzen Raum fliegt eine **Lichtnadel** mit langem Schweif von unten links in ein **Tor**, ein dunkles Loch in einem Ring aus wirbelnden Wolken. Dazu kommen Geschwindigkeitslinien und dünne Umlaufbahnen. Die **Farbe** verrät die beste Karte im Pack: blau (Common bis Rare), violett (Double Rare), rosa (Art Rare), gold (Special Art Rare), Regenbogen (Ultra Rare). Bei besseren Packs wechselt sie unterwegs die Farbe nach oben (blau, violett, gold). Zum Schluss stürzt die Nadel ins Tor, das Bild verwischt zur Mitte hin, dann kommt der **Weißblitz** mit Kreuzstern und Lichtadern.
+   - Bei **Special Art Rare** und **Ultra Rare** weben sich zusätzlich **fünf Lichtfäden** in den Herz-Farben der Schwestern um die Nadel. Sie hängt kurz vor dem Tor, die Fäden ziehen sich zu, dann stürzt sie hinein.
    - **Aufschlag:** Blitz, Druckwellen, Lichtstrahlen und ein Funkenregen. Je besser die Karte, desto größer.
+   - **Zeremonie** (ab Art Rare, nur in der ausführlichen Version): Der Bildschirm wird schwarz, eine dünne Linie wird gezogen, ein gezackter Ausschlag schießt in der Mitte hoch, und **Sterne leuchten nacheinander auf**: drei bei Art Rare, vier bei Special Art Rare, fünf bei Ultra Rare (in den fünf Herz-Farben). Danach kommen die Karten.
    - **Aufdecken:** Die Karten kommen verdeckt herein, die schlechteren zuerst und die beste zuletzt. Hinter der Karte drehen sich Lichtstrahlen in der Farbe der Seltenheit. Bei Special Art Rare und Ultra Rare hält die Karte auf der Kante an, der Hintergrund wird dunkel und die Kamera fährt heran, dann dreht sie sich mit ihrem echten 3D-Finish auf.
    - **Namensschild:** Seltenheit, Name, Titel, "NEU" oder "Dublette", Finish und ob es eine Garantie oder Hauptkarte war.
    - **Ergebnis:** alle Karten, was neu ist und dein Card-Dex-Stand.
    - Tippen, Leertaste oder Pfeil rechts geht weiter, Escape oder "Überspringen" springt zum Ergebnis.
 4. **Einstellungen:** Pack-Animation Ausführlich, Kurz oder Aus. Lautstärke und Ton aus. Bei "Verringerte Bewegung" im Betriebssystem läuft automatisch die kurze Version.
-5. **Ton (Tone.js):** Aufstieg beim Flug, Herzschlag, Aufschlag mit tiefem Schlag und Rauschen, Glockenklänge die mit der Seltenheit wachsen, Funkeln bei neuen Karten.
+5. **Ton (Tone.js):** Wind und tiefes Dröhnen beim Sturm, Aufstieg beim Flug, Herzschlag, Aufschlag mit tiefem Schlag und Rauschen, bei der Zeremonie eine Glocke pro Stern (jede höher als die davor), Glockenklänge die mit der Seltenheit wachsen, Funkeln bei neuen Karten.
 
 ## 8. Später (Entwurf, ich frage dann nochmal)
 **Kiosk (Stufe 5):** Damit gute Karten ein Grind bleiben, verkauft der Kiosk nur bis **Double Rare**, immer mit normalem Finish. Art Rare, Special Art Rare, Ultra Rare und die Halloween-Karten gibt es nur aus Packs. Täglich wechselnde Angebote.

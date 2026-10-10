@@ -2,7 +2,7 @@
 // a time, drawn by the same holo renderer as the inspect view. The director decides what happens; this component plays it.
 
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { useEffect, useMemo, useRef, useSyncExternalStore } from 'react';
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { MathUtils, PerspectiveCamera, Scene, Vector3, type Group } from 'three';
 import { useComposedCard } from '../../cardface/useComposedCard';
 import type { FrameStyle } from '../../cards/frameStyle';
@@ -36,6 +36,7 @@ export interface PullSceneProps {
 
 const CAMERA_Z = 12.6;
 const CAMERA_FOV = 40;
+const COMPILE_PATIENCE_MS = 4000;
 
 export function PullScene(props: PullSceneProps) {
   return (
@@ -69,7 +70,28 @@ function Stage({ runner, packs, graphics, frameStyle, idleMotion, running }: Pul
       fx.dispose();
     };
   }, [background, scene, fx]);
-  useGlowCompositor(background, graphics !== 'low');
+  useGlowCompositor(background, graphics !== 'low', fx.post);
+
+  // Every shader of the show is compiled before it starts. Otherwise the first sight of the gate (a heavy shader) could stall
+  // the picture in the middle of the flight, which is the one moment that must be smooth. A graphics chip that never answers
+  // does not hold the show back for long.
+  const [compiledFor, setCompiledFor] = useState<PullFx | null>(null);
+  useEffect(() => {
+    let alive = true;
+    const done = () => {
+      if (alive) {
+        setCompiledFor(fx);
+      }
+    };
+    const patience = new Promise<void>((resolve) => {
+      window.setTimeout(resolve, COMPILE_PATIENCE_MS);
+    });
+    void Promise.race([gl.compileAsync(background, camera), patience]).then(done, done);
+    return () => {
+      alive = false;
+    };
+  }, [gl, background, camera, fx]);
+  const compiled = compiledFor === fx;
 
   const orders = useMemo(() => ordersOf(packs), [packs]);
   const snapshot = useSyncExternalStore(runner.subscribe, runner.getSnapshot);
@@ -117,7 +139,7 @@ function Stage({ runner, packs, graphics, frameStyle, idleMotion, running }: Pul
       Reflect.set(window, '__pullAdvance', 0);
     }
     clock.current += dt;
-    if (running) {
+    if (running && compiled) {
       runner.step(dt);
     }
     const state = runner.state;

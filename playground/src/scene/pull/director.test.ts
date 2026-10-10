@@ -3,6 +3,8 @@ import type { Rarity } from '../../cards/model';
 import {
   advance,
   bestRarity,
+  ceremonyBeats,
+  ceremonyFor,
   isCinematic,
   phaseDuration,
   progress,
@@ -18,7 +20,15 @@ import {
 
 const pack = (...rarities: Rarity[]): ShowPack => ({ rarities });
 const PLAIN = pack('C', 'U', 'C', 'R', 'U');
+/** The best card is only Double Rare: a violet pack, no ceremony. */
+const VIOLET = pack('C', 'U', 'C', 'RR', 'U');
 const RARE = pack('C', 'U', 'C', 'RR', 'SAR');
+const INTRO = phaseDuration('full', PLAIN, 'intro', 0);
+
+/** Seconds from the start of a show to the moment its first card starts to enter. */
+function cinematicSeconds(p: ShowPack, mode: PullMode): number {
+  return (['intro', 'flight', 'impact', 'ceremony'] as const).reduce((sum, phase) => sum + phaseDuration(mode, p, phase, 0), 0);
+}
 
 function phases(events: readonly DirectorEvent[]): string[] {
   return events.flatMap((event) => (event.type === 'phase' ? [`${event.phase}:${event.pack}.${event.card}`] : []));
@@ -69,9 +79,41 @@ describe('phase lengths', () => {
   });
 
   it('are zero for the cinematic when the show is off', () => {
-    for (const phase of ['intro', 'flight', 'impact'] as const) {
+    for (const phase of ['intro', 'flight', 'impact', 'ceremony'] as const) {
       expect(phaseDuration('off', RARE, phase, 0)).toBe(0);
     }
+  });
+
+  it('give the ceremony a length that grows with its stars, and none to the short show or to packs below Art Rare', () => {
+    const lengths = (['AR', 'SAR', 'UR'] as const).map((best) => phaseDuration('full', pack('C', 'C', 'U', 'U', best), 'ceremony', 0));
+    expect(lengths[0]).toBeGreaterThan(2);
+    expect(lengths[1]).toBeGreaterThan(lengths[0] ?? 0);
+    expect(lengths[2]).toBeGreaterThan(lengths[1] ?? 0);
+    expect(phaseDuration('short', RARE, 'ceremony', 0)).toBe(0);
+    expect(phaseDuration('full', VIOLET, 'ceremony', 0)).toBe(0);
+  });
+});
+
+describe('the ceremony', () => {
+  it('has stars only for Art Rare and better, and only in the full show', () => {
+    expect(ceremonyFor('full', 'RR')).toBe(0);
+    expect(ceremonyFor('full', 'AR')).toBe(3);
+    expect(ceremonyFor('full', 'SAR')).toBe(4);
+    expect(ceremonyFor('full', 'UR')).toBe(5);
+    expect(ceremonyFor('short', 'UR')).toBe(0);
+    expect(ceremonyFor('off', 'UR')).toBe(0);
+  });
+
+  it('lights the stars one after the other, each after the line is drawn, and fades out when they all shine', () => {
+    for (const stars of [3, 4, 5]) {
+      const beats = ceremonyBeats(stars);
+      expect(beats.lineFrom).toBeLessThan(beats.lineTo);
+      expect(beats.firstStar).toBeGreaterThanOrEqual(beats.lineTo);
+      const last = beats.firstStar + beats.starGap * (stars - 1);
+      expect(beats.fadeFrom).toBeGreaterThan(last + 0.5);
+      expect(beats.duration).toBeGreaterThan(beats.fadeFrom);
+    }
+    expect(ceremonyBeats(5).duration).toBeGreaterThan(ceremonyBeats(3).duration);
   });
 });
 
@@ -83,16 +125,23 @@ describe('advancing time', () => {
     expect(inside.state.phase).toBe('intro');
     expect(inside.state.time).toBeCloseTo(0.3);
     expect(inside.events).toEqual([]);
-    const over = advance([PLAIN], 'full', start, 1);
+    const over = advance([PLAIN], 'full', start, INTRO + 0.1);
     expect(over.state.phase).toBe('flight');
     expect(over.state.time).toBeCloseTo(0.1);
     expect(phases(over.events)).toEqual(['flight:0.0']);
   });
 
   it('can jump over several phases in one long frame without losing an event', () => {
-    const result = advance([PLAIN], 'full', startState('full'), 5);
+    const result = advance([PLAIN], 'full', startState('full'), cinematicSeconds(PLAIN, 'full') + 0.1);
     expect(phases(result.events)).toEqual(['flight:0.0', 'impact:0.0', 'enter:0.0']);
     expect(result.events.filter((event) => event.type === 'impact')).toHaveLength(1);
+  });
+
+  it('plays the ceremony between the burst and the first card for Art Rare and better, and for nobody else', () => {
+    const through = (p: ShowPack, mode: PullMode) => phases(advance([p], mode, startState(mode), cinematicSeconds(p, mode) + 0.1).events);
+    expect(through(RARE, 'full')).toEqual(['flight:0.0', 'impact:0.0', 'ceremony:0.0', 'enter:0.0']);
+    expect(through(VIOLET, 'full')).toEqual(['flight:0.0', 'impact:0.0', 'enter:0.0']);
+    expect(through(RARE, 'short')).toEqual(['flight:0.0', 'impact:0.0', 'enter:0.0']);
   });
 
   it('reports the middle of a flip so the scene can burst there', () => {
@@ -111,11 +160,20 @@ describe('advancing time', () => {
 
 describe('taps', () => {
   it('skip the cinematic to the burst, then to the first card', () => {
-    const intro = tap([RARE], 'full', startState('full'));
+    const intro = tap([VIOLET], 'full', startState('full'));
     expect(intro.state.phase).toBe('impact');
     expect(intro.events.map((event) => event.type)).toEqual(['phase', 'impact']);
-    const impact = tap([RARE], 'full', intro.state);
+    const impact = tap([VIOLET], 'full', intro.state);
     expect(impact.state).toMatchObject({ phase: 'enter', card: 0, time: 0 });
+  });
+
+  it('lead a pack with a ceremony from the burst to the ceremony and only then to the first card', () => {
+    const impact = tap([RARE], 'full', startState('full'));
+    const ceremony = tap([RARE], 'full', impact.state);
+    expect(ceremony.state).toMatchObject({ phase: 'ceremony', card: 0, time: 0 });
+    expect(phases(ceremony.events)).toEqual(['ceremony:0.0']);
+    const enter = tap([RARE], 'full', ceremony.state);
+    expect(enter.state).toMatchObject({ phase: 'enter', card: 0, time: 0 });
   });
 
   it('finish a flip at once, and send a shown card away', () => {
@@ -162,7 +220,7 @@ describe('a whole show', () => {
   });
 
   it('can be skipped to the summary from anywhere', () => {
-    for (const phase of ['intro', 'flight', 'impact', 'enter', 'flip', 'show', 'exit'] as const) {
+    for (const phase of ['intro', 'flight', 'impact', 'ceremony', 'enter', 'flip', 'show', 'exit'] as const) {
       const skipped = skipAll({ pack: 1, phase, time: 0.2, card: 2 });
       expect(skipped.state.phase).toBe('summary');
       expect(skipped.events).toHaveLength(1);
@@ -173,14 +231,14 @@ describe('a whole show', () => {
 
 describe('helpers', () => {
   it('tells the cinematic phases apart', () => {
-    const cinematic: DirectorState['phase'][] = ['intro', 'flight', 'impact'];
+    const cinematic: DirectorState['phase'][] = ['intro', 'flight', 'impact', 'ceremony'];
     const cards: DirectorState['phase'][] = ['enter', 'flip', 'show', 'exit', 'summary'];
     expect(cinematic.every(isCinematic)).toBe(true);
     expect(cards.some(isCinematic)).toBe(false);
   });
 
   it('reports progress from 0 to 1 and 1 for phases that wait', () => {
-    const state: DirectorState = { pack: 0, phase: 'intro', time: 0.45, card: 0 };
+    const state: DirectorState = { pack: 0, phase: 'intro', time: INTRO / 2, card: 0 };
     expect(progress('full', [PLAIN], state)).toBeCloseTo(0.5);
     expect(progress('full', [PLAIN], { ...state, phase: 'show' })).toBe(1);
     expect(progress('off', [PLAIN], { ...state, phase: 'intro' })).toBe(1);

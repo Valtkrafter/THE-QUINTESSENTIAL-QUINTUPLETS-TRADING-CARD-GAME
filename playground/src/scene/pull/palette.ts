@@ -90,6 +90,23 @@ export function threadStrength(best: Rarity): number {
   }
 }
 
+/**
+ * How many stars the ceremony lights for the best card of a pack: the screen goes black, a thin line is drawn and the stars
+ * on it light up one by one. Zero means no ceremony (only Art Rare and better get one).
+ */
+export function ceremonyStars(best: Rarity): number {
+  switch (best) {
+    case 'AR':
+      return 3;
+    case 'SAR':
+      return 4;
+    case 'UR':
+      return 5;
+    default:
+      return 0;
+  }
+}
+
 /** How big the burst at the end of the flight is, from 0.3 for a plain pack to 1 for an Ultra Rare. */
 export function impactStrength(best: Rarity): number {
   return [0.3, 0.38, 0.5, 0.65, 0.8, 0.92, 1][RARITY_IDS.indexOf(best)] ?? 0.3;

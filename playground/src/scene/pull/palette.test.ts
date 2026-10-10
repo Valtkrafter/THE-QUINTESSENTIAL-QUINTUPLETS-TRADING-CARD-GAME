@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { RARITY_IDS } from '../../cards/model';
-import { burstCount, impactStrength, revealLook, starColors, threadStrength, tierOf, tierRank } from './palette';
+import { burstCount, ceremonyStars, impactStrength, revealLook, starColors, threadStrength, tierOf, tierRank } from './palette';
 
 describe('show palette', () => {
   it('gives every rarity a colour family, getting rarer from blue to rainbow', () => {
@@ -19,6 +19,10 @@ describe('show palette', () => {
 
   it('brings the five threads for Special Art Rare and Ultra Rare only, strongest for Ultra Rare', () => {
     expect(RARITY_IDS.map(threadStrength)).toEqual([0, 0, 0, 0, 0, 0.7, 1]);
+  });
+
+  it('lights three, four or five stars in the ceremony for Art Rare, Special Art Rare and Ultra Rare, and none below', () => {
+    expect(RARITY_IDS.map(ceremonyStars)).toEqual([0, 0, 0, 0, 3, 4, 5]);
   });
 
   it('makes the burst grow with the rarity', () => {

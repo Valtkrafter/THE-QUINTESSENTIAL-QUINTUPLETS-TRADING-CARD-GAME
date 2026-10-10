@@ -4,7 +4,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type PointerEvent as ReactPointerEvent } from 'react';
 import { RARITIES } from '../../cards/model';
 import type { PackOpening } from '../../packs/openPack';
-import { bestRarity, phaseDuration } from '../../scene/pull/director';
+import { bestRarity, ceremonyBeats, ceremonyFor, phaseDuration } from '../../scene/pull/director';
 import { threadStrength, tierOf } from '../../scene/pull/palette';
 import { PullScene } from '../../scene/pull/PullScene';
 import { PullRunner } from '../../scene/pull/runner';
@@ -79,7 +79,16 @@ export default function PullOverlay({ openings, preview = false, onClose, onAgai
   const order = orders[snapshot.pack] ?? [];
   const current = opening?.pulls[order[snapshot.card] ?? -1];
   const inSummary = snapshot.phase === 'summary';
-  const inCinematic = snapshot.phase === 'intro' || snapshot.phase === 'flight' || snapshot.phase === 'impact';
+  const inCinematic = snapshot.phase === 'intro' || snapshot.phase === 'flight' || snapshot.phase === 'impact' || snapshot.phase === 'ceremony';
+
+  // Sound of the very first storm: the show starts in its intro without an event, so the cue is given here, as soon as both
+  // the cards and the sound are ready (a sound that is late would be out of step with the picture and is left out).
+  useEffect(() => {
+    const first = runner.packs[0];
+    if (audio !== null && prepared && first !== undefined && runner.state.phase === 'intro' && runner.state.pack === 0 && runner.state.time < 0.4) {
+      audio.intro(phaseDuration(runner.mode, first, 'intro', 0) - runner.state.time);
+    }
+  }, [audio, prepared, runner]);
 
   // Sound: the show's events become cues.
   useEffect(
@@ -98,8 +107,13 @@ export default function PullOverlay({ openings, preview = false, onClose, onAgai
           const pull = openings[event.pack]?.pulls[index ?? -1];
           audio.reveal(rarity, tierOf(rarity), pull?.isNew ?? false);
         } else if (event.type === 'phase') {
-          if (event.phase === 'flight') {
+          if (event.phase === 'intro') {
+            audio.intro(phaseDuration(runner.mode, pack, 'intro', 0));
+          } else if (event.phase === 'flight') {
             audio.flight({ seconds: phaseDuration(runner.mode, pack, 'flight', 0), tier: tierOf(best), threads: runner.mode === 'full' && threadStrength(best) > 0 });
+          } else if (event.phase === 'ceremony') {
+            const beats = ceremonyBeats(ceremonyFor(runner.mode, best));
+            audio.ceremony({ stars: beats.stars, tier: tierOf(best), firstStar: beats.firstStar, starGap: beats.starGap, seconds: beats.duration });
           } else if (event.phase === 'flip' && rarity !== undefined) {
             audio.flip(tierOf(rarity), phaseDuration(runner.mode, pack, 'flip', event.card));
           } else if (event.phase === 'summary') {
@@ -114,6 +128,10 @@ export default function PullOverlay({ openings, preview = false, onClose, onAgai
   const tap = useCallback(() => {
     if (runner.state.phase === 'summary') {
       return;
+    }
+    if (runner.state.phase === 'ceremony') {
+      // Leaving the ceremony early also cuts its bells and its chord.
+      audio?.stop();
     }
     audio?.tap();
     runner.tap();

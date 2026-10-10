@@ -1,5 +1,5 @@
-// The curves of the pull show: the path of the shooting star, how a card flips and where it sits in each phase. Plain
-// maths, so the shape of every movement (starts and ends where it should, never runs backwards) can be tested.
+// The curves of the pull show: the needle that falls into the gate, the dive, how a card flips and where it sits in each
+// phase. Plain maths, so the shape of every movement (starts and ends where it should, never runs backwards) can be tested.
 
 import { Vector3 } from 'three';
 import type { Phase } from './director';
@@ -32,16 +32,21 @@ export function easeOutBack(t: number): number {
   return 1 + c3 * (t - 1) ** 3 + c1 * (t - 1) ** 2;
 }
 
-// --- The shooting star -------------------------------------------------------------------------------------------
+// --- The cinematic: storm, needle, gate ----------------------------------------------------------------------------
 
-const P0 = new Vector3(-10.5, 7.8, -17);
-const P1 = new Vector3(-5.2, 6.4, -8.5);
-const P2 = new Vector3(-1.6, 2.4, 0.5);
-/** Where the star lands: just in front of the middle of the screen. */
+/** Where the burst of light is centred: just in front of the middle of the screen. */
 export const IMPACT_POINT: Vector3 = new Vector3(0.1, 0.35, 2.6);
 
-/** A point on the star's curved path, from far away at the top left (0) to the landing point (1). */
-export function starPath(p: number, out: Vector3 = new Vector3()): Vector3 {
+const N0 = new Vector3(-5.0, -3.0, 5.0);
+const N1 = new Vector3(-3.2, -1.9, -1.0);
+const N2 = new Vector3(-1.0, -0.4, -10.0);
+const N3 = new Vector3(0.0, 0.27, -34.0);
+
+/**
+ * A point on the path of the needle: it starts close to the camera at the lower left (off screen) and falls away into the
+ * gate in the middle of the screen, so its trail seems to rush towards the viewer.
+ */
+export function needlePath(p: number, out: Vector3 = new Vector3()): Vector3 {
   const t = clamp01(p);
   const s = 1 - t;
   const a = s * s * s;
@@ -49,29 +54,92 @@ export function starPath(p: number, out: Vector3 = new Vector3()): Vector3 {
   const c = 3 * s * t * t;
   const d = t * t * t;
   return out.set(
-    a * P0.x + b * P1.x + c * P2.x + d * IMPACT_POINT.x,
-    a * P0.y + b * P1.y + c * P2.y + d * IMPACT_POINT.y,
-    a * P0.z + b * P1.z + c * P2.z + d * IMPACT_POINT.z,
+    a * N0.x + b * N1.x + c * N2.x + d * N3.x,
+    a * N0.y + b * N1.y + c * N2.y + d * N3.y,
+    a * N0.z + b * N1.z + c * N2.z + d * N3.z,
   );
 }
 
-/** Where the flight stops speeding up and hangs in the air, for the packs with the five threads. */
+/** Where the flight stops and the needle hangs, for the packs with the five threads. */
 const HANG_AT = 0.72;
-const HANG_PATH = 0.86;
+const HANG_PATH = 0.82;
 
 /**
- * Turns the time of the flight (0..1) into a position on the path (0..1). The star speeds up as it falls. With `hang` it
- * pauses close to the end, so the threads can tighten around it, and then plunges.
+ * Turns the time of the flight (0..1) into a position on the needle's path (0..1). The needle is fast at first and glides
+ * towards the gate. With `hang` it stops close to the end so the threads can tighten around it, and then plunges in.
  */
-export function flightProgress(time: number, hang: boolean): number {
+export function needleProgress(time: number, hang: boolean): number {
   const t = clamp01(time);
   if (!hang) {
-    return t ** 2.1;
+    return 1 - (1 - t) ** 1.8;
   }
   if (t < HANG_AT) {
-    return HANG_PATH * (t / HANG_AT) ** 1.6;
+    return HANG_PATH * (1 - (1 - t / HANG_AT) ** 1.8);
   }
   return HANG_PATH + (1 - HANG_PATH) * easeInCubic((t - HANG_AT) / (1 - HANG_AT));
+}
+
+/** Where the gate's own clock stands while the needle hangs: calm and glowing, the dive still ahead. */
+const GATE_HANG = 0.64;
+
+/**
+ * The gate runs on its own clock. Without the hang it follows the flight. With the hang it waits in its calm pose while the
+ * needle hangs and the threads tighten, and the whole dive and the white-out happen in the plunge at the end.
+ */
+export function gateTime(u: number, hang: boolean): number {
+  const t = clamp01(u);
+  if (!hang) {
+    return t;
+  }
+  return t < HANG_AT ? t * (GATE_HANG / HANG_AT) : GATE_HANG + (1 - GATE_HANG) * ((t - HANG_AT) / (1 - HANG_AT));
+}
+
+/** How visible the gate is (0 = not there, 1 = fully drawn). */
+export function gateOpen(u: number): number {
+  return smoothstep(0.05, 0.36, u);
+}
+
+/** How brightly the clouds of the gate glow. */
+export function gateEnergy(u: number): number {
+  return smoothstep(0.28, 0.92, u);
+}
+
+/**
+ * How brightly the gate shines. It rises with the energy, and during the final rush, when the ring flies outwards past the
+ * edges of the screen, it dims again, so the white-out in the middle has room to be seen.
+ */
+export function gateGlow(u: number): number {
+  return gateEnergy(u) * (1 - 0.65 * smoothstep(0.8, 1, u));
+}
+
+/** The dive into the gate: the ring grows from small to normal, then rushes outwards past the screen. */
+export function gateZoom(u: number): number {
+  return 0.5 + 0.5 * smoothstep(0, 0.62, u) + 2.7 * easeInCubic(smoothstep(0.66, 1, u));
+}
+
+/** The feeling of speed: thin lines flying away from the middle. */
+export function speedLines(u: number): number {
+  return smoothstep(0.04, 0.7, u);
+}
+
+/** Radial blur towards the middle while the dive is fast. */
+export function diveBlur(u: number): number {
+  return smoothstep(0.7, 1, u);
+}
+
+/** The white-out that builds up in the last part of the flight. */
+export function whiteOut(u: number): number {
+  return smoothstep(0.84, 0.995, u);
+}
+
+/** The storm at the start: the camera falls towards its eye. */
+export function stormZoom(u: number): number {
+  return 1 + 3.4 * easeInCubic(clamp01(u));
+}
+
+/** The storm fades to black in the last part of the intro. */
+export function stormFade(u: number): number {
+  return 1 - smoothstep(0.78, 1, u);
 }
 
 // --- The card ---------------------------------------------------------------------------------------------------

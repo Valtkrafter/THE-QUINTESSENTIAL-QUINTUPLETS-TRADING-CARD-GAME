@@ -1,12 +1,31 @@
 // Everything that glows in the pull show, as one object that is told what the show is doing each frame. The scene gives it
-// the time, the camera and the director's state; it moves the sky, the shooting star, the five threads, the shock waves,
-// the rays behind a card and the particles. Nothing here decides what comes out of a pack.
+// the time, the camera and the director's state; it draws the storm, the needle of light with its trail and threads, the gate
+// it dives into, the white-out, the shock waves, the ceremony of stars, the rays behind a card and the particles. Nothing
+// here decides what comes out of a pack.
 
-import { Color, Group, Mesh, PlaneGeometry, ShaderMaterial, Vector2, Vector3, type PerspectiveCamera } from 'three';
+import { Color, Group, MathUtils, Mesh, PlaneGeometry, ShaderMaterial, Vector2, Vector3, type PerspectiveCamera } from 'three';
 import type { GraphicsLevel } from '../../../state/preferences';
 import type { Rarity } from '../../../cards/model';
-import type { DirectorState, PullMode } from '../director';
-import { CARD_HOME_Y, IMPACT_POINT, clamp01, easeOutCubic, flightProgress, smoothstep, starPath } from '../motion';
+import { ceremonyBeats, ceremonyFor, type DirectorState, type PullMode } from '../director';
+import {
+  CARD_HOME_Y,
+  IMPACT_POINT,
+  clamp01,
+  diveBlur,
+  easeOutCubic,
+  gateEnergy,
+  gateGlow,
+  gateOpen,
+  gateTime,
+  gateZoom,
+  needlePath,
+  needleProgress,
+  smoothstep,
+  speedLines,
+  stormFade,
+  stormZoom,
+  whiteOut,
+} from '../motion';
 import {
   HEART_COLORS,
   TIER_LOOK,
@@ -16,9 +35,24 @@ import {
   starColors,
   threadStrength,
   tierOf,
+  tierRank,
   type Tier,
 } from '../palette';
-import { flashFragment, fullscreenVertex, glowFragment, planeVertex, raysFragment, ringFragment, skyFragment } from '../shaders';
+import {
+  burstFragment,
+  ceremonyFragment,
+  flashFragment,
+  fullscreenVertex,
+  gateFragment,
+  glowFragment,
+  planeVertex,
+  raysFragment,
+  ringFragment,
+  skyFragment,
+  stormFragment,
+  streaksFragment,
+} from '../shaders';
+import type { PostState } from '../types';
 import { additiveMaterial, displayColor, rainbowColor, uniform } from './materials';
 import { ParticleField } from './particles';
 import { Ribbon } from './ribbon';
@@ -43,10 +77,17 @@ export interface FxFrame {
 
 const TRAIL_SEGMENTS = 72;
 const THREAD_SEGMENTS = 90;
-const TRAIL_TIME = 0.34;
-const THREAD_TIME = 0.5;
+/** How much of the flight the trail of the needle reaches back, as a share of the flight. */
+const TRAIL_TIME = 0.3;
+const THREAD_TIME = 0.42;
 const IMPACT_RINGS = 4;
 const CARD_RINGS = 2;
+/** One "unit" of a distant effect is this share of the distance to the camera, so it keeps its size on the screen. */
+const SCREEN_UNIT = 0.05;
+/** Where the needle ends: the middle of the gate. */
+const GATE_POINT: Vector3 = needlePath(1);
+/** How quickly the glow of the gate dies down after the burst (per second). */
+const AFTERGLOW_RATE = 3.2;
 
 const TIER_COLORS: Readonly<Record<Tier, { readonly main: Color; readonly light: Color }>> = {
   blue: { main: displayColor(TIER_LOOK.blue.color), light: displayColor(TIER_LOOK.blue.light) },
@@ -64,10 +105,26 @@ interface Pulse {
   strength: number;
 }
 
+/** The trail of the needle is a point at the tip, widest a little behind it, and thins out again towards its tail. */
+function trailProfile(back: number): number {
+  return smoothstep(0, 0.16, back) ** 0.7 * (1 - 0.5 * back);
+}
+
 /** A plane of the given size that is drawn with an additive shader. */
 function additivePlane(size: number, fragment: string, uniforms: Record<string, { value: unknown }>): Mesh<PlaneGeometry, ShaderMaterial> {
   const mesh = new Mesh(new PlaneGeometry(size, size), additiveMaterial(planeVertex, fragment, uniforms));
   mesh.frustumCulled = false;
+  return mesh;
+}
+
+/** A picture that covers the whole screen, drawn with its own shader: added to what is there, or replacing it. */
+function screenQuad(fragment: string, uniforms: Record<string, { value: unknown }>, additive: boolean, order: number): Mesh<PlaneGeometry, ShaderMaterial> {
+  const material = additive
+    ? additiveMaterial(fullscreenVertex, fragment, uniforms)
+    : new ShaderMaterial({ vertexShader: fullscreenVertex, fragmentShader: fragment, uniforms, depthTest: false, depthWrite: false });
+  const mesh = new Mesh(new PlaneGeometry(2, 2), material);
+  mesh.frustumCulled = false;
+  mesh.renderOrder = order;
   return mesh;
 }
 
@@ -76,6 +133,8 @@ export class PullFx {
   readonly background = new Group();
   /** Drawn on top of the card, without bloom. */
   readonly foreground = new Group();
+  /** What the final picture is put through; the compositor reads it every frame. */
+  readonly post: PostState = { blur: 0, aberration: 0 };
 
   readonly #quality: GraphicsLevel;
   readonly #sky: Mesh<PlaneGeometry, ShaderMaterial>;
@@ -84,8 +143,67 @@ export class PullFx {
     uAspect: uniform(1),
     uDim: uniform(0),
     uGlow: uniform(0),
+    uSpace: uniform(0),
+    uLevel: uniform(1),
     uGlowColor: uniform(new Color(1, 1, 1)),
     uGlowPos: uniform(new Vector2(0.5, 0.45)),
+  };
+
+  readonly #storm: Mesh<PlaneGeometry, ShaderMaterial>;
+  readonly #stormUniforms = {
+    uTime: uniform(0),
+    uAspect: uniform(1),
+    uCenter: uniform(new Vector2(0.5, 0.5)),
+    uZoom: uniform(1),
+    uFade: uniform(0),
+    uTint: uniform(new Color(0.5, 0.7, 1)),
+  };
+  readonly #streaks: Mesh<PlaneGeometry, ShaderMaterial>;
+  readonly #streaksUniforms = {
+    uTime: uniform(0),
+    uAspect: uniform(1),
+    uCenter: uniform(new Vector2(0.5, 0.5)),
+    uFlow: uniform(0),
+    uSpeed: uniform(0),
+    uArcs: uniform(0),
+    uColor: uniform(new Color(1, 1, 1)),
+    uRainbow: uniform(0),
+  };
+  readonly #gate: Mesh<PlaneGeometry, ShaderMaterial>;
+  readonly #gateUniforms = {
+    uTime: uniform(0),
+    uAspect: uniform(1),
+    uCenter: uniform(new Vector2(0.5, 0.5)),
+    uOpen: uniform(0),
+    uZoom: uniform(0.5),
+    uEnergy: uniform(0),
+    uRainbow: uniform(0),
+    uDetail: uniform(1),
+    uColor: uniform(new Color(1, 1, 1)),
+  };
+  readonly #whiteout: Mesh<PlaneGeometry, ShaderMaterial>;
+  readonly #whiteoutUniforms = {
+    uTime: uniform(0),
+    uAspect: uniform(1),
+    uCenter: uniform(new Vector2(0.5, 0.5)),
+    uStrength: uniform(0),
+    uGrow: uniform(1),
+    uRainbow: uniform(0),
+    uColor: uniform(new Color(1, 1, 1)),
+  };
+  readonly #ceremony: Mesh<PlaneGeometry, ShaderMaterial>;
+  readonly #ceremonyUniforms = {
+    uTime: uniform(0),
+    uAspect: uniform(1),
+    uDraw: uniform(0),
+    uSpike: uniform(0),
+    uCount: uniform(5),
+    uFade: uniform(1),
+    uHearts: uniform(0),
+    uLit: uniform<number[]>([0, 0, 0, 0, 0]),
+    uPop: uniform<number[]>([0, 0, 0, 0, 0]),
+    uColor: uniform(new Color(1, 1, 1)),
+    uHeart: uniform<Color[]>(HEARTS.map((color) => color.clone())),
   };
 
   readonly #head: Mesh<PlaneGeometry, ShaderMaterial>;
@@ -118,6 +236,7 @@ export class PullFx {
   readonly #flashUniforms = { uColor: uniform(new Color(1, 1, 1)), uAlpha: uniform(0) };
   readonly #burst: ParticleField;
   readonly #motes: ParticleField;
+  readonly #dust: ParticleField;
 
   readonly #impactRingPulses: Pulse[] = Array.from({ length: IMPACT_RINGS }, () => ({ start: -1000, strength: 0 }));
   readonly #cardRingPulses: Pulse[] = Array.from({ length: CARD_RINGS }, () => ({ start: -1000, strength: 0 }));
@@ -129,9 +248,16 @@ export class PullFx {
   #flashTier: Tier = 'blue';
   #shake = 0;
   #shakeStart = -1000;
+  #rumble = 0;
   #dim = 0;
+  #space = 0;
+  #level = 1;
+  #flow = 0;
   #moteClock = 0;
+  #starsFired = 0;
+  readonly #gateCentre = new Vector2(0.5, 0.5);
   readonly #scratch = new Vector3();
+  readonly #drift = new Vector3(0, 0.3, 0);
   readonly #color = new Color();
   readonly #color2 = new Color();
 
@@ -139,9 +265,12 @@ export class PullFx {
     this.#quality = quality;
     const particleCapacity = quality === 'high' ? 2600 : quality === 'normal' ? 1500 : 800;
 
-    this.#sky = new Mesh(new PlaneGeometry(2, 2), new ShaderMaterial({ vertexShader: fullscreenVertex, fragmentShader: skyFragment, uniforms: this.#skyUniforms, depthTest: false, depthWrite: false }));
-    this.#sky.frustumCulled = false;
-    this.#sky.renderOrder = -100;
+    this.#sky = screenQuad(skyFragment, this.#skyUniforms, false, -100);
+    this.#storm = screenQuad(stormFragment, this.#stormUniforms, false, -99);
+    this.#streaks = screenQuad(streaksFragment, this.#streaksUniforms, true, -90);
+    this.#gate = screenQuad(gateFragment, this.#gateUniforms, true, -85);
+    this.#whiteout = screenQuad(burstFragment, this.#whiteoutUniforms, true, -8);
+    this.#ceremony = screenQuad(ceremonyFragment, this.#ceremonyUniforms, true, -7);
 
     this.#impactRays = additivePlane(34, raysFragment, this.#impactRaysUniforms);
     this.#impactRays.renderOrder = -60;
@@ -169,27 +298,43 @@ export class PullFx {
     this.#burst.points.renderOrder = -10;
     this.#motes = new ParticleField(Math.round(particleCapacity / 3), 0, 0.6);
     this.#motes.points.renderOrder = -12;
+    this.#dust = new ParticleField(Math.round(particleCapacity / 3), 0, 1.1);
+    this.#dust.points.renderOrder = -14;
 
     const flashMesh = new Mesh(new PlaneGeometry(2, 2), additiveMaterial(fullscreenVertex, flashFragment, this.#flashUniforms));
     flashMesh.frustumCulled = false;
     flashMesh.renderOrder = 1000;
     this.#flash = flashMesh;
 
-    this.background.add(this.#sky, this.#stageRays, this.#impactRays, this.#halo, this.#trail.mesh, ...this.#threads.map((thread) => thread.mesh), this.#head, this.#burst.points, this.#motes.points);
+    this.background.add(
+      this.#sky,
+      this.#storm,
+      this.#streaks,
+      this.#gate,
+      this.#stageRays,
+      this.#impactRays,
+      this.#halo,
+      this.#trail.mesh,
+      ...this.#threads.map((thread) => thread.mesh),
+      this.#head,
+      this.#dust.points,
+      this.#burst.points,
+      this.#motes.points,
+      this.#whiteout,
+      this.#ceremony,
+    );
     for (const ring of this.#rings) {
       this.background.add(ring.mesh);
     }
     this.foreground.add(this.#flash);
-    this.#head.visible = false;
-    this.#trail.mesh.visible = false;
-    for (const thread of this.#threads) {
-      thread.mesh.visible = false;
+    for (const hidden of [this.#storm, this.#streaks, this.#gate, this.#whiteout, this.#ceremony, this.#head, this.#trail.mesh, ...this.#threads.map((thread) => thread.mesh)]) {
+      hidden.visible = false;
     }
   }
 
   // --- Events ------------------------------------------------------------------------------------------------
 
-  /** The star has landed: flash, shock waves, burst. */
+  /** The needle has gone through the gate: flash, shock waves, burst. */
   impact(time: number, best: Rarity): void {
     const strength = impactStrength(best);
     const tier = tierOf(best);
@@ -197,7 +342,8 @@ export class PullFx {
     this.#impactStrength = strength;
     this.#impactTier = tier;
     this.#flashStart = time;
-    this.#flashStrength = 0.3 + strength * 0.4;
+    // The white-out already fills the screen; the flash only adds a short extra kick on top of it.
+    this.#flashStrength = 0.1 + strength * 0.22;
     this.#flashTier = tier;
     this.#shake = 0.12 + strength * 0.4;
     this.#shakeStart = time;
@@ -235,10 +381,10 @@ export class PullFx {
     this.#burst.emit({ count, time, origin: this.#scratch, spread: 1.4, speed: [1.5, 3.5 + look.intensity * 5], life: [0.8, 1.6 + look.intensity], size: [0.05, 0.14 + look.intensity * 0.1], colors });
   }
 
-  /** How far the camera is pushed off its place by a shake, written into `out`. */
+  /** How far the camera is pushed off its place by a shake and by the rumble of the dive, written into `out`. */
   cameraShake(time: number, out: Vector3): Vector3 {
     const age = time - this.#shakeStart;
-    const amplitude = this.#shake * Math.exp(-age * 5.5) * (age < 0 ? 0 : 1);
+    const amplitude = this.#shake * Math.exp(-age * 5.5) * (age < 0 ? 0 : 1) + this.#rumble;
     return out.set(Math.sin(time * 61) * amplitude, Math.cos(time * 53) * amplitude * 0.8, 0);
   }
 
@@ -253,17 +399,22 @@ export class PullFx {
     const stageTier = tierOf(frame.card ?? frame.best);
     const stageLook = frame.card === null ? null : revealLook(frame.card);
 
+    this.#locateGate(camera);
     this.#updateSky(frame, showingCard, stageTier);
-    this.#updateStar(frame);
+    this.#updateStorm(frame);
+    this.#updateFlight(frame);
     this.#updateImpact(frame);
+    this.#updateCeremony(frame);
     this.#updateStage(frame, showingCard, stageTier, stageLook?.intensity ?? 0);
     this.#updateFlash(frame);
 
     const scale = frame.pixelHeight / (2 * Math.tan((camera.fov * Math.PI) / 360));
-    this.#burst.update(time, scale);
-    this.#motes.update(time, scale);
+    for (const field of [this.#burst, this.#motes, this.#dust]) {
+      field.update(time, scale);
+    }
     this.#burst.uniforms.uBrightness.value = 1.1;
     this.#motes.uniforms.uBrightness.value = 0.9;
+    this.#dust.uniforms.uBrightness.value = 1.0;
   }
 
   #setTierColor(tier: Tier, time: number, main: Color, light: Color): boolean {
@@ -277,13 +428,31 @@ export class PullFx {
     return false;
   }
 
+  /** Finds where the gate is on the screen: the needle always ends in its middle, whatever the shape of the window. */
+  #locateGate(camera: PerspectiveCamera): void {
+    camera.updateMatrixWorld();
+    this.#scratch.copy(GATE_POINT).project(camera);
+    this.#gateCentre.set(this.#scratch.x * 0.5 + 0.5, this.#scratch.y * 0.5 + 0.5);
+  }
+
   #updateSky(frame: FxFrame, showingCard: boolean, stageTier: Tier): void {
-    const target = showingCard ? 0.52 : frame.state.phase === 'summary' ? 0.68 : 0;
+    const phase = frame.state.phase;
+    const hold = phase === 'ceremony' || (phase === 'impact' && ceremonyFor(frame.mode, frame.best) > 0);
+    const space = phase === 'intro' || phase === 'flight' || hold ? 1 : 0;
+    const level = hold ? 0 : 1;
+    // Space comes quickly and goes slowly (under the white-out); the sky goes dark fast and returns gently after a ceremony.
+    this.#space = MathUtils.damp(this.#space, space, space > this.#space ? 10 : 2.4, frame.delta);
+    this.#level = MathUtils.damp(this.#level, level, level < this.#level ? 4 : 2.2, frame.delta);
+
+    const target = showingCard ? 0.52 : phase === 'summary' ? 0.68 : 0;
     this.#dim += (target - this.#dim) * (1 - Math.exp(-frame.delta * 3));
     const uniforms = this.#skyUniforms;
     uniforms.uTime.value = frame.time;
     uniforms.uAspect.value = frame.aspect;
     uniforms.uDim.value = this.#dim;
+    uniforms.uSpace.value = this.#space;
+    uniforms.uLevel.value = this.#level;
+    this.#sky.visible = this.#level > 0.003;
     if (showingCard) {
       this.#setTierColor(stageTier, frame.time, this.#color, this.#color2);
       uniforms.uGlowColor.value.copy(this.#color);
@@ -291,37 +460,67 @@ export class PullFx {
     }
   }
 
-  #updateStar(frame: FxFrame): void {
-    const { state, time, camera } = frame;
+  /** The first shot: a stormy planet from above, the camera falling towards the eye, then black. */
+  #updateStorm(frame: FxFrame): void {
+    const visible = frame.state.phase === 'intro' && frame.mode === 'full';
+    this.#storm.visible = visible;
+    if (!visible) {
+      return;
+    }
+    const u = frame.progress;
+    const storm = this.#stormUniforms;
+    storm.uTime.value = frame.time;
+    storm.uAspect.value = frame.aspect;
+    storm.uCenter.value.copy(this.#gateCentre);
+    storm.uZoom.value = stormZoom(u);
+    storm.uFade.value = smoothstep(0, 0.14, u) * stormFade(u);
+    storm.uTint.value.copy(TIER_COLORS[starColors(frame.best)[0] ?? 'blue'].main);
+  }
+
+  /** The needle of light, its trail and threads, the gate it dives into, the speed lines and the white-out. */
+  #updateFlight(frame: FxFrame): void {
+    const { state, time, camera, delta } = frame;
     const flying = state.phase === 'flight';
+    const afterglow = state.phase === 'impact';
+    const active = flying || afterglow;
+    const threadPower = frame.mode === 'full' ? threadStrength(frame.best) : 0;
+    const hang = threadPower > 0;
+
     this.#head.visible = flying;
     this.#trail.mesh.visible = flying;
-    const threadPower = frame.mode === 'full' ? threadStrength(frame.best) : 0;
     for (const thread of this.#threads) {
-      thread.mesh.visible = flying && threadPower > 0;
+      thread.mesh.visible = flying && hang;
     }
-    if (!flying) {
+    if (!active) {
+      this.#gate.visible = false;
+      this.#streaks.visible = false;
+      this.#whiteout.visible = false;
+      this.post.blur = 0;
+      this.post.aberration = 0;
+      this.#rumble = 0;
       if (state.phase === 'intro') {
         this.#skyUniforms.uGlow.value = 0;
       }
       return;
     }
 
-    const u = frame.progress;
-    const hang = threadPower > 0;
-    const path = flightProgress(u, hang);
+    // During the burst the picture of the end of the flight stays and dies down, so the cut to the cards is not a jump.
+    const age = afterglow ? Math.max(0, time - this.#impactStart) : 0;
+    const decay = afterglow ? Math.exp(-age * AFTERGLOW_RATE) : 1;
+    const u = flying ? frame.progress : 1;
+    const gt = gateTime(u, hang);
+
+    // Colour: the needle upgrades on its way (blue, then violet, then gold ...) and the gate wears the same colour.
     const tiers = starColors(frame.best);
-    const n = tiers.length;
-    const position = Math.min(n - 1e-6, u * n);
+    const stops = tiers.length;
+    const position = Math.min(stops - 1e-6, u * stops);
     const index = Math.floor(position);
     const local = position - index;
     const tier = tiers[index] ?? 'blue';
     const previous = tiers[index - 1];
     const blend = previous === undefined ? 1 : smoothstep(0, 0.1, local);
     const rainbow = tier === 'rainbow' && blend > 0.5;
-    const pulse = index > 0 ? Math.exp(-local * 12) : 0;
-
-    // Colour: cross-fade from the earlier tier.
+    const pulse = flying && index > 0 ? Math.exp(-local * 12) : 0;
     this.#setTierColor(tier, time, this.#color, this.#color2);
     if (previous !== undefined && blend < 1) {
       const from = TIER_COLORS[previous];
@@ -329,26 +528,83 @@ export class PullFx {
       this.#color2.lerpColors(from.light, this.#color2, blend);
     }
 
-    // Head.
-    const size = 0.7 + 1.25 * path * path + pulse * 0.9;
-    starPath(path, this.#scratch);
+    // The gate.
+    const dive = diveBlur(gt);
+    const gate = this.#gateUniforms;
+    this.#gate.visible = decay > 0.01;
+    gate.uTime.value = time;
+    gate.uAspect.value = frame.aspect;
+    gate.uCenter.value.copy(this.#gateCentre);
+    gate.uOpen.value = gateOpen(gt) * decay;
+    gate.uZoom.value = gateZoom(gt) + age * 1.4;
+    gate.uEnergy.value = gateGlow(gt) + pulse * 0.4;
+    gate.uRainbow.value = rainbow ? 1 : 0;
+    gate.uDetail.value = this.#quality === 'low' ? 0 : 1;
+    gate.uColor.value.copy(this.#color);
+
+    // Speed lines and the thin orbits.
+    const speed = speedLines(gt);
+    this.#flow += delta * (0.35 + speed * 1.8);
+    const streaks = this.#streaksUniforms;
+    this.#streaks.visible = decay > 0.01;
+    streaks.uTime.value = time;
+    streaks.uAspect.value = frame.aspect;
+    streaks.uCenter.value.copy(this.#gateCentre);
+    streaks.uFlow.value = this.#flow;
+    streaks.uSpeed.value = speed * decay;
+    streaks.uArcs.value = smoothstep(0, 0.25, u) * decay * (1 - 0.7 * whiteOut(gt));
+    streaks.uColor.value.copy(this.#color);
+    streaks.uRainbow.value = rainbow ? 1 : 0;
+
+    // The white-out: it builds up at the end of the dive and dies down during the burst.
+    const white = flying ? whiteOut(gt) : Math.exp(-age * 2.4);
+    const whiteout = this.#whiteoutUniforms;
+    this.#whiteout.visible = white > 0.004;
+    whiteout.uTime.value = time;
+    whiteout.uAspect.value = frame.aspect;
+    whiteout.uCenter.value.copy(this.#gateCentre);
+    whiteout.uStrength.value = white;
+    whiteout.uGrow.value = 0.75 + 0.9 * white + age * 0.9;
+    whiteout.uRainbow.value = rainbow ? 1 : 0;
+    whiteout.uColor.value.copy(this.#color);
+
+    this.post.blur = dive * decay;
+    this.post.aberration = (0.18 + 0.7 * dive) * decay;
+    this.#rumble = 0.06 * dive * decay;
+
+    const sky = this.#skyUniforms;
+    sky.uGlow.value = (0.04 + 0.22 * gateEnergy(gt) + pulse * 0.2) * decay;
+    sky.uGlowColor.value.copy(this.#color);
+    sky.uGlowPos.value.copy(this.#gateCentre);
+
+    if (!flying) {
+      return;
+    }
+
+    // The needle.
+    const path = needleProgress(u, hang);
+    needlePath(path, this.#scratch);
+    const unit = camera.position.distanceTo(this.#scratch) * SCREEN_UNIT;
     this.#head.position.copy(this.#scratch);
     this.#head.quaternion.copy(camera.quaternion);
-    this.#head.scale.setScalar(size);
+    this.#head.scale.setScalar(unit * ((hang ? 0.4 : 0.55) + 0.25 * path * path + pulse * 0.8));
     const head = this.#headUniforms;
     head.uColor.value.copy(this.#color);
     head.uCore.value.copy(this.#color2);
-    head.uIntensity.value = 0.55 + 0.25 * path + pulse * 0.5;
-    head.uFlare.value = 0.3 + pulse * 1.1;
+    head.uIntensity.value = 0.8 + 0.2 * path + pulse * 0.5;
+    head.uFlare.value = 0.4 + 0.3 * path + pulse * 1.1;
     head.uRainbow.value = rainbow ? 1 : 0;
     head.uTime.value = time;
 
-    // Trail: the star's own earlier positions.
+    // Trail: the needle's own earlier positions, seen from the front, so it rushes towards the viewer.
     for (let i = 0; i < TRAIL_SEGMENTS; i += 1) {
       const back = i / (TRAIL_SEGMENTS - 1);
-      const earlier = Math.max(0, u - back * TRAIL_TIME);
-      starPath(flightProgress(earlier, hang), this.#trail.points[i] ?? this.#scratch);
-      this.#trail.widths[i] = (0.42 + 0.55 * path) * (1 - back) ** 0.7;
+      const point = this.#trail.points[i];
+      if (point === undefined) {
+        continue;
+      }
+      needlePath(needleProgress(Math.max(0, u - back * TRAIL_TIME), hang), point);
+      this.#trail.widths[i] = camera.position.distanceTo(point) * SCREEN_UNIT * trailProfile(back) * (0.8 + 0.9 * path);
     }
     this.#trail.rebuild(camera.position);
     const trail = this.#trail.uniforms;
@@ -358,15 +614,28 @@ export class PullFx {
     trail.uIntensity.value = 1.0 + pulse * 0.5;
     trail.uRainbow.value = rainbow ? 1 : 0;
 
-    // The five threads, spiralling round the path and tightening round the star.
-    if (threadPower > 0) {
-      this.#updateThreads(frame, u, hang, threadPower);
+    if (hang) {
+      this.#updateThreads(frame, u, threadPower);
     }
 
-    const sky = this.#skyUniforms;
-    sky.uGlow.value = 0.12 + 0.6 * path + pulse * 0.25;
-    sky.uGlowColor.value.copy(this.#color);
-    sky.uGlowPos.value.set(0.5 + (this.#scratch.x / 24) * 0.5, 0.5 + (this.#scratch.y / 14) * 0.5);
+    // Sparks that stream off the needle, more for the better tiers.
+    const rank = tierRank(tier);
+    const sparks = Math.round(clamp01(delta * 60) * (1 + rank * 0.7) * (this.#quality === 'low' ? 0.5 : 1));
+    if (sparks > 0) {
+      const colors = tier === 'rainbow' ? HEARTS : [TIER_COLORS[tier].main, TIER_COLORS[tier].light];
+      const behind = needleProgress(Math.max(0, u - Math.random() * 0.05), hang);
+      needlePath(behind, this.#scratch);
+      this.#dust.emit({
+        count: sparks,
+        time,
+        origin: this.#scratch,
+        spread: unit * 0.9,
+        speed: [unit * 0.6, unit * 3.2],
+        life: [0.4, 1.1],
+        size: [unit * 0.08, unit * 0.26],
+        colors,
+      });
+    }
   }
 
   readonly #centre = new Vector3();
@@ -376,7 +645,8 @@ export class PullFx {
   readonly #up = new Vector3();
   readonly #worldUp = new Vector3(0, 1, 0);
 
-  #updateThreads(frame: FxFrame, u: number, hang: boolean, power: number): void {
+  /** The five Heart-coloured threads: they spiral round the path of the needle and tighten round it before it plunges. */
+  #updateThreads(frame: FxFrame, u: number, power: number): void {
     const fadeIn = smoothstep(0.1, 0.38, u) * (1 - smoothstep(0.985, 1, u));
     const tighten = smoothstep(0.5, 1, u);
     for (const [k, thread] of this.#threads.entries()) {
@@ -384,27 +654,28 @@ export class PullFx {
       for (let i = 0; i < THREAD_SEGMENTS; i += 1) {
         const back = i / (THREAD_SEGMENTS - 1);
         const earlier = Math.max(0, u - back * THREAD_TIME);
-        starPath(flightProgress(earlier, hang), this.#centre);
-        starPath(flightProgress(Math.min(1, earlier + 0.01), hang), this.#ahead);
+        needlePath(needleProgress(earlier, true), this.#centre);
+        needlePath(needleProgress(Math.min(1, earlier + 0.01), true), this.#ahead);
         this.#tangent.subVectors(this.#ahead, this.#centre);
         if (this.#tangent.lengthSq() < 1e-10) {
-          this.#tangent.set(0.5, -0.4, 1);
+          this.#tangent.set(0.5, -0.4, -1);
         }
         this.#tangent.normalize();
         this.#right.crossVectors(this.#tangent, this.#worldUp).normalize();
         this.#up.crossVectors(this.#right, this.#tangent);
+        const around = frame.camera.position.distanceTo(this.#centre) * SCREEN_UNIT;
         const angle = phase + back * 9 - frame.time * 2.4;
-        const radius = (0.5 + 1.6 * back) * (1 - tighten * 0.93);
+        const radius = around * (0.8 + 2.4 * back) * (1 - tighten * 0.93);
         const point = thread.points[i] ?? this.#centre;
         point.copy(this.#centre).addScaledVector(this.#right, Math.cos(angle) * radius).addScaledVector(this.#up, Math.sin(angle) * radius);
-        thread.widths[i] = (0.3 + 0.3 * (1 - back)) * (1 - back) ** 0.35;
+        thread.widths[i] = around * (0.15 + 0.15 * (1 - back)) * (1 - back) ** 0.35;
       }
       thread.rebuild(frame.camera.position);
       const heart = HEARTS[k] ?? WHITE;
       thread.uniforms.uColor.value.copy(heart);
       thread.uniforms.uCore.value.copy(heart).lerp(WHITE, 0.55);
       thread.uniforms.uTime.value = frame.time;
-      thread.uniforms.uIntensity.value = 2.1 * power * fadeIn;
+      thread.uniforms.uIntensity.value = 1.5 * power * fadeIn;
       thread.uniforms.uRainbow.value = 0;
     }
   }
@@ -418,7 +689,7 @@ export class PullFx {
       const rainbow = this.#setTierColor(this.#impactTier, time, this.#color, this.#color2);
       rays.uColor.value.copy(this.#color);
       rays.uRainbow.value = rainbow ? 1 : 0;
-      rays.uIntensity.value = strength * 0.85 * Math.exp(-t * 1.6) * smoothstep(0, 0.06, t);
+      rays.uIntensity.value = strength * 0.85 * Math.exp(-t * 2.2) * smoothstep(0, 0.06, t);
       rays.uTime.value = time;
       this.#impactRays.visible = rays.uIntensity.value > 0.003;
       this.#impactRays.position.copy(IMPACT_POINT);
@@ -454,6 +725,57 @@ export class PullFx {
       ring.uniforms.uRainbow.value = rainbow ? 1 : 0;
       ring.uniforms.uTime.value = frame.time;
     });
+  }
+
+  /** The ceremony of Art Rare and better: a black screen, a thin line, and one star after the other lights up on it. */
+  #updateCeremony(frame: FxFrame): void {
+    const active = frame.state.phase === 'ceremony';
+    this.#ceremony.visible = active;
+    if (!active) {
+      this.#starsFired = 0;
+      return;
+    }
+    const stars = ceremonyFor(frame.mode, frame.best);
+    const beats = ceremonyBeats(stars);
+    const t = frame.state.time;
+    const tier = tierOf(frame.best);
+    const rainbow = tier === 'rainbow';
+    const base = rainbow ? TIER_COLORS.gold.light : TIER_COLORS[tier].main;
+
+    const ceremony = this.#ceremonyUniforms;
+    ceremony.uTime.value = frame.time;
+    ceremony.uAspect.value = frame.aspect;
+    ceremony.uCount.value = stars;
+    ceremony.uDraw.value = smoothstep(beats.lineFrom, beats.lineTo, t);
+    ceremony.uSpike.value = easeOutCubic(smoothstep(beats.spike, beats.spike + 0.35, t));
+    ceremony.uFade.value = 1 - smoothstep(beats.fadeFrom, beats.duration, t);
+    ceremony.uHearts.value = rainbow ? 1 : 0;
+    ceremony.uColor.value.copy(base);
+    for (let i = 0; i < 5; i += 1) {
+      const since = t - (beats.firstStar + i * beats.starGap);
+      ceremony.uLit.value[i] = smoothstep(0, 0.16, since);
+      ceremony.uPop.value[i] = since > 0 ? Math.exp(-since * 7) : 0;
+    }
+
+    // A puff of sparks where each star lights up. The line is as wide as the ornament in the shader (see GAP there).
+    const fit = Math.min(1, 0.8 * frame.aspect);
+    const halfHeight = Math.tan(MathUtils.degToRad(frame.camera.fov / 2)) * frame.camera.position.z;
+    const colors = rainbow ? HEARTS : [base, TIER_COLORS.gold.light];
+    while (this.#starsFired < stars && t >= beats.firstStar + this.#starsFired * beats.starGap) {
+      const x = (this.#starsFired - 0.5 * (stars - 1)) * 0.24 * fit * halfHeight;
+      this.#scratch.set(x, 0.27, 0);
+      const burstColors = rainbow ? [HEARTS[this.#starsFired] ?? WHITE, WHITE] : colors;
+      this.#motes.emit({ count: this.#quality === 'low' ? 10 : 22, time: frame.time, origin: this.#scratch, spread: 0.1, speed: [0.5, 2.6], life: [0.7, 1.5], size: [0.04, 0.1], colors: burstColors });
+      this.#starsFired += 1;
+    }
+
+    // Golden dust that drifts up through the whole picture.
+    this.#moteClock += frame.delta;
+    if (this.#moteClock > 0.05 && this.#quality !== 'low') {
+      this.#moteClock = 0;
+      this.#scratch.set((Math.random() - 0.5) * 2 * halfHeight * frame.aspect * 0.9, (Math.random() - 0.5) * halfHeight * 1.8, 0);
+      this.#motes.emit({ count: 2, time: frame.time, origin: this.#scratch, spread: 0.4, speed: [0.1, 0.45], life: [1.6, 3.2], size: [0.025, 0.07], colors, drift: this.#drift });
+    }
   }
 
   #updateStage(frame: FxFrame, showingCard: boolean, tier: Tier, cardIntensity: number): void {
@@ -494,12 +816,6 @@ export class PullFx {
     const sky = this.#skyUniforms;
     if (showingCard) {
       sky.uGlow.value = 0.15 + intensity * 0.55;
-    } else if (frame.state.phase === 'impact') {
-      const t = frame.time - this.#impactStart;
-      sky.uGlow.value = this.#impactStrength * 0.6 * Math.exp(-Math.max(t, 0) * 1.3);
-      this.#setTierColor(this.#impactTier, frame.time, this.#color, this.#color2);
-      sky.uGlowColor.value.copy(this.#color);
-      sky.uGlowPos.value.set(0.5, 0.5);
     } else if (frame.state.phase === 'summary') {
       sky.uGlow.value *= 0.96;
     }
@@ -530,9 +846,7 @@ export class PullFx {
   }
 
   dispose(): void {
-    this.#sky.geometry.dispose();
-    this.#sky.material.dispose();
-    for (const mesh of [this.#head, this.#impactRays, this.#stageRays, this.#halo, this.#flash]) {
+    for (const mesh of [this.#sky, this.#storm, this.#streaks, this.#gate, this.#whiteout, this.#ceremony, this.#head, this.#impactRays, this.#stageRays, this.#halo, this.#flash]) {
       mesh.geometry.dispose();
       mesh.material.dispose();
     }
@@ -546,6 +860,6 @@ export class PullFx {
     }
     this.#burst.dispose();
     this.#motes.dispose();
+    this.#dust.dispose();
   }
 }
-

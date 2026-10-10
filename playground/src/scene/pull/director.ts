@@ -4,7 +4,7 @@
 
 import type { Rarity } from '../../cards/model';
 import { RARITY_IDS } from '../../cards/model';
-import { rarityRank, revealLook, threadStrength } from './palette';
+import { ceremonyStars, rarityRank, revealLook, threadStrength } from './palette';
 
 /** How much show the player wants: all of it, a short version, or none (cards are revealed straight away). */
 export type PullMode = 'full' | 'short' | 'off';
@@ -15,9 +15,10 @@ export interface ShowPack {
 }
 
 export type Phase =
-  | 'intro' // the sky fades in
-  | 'flight' // the shooting star falls (and the five threads weave in for the best packs)
-  | 'impact' // flash, shock waves, burst
+  | 'intro' // the camera falls into a storm
+  | 'flight' // a needle of light dives into the gate (and the five threads weave in for the best packs)
+  | 'impact' // white-out, flash, shock waves, burst
+  | 'ceremony' // black screen, the stars of the best card light up one by one (Art Rare and better, full show only)
   | 'enter' // the next card slides in face down
   | 'flip' // the card turns over
   | 'show' // the card waits for a tap
@@ -61,13 +62,42 @@ interface Timing {
 }
 
 const TIMING: Readonly<Record<PullMode, Timing>> = {
-  full: { intro: 0.9, flight: 2.7, impact: 1.0, enter: 0.6, exit: 0.4, flip: 1 },
+  full: { intro: 1.6, flight: 2.7, impact: 1.0, enter: 0.6, exit: 0.4, flip: 1 },
   short: { intro: 0.15, flight: 1.1, impact: 0.55, enter: 0.3, exit: 0.3, flip: 0.55 },
   off: { intro: 0, flight: 0, impact: 0, enter: 0.25, exit: 0.2, flip: 0.3 },
 };
 
 /** Extra flight time for the packs that bring the five threads. */
 const THREAD_EXTRA_SECONDS = 1.1;
+
+/** How many stars the ceremony of a pack lights in this mode (0 when there is no ceremony). Only the full show has one. */
+export function ceremonyFor(mode: PullMode, best: Rarity): number {
+  return mode === 'full' ? ceremonyStars(best) : 0;
+}
+
+/** The beats of a ceremony in seconds from its start. The scene draws them and the sound plays along. */
+export interface CeremonyBeats {
+  readonly stars: number;
+  /** The thin line is drawn from the middle outwards between these two times. */
+  readonly lineFrom: number;
+  readonly lineTo: number;
+  /** The spike in the middle shoots up. */
+  readonly spike: number;
+  /** Star `i` lights at `firstStar + i * starGap`. */
+  readonly firstStar: number;
+  readonly starGap: number;
+  /** Everything fades out between `fadeFrom` and `duration`. */
+  readonly fadeFrom: number;
+  readonly duration: number;
+}
+
+export function ceremonyBeats(stars: number): CeremonyBeats {
+  const firstStar = 0.75;
+  const starGap = 0.3;
+  const lastStar = firstStar + starGap * Math.max(0, stars - 1);
+  const fadeFrom = lastStar + 0.85;
+  return { stars, lineFrom: 0.15, lineTo: 0.75, spike: 0.6, firstStar, starGap, fadeFrom, duration: fadeFrom + 0.35 };
+}
 
 export function phaseDuration(mode: PullMode, pack: ShowPack, phase: Phase, cardIndex: number): number {
   const timing = TIMING[mode];
@@ -78,6 +108,10 @@ export function phaseDuration(mode: PullMode, pack: ShowPack, phase: Phase, card
       return timing.flight === 0 ? 0 : timing.flight + (mode === 'full' && threadStrength(bestRarity(pack)) > 0 ? THREAD_EXTRA_SECONDS : 0);
     case 'impact':
       return timing.impact;
+    case 'ceremony': {
+      const stars = ceremonyFor(mode, bestRarity(pack));
+      return stars === 0 ? 0 : ceremonyBeats(stars).duration;
+    }
     case 'enter':
       return timing.enter;
     case 'flip': {
@@ -102,6 +136,8 @@ function following(packs: readonly ShowPack[], state: DirectorState, mode: PullM
     case 'flight':
       return { phase: 'impact', pack: state.pack, card: 0 };
     case 'impact':
+      return { phase: pack !== undefined && ceremonyFor(mode, bestRarity(pack)) > 0 ? 'ceremony' : 'enter', pack: state.pack, card: 0 };
+    case 'ceremony':
       return { phase: 'enter', pack: state.pack, card: 0 };
     case 'enter':
       return { phase: 'flip', pack: state.pack, card: state.card };
@@ -173,7 +209,7 @@ export function advance(packs: readonly ShowPack[], mode: PullMode, state: Direc
   return { state: current, events };
 }
 
-/** A tap on the screen: skips the cinematic, finishes a flip, or sends the shown card away. */
+/** A tap on the screen: skips the cinematic one beat at a time, finishes a flip, or sends the shown card away. */
 export function tap(packs: readonly ShowPack[], mode: PullMode, state: DirectorState): Advance {
   switch (state.phase) {
     case 'intro':
@@ -182,9 +218,12 @@ export function tap(packs: readonly ShowPack[], mode: PullMode, state: DirectorS
       const impact: DirectorState = { ...state, phase: 'impact', time: 0 };
       return { state: impact, events: phaseEvents(state, impact) };
     }
-    case 'impact': {
-      const enter: DirectorState = { ...state, phase: 'enter', time: 0, card: 0 };
-      return { state: enter, events: phaseEvents(state, enter) };
+    case 'impact':
+    case 'ceremony': {
+      // The burst leads to the ceremony (when the pack has one) and the ceremony leads to the first card, so a second quick
+      // tap does not skip the best moment of a good pack by accident.
+      const next: DirectorState = { ...following(packs, state, mode), time: 0 };
+      return { state: next, events: phaseEvents(state, next) };
     }
     case 'enter':
     case 'flip': {
@@ -216,7 +255,7 @@ export function skipAll(state: DirectorState): Advance {
 
 /** True while the cinematic (before the first card of a pack) is running. */
 export function isCinematic(phase: Phase): boolean {
-  return phase === 'intro' || phase === 'flight' || phase === 'impact';
+  return phase === 'intro' || phase === 'flight' || phase === 'impact' || phase === 'ceremony';
 }
 
 /** Progress 0..1 through the current phase (1 when the phase has no end). */
