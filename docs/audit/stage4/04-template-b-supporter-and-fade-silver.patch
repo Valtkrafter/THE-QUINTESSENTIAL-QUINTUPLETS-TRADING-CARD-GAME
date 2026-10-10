@@ -1,0 +1,196 @@
+diff --git a/src/cardface/classicFrame.ts b/src/cardface/classicFrame.ts
+index c6e496e..e47e331 100644
+--- a/src/cardface/classicFrame.ts
++++ b/src/cardface/classicFrame.ts
+@@ -19,7 +19,7 @@ import {
+   type Painter,
+   type Rect,
+ } from './paint';
+-import { LIGHT_INK, drawArea, fitArea, metaRow, rulesRows, statsRow } from './rules';
++import { LIGHT_INK, STATS_SLOT, drawArea, fitArea, metaRow, rulesRows, statsRow } from './rules';
+ 
+ // Classic frame, modelled on the Weiß Schwarz look: a pearl border, art filling the card, a white
+ // level box top left, a white HP box top right, a translucent white text box and a rounded name
+@@ -35,7 +35,9 @@ const PANEL_BOTTOM = FACE_HEIGHT - SAFE;
+  * Fixed height of the rules text box, like a printed template: it never moves. 276px is the tallest
+  * content in the current set (two moves, one with a two-line effect). Longer text shrinks, see SCALE_STEPS.
+  */
+-const BOX_HEIGHT = 276;
++const BOX_HEIGHT_A = 276;
++/** Template B (Supporter): the same box without the stats slot, so there is no empty stat gap. */
++const BOX_HEIGHT_B = BOX_HEIGHT_A - STATS_SLOT;
+ const BOX_PAD_Y = 18;
+ const FOOTER_PAD_Y = 14;
+ const NAME_ROW = 84;
+@@ -220,14 +222,15 @@ export function drawClassicFrame(painter: Painter, card: Card): void {
+   const { ctx } = painter;
+   const footerHeight = FOOTER_PAD_Y * 2 + NAME_ROW + 10 + 30;
+   const footer = { x: PANEL_X, y: PANEL_BOTTOM - footerHeight, w: PANEL_WIDTH, h: footerHeight };
+-  const box = { x: PANEL_X, y: footer.y - GAP - BOX_HEIGHT, w: PANEL_WIDTH, h: BOX_HEIGHT };
++  const boxHeight = card.kind === 'character' ? BOX_HEIGHT_A : BOX_HEIGHT_B;
++  const box = { x: PANEL_X, y: footer.y - GAP - boxHeight, w: PANEL_WIDTH, h: boxHeight };
+ 
+   // Rules text on top, weakness / resistance / retreat pinned to the bottom edge of the box.
+   const area = fitArea(
+     [],
+     (scale) => rulesRows(ctx, card, TEXT_WIDTH, INK, scale),
+     card.kind === 'character' ? [statsRow(ctx, card, INK)] : [],
+-    BOX_HEIGHT - BOX_PAD_Y * 2,
++    boxHeight - BOX_PAD_Y * 2,
+     card.kind === 'supporter',
+   );
+   if (!area.fits) {
+diff --git a/src/cardface/composeCardFace.ts b/src/cardface/composeCardFace.ts
+index a24dd2a..3c96ecf 100644
+--- a/src/cardface/composeCardFace.ts
++++ b/src/cardface/composeCardFace.ts
+@@ -11,6 +11,7 @@ import {
+   PAD,
+   RADIUS,
+   SAFE,
++  SILVER,
+   TEXT_WIDTH,
+   TYPE,
+   centeredBaseline,
+@@ -24,14 +25,19 @@ import {
+   type Painter,
+   type Rect,
+ } from './paint';
+-import { LIGHT_INK, ROW_GAP, darkInk, drawArea, fitArea, metaRow, rulesRows, statsRow, type Ink, type Row } from './rules';
++import { LIGHT_INK, ROW_GAP, STATS_SLOT, darkInk, drawArea, fitArea, metaRow, rulesRows, statsRow, type Ink, type Row } from './rules';
+ 
+ export { FACE_HEIGHT, FACE_WIDTH } from './paint';
+ 
+ const MASK_SCALE = 0.5;
+ const AREA_BOTTOM = FACE_HEIGHT - SAFE;
+-/** Fixed height of the text area, like a printed template. 442px is the tallest content in the current set. */
+-const AREA_HEIGHT = 442;
++/**
++ * Fixed height of the text area, like a printed template. Two templates: A for Characters (442px, the tallest
++ * content in the current set) and B for Supporters.
++ */
++const AREA_HEIGHT_A = 442;
++/** Template B (Supporter): the same area without the stats slot, so there is no empty stat gap. */
++const AREA_HEIGHT_B = AREA_HEIGHT_A - STATS_SLOT;
+ const AREA_PAD_Y = 20;
+ const HEADER_ROW = 56;
+ const PAPER = '#f8f5ee';
+@@ -91,6 +97,10 @@ function titleRow(ctx: CanvasRenderingContext2D, card: Card, titleColor: string,
+   };
+ }
+ 
++function areaHeightFor(card: Card): number {
++  return card.kind === 'character' ? AREA_HEIGHT_A : AREA_HEIGHT_B;
++}
++
+ /** Name and title pinned to the top, stats and credits pinned to the bottom, rules text in between. */
+ function buildTextArea(painter: Painter, card: Card, ink: Ink) {
+   const { ctx, style, accent } = painter;
+@@ -104,7 +114,7 @@ function buildTextArea(painter: Painter, card: Card, ink: Ink) {
+     bottom.push(statsRow(ctx, card, ink));
+   }
+   bottom.push({ ...metaRow(ctx, card, TEXT_WIDTH, ink), ruleBefore: true });
+-  const area = fitArea(top, (scale) => rulesRows(ctx, card, TEXT_WIDTH, ink, scale), bottom, AREA_HEIGHT - AREA_PAD_Y * 2, card.kind === 'supporter');
++  const area = fitArea(top, (scale) => rulesRows(ctx, card, TEXT_WIDTH, ink, scale), bottom, areaHeightFor(card) - AREA_PAD_Y * 2, card.kind === 'supporter');
+   if (!area.fits) {
+     console.warn(`Card ${card.id}: rules text overflows the fixed text area even at ${area.scale}x. Shorten it.`);
+   }
+@@ -142,10 +152,10 @@ function drawTextAreaBackground(painter: Painter, area: Rect): void {
+     fade.addColorStop(1, 'rgba(8, 6, 14, 0.96)');
+     ctx.fillStyle = fade;
+     ctx.fillRect(0, top, FACE_WIDTH, FACE_HEIGHT - top);
+-    const gold = ctx.createLinearGradient(area.x + PAD, 0, area.x + area.w * 0.7, 0);
+-    gold.addColorStop(0, 'rgba(230, 194, 122, 0.95)');
+-    gold.addColorStop(1, 'rgba(230, 194, 122, 0)');
+-    ctx.fillStyle = gold;
++    const rule = ctx.createLinearGradient(area.x + PAD, 0, area.x + area.w * 0.7, 0);
++    rule.addColorStop(0, 'rgba(223, 226, 238, 0.95)');
++    rule.addColorStop(1, 'rgba(223, 226, 238, 0)');
++    ctx.fillStyle = rule;
+     ctx.fillRect(area.x + PAD, area.y + 4, area.w * 0.6, 2);
+     protect(painter, { x: 0, y: area.y - 30, w: FACE_WIDTH, h: FACE_HEIGHT - area.y + 30 }, 0);
+   } else {
+@@ -231,9 +241,9 @@ function drawBadge(painter: Painter, card: Card): Badge {
+     ctx.fillStyle = 'rgba(10, 8, 18, 0.5)';
+     ctx.fill();
+     const ring = ctx.createLinearGradient(cx - radius, cy - radius, cx + radius, cy + radius);
+-    ring.addColorStop(0, '#fff1c4');
+-    ring.addColorStop(0.5, '#e6c27a');
+-    ring.addColorStop(1, '#a8741c');
++    ring.addColorStop(0, SILVER.light);
++    ring.addColorStop(0.5, SILVER.mid);
++    ring.addColorStop(1, SILVER.dark);
+     ctx.strokeStyle = ring;
+     ctx.lineWidth = 3.5;
+     ctx.stroke();
+@@ -302,7 +312,7 @@ function drawHp(painter: Painter, card: CharacterCard, centerY: number): void {
+   const numberWidth = ctx.measureText(number).width;
+   ctx.textAlign = 'right';
+   outlinedText(ctx, number, numberRight, centeredBaseline(centerY, size), numberFont, '#ffffff', style === 'paper' ? 9 : 6);
+-  outlinedText(ctx, 'HP', numberRight - numberWidth - 10, centeredBaseline(centerY, 28) + 6, `900 28px ${LATIN}`, style === 'paper' ? '#ffffff' : '#f3d79a', 6);
++  outlinedText(ctx, 'HP', numberRight - numberWidth - 10, centeredBaseline(centerY, 28) + 6, `900 28px ${LATIN}`, style === 'paper' ? '#ffffff' : SILVER.label, 6);
+   ctx.textAlign = 'left';
+   const left = numberRight - numberWidth - 60;
+   protect(painter, { x: left, y: centerY - 50, w: right - left + 6, h: 100 }, RADIUS);
+@@ -332,7 +342,8 @@ export function composeCardFace(card: Card, art: HTMLImageElement | null, style:
+ 
+   const ink = style === 'paper' ? LIGHT_INK : darkInk(accent);
+   const content = buildTextArea(painter, card, ink);
+-  const area = { x: SAFE, y: AREA_BOTTOM - AREA_HEIGHT, w: FACE_WIDTH - SAFE * 2, h: AREA_HEIGHT };
++  const areaHeight = areaHeightFor(card);
++  const area = { x: SAFE, y: AREA_BOTTOM - areaHeight, w: FACE_WIDTH - SAFE * 2, h: areaHeight };
+ 
+   if (card.signed) {
+     drawSignature(painter, card, area.y);
+diff --git a/src/cardface/paint.ts b/src/cardface/paint.ts
+index bcc7845..1a16d4e 100644
+--- a/src/cardface/paint.ts
++++ b/src/cardface/paint.ts
+@@ -31,8 +31,8 @@ export const TYPE = {
+   title: 26,
+   body: 26,
+   stat: 26,
+-  /** Supporter effect text, the main content of a Supporter card. */
+-  effect: 28,
++  /** Supporter effect text: Template B is built around it, so it is set larger than rules text. */
++  effect: 32,
+   abilityName: 32,
+   moveName: 32,
+   /** English name in the Classic name panel. */
+@@ -51,6 +51,12 @@ export function centeredBaseline(centerY: number, size: number): number {
+   return centerY + size * 0.36;
+ }
+ 
++/**
++ * Polished silver, used where the Fade frame used to use gold. True gold is reserved for hot-stamped
++ * signatures and Ichika's Heart colour.
++ */
++export const SILVER = { light: '#f4f5fa', mid: '#a4a9bd', dark: '#6e7388', label: '#dfe2ee' } as const;
++
+ export const LATIN = '"Segoe UI", "Yu Gothic UI", system-ui, sans-serif';
+ export const JAPANESE = '"Yu Gothic UI", "Yu Gothic", Meiryo, "Noto Sans JP", sans-serif';
+ const SCRIPT = '"Segoe Script", "Ink Free", "Brush Script MT", cursive';
+diff --git a/src/cardface/rules.ts b/src/cardface/rules.ts
+index e1f84b4..61a4c05 100644
+--- a/src/cardface/rules.ts
++++ b/src/cardface/rules.ts
+@@ -40,6 +40,10 @@ export interface Row {
+ 
+ /** Vertical space between rows; rules sit in its middle. */
+ export const ROW_GAP = 14;
++/** Height of the weakness / resistance / retreat row. */
++export const STATS_ROW_HEIGHT = 40;
++/** Space a Character template reserves for the stats row. Supporter template B does not have it. */
++export const STATS_SLOT = STATS_ROW_HEIGHT + ROW_GAP;
+ // Tag fills chosen so white text passes 4.5:1 (was 4.47 and 3.02).
+ const ABILITY_RED = '#c8283f';
+ const SUPPORTER_ORANGE = '#b45309';
+@@ -157,7 +161,7 @@ export function rulesRows(ctx: CanvasRenderingContext2D, card: Card, width: numb
+ 
+ /** Weakness, resistance and retreat cost, spelled out. */
+ export function statsRow(ctx: CanvasRenderingContext2D, card: CharacterCard, ink: Ink): Row {
+-  const height = 40;
++  const height = STATS_ROW_HEIGHT;
+   return {
+     height,
+     ruleBefore: true,

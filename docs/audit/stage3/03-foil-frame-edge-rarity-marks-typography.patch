@@ -1,0 +1,526 @@
+diff --git a/src/cardface/classicFrame.ts b/src/cardface/classicFrame.ts
+index ee4937c..c6e496e 100644
+--- a/src/cardface/classicFrame.ts
++++ b/src/cardface/classicFrame.ts
+@@ -1,4 +1,5 @@
+ import { STAGES, type Card, type Stage } from '../cards/model';
++import { FRAME_BORDER_PX } from '../holo/frames';
+ import { darken, drawGlyph, lighten, readableOn, withAlpha } from './glyphs';
+ import {
+   FACE_HEIGHT,
+@@ -24,7 +25,7 @@ import { LIGHT_INK, drawArea, fitArea, metaRow, rulesRows, statsRow } from './ru
+ // level box top left, a white HP box top right, a translucent white text box and a rounded name
+ // panel, all inset by SAFE. Everything is flat print: solid fills and crisp keylines, no shadows.
+ 
+-const BORDER = 24;
++const BORDER = FRAME_BORDER_PX.classic;
+ const INNER: Rect = { x: BORDER, y: BORDER, w: FACE_WIDTH - BORDER * 2, h: FACE_HEIGHT - BORDER * 2 };
+ const INNER_RADIUS = 20;
+ const PANEL_X = SAFE;
+@@ -44,8 +45,6 @@ const CORNER_W = 132;
+ const CORNER_BOX_H = 112;
+ const CHIP_H = 44;
+ const CHIP_GAP = 8;
+-const LEVEL_NUMERAL = 86;
+-const HP_NUMERAL = 64;
+ 
+ const STAGE_LEVEL: Readonly<Record<Stage, number>> = { basic: 1, close: 2, bride: 3 };
+ const INK = LIGHT_INK;
+@@ -131,8 +130,8 @@ function drawLevelCluster(painter: Painter, card: Card): void {
+     ctx.fillText('LV.', box.x + 14, box.y + 30);
+     ctx.fillStyle = INK.text;
+     ctx.textAlign = 'center';
+-    ctx.font = `900 ${LEVEL_NUMERAL}px ${LATIN}`;
+-    ctx.fillText(String(STAGE_LEVEL[card.stage]), box.x + box.w / 2 + 12, centeredBaseline(box.y + box.h / 2 + 6, LEVEL_NUMERAL));
++    ctx.font = `900 ${TYPE.level}px ${LATIN}`;
++    ctx.fillText(String(STAGE_LEVEL[card.stage]), box.x + box.w / 2 + 12, centeredBaseline(box.y + box.h / 2 + 6, TYPE.level));
+     ctx.textAlign = 'left';
+   } else {
+     drawGlyph(ctx, 'study', box.x + box.w / 2, box.y + box.h / 2, 70, INK.text);
+@@ -162,7 +161,7 @@ function drawHpCluster(painter: Painter, card: Card): void {
+ 
+   // Three-digit HP must fit the box: shrink the numeral rather than overflow.
+   const number = String(card.hp);
+-  let size = HP_NUMERAL;
++  let size: number = TYPE.hp;
+   ctx.font = `900 ${size}px ${LATIN}`;
+   while (ctx.measureText(number).width > box.w - 28 && size > 40) {
+     size -= 2;
+@@ -202,12 +201,12 @@ function drawFooter(painter: Painter, card: Card, panel: Rect): void {
+   ctx.font = `italic 600 ${TYPE.title}px ${LATIN}`;
+   ctx.fillText(`“${card.title}”`, left, centeredBaseline(rowTop + 24, TYPE.title));
+   ctx.fillStyle = INK.text;
+-  ctx.font = `800 32px ${LATIN}`;
+-  ctx.fillText(card.name.en, left, centeredBaseline(rowTop + 60, 32));
++  ctx.font = `800 ${TYPE.heading}px ${LATIN}`;
++  ctx.fillText(card.name.en, left, centeredBaseline(rowTop + 60, TYPE.heading));
+ 
+   ctx.textAlign = 'right';
+-  ctx.font = `800 50px ${JAPANESE}`;
+-  ctx.fillText(card.name.ja, right, centeredBaseline(middle, 50));
++  ctx.font = `800 ${TYPE.nameJa}px ${JAPANESE}`;
++  ctx.fillText(card.name.ja, right, centeredBaseline(middle, TYPE.nameJa));
+   ctx.textAlign = 'left';
+ 
+   const metaTop = rowTop + NAME_ROW + 10;
+diff --git a/src/cardface/composeCardFace.ts b/src/cardface/composeCardFace.ts
+index 2325e2b..a24dd2a 100644
+--- a/src/cardface/composeCardFace.ts
++++ b/src/cardface/composeCardFace.ts
+@@ -64,8 +64,8 @@ function headerRow(ctx: CanvasRenderingContext2D, card: Card, nameColor: string,
+       ctx.fillText(card.name.en, x, centeredBaseline(middle, TYPE.name));
+       ctx.textAlign = 'right';
+       ctx.fillStyle = jaColor;
+-      ctx.font = `700 36px ${JAPANESE}`;
+-      ctx.fillText(card.name.ja, x + TEXT_WIDTH, centeredBaseline(middle, 36));
++      ctx.font = `700 ${TYPE.name}px ${JAPANESE}`;
++      ctx.fillText(card.name.ja, x + TEXT_WIDTH, centeredBaseline(middle, TYPE.name));
+       ctx.textAlign = 'left';
+     },
+   };
+diff --git a/src/cardface/glyphs.ts b/src/cardface/glyphs.ts
+index 68b38e7..6fa122d 100644
+--- a/src/cardface/glyphs.ts
++++ b/src/cardface/glyphs.ts
+@@ -1,4 +1,4 @@
+-import type { Affinity } from '../cards/model';
++import type { Affinity, RarityShape } from '../cards/model';
+ 
+ /** Draws an affinity symbol centred on (x, y). `size` is roughly the glyph's width. */
+ export function drawGlyph(ctx: CanvasRenderingContext2D, affinity: Affinity, x: number, y: number, size: number, color: string): void {
+@@ -81,6 +81,58 @@ export function drawGlyph(ctx: CanvasRenderingContext2D, affinity: Affinity, x:
+   ctx.restore();
+ }
+ 
++/**
++ * Rarity marks as vector shapes, so every machine draws the same stamp (text symbols come from three
++ * different fonts). Returns the width used. Marks are `size` px tall and `size * 1.3` apart.
++ */
++export function drawRarityMarks(ctx: CanvasRenderingContext2D, shape: RarityShape, count: number, x: number, centerY: number, size: number, color: string): number {
++  const step = size * 1.3;
++  ctx.save();
++  ctx.fillStyle = color;
++  for (let index = 0; index < count; index += 1) {
++    const cx = x + size / 2 + index * step;
++    ctx.beginPath();
++    switch (shape) {
++      case 'circle':
++        ctx.arc(cx, centerY, size * 0.36, 0, Math.PI * 2);
++        break;
++      case 'diamond':
++        ctx.moveTo(cx, centerY - size / 2);
++        ctx.lineTo(cx + size * 0.4, centerY);
++        ctx.lineTo(cx, centerY + size / 2);
++        ctx.lineTo(cx - size * 0.4, centerY);
++        ctx.closePath();
++        break;
++      case 'star':
++        for (let point = 0; point < 10; point += 1) {
++          const radius = point % 2 === 0 ? size * 0.52 : size * 0.22;
++          const angle = -Math.PI / 2 + (point * Math.PI) / 5;
++          const px = cx + Math.cos(angle) * radius;
++          const py = centerY + 0.04 * size + Math.sin(angle) * radius;
++          if (point === 0) {
++            ctx.moveTo(px, py);
++          } else {
++            ctx.lineTo(px, py);
++          }
++        }
++        ctx.closePath();
++        break;
++      case 'sparkle':
++        // Four-point star with concave sides.
++        ctx.moveTo(cx, centerY - size * 0.56);
++        ctx.quadraticCurveTo(cx, centerY, cx + size * 0.56, centerY);
++        ctx.quadraticCurveTo(cx, centerY, cx, centerY + size * 0.56);
++        ctx.quadraticCurveTo(cx, centerY, cx - size * 0.56, centerY);
++        ctx.quadraticCurveTo(cx, centerY, cx, centerY - size * 0.56);
++        ctx.closePath();
++        break;
++    }
++    ctx.fill();
++  }
++  ctx.restore();
++  return size + (count - 1) * step;
++}
++
+ /** Print ink used for outlines and for glyphs on light fills. */
+ export const PRINT_INK = '#1b1824';
+ 
+diff --git a/src/cardface/paint.ts b/src/cardface/paint.ts
+index bc489e5..bcc7845 100644
+--- a/src/cardface/paint.ts
++++ b/src/cardface/paint.ts
+@@ -27,15 +27,23 @@ export const TEXT_WIDTH = FACE_WIDTH - SAFE * 2 - PAD * 2;
+ export const TYPE = {
+   credit: 18,
+   label: 20,
+-  meta: 21,
+-  title: 25,
++  meta: 20,
++  title: 26,
+   body: 26,
+-  bodyLine: 34,
+-  stat: 25,
+-  abilityName: 30,
+-  moveName: 34,
++  stat: 26,
++  /** Supporter effect text, the main content of a Supporter card. */
++  effect: 28,
++  abilityName: 32,
++  moveName: 32,
++  /** English name in the Classic name panel. */
++  heading: 32,
+   damage: 46,
++  /** Name in the Paper, Fade and Glass headers. */
+   name: 40,
++  /** Japanese name in the Classic name panel. */
++  nameJa: 50,
++  hp: 56,
++  level: 86,
+ } as const;
+ 
+ /** Baseline that vertically centres text of `size` on `centerY`. */
+@@ -143,20 +151,41 @@ export function drawGlass(painter: Painter, rect: Rect, radius: number): void {
+   ctx.restore();
+ }
+ 
++const CJK = /[\u3000-\u9fff\uff00-\uffef]/;
++/** Punctuation that must not start a line (kinsoku): it hangs at the end of the previous line instead. */
++const NO_LINE_START = '、。，．・！？）」』】〕〉》ー…';
++
++/**
++ * Splits text into wrap units: Latin words keep their trailing space, and every CJK character is its own
++ * unit, because Japanese has no spaces to break on.
++ */
++function wrapUnits(text: string): string[] {
++  const units: string[] = [];
++  for (const chunk of text.match(/\S+\s*|\s+/g) ?? []) {
++    if (!CJK.test(chunk)) {
++      units.push(chunk);
++    } else {
++      units.push(...(chunk.match(/[A-Za-z0-9'’.,%×−+-]+|[\s\S]/gu) ?? []));
++    }
++  }
++  return units;
++}
++
+ export function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
+   const lines: string[] = [];
+   let line = '';
+-  for (const word of text.split(' ')) {
+-    const candidate = line === '' ? word : `${line} ${word}`;
+-    if (line !== '' && ctx.measureText(candidate).width > maxWidth) {
+-      lines.push(line);
+-      line = word;
++  for (const unit of wrapUnits(text)) {
++    const candidate = line + unit;
++    const hangs = unit.length === 1 && NO_LINE_START.includes(unit);
++    if (line !== '' && !hangs && ctx.measureText(candidate.trimEnd()).width > maxWidth) {
++      lines.push(line.trimEnd());
++      line = unit.trimStart();
+     } else {
+       line = candidate;
+     }
+   }
+   if (line !== '') {
+-    lines.push(line);
++    lines.push(line.trimEnd());
+   }
+   return lines;
+ }
+diff --git a/src/cardface/rules.ts b/src/cardface/rules.ts
+index bfc3d0b..e1f84b4 100644
+--- a/src/cardface/rules.ts
++++ b/src/cardface/rules.ts
+@@ -1,7 +1,7 @@
+ import { SET_SIZE } from '../cards/catalog';
+ import { AFFINITY_INFO, CHARACTERS } from '../cards/characters';
+ import { RARITIES, type Ability, type Affinity, type Card, type CharacterCard, type Move } from '../cards/model';
+-import { drawAffinityCoin, lighten, withAlpha } from './glyphs';
++import { drawAffinityCoin, drawRarityMarks, lighten, withAlpha } from './glyphs';
+ import { JAPANESE, LATIN, TYPE, centeredBaseline, drawTag, wrapText } from './paint';
+ 
+ // Rules-text rows shared by every frame style, so abilities, moves and stats read the same everywhere.
+@@ -136,7 +136,7 @@ function supporterRows(ctx: CanvasRenderingContext2D, effect: string, width: num
+         ctx.fillText('Play only 1 Supporter card during your turn.', x + tagWidth + 12, centeredBaseline(y + head / 2, labelSize));
+       },
+     },
+-    paragraphRow(ctx, effect, width, ink.text, 28, 600, scale),
++    paragraphRow(ctx, effect, width, ink.text, TYPE.effect, 600, scale),
+   ];
+ }
+ 
+@@ -212,14 +212,17 @@ export function metaRow(ctx: CanvasRenderingContext2D, card: Card, width: number
+     draw(x, y) {
+       const middle = y + height / 2;
+       const rarity = RARITIES.find((entry) => entry.id === card.rarity);
+-      const code = `${card.set}-${String(card.number).padStart(3, '0')}/${SET_SIZE}  ${card.rarity} ${rarity?.symbol ?? ''}`;
++      const code = `${card.set}-${String(card.number).padStart(3, '0')}/${SET_SIZE}  ${card.rarity}`;
+       ctx.fillStyle = ink.text;
+       ctx.font = `800 ${TYPE.meta}px ${LATIN}`;
+       ctx.fillText(code, x, centeredBaseline(middle, TYPE.meta));
+-      const codeWidth = ctx.measureText(code).width;
++      let cursor = x + ctx.measureText(code).width + 10;
++      if (rarity !== undefined) {
++        cursor += drawRarityMarks(ctx, rarity.mark.shape, rarity.mark.count, cursor, middle, 20, ink.text) + 18;
++      }
+       ctx.fillStyle = ink.muted;
+       ctx.font = `600 ${TYPE.credit}px ${LATIN}`;
+-      ctx.fillText(`Illus. ${card.illustrator}`, x + codeWidth + 18, centeredBaseline(middle, TYPE.credit));
++      ctx.fillText(`Illus. ${card.illustrator}`, cursor, centeredBaseline(middle, TYPE.credit));
+ 
+       ctx.textAlign = 'right';
+       ctx.fillStyle = ink.text;
+diff --git a/src/cards/model.ts b/src/cards/model.ts
+index d4b401e..d83a850 100644
+--- a/src/cards/model.ts
++++ b/src/cards/model.ts
+@@ -28,16 +28,29 @@ export type SupportingId = (typeof SUPPORTING_CAST)[number];
+ 
+ export type CharacterId = SisterId | SupportingId;
+ 
+-/** Seven tiers, lowest first. `tier` doubles as the pull-rate bucket for the pack engine later. */
++export type RarityShape = 'circle' | 'diamond' | 'star' | 'sparkle';
++
++interface RarityDefinition {
++  readonly id: string;
++  readonly label: string;
++  readonly tier: number;
++  readonly symbol: string;
++  readonly mark: { readonly shape: RarityShape; readonly count: number };
++}
++
++/**
++ * Seven tiers, lowest first. `tier` doubles as the pull-rate bucket for the pack engine later.
++ * `mark` is drawn as vector shapes on the card face; `symbol` is the text form for lists and logs.
++ */
+ export const RARITIES = [
+-  { id: 'C', label: 'Common', tier: 1, symbol: '●' },
+-  { id: 'U', label: 'Uncommon', tier: 2, symbol: '◆' },
+-  { id: 'R', label: 'Rare', tier: 3, symbol: '★' },
+-  { id: 'RR', label: 'Double Rare', tier: 4, symbol: '★★' },
+-  { id: 'AR', label: 'Art Rare', tier: 5, symbol: '✦' },
+-  { id: 'SAR', label: 'Special Art Rare', tier: 6, symbol: '✦✦' },
+-  { id: 'UR', label: 'Ultra Rare', tier: 7, symbol: '✦✦✦' },
+-] as const;
++  { id: 'C', label: 'Common', tier: 1, symbol: '●', mark: { shape: 'circle', count: 1 } },
++  { id: 'U', label: 'Uncommon', tier: 2, symbol: '◆', mark: { shape: 'diamond', count: 1 } },
++  { id: 'R', label: 'Rare', tier: 3, symbol: '★', mark: { shape: 'star', count: 1 } },
++  { id: 'RR', label: 'Double Rare', tier: 4, symbol: '★★', mark: { shape: 'star', count: 2 } },
++  { id: 'AR', label: 'Art Rare', tier: 5, symbol: '✦', mark: { shape: 'sparkle', count: 1 } },
++  { id: 'SAR', label: 'Special Art Rare', tier: 6, symbol: '✦✦', mark: { shape: 'sparkle', count: 2 } },
++  { id: 'UR', label: 'Ultra Rare', tier: 7, symbol: '✦✦✦', mark: { shape: 'sparkle', count: 3 } },
++] as const satisfies readonly RarityDefinition[];
+ export type Rarity = (typeof RARITIES)[number]['id'];
+ 
+ /** Bond stages, the equivalent of Basic → Stage 1 → Stage 2. */
+diff --git a/src/holo/HoloCard.tsx b/src/holo/HoloCard.tsx
+index 74954b2..10bfbd8 100644
+--- a/src/holo/HoloCard.tsx
++++ b/src/holo/HoloCard.tsx
+@@ -4,6 +4,7 @@ import { MeshBasicMaterial, PlaneGeometry, Vector3, type Group, type Mesh, type
+ import { CARD_HEIGHT, CARD_THICKNESS, CARD_WIDTH, getCardGeometries } from './cardGeometry';
+ import { CardRig } from './cardRig';
+ import type { Finish } from './finishes';
++import { frameInsetUv } from './frames';
+ import type { HoloSettings } from './settings';
+ import type { CardTexture } from './textures';
+ 
+@@ -81,8 +82,9 @@ export function HoloCard({
+       maskIndex,
+       intensity: settings.intensity,
+       glare: settings.glare,
++      frameInset: frameInsetUv(settings.frameStyle),
+     });
+-  }, [rig, finish, maskIndex, settings.intensity, settings.glare]);
++  }, [rig, finish, maskIndex, settings.intensity, settings.glare, settings.frameStyle]);
+ 
+   useEffect(() => {
+     rig.setArt(art, mask, settings.artFit, settings.artFocus);
+diff --git a/src/holo/cardMaterials.ts b/src/holo/cardMaterials.ts
+index 8417d63..6ff8bdd 100644
+--- a/src/holo/cardMaterials.ts
++++ b/src/holo/cardMaterials.ts
+@@ -12,6 +12,7 @@ export type FrontUniforms = {
+   uHasMask: { value: number };
+   uMaskMode: { value: number };
+   uArtBox: { value: Vector4 };
++  uFrameInset: { value: Vector2 };
+   uFinish: { value: number };
+   uIntensity: { value: number };
+   uGlare: { value: number };
+@@ -46,6 +47,7 @@ export function createFrontShader(): CardShader<FrontUniforms> {
+     uHasMask: { value: 0 },
+     uMaskMode: { value: 0 },
+     uArtBox: { value: new Vector4(ART_BOX.minU, ART_BOX.minV, ART_BOX.maxU, ART_BOX.maxV) },
++    uFrameInset: { value: new Vector2(0, 0) },
+     uFinish: { value: 0 },
+     uIntensity: { value: 1 },
+     uGlare: { value: 0.6 },
+diff --git a/src/holo/cardRig.ts b/src/holo/cardRig.ts
+index dde7272..18453d3 100644
+--- a/src/holo/cardRig.ts
++++ b/src/holo/cardRig.ts
+@@ -36,6 +36,8 @@ export interface CardLook {
+   readonly maskIndex: number;
+   readonly intensity: number;
+   readonly glare: number;
++  /** Printed border width in card uv (x, y); see frames.ts. */
++  readonly frameInset: readonly [number, number];
+ }
+ 
+ export interface CardFrameInput {
+@@ -125,12 +127,13 @@ export class CardRig {
+     }
+   }
+ 
+-  setLook({ finishIndex, maskIndex, intensity, glare }: CardLook): void {
++  setLook({ finishIndex, maskIndex, intensity, glare, frameInset }: CardLook): void {
+     const uniforms = this.front.uniforms;
+     uniforms.uFinish.value = finishIndex;
+     uniforms.uMaskMode.value = maskIndex;
+     uniforms.uIntensity.value = intensity;
+     uniforms.uGlare.value = glare;
++    uniforms.uFrameInset.value.set(frameInset[0], frameInset[1]);
+     this.back.uniforms.uIntensity.value = intensity;
+   }
+ 
+diff --git a/src/holo/finishes.ts b/src/holo/finishes.ts
+index e967ea0..6d4e285 100644
+--- a/src/holo/finishes.ts
++++ b/src/holo/finishes.ts
+@@ -95,10 +95,13 @@ export function findFinish(id: FinishId): Finish {
+   return FINISHES.find((finish) => finish.id === id) ?? FINISHES[0];
+ }
+ 
+-/** `auto` uses the art's own mask when it has one (composed cards always do), else the finish default. */
+-export function resolveMaskIndex(setting: MaskSetting, finish: Finish, hasMask: boolean): number {
++/**
++ * `auto` uses the art's own mask when it has one (composed cards always do), else the finish default.
++ * "Frame edge" needs a frame: on borderless frame styles it falls back to the automatic choice.
++ */
++export function resolveMaskIndex(setting: MaskSetting, finish: Finish, hasMask: boolean, hasFrame: boolean): number {
+   const autoMode: MaskModeId = hasMask ? 'custom' : finish.defaultMask;
+-  const modeId = setting === 'auto' ? autoMode : setting;
++  const modeId = setting === 'auto' || (setting === 'frame' && !hasFrame) ? autoMode : setting;
+   return MASK_MODES.find((mode) => mode.id === modeId)?.shaderIndex ?? 0;
+ }
+ 
+diff --git a/src/holo/frames.ts b/src/holo/frames.ts
+new file mode 100644
+index 0000000..94656a8
+--- /dev/null
++++ b/src/holo/frames.ts
+@@ -0,0 +1,24 @@
++import { FACE_HEIGHT, FACE_WIDTH } from '../cardface/paint';
++import type { FrameStyle } from './settings';
++
++/**
++ * Width in face pixels of the printed border each frame style draws around the art (0 = no border).
++ * The Classic frame draws its pearl border from this value, and the shader's "Frame edge" foil region
++ * reads the same value, so the two can never drift apart.
++ */
++export const FRAME_BORDER_PX: Readonly<Record<FrameStyle, number>> = {
++  classic: 24,
++  paper: 0,
++  fade: 0,
++  glass: 0,
++};
++
++export function hasFrame(style: FrameStyle): boolean {
++  return FRAME_BORDER_PX[style] > 0;
++}
++
++/** Border width as a fraction of the card face (x, y), the unit the shader works in. */
++export function frameInsetUv(style: FrameStyle): readonly [number, number] {
++  const border = FRAME_BORDER_PX[style];
++  return [border / FACE_WIDTH, border / FACE_HEIGHT];
++}
+diff --git a/src/holo/shaders/cardFront.frag.glsl b/src/holo/shaders/cardFront.frag.glsl
+index 9f0e64d..bdb9456 100644
+--- a/src/holo/shaders/cardFront.frag.glsl
++++ b/src/holo/shaders/cardFront.frag.glsl
+@@ -4,6 +4,7 @@ uniform vec4 uMapTransform; // xy: scale, zw: offset (cover fit of the art onto
+ uniform float uHasMask;
+ uniform int uMaskMode;
+ uniform vec4 uArtBox; // xy: min uv, zw: max uv
++uniform vec2 uFrameInset; // printed border width in uv (x, y); the "Frame edge" foil region is everything outside it
+ uniform int uFinish;
+ uniform float uIntensity;
+ uniform float uGlare;
+@@ -18,12 +19,11 @@ varying vec2 vUv;
+ varying vec3 vLocalPosition;
+ 
+ const vec3 ART_BACKDROP = vec3(0.95, 0.94, 0.97);
+-const vec4 FRAME_INNER = vec4(0.045, 0.032, 0.955, 0.968);
+ 
+ float foilMask(vec2 uv, vec2 mapUv, float tone) {
+   if (uMaskMode == 1) return boxMask(uv, uArtBox);
+   if (uMaskMode == 2) return 1.0 - boxMask(uv, uArtBox);
+-  if (uMaskMode == 3) return 1.0 - boxMask(uv, FRAME_INNER);
++  if (uMaskMode == 3) return 1.0 - boxMask(uv, vec4(uFrameInset, 1.0 - uFrameInset));
+   if (uMaskMode == 4) return smoothstep(0.42, 0.8, tone);
+   if (uMaskMode == 5) return uHasMask > 0.5 ? texture2D(uMask, mapUv).r : 0.0;
+   return 1.0;
+@@ -201,7 +201,8 @@ void main() {
+   else color = shadePrint(base, V, L);
+ 
+   // Signature layer (mask green channel) is always gold foil, whatever the finish.
+-  float signature = uHasMask > 0.5 ? texture2D(uMask, mapUv).g : 0.0;
++  // The mask is half resolution: tighten its soft edge so the foil follows the letter shapes.
++  float signature = uHasMask > 0.5 ? smoothstep(0.3, 0.7, texture2D(uMask, mapUv).g) : 0.0;
+   color = mix(color, goldFoil(uv, V, L, 0.8), signature);
+ 
+   // Soft light that follows the pointer while the card is hovered.
+diff --git a/src/scene/Stage.tsx b/src/scene/Stage.tsx
+index 70f7ca1..93b9df2 100644
+--- a/src/scene/Stage.tsx
++++ b/src/scene/Stage.tsx
+@@ -5,6 +5,7 @@ import { useComposedCard } from '../cardface/useComposedCard';
+ import type { Card } from '../cards/model';
+ import { CARD_HEIGHT, CARD_WIDTH } from '../holo/cardGeometry';
+ import { FINISHES, findFinish, resolveMaskIndex, type Finish, type FinishId } from '../holo/finishes';
++import { hasFrame } from '../holo/frames';
+ import { HoloCard } from '../holo/HoloCard';
+ import type { HoloSettings, ViewMode } from '../holo/settings';
+ import {
+@@ -163,7 +164,7 @@ function Scene({
+             key={finish.id}
+             position={position}
+             finish={finish}
+-            maskIndex={resolveMaskIndex(settings.maskSetting, finish, mask !== null)}
++            maskIndex={resolveMaskIndex(settings.maskSetting, finish, mask !== null, hasFrame(settings.frameStyle))}
+             art={art}
+             mask={mask}
+             back={back}
+@@ -181,7 +182,7 @@ function Scene({
+           key="inspect"
+           position={[0, 0, 0]}
+           finish={inspectedFinish}
+-          maskIndex={resolveMaskIndex(settings.maskSetting, inspectedFinish, mask !== null)}
++          maskIndex={resolveMaskIndex(settings.maskSetting, inspectedFinish, mask !== null, hasFrame(settings.frameStyle))}
+           art={art}
+           mask={mask}
+           back={back}
+diff --git a/src/ui/ControlPanel.tsx b/src/ui/ControlPanel.tsx
+index da247e1..0c0e4f3 100644
+--- a/src/ui/ControlPanel.tsx
++++ b/src/ui/ControlPanel.tsx
+@@ -3,6 +3,7 @@ import type { CardId } from '../cards/model';
+ import type { Selection } from '../cards/selection';
+ import { CardBrowser } from './CardBrowser';
+ import type { ArtLibrary } from '../cards/artLibrary';
++import { hasFrame } from '../holo/frames';
+ import { FINISHES, LAYOUT_MASK_MODES, MASK_MODES, findFinish, isMaskSetting, type FinishId } from '../holo/finishes';
+ import type { FrameStyle, HoloSettings, ViewMode } from '../holo/settings';
+ 
+@@ -116,7 +117,7 @@ export function ControlPanel({
+           <span className="field__label">Foil region</span>
+           <select value={settings.maskSetting} onChange={handleMaskChange}>
+             <option value="auto">Per finish (default)</option>
+-            {MASK_MODES.filter((maskMode) => !LAYOUT_MASK_MODES.has(maskMode.id)).map((maskMode) => {
++            {MASK_MODES.filter((maskMode) => !LAYOUT_MASK_MODES.has(maskMode.id) && (maskMode.id !== 'frame' || hasFrame(settings.frameStyle))).map((maskMode) => {
+               const unavailable = maskMode.id === 'custom' && !hasCustomMask;
+               return (
+                 <option key={maskMode.id} value={maskMode.id} disabled={unavailable}>

@@ -1,0 +1,163 @@
+diff --git a/src/cardface/fonts.ts b/src/cardface/fonts.ts
+new file mode 100644
+index 0000000..f1d6a11
+--- /dev/null
++++ b/src/cardface/fonts.ts
+@@ -0,0 +1,36 @@
++import { CHARACTERS } from '../cards/characters';
++import { STAGES, type Card } from '../cards/model';
++
++// Fonts are bundled (see main.tsx imports), so a card face looks identical on every machine.
++export const LATIN_FAMILY = 'Inter Variable';
++export const JAPANESE_FAMILY = 'Noto Sans JP Variable';
++
++/** Characters every face can draw regardless of the card: labels, digits and typographic symbols. */
++const COMMON_TEXT = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 ×−—–“”’‘·•.,:;!?/()+-%《》LV.HP';
++
++/** Every string a card face may draw: the card's own text plus the cast data and stage names it looks up. */
++function textOf(card: Card): string {
++  const character = CHARACTERS[card.character];
++  const stages = STAGES.map((stage) => `${stage.label}${stage.ja}`).join('');
++  const traits = character.traits.map((trait) => `${trait.en}${trait.ja}`).join('');
++  return `${JSON.stringify(card)}${character.name.en}${character.name.ja}${traits}${stages}サポートSUPPORTER${COMMON_TEXT}`;
++}
++
++/**
++ * Resolves once the faces needed to draw `card` are loaded. Canvas text silently falls back to another
++ * font if the requested one is not ready, so card faces must never be composed before this resolves.
++ * The variable fonts split into unicode-range files; passing the text loads only the ranges it needs.
++ */
++export async function ensureCardFonts(card: Card): Promise<void> {
++  const text = textOf(card);
++  await Promise.all([
++    document.fonts.load(`800 26px "${LATIN_FAMILY}"`, text),
++    document.fonts.load(`italic 600 26px "${LATIN_FAMILY}"`, text),
++    document.fonts.load(`800 26px "${JAPANESE_FAMILY}"`, text),
++  ]);
++}
++
++/** Loads the Latin face used by the playground's own canvas labels (gallery captions, empty-art pattern). */
++export async function ensureLabelFont(): Promise<void> {
++  await document.fonts.load(`600 34px "${LATIN_FAMILY}"`, COMMON_TEXT);
++}
+diff --git a/src/cardface/paint.ts b/src/cardface/paint.ts
+index 1a16d4e..232ed05 100644
+--- a/src/cardface/paint.ts
++++ b/src/cardface/paint.ts
+@@ -1,6 +1,7 @@
+ import { CHARACTERS } from '../cards/characters';
+ import type { ArtCrop, Card } from '../cards/model';
+ import type { FrameStyle } from '../holo/settings';
++import { JAPANESE_FAMILY, LATIN_FAMILY } from './fonts';
+ import { lighten, withAlpha } from './glyphs';
+ 
+ // Shared drawing helpers for every card frame style. Coordinates are face pixels.
+@@ -57,8 +58,8 @@ export function centeredBaseline(centerY: number, size: number): number {
+  */
+ export const SILVER = { light: '#f4f5fa', mid: '#a4a9bd', dark: '#6e7388', label: '#dfe2ee' } as const;
+ 
+-export const LATIN = '"Segoe UI", "Yu Gothic UI", system-ui, sans-serif';
+-export const JAPANESE = '"Yu Gothic UI", "Yu Gothic", Meiryo, "Noto Sans JP", sans-serif';
++export const LATIN = `"${LATIN_FAMILY}", sans-serif`;
++export const JAPANESE = `"${JAPANESE_FAMILY}", "${LATIN_FAMILY}", sans-serif`;
+ const SCRIPT = '"Segoe Script", "Ink Free", "Brush Script MT", cursive';
+ 
+ export interface Rect {
+diff --git a/src/cardface/useComposedCard.ts b/src/cardface/useComposedCard.ts
+index 9c768b8..b83116e 100644
+--- a/src/cardface/useComposedCard.ts
++++ b/src/cardface/useComposedCard.ts
+@@ -6,6 +6,7 @@ import type { Card, CardId } from '../cards/model';
+ import type { FrameStyle } from '../holo/settings';
+ import type { CardTexture } from '../holo/textures';
+ import { composeCardFace, FACE_HEIGHT, FACE_WIDTH } from './composeCardFace';
++import { ensureCardFonts } from './fonts';
+ 
+ export interface ComposedCardTextures {
+   readonly face: CardTexture;
+@@ -58,11 +59,12 @@ export function useComposedCard(card: Card | null, style: FrameStyle): ComposedC
+     }
+     let cancelled = false;
+     const url = artUrlFor(card.art);
+-    void (url === null ? Promise.resolve(null) : loadImage(url)).then((image) => {
++    const image = url === null ? Promise.resolve(null) : loadImage(url);
++    void Promise.all([image, ensureCardFonts(card)]).then(([loadedImage]) => {
+       if (cancelled) {
+         return;
+       }
+-      const { face, mask } = composeCardFace(card, image, style);
++      const { face, mask } = composeCardFace(card, loadedImage, style);
+       const textures = { face: toTexture(face, renderer), mask: toTexture(mask, renderer) };
+       const previous = shownRef.current;
+       shownRef.current = textures;
+diff --git a/src/holo/textures.ts b/src/holo/textures.ts
+index ab7c09d..c8ac57e 100644
+--- a/src/holo/textures.ts
++++ b/src/holo/textures.ts
+@@ -1,6 +1,7 @@
+ import { useThree } from '@react-three/fiber';
+ import { useEffect, useState } from 'react';
+ import { CanvasTexture, NoColorSpace, SRGBColorSpace, TextureLoader, Vector4, type Texture } from 'three';
++import { LATIN } from '../cardface/paint';
+ import { ART_BOX } from './finishes';
+ import type { ArtFit } from './settings';
+ 
+@@ -136,9 +137,9 @@ export function createEmptyArtTexture(): CardTexture {
+ 
+   context.fillStyle = '#f3f1fa';
+   context.textAlign = 'center';
+-  context.font = '600 46px system-ui, sans-serif';
++  context.font = `600 46px ${LATIN}`;
+   context.fillText('No card art loaded', EMPTY_WIDTH / 2, 760);
+-  context.font = '30px system-ui, sans-serif';
++  context.font = `500 30px ${LATIN}`;
+   context.fillText('Drop images onto the page', EMPTY_WIDTH / 2, 815);
+   context.fillText('or add them to src/assets/cards', EMPTY_WIDTH / 2, 855);
+ 
+@@ -181,7 +182,7 @@ export function createLabelTexture(text: string): Texture {
+   context.fillStyle = 'rgba(232, 230, 242, 0.92)';
+   context.textAlign = 'center';
+   context.textBaseline = 'middle';
+-  context.font = '600 34px system-ui, sans-serif';
++  context.font = `600 34px ${LATIN}`;
+   context.fillText(text, width / 2, height / 2);
+   const texture = new CanvasTexture(canvas);
+   texture.colorSpace = SRGBColorSpace;
+diff --git a/src/index.css b/src/index.css
+index 6d64983..b626b16 100644
+--- a/src/index.css
++++ b/src/index.css
+@@ -12,7 +12,7 @@
+   --text-muted: #9b99ae;
+   --accent: #b7a4ff;
+   --radius: 10px;
+-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
++  font-family: 'Inter Variable', system-ui, sans-serif;
+   font-size: 14px;
+   line-height: 1.45;
+   -webkit-font-smoothing: antialiased;
+diff --git a/src/main.tsx b/src/main.tsx
+index 89be664..0808250 100644
+--- a/src/main.tsx
++++ b/src/main.tsx
+@@ -1,6 +1,10 @@
++import '@fontsource-variable/inter';
++import '@fontsource-variable/inter/wght-italic.css';
++import '@fontsource-variable/noto-sans-jp';
+ import { StrictMode } from 'react';
+ import { createRoot } from 'react-dom/client';
+ import App from './App.tsx';
++import { ensureLabelFont } from './cardface/fonts';
+ import './index.css';
+ 
+ const rootElement = document.getElementById('root');
+@@ -8,6 +12,9 @@ if (rootElement === null) {
+   throw new Error('Missing #root element in index.html.');
+ }
+ 
++// Canvas labels are drawn once at start-up, so the bundled face must be ready before the first render.
++await ensureLabelFont();
++
+ createRoot(rootElement).render(
+   <StrictMode>
+     <App />

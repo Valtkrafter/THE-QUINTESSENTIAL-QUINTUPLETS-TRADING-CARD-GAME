@@ -1,0 +1,336 @@
+/* Playground chrome only. These are not the game's design tokens, which are still undecided. */
+:root {
+  color-scheme: dark;
+  --bg: #0b0b12;
+  --bg-stage-glow: #1d1b2e;
+  --panel: #12121b;
+  --panel-border: #25253a;
+  --control: #1b1b29;
+  --control-hover: #25253a;
+  --control-active: #3a3160;
+  --text: #e8e6f2;
+  --text-muted: #9b99ae;
+  --accent: #b7a4ff;
+  --radius: 10px;
+  font-family: 'Inter Variable', system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+}
+
+button,
+select,
+input {
+  font: inherit;
+  color: inherit;
+}
+
+code {
+  font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
+  font-size: 0.9em;
+  color: var(--accent);
+}
+
+.app {
+  display: grid;
+  grid-template-columns: 320px minmax(0, 1fr);
+  height: 100%;
+}
+
+/* Panel */
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  padding: 20px 18px;
+  overflow-y: auto;
+  background: var(--panel);
+  border-right: 1px solid var(--panel-border);
+}
+
+.panel__header h1 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+}
+
+.panel__header p {
+  margin: 4px 0 0;
+  color: var(--text-muted);
+}
+
+.panel__section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.panel__section h2 {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.hint {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.segmented {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 4px;
+  background: var(--control);
+  border-radius: var(--radius);
+}
+
+.segmented button,
+.chip,
+.button {
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  padding: 7px 10px;
+  cursor: pointer;
+  transition: background-color 120ms ease, border-color 120ms ease;
+}
+
+.segmented button:hover,
+.chip:hover,
+.button:hover {
+  background: var(--control-hover);
+}
+
+.segmented button[aria-pressed='true'],
+.chip[aria-pressed='true'] {
+  background: var(--control-active);
+  border-color: var(--accent);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chip {
+  background: var(--control);
+  font-size: 13px;
+}
+
+.button {
+  background: var(--control);
+  border-color: var(--panel-border);
+  align-self: flex-start;
+}
+
+button:focus-visible,
+select:focus-visible,
+input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field__label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+}
+
+.field__label output {
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.field select {
+  background: var(--control);
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  padding: 7px 8px;
+}
+
+.field input[type='range'] {
+  width: 100%;
+  accent-color: var(--accent);
+}
+
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.toggle input {
+  accent-color: var(--accent);
+  width: 16px;
+  height: 16px;
+}
+
+.art-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.art-thumb {
+  position: relative;
+  aspect-ratio: 5 / 7;
+  padding: 0;
+  overflow: hidden;
+  border: 2px solid transparent;
+  border-radius: 6px;
+  background: var(--control);
+  cursor: pointer;
+}
+
+.art-thumb[aria-pressed='true'] {
+  border-color: var(--accent);
+}
+
+.art-thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.art-thumb__badge {
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+  padding: 0 4px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.7);
+  font-size: 10px;
+}
+
+.panel__perf {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 14px;
+  border-top: 1px solid var(--panel-border);
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.panel__perf div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.panel__perf span:last-child {
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.panel__gpu {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: right;
+}
+
+/* Stage */
+
+.stage {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  background: radial-gradient(ellipse at 50% 42%, var(--bg-stage-glow), var(--bg) 72%);
+}
+
+.stage canvas {
+  touch-action: none;
+}
+
+.stage__hint {
+  position: absolute;
+  left: 50%;
+  bottom: 14px;
+  margin: 0;
+  transform: translateX(-50%);
+  color: var(--text-muted);
+  font-size: 12px;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.drop-overlay {
+  position: absolute;
+  inset: 16px;
+  display: grid;
+  place-items: center;
+  border: 2px dashed var(--accent);
+  border-radius: 16px;
+  background: rgba(11, 11, 18, 0.72);
+  font-size: 18px;
+  pointer-events: none;
+}
+
+@media (max-width: 820px) {
+  .app {
+    grid-template-columns: 1fr;
+    grid-template-rows: 62vh auto;
+    height: auto;
+    min-height: 100%;
+  }
+
+  .stage {
+    grid-row: 1;
+  }
+
+  .panel {
+    grid-row: 2;
+    overflow: visible;
+    border-right: 0;
+    border-top: 1px solid var(--panel-border);
+  }
+}
+
+.art-thumb__missing {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.segmented--grid {
+  grid-template-columns: repeat(4, 1fr);
+}

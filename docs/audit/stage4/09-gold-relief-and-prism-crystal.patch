@@ -1,0 +1,158 @@
+diff --git a/src/holo/finishes.ts b/src/holo/finishes.ts
+index 6d4e285..e2160b8 100644
+--- a/src/holo/finishes.ts
++++ b/src/holo/finishes.ts
+@@ -47,8 +47,8 @@ export const FINISHES = [
+   },
+   {
+     id: 'prism',
+-    label: 'Cracked Ice',
+-    description: 'A clear shattered layer over the art. Each shard flashes silver-rainbow on its own when it catches the light.',
++    label: 'Prism Crystal',
++    description: 'A cut-gem surface of tilted triangular facets. Facets flash in turn as you tilt, with colour-split highlights and bright bevel lines.',
+     shaderIndex: 5,
+     defaultMask: 'full',
+   },
+diff --git a/src/holo/shaders/cardFront.frag.glsl b/src/holo/shaders/cardFront.frag.glsl
+index f6313d9..649d909 100644
+--- a/src/holo/shaders/cardFront.frag.glsl
++++ b/src/holo/shaders/cardFront.frag.glsl
+@@ -117,11 +117,14 @@ vec3 finishCosmos(vec3 base, vec2 uv, vec3 V, vec3 L, float mask, float tone) {
+ vec3 goldFoil(vec2 uv, vec3 V, vec3 L, float tone) {
+   vec3 gold = vec3(1.0, 0.8, 0.42);
+ 
+-  vec2 p = vec2(uv.x * uAspect, uv.y) * 3.2;
+-  float e = 0.04;
+-  float h = fbm(p);
+-  vec2 slope = vec2(fbm(p + vec2(e, 0.0)) - h, fbm(p + vec2(0.0, e)) - h) / e;
+-  vec3 N = normalize(vec3(-slope * 0.06, 1.0));
++  // Relief from gradient noise with exact derivatives: broad swells plus a fine grain that fades out once it
++  // gets smaller than a pixel. (A finite-difference value-noise normal showed square, grid-aligned patches.)
++  vec2 p = vec2(uv.x * uAspect, uv.y);
++  vec3 swell = fbmd(p * 1.6);
++  vec3 grain = fbmd(p * 46.0 + 9.1);
++  float grainFade = clamp(1.0 - fwidth(p.x * 46.0) * 0.7, 0.0, 1.0);
++  vec2 slope = swell.yz * 1.6 * 0.030 + grain.yz * 46.0 * 0.0014 * grainFade;
++  vec3 N = normalize(vec3(-slope, 1.0));
+ 
+   vec3 R = reflect(-V, N);
+   float studio = 0.38 + 0.62 * pow(clamp(0.5 + 0.5 * (R.y * 1.8 - R.x * 0.8), 0.0, 1.0), 1.5);
+@@ -140,27 +143,50 @@ vec3 finishGold(vec3 base, vec2 uv, vec3 V, vec3 L, float mask, float tone) {
+   return mix(color, metal, clamp(amount, 0.0, 1.0)) + metal * max(amount - 1.0, 0.0) * 0.3;
+ }
+ 
+-// Cracked ice: a clear shattered layer over the art. Shards stay nearly invisible until their facet
+-// catches the light, then flash silver-rainbow individually; fine cracks glint between them.
++// Equilateral triangle lattice (simplex grid). xy = cell, z = which half of the cell, w = distance to the
++// nearest edge in barycentric units (0 on an edge, 1/3 at the centre).
++vec4 triangleLattice(vec2 p) {
++  vec2 s = p + (p.x + p.y) * 0.3660254;
++  vec2 cell = floor(s);
++  vec2 f = s - cell;
++  float lower = step(f.y, f.x);
++  vec3 b = lower > 0.5 ? vec3(1.0 - f.x, f.x - f.y, f.y) : vec3(1.0 - f.y, f.y - f.x, f.x);
++  return vec4(cell, lower, min(min(b.x, b.y), b.z));
++}
++
++// Prism Crystal: a cut-gem surface. The card is a lattice of triangular facets, each tilted a little
++// differently, so as the card moves the facets flash in turn. The red, green and blue peaks of a flash sit
++// slightly apart (colour dispersion, like light leaving a diamond) and hairline bevels catch the light.
+ vec3 finishPrism(vec3 base, vec2 uv, vec3 V, vec3 L, float mask, float tone) {
+   vec3 color = shadePrint(base, V, L);
+-  vec4 shard = voronoi(vec2(uv.x * uAspect, uv.y) * 16.0);
+-  float seed = hash12(shard.zw);
+-  vec2 facetTilt = hash22(shard.zw + 5.3) * 2.0 - 1.0;
+-  vec3 facetNormal = normalize(vec3(facetTilt * 0.45, 1.0));
++  vec2 p = vec2(uv.x * uAspect, uv.y);
++  vec4 big = triangleLattice(p * 9.0);
++  vec4 fine = triangleLattice(p * 27.0 + 4.1);
++  vec2 bigTilt = hash22(big.xy * 2.0 + big.z + 3.7) * 2.0 - 1.0;
++  vec2 fineTilt = hash22(fine.xy * 2.0 + fine.z + 8.9) * 2.0 - 1.0;
++  float seed = hash12(big.xy * 2.0 + big.z);
++  vec3 N = normalize(vec3(bigTilt * 0.5 + fineTilt * 0.1, 1.0));
+   vec3 H = normalize(L + V);
+-  float glint = pow(max(dot(facetNormal, H), 0.0), 48.0);
+-  vec3 R = reflect(-V, facetNormal);
+-  vec3 rainbow = spectrum(seed + R.x * 3.0 + R.y * 2.0);
+-  vec3 shine = mix(vec3(0.85), rainbow, 0.55);
++  float d = dot(N, H);
++
++  // Hard flash with split colour peaks, plus a soft tinted sheen so unlit facets still shimmer.
++  vec3 flash = pow(clamp(vec3(d + 0.012, d, d - 0.012), 0.0, 1.0), vec3(120.0));
++  vec3 tint = spectrum(seed + dot(N.xy, V.xy) * 6.0 + V.x * 1.2);
++  vec3 sheen = mix(vec3(0.92), tint, 0.55) * pow(max(d, 0.0), 70.0) * 0.5;
+ 
+-  float crackWidth = max(0.035, fwidth(shard.y) * 1.2);
+-  float crack = 1.0 - smoothstep(0.0, crackWidth, shard.y);
++  float edge = big.w;
++  float line = 1.0 - smoothstep(0.0, max(fwidth(edge) * 1.4, 0.012), edge);
++  vec3 bevel = mix(vec3(1.0), tint, 0.35) * line * (0.12 + 0.9 * pow(max(d, 0.0), 60.0));
+ 
+   float amount = clamp(mask * uIntensity, 0.0, 2.0);
+-  color *= mix(1.0, 0.94 + 0.12 * seed, clamp(amount, 0.0, 1.0) * 0.6);
+-  vec3 overlay = shine * (0.07 + 1.1 * glint) + vec3(crack) * (0.15 + 0.6 * glint);
+-  return screenBlend(clamp(color, 0.0, 1.0), clamp(overlay * amount * 0.8, 0.0, 1.0));
++  float lit = min(amount, 1.0);
++  // Multiplicative part: facets shade and tint the print itself, so the cut reads even on pale art
++  // (a screen blend alone washes out there).
++  float shade = 0.92 + 0.16 * dot(N, L);
++  vec3 facetTint = mix(vec3(1.0), tint * 1.1, 0.04 + 0.34 * pow(max(d, 0.0), 40.0));
++  color *= mix(vec3(1.0), shade * facetTint, lit);
++  vec3 add = (sheen + flash * 1.6 + bevel) * amount;
++  return screenBlend(clamp(color, 0.0, 1.0), clamp(add, 0.0, 1.0));
+ }
+ 
+ // Starburst rays and etched rings around a focal point; both rotate and ripple with the tilt.
+diff --git a/src/holo/shaders/common.glsl b/src/holo/shaders/common.glsl
+index 111426c..3216cee 100644
+--- a/src/holo/shaders/common.glsl
++++ b/src/holo/shaders/common.glsl
+@@ -57,6 +57,48 @@ float fbm(vec2 p) {
+   return sum;
+ }
+ 
++// Gradient (Perlin) noise with analytic derivatives: x = value, yz = d/dx, d/dy. The quintic fade keeps the
++// derivative continuous, so normals built from it have no grid-aligned artifacts (value noise does).
++vec3 gnoised(vec2 p) {
++  vec2 i = floor(p);
++  vec2 f = fract(p);
++  vec2 u = f * f * f * (f * (f * 6.0 - 15.0) + 10.0);
++  vec2 du = 30.0 * f * f * (f * (f - 2.0) + 1.0);
++  vec2 ga = hash22(i) * 2.0 - 1.0;
++  vec2 gb = hash22(i + vec2(1.0, 0.0)) * 2.0 - 1.0;
++  vec2 gc = hash22(i + vec2(0.0, 1.0)) * 2.0 - 1.0;
++  vec2 gd = hash22(i + vec2(1.0, 1.0)) * 2.0 - 1.0;
++  float va = dot(ga, f);
++  float vb = dot(gb, f - vec2(1.0, 0.0));
++  float vc = dot(gc, f - vec2(0.0, 1.0));
++  float vd = dot(gd, f - vec2(1.0, 1.0));
++  float k = va - vb - vc + vd;
++  return vec3(
++    va + u.x * (vb - va) + u.y * (vc - va) + u.x * u.y * k,
++    ga + u.x * (gb - ga) + u.y * (gc - ga) + u.x * u.y * (ga - gb - gc + gd) + du * (u.yx * k + vec2(vb, vc) - va)
++  );
++}
++
++const mat2 OCTAVE_ROTATION = mat2(0.8, -0.6, 0.6, 0.8);
++
++// Fractal gradient noise with derivatives (value, d/dp). Each octave is rotated, so no lattice direction shows.
++vec3 fbmd(vec2 p) {
++  float value = 0.0;
++  vec2 grad = vec2(0.0);
++  float amplitude = 0.5;
++  float frequency = 1.0;
++  mat2 m = mat2(1.0);
++  for (int i = 0; i < 5; i++) {
++    vec3 n = gnoised(m * p * frequency + float(i) * 17.3);
++    value += amplitude * n.x;
++    grad += amplitude * frequency * (transpose(m) * n.yz);
++    frequency *= 2.0;
++    amplitude *= 0.5;
++    m = OCTAVE_ROTATION * m;
++  }
++  return vec3(value, grad);
++}
++
+ // x: distance to the nearest cell point, y: distance to the nearest cell border (F2 - F1), zw: nearest cell id.
+ vec4 voronoi(vec2 p) {
+   vec2 cell = floor(p);

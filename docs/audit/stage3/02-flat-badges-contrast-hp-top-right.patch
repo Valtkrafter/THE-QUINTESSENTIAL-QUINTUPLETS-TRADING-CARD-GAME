@@ -1,0 +1,451 @@
+diff --git a/src/cardface/classicFrame.ts b/src/cardface/classicFrame.ts
+index 4787048..ee4937c 100644
+--- a/src/cardface/classicFrame.ts
++++ b/src/cardface/classicFrame.ts
+@@ -1,5 +1,5 @@
+-import type { Card, Stage } from '../cards/model';
+-import { darken, drawGlyph, lighten, withAlpha } from './glyphs';
++import { STAGES, type Card, type Stage } from '../cards/model';
++import { darken, drawGlyph, lighten, readableOn, withAlpha } from './glyphs';
+ import {
+   FACE_HEIGHT,
+   FACE_WIDTH,
+@@ -21,7 +21,8 @@ import {
+ import { LIGHT_INK, drawArea, fitArea, metaRow, rulesRows, statsRow } from './rules';
+ 
+ // Classic frame, modelled on the Weiß Schwarz look: a pearl border, art filling the card, a white
+-// level box top left, a translucent white text box and a rounded name panel, all inset by SAFE.
++// level box top left, a white HP box top right, a translucent white text box and a rounded name
++// panel, all inset by SAFE. Everything is flat print: solid fills and crisp keylines, no shadows.
+ 
+ const BORDER = 24;
+ const INNER: Rect = { x: BORDER, y: BORDER, w: FACE_WIDTH - BORDER * 2, h: FACE_HEIGHT - BORDER * 2 };
+@@ -37,10 +38,18 @@ const BOX_HEIGHT = 276;
+ const BOX_PAD_Y = 18;
+ const FOOTER_PAD_Y = 14;
+ const NAME_ROW = 84;
+-const LEVEL_BOX = 112;
++
++/** The two corner clusters share one size: a white box with a colour chip underneath. */
++const CORNER_W = 132;
++const CORNER_BOX_H = 112;
++const CHIP_H = 44;
++const CHIP_GAP = 8;
++const LEVEL_NUMERAL = 86;
++const HP_NUMERAL = 64;
+ 
+ const STAGE_LEVEL: Readonly<Record<Stage, number>> = { basic: 1, close: 2, bride: 3 };
+ const INK = LIGHT_INK;
++const KEYLINE = 'rgba(27, 24, 36, 0.8)';
+ 
+ /** Pearl border around the art. It takes foil, like the frame of a real foil card. */
+ function drawBorder(painter: Painter): void {
+@@ -65,8 +74,6 @@ function drawBorder(painter: Painter): void {
+ }
+ 
+ /** Printed boxes are flat: a white fill with a crisp dark keyline, no blurred shadow. */
+-const KEYLINE = 'rgba(27, 24, 36, 0.8)';
+-
+ function drawWhitePanel(ctx: CanvasRenderingContext2D, rect: Rect, opacity: number): void {
+   ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
+   ctx.beginPath();
+@@ -77,52 +84,100 @@ function drawWhitePanel(ctx: CanvasRenderingContext2D, rect: Rect, opacity: numb
+   ctx.stroke();
+ }
+ 
+-function drawLevelBox(painter: Painter, card: Card): void {
++/** Solid accent chip with an ink outline. Holds the stage name, a type glyph, or both. */
++function drawChip(painter: Painter, rect: Rect, label: string | null, glyph: Parameters<typeof drawGlyph>[1] | null): void {
+   const { ctx, accent } = painter;
+-  const box = { x: SAFE, y: SAFE, w: LEVEL_BOX, h: LEVEL_BOX };
++  const ink = readableOn(accent);
++  ctx.fillStyle = accent;
++  ctx.beginPath();
++  ctx.roundRect(rect.x, rect.y, rect.w, rect.h, 12);
++  ctx.fill();
++  ctx.strokeStyle = KEYLINE;
++  ctx.lineWidth = 2;
++  ctx.stroke();
++
++  const middle = rect.y + rect.h / 2;
++  const glyphSize = label === null ? 38 : 30;
++  ctx.font = `900 ${TYPE.label}px ${LATIN}`;
++  ctx.letterSpacing = '1px';
++  const labelWidth = label === null ? 0 : ctx.measureText(label).width;
++  const gap = glyph !== null && label !== null ? 8 : 0;
++  const total = (glyph === null ? 0 : glyphSize) + gap + labelWidth;
++  let cursor = rect.x + (rect.w - total) / 2;
++  if (glyph !== null) {
++    drawGlyph(ctx, glyph, cursor + glyphSize / 2, middle, glyphSize, ink);
++    cursor += glyphSize + gap;
++  }
++  if (label !== null) {
++    ctx.fillStyle = ink;
++    ctx.fillText(label, cursor, centeredBaseline(middle, TYPE.label));
++  }
++  ctx.letterSpacing = '0px';
++}
++
++function stageName(stage: Stage): string {
++  return (STAGES.find((entry) => entry.id === stage)?.label ?? '').toUpperCase();
++}
++
++/** Top left: "LV.n" box with the stage name chip underneath. PRIME ribbon to the right. */
++function drawLevelCluster(painter: Painter, card: Card): void {
++  const { ctx } = painter;
++  const box = { x: SAFE, y: SAFE, w: CORNER_W, h: CORNER_BOX_H };
+   drawWhitePanel(ctx, box, 0.94);
+ 
+   if (card.kind === 'character') {
+     ctx.fillStyle = INK.muted;
+     ctx.font = `800 ${TYPE.label}px ${LATIN}`;
+-    ctx.fillText('LV', box.x + 12, box.y + 28);
++    ctx.fillText('LV.', box.x + 14, box.y + 30);
+     ctx.fillStyle = INK.text;
+     ctx.textAlign = 'center';
+-    ctx.font = `900 86px ${LATIN}`;
+-    ctx.fillText(String(STAGE_LEVEL[card.stage]), box.x + box.w / 2 + 8, centeredBaseline(box.y + box.h / 2 + 6, 86));
++    ctx.font = `900 ${LEVEL_NUMERAL}px ${LATIN}`;
++    ctx.fillText(String(STAGE_LEVEL[card.stage]), box.x + box.w / 2 + 12, centeredBaseline(box.y + box.h / 2 + 6, LEVEL_NUMERAL));
+     ctx.textAlign = 'left';
+   } else {
+     drawGlyph(ctx, 'study', box.x + box.w / 2, box.y + box.h / 2, 70, INK.text);
+   }
+ 
+-  // Colour chip under the box: the Heart type for characters, a SUP label for Supporters.
+-  const chip = { x: box.x, y: box.y + box.h + 8, w: box.w, h: 44 };
+-  const fill = ctx.createLinearGradient(chip.x, chip.y, chip.x, chip.y + chip.h);
+-  fill.addColorStop(0, lighten(accent, 0.2));
+-  fill.addColorStop(1, darken(accent, 0.2));
+-  ctx.fillStyle = fill;
+-  ctx.beginPath();
+-  ctx.roundRect(chip.x, chip.y, chip.w, chip.h, 12);
+-  ctx.fill();
+-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
+-  ctx.lineWidth = 2;
+-  ctx.stroke();
+-  if (card.kind === 'character') {
+-    drawGlyph(ctx, card.affinity, chip.x + chip.w / 2, chip.y + chip.h / 2, 32, '#ffffff');
+-  } else {
+-    ctx.fillStyle = '#ffffff';
+-    ctx.textAlign = 'center';
+-    ctx.font = `900 ${TYPE.label}px ${LATIN}`;
+-    ctx.fillText('SUP', chip.x + chip.w / 2, centeredBaseline(chip.y + chip.h / 2, TYPE.label));
+-    ctx.textAlign = 'left';
+-  }
++  const chip = { x: box.x, y: box.y + box.h + CHIP_GAP, w: CORNER_W, h: CHIP_H };
++  drawChip(painter, chip, card.kind === 'character' ? stageName(card.stage) : 'SUPPORT', null);
++  protect(painter, { x: box.x - 4, y: box.y - 4, w: box.w + 8, h: box.h + CHIP_GAP + CHIP_H + 8 }, RADIUS);
+ 
+-  protect(painter, { x: box.x - 4, y: box.y - 4, w: box.w + 8, h: box.h + chip.h + 16 }, RADIUS);
+   if (card.kind === 'character' && card.prime) {
+-    protect(painter, drawPrimePill(ctx, box.x + box.w + 14, box.y + box.h / 2 - 21, false), 21);
++    protect(painter, drawPrimePill(ctx, box.x + box.w + 14, box.y + (box.h - 42) / 2), 4);
+   }
+ }
+ 
++/** Top right: HP box with the Heart type chip underneath, mirroring the level cluster. */
++function drawHpCluster(painter: Painter, card: Card): void {
++  if (card.kind !== 'character') {
++    return;
++  }
++  const { ctx } = painter;
++  const box = { x: FACE_WIDTH - SAFE - CORNER_W, y: SAFE, w: CORNER_W, h: CORNER_BOX_H };
++  drawWhitePanel(ctx, box, 0.94);
++
++  ctx.fillStyle = INK.muted;
++  ctx.font = `800 ${TYPE.label}px ${LATIN}`;
++  ctx.fillText('HP', box.x + 14, box.y + 30);
++
++  // Three-digit HP must fit the box: shrink the numeral rather than overflow.
++  const number = String(card.hp);
++  let size = HP_NUMERAL;
++  ctx.font = `900 ${size}px ${LATIN}`;
++  while (ctx.measureText(number).width > box.w - 28 && size > 40) {
++    size -= 2;
++    ctx.font = `900 ${size}px ${LATIN}`;
++  }
++  ctx.fillStyle = INK.text;
++  ctx.textAlign = 'right';
++  ctx.fillText(number, box.x + box.w - 14, centeredBaseline(box.y + box.h / 2 + 14, size));
++  ctx.textAlign = 'left';
++
++  const chip = { x: box.x, y: box.y + box.h + CHIP_GAP, w: CORNER_W, h: CHIP_H };
++  drawChip(painter, chip, null, card.affinity);
++  protect(painter, { x: box.x - 4, y: box.y - 4, w: box.w + 8, h: box.h + CHIP_GAP + CHIP_H + 8 }, RADIUS);
++}
++
+ function drawFooter(painter: Painter, card: Card, panel: Rect): void {
+   const { ctx, accent } = painter;
+   drawWhitePanel(ctx, panel, 0.93);
+@@ -142,30 +197,13 @@ function drawFooter(painter: Painter, card: Card, panel: Rect): void {
+   const rowTop = panel.y + FOOTER_PAD_Y;
+   const middle = rowTop + NAME_ROW / 2;
+ 
+-  let textX = left;
+-  if (card.kind === 'character') {
+-    const chip = { x: left, y: middle - 31, w: 146, h: 62 };
+-    ctx.fillStyle = INK.text;
+-    ctx.beginPath();
+-    ctx.roundRect(chip.x, chip.y, chip.w, chip.h, 12);
+-    ctx.fill();
+-    ctx.fillStyle = 'rgba(255, 255, 255, 0.72)';
+-    ctx.font = `800 ${TYPE.label}px ${LATIN}`;
+-    ctx.fillText('HP', chip.x + 14, centeredBaseline(middle, TYPE.label));
+-    ctx.fillStyle = '#ffffff';
+-    ctx.textAlign = 'right';
+-    ctx.font = `900 44px ${LATIN}`;
+-    ctx.fillText(String(card.hp), chip.x + chip.w - 14, centeredBaseline(middle, 44));
+-    ctx.textAlign = 'left';
+-    textX = chip.x + chip.w + 18;
+-  }
+-
+-  ctx.fillStyle = darken(accent, 0.35);
++  // Title in a darkened accent: 0.45 keeps every Heart colour above 4.5:1 on the panel.
++  ctx.fillStyle = darken(accent, 0.45);
+   ctx.font = `italic 600 ${TYPE.title}px ${LATIN}`;
+-  ctx.fillText(`“${card.title}”`, textX, centeredBaseline(rowTop + 24, TYPE.title));
++  ctx.fillText(`“${card.title}”`, left, centeredBaseline(rowTop + 24, TYPE.title));
+   ctx.fillStyle = INK.text;
+   ctx.font = `800 32px ${LATIN}`;
+-  ctx.fillText(card.name.en, textX, centeredBaseline(rowTop + 60, 32));
++  ctx.fillText(card.name.en, left, centeredBaseline(rowTop + 60, 32));
+ 
+   ctx.textAlign = 'right';
+   ctx.font = `800 50px ${JAPANESE}`;
+@@ -201,7 +239,8 @@ export function drawClassicFrame(painter: Painter, card: Card): void {
+     drawSignature(painter, card, box.y);
+   }
+   drawBorder(painter);
+-  drawLevelBox(painter, card);
++  drawLevelCluster(painter, card);
++  drawHpCluster(painter, card);
+   drawWhitePanel(ctx, box, 0.84);
+   drawArea(ctx, area, box.x + PAD, box.y + BOX_PAD_Y, TEXT_WIDTH, INK);
+   protect(painter, box, RADIUS);
+diff --git a/src/cardface/composeCardFace.ts b/src/cardface/composeCardFace.ts
+index 982eb1a..2325e2b 100644
+--- a/src/cardface/composeCardFace.ts
++++ b/src/cardface/composeCardFace.ts
+@@ -2,7 +2,7 @@ import { AFFINITY_INFO } from '../cards/characters';
+ import { STAGES, type Card, type CharacterCard } from '../cards/model';
+ import type { FrameStyle } from '../holo/settings';
+ import { drawClassicFrame } from './classicFrame';
+-import { darken, drawAffinityCoin, drawGlyph, lighten } from './glyphs';
++import { darken, drawAffinityCoin, drawGlyph, lighten, readableOn } from './glyphs';
+ import {
+   FACE_HEIGHT,
+   FACE_WIDTH,
+@@ -97,7 +97,7 @@ function buildTextArea(painter: Painter, card: Card, ink: Ink) {
+   const onBar = style === 'paper';
+   const top: Row[] = [
+     headerRow(ctx, card, onBar ? '#ffffff' : ink.text, onBar ? 'rgba(255, 255, 255, 0.9)' : ink.muted),
+-    titleRow(ctx, card, onBar ? darken(accent, 0.3) : lighten(accent, 0.3), ink),
++    titleRow(ctx, card, onBar ? darken(accent, 0.45) : lighten(accent, 0.3), ink),
+   ];
+   const bottom: Row[] = [];
+   if (card.kind === 'character') {
+@@ -189,10 +189,7 @@ function drawBadge(painter: Painter, card: Card): Badge {
+     const cy = SAFE + radius;
+     ctx.save();
+     hexagonPath(ctx, cx, cy, radius);
+-    const fill = ctx.createLinearGradient(cx, cy - radius, cx, cy + radius);
+-    fill.addColorStop(0, lighten(accent, 0.25));
+-    fill.addColorStop(1, darken(accent, 0.3));
+-    ctx.fillStyle = fill;
++    ctx.fillStyle = accent;
+     ctx.fill();
+     // Dark outer keyline under a white ring: separates the badge from any art without a blurred shadow.
+     ctx.lineJoin = 'round';
+@@ -203,7 +200,7 @@ function drawBadge(painter: Painter, card: Card): Badge {
+     ctx.strokeStyle = '#ffffff';
+     ctx.stroke();
+     ctx.restore();
+-    drawGlyph(ctx, affinity, cx, cy - 4, 70, '#ffffff');
++    drawGlyph(ctx, affinity, cx, cy - 4, 70, readableOn(accent));
+     ctx.font = `900 ${TYPE.label}px ${LATIN}`;
+     const ribbon = { w: Math.max(ctx.measureText(label).width + 30, 116), h: 34 };
+     const ribbonY = cy + radius - 16;
+@@ -343,7 +340,7 @@ export function composeCardFace(card: Card, art: HTMLImageElement | null, style:
+   const badge = drawBadge(painter, card);
+   if (card.kind === 'character') {
+     if (card.prime) {
+-      protect(painter, drawPrimePill(ctx, badge.right + 14, badge.centerY - 21, style === 'fade'), 21);
++      protect(painter, drawPrimePill(ctx, badge.right + 14, badge.centerY - 21), 4);
+     }
+     drawHp(painter, card, badge.centerY);
+   }
+diff --git a/src/cardface/glyphs.ts b/src/cardface/glyphs.ts
+index 4871773..68b38e7 100644
+--- a/src/cardface/glyphs.ts
++++ b/src/cardface/glyphs.ts
+@@ -42,13 +42,13 @@ export function drawGlyph(ctx: CanvasRenderingContext2D, affinity: Affinity, x:
+       for (let leaf = 0; leaf < 4; leaf += 1) {
+         const angle = (leaf * Math.PI) / 2 - Math.PI / 4;
+         ctx.beginPath();
+-        ctx.arc(x + Math.cos(angle) * 0.17 * s, y - 0.06 * s + Math.sin(angle) * 0.17 * s, 0.15 * s, 0, Math.PI * 2);
++        ctx.arc(x + Math.cos(angle) * 0.2 * s, y - 0.08 * s + Math.sin(angle) * 0.2 * s, 0.21 * s, 0, Math.PI * 2);
+         ctx.fill();
+       }
+       ctx.beginPath();
+-      ctx.lineWidth = 0.06 * s;
+-      ctx.moveTo(x, y + 0.08 * s);
+-      ctx.quadraticCurveTo(x + 0.05 * s, y + 0.3 * s, x + 0.16 * s, y + 0.42 * s);
++      ctx.lineWidth = 0.09 * s;
++      ctx.moveTo(x, y + 0.06 * s);
++      ctx.quadraticCurveTo(x + 0.05 * s, y + 0.3 * s, x + 0.2 * s, y + 0.46 * s);
+       ctx.stroke();
+       break;
+     case 'star':
+@@ -81,21 +81,41 @@ export function drawGlyph(ctx: CanvasRenderingContext2D, affinity: Affinity, x:
+   ctx.restore();
+ }
+ 
+-/** Coloured coin with a white glyph, used for move costs, weakness and resistance. */
++/** Print ink used for outlines and for glyphs on light fills. */
++export const PRINT_INK = '#1b1824';
++
++function relativeLuminance(hex: string): number {
++  const channel = (value: number): number => {
++    const unit = value / 255;
++    return unit <= 0.04045 ? unit / 12.92 : ((unit + 0.055) / 1.055) ** 2.4;
++  };
++  const [r, g, b] = parseHex(hex);
++  return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
++}
++
++/** WCAG contrast ratio between two `#rrggbb` colours (1 to 21). */
++export function contrastRatio(a: string, b: string): number {
++  const [light, dark] = [relativeLuminance(a), relativeLuminance(b)].sort((p, q) => q - p) as [number, number];
++  return (light + 0.05) / (dark + 0.05);
++}
++
++/** White or print ink, whichever reads better on `fill`. All six Heart colours pick ink (at least 5.6:1). */
++export function readableOn(fill: string): string {
++  return contrastRatio('#ffffff', fill) >= contrastRatio(PRINT_INK, fill) ? '#ffffff' : PRINT_INK;
++}
++
++/** Flat colour disc with a crisp ink outline and a high-contrast glyph, like an energy symbol on a printed card. */
+ export function drawAffinityCoin(ctx: CanvasRenderingContext2D, affinity: Affinity, x: number, y: number, radius: number, color: string): void {
+   ctx.save();
+-  const gradient = ctx.createRadialGradient(x - radius * 0.35, y - radius * 0.35, radius * 0.1, x, y, radius);
+-  gradient.addColorStop(0, lighten(color, 0.35));
+-  gradient.addColorStop(1, color);
+-  ctx.fillStyle = gradient;
++  ctx.fillStyle = color;
+   ctx.beginPath();
+   ctx.arc(x, y, radius, 0, Math.PI * 2);
+   ctx.fill();
+-  ctx.lineWidth = Math.max(1.5, radius * 0.1);
+-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
++  ctx.lineWidth = Math.max(2, radius * 0.12);
++  ctx.strokeStyle = PRINT_INK;
+   ctx.stroke();
+   ctx.restore();
+-  drawGlyph(ctx, affinity, x, y, radius * 1.45, '#ffffff');
++  drawGlyph(ctx, affinity, x, y, radius * 1.5, readableOn(color));
+ }
+ 
+ function parseHex(hex: string): [number, number, number] {
+diff --git a/src/cardface/paint.ts b/src/cardface/paint.ts
+index a2fc90f..bc489e5 100644
+--- a/src/cardface/paint.ts
++++ b/src/cardface/paint.ts
+@@ -188,31 +188,37 @@ export function outlinedText(ctx: CanvasRenderingContext2D, text: string, x: num
+   ctx.restore();
+ }
+ 
+-export function drawPrimePill(ctx: CanvasRenderingContext2D, x: number, y: number, outlined: boolean): Rect {
+-  const width = 124;
++/**
++ * PRIME marker: a dark obsidian ribbon with a swallowtail end and a thin silver rim. It is deliberately
++ * not gold, so true gold stays reserved for hot-stamped signatures and Ichika's Heart colour.
++ */
++export function drawPrimePill(ctx: CanvasRenderingContext2D, x: number, y: number): Rect {
++  const width = 132;
+   const height = 42;
++  const notch = 13;
+   ctx.save();
+   ctx.beginPath();
+-  ctx.roundRect(x, y, width, height, 21);
+-  if (outlined) {
+-    ctx.fillStyle = 'rgba(10, 8, 18, 0.45)';
+-    ctx.fill();
+-    ctx.strokeStyle = '#e6c27a';
+-    ctx.lineWidth = 2.5;
+-    ctx.stroke();
+-    ctx.fillStyle = '#f3d79a';
+-  } else {
+-    const gold = ctx.createLinearGradient(x, y, x + width, y + height);
+-    gold.addColorStop(0, '#fff1b8');
+-    gold.addColorStop(0.5, '#e8b94a');
+-    gold.addColorStop(1, '#a8741c');
+-    ctx.fillStyle = gold;
+-    ctx.fill();
+-    ctx.fillStyle = '#3a2506';
+-  }
++  ctx.moveTo(x, y);
++  ctx.lineTo(x + width, y);
++  ctx.lineTo(x + width - notch, y + height / 2);
++  ctx.lineTo(x + width, y + height);
++  ctx.lineTo(x, y + height);
++  ctx.closePath();
++  ctx.fillStyle = '#14121c';
++  ctx.fill();
++  const rim = ctx.createLinearGradient(x, y, x + width, y);
++  rim.addColorStop(0, '#f2f0f8');
++  rim.addColorStop(0.5, '#8c88a0');
++  rim.addColorStop(1, '#f2f0f8');
++  ctx.lineJoin = 'miter';
++  ctx.lineWidth = 2;
++  ctx.strokeStyle = rim;
++  ctx.stroke();
++  ctx.fillStyle = '#eceaf4';
+   ctx.textAlign = 'center';
+-  ctx.font = `900 22px ${LATIN}`;
+-  ctx.fillText('PRIME', x + width / 2, y + 29);
++  ctx.font = `900 ${TYPE.label}px ${LATIN}`;
++  ctx.letterSpacing = '3px';
++  ctx.fillText('PRIME', x + (width - notch) / 2 + 2, centeredBaseline(y + height / 2, TYPE.label));
+   ctx.restore();
+   return { x, y, w: width, h: height };
+ }
+diff --git a/src/cardface/rules.ts b/src/cardface/rules.ts
+index 6ad7afa..bfc3d0b 100644
+--- a/src/cardface/rules.ts
++++ b/src/cardface/rules.ts
+@@ -40,8 +40,9 @@ export interface Row {
+ 
+ /** Vertical space between rows; rules sit in its middle. */
+ export const ROW_GAP = 14;
+-const ABILITY_RED = '#d93b52';
+-const SUPPORTER_ORANGE = '#e07a14';
++// Tag fills chosen so white text passes 4.5:1 (was 4.47 and 3.02).
++const ABILITY_RED = '#c8283f';
++const SUPPORTER_ORANGE = '#b45309';
+ const COIN_RADIUS = 19;
+ const COIN_STEP = 44;
+ 
+@@ -184,19 +185,19 @@ export function statsRow(ctx: CanvasRenderingContext2D, card: CharacterCard, ink
+       if (card.weakness === null) {
+         value('—');
+       } else {
+-        coin(card.weakness, 15);
++        coin(card.weakness, 17);
+         value('×2');
+       }
+       label('RESISTANCE');
+       if (card.resistance === null) {
+         value('—');
+       } else {
+-        coin(card.resistance, 15);
++        coin(card.resistance, 17);
+         value('−30');
+       }
+       label('RETREAT');
+       for (let index = 0; index < card.retreat; index += 1) {
+-        coin('study', 14);
++        coin('study', 16);
+       }
+     },
+   };

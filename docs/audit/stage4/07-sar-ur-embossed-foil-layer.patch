@@ -1,0 +1,210 @@
+diff --git a/src/holo/HoloCard.tsx b/src/holo/HoloCard.tsx
+index 10bfbd8..c760986 100644
+--- a/src/holo/HoloCard.tsx
++++ b/src/holo/HoloCard.tsx
+@@ -22,6 +22,8 @@ export interface HoloCardProps {
+   /** World-space light position, mutated by the scene each frame. */
+   readonly light: Vector3;
+   readonly interaction: CardInteraction;
++  /** Embossed foil layer strength (SAR / UR only); defaults to off. */
++  readonly premium?: number | undefined;
+   readonly shadowTexture: Texture;
+   readonly label?: Texture | undefined;
+   /** Increment to flip the card over. */
+@@ -46,6 +48,7 @@ export function HoloCard({
+   settings,
+   light,
+   interaction,
++  premium = 0,
+   shadowTexture,
+   label,
+   flipRequest = 0,
+@@ -83,8 +86,9 @@ export function HoloCard({
+       intensity: settings.intensity,
+       glare: settings.glare,
+       frameInset: frameInsetUv(settings.frameStyle),
++      premium,
+     });
+-  }, [rig, finish, maskIndex, settings.intensity, settings.glare, settings.frameStyle]);
++  }, [rig, finish, maskIndex, settings.intensity, settings.glare, settings.frameStyle, premium]);
+ 
+   useEffect(() => {
+     rig.setArt(art, mask, settings.artFit, settings.artFocus);
+diff --git a/src/holo/cardMaterials.ts b/src/holo/cardMaterials.ts
+index 6ff8bdd..f6ceeea 100644
+--- a/src/holo/cardMaterials.ts
++++ b/src/holo/cardMaterials.ts
+@@ -13,6 +13,7 @@ export type FrontUniforms = {
+   uMaskMode: { value: number };
+   uArtBox: { value: Vector4 };
+   uFrameInset: { value: Vector2 };
++  uPremium: { value: number };
+   uFinish: { value: number };
+   uIntensity: { value: number };
+   uGlare: { value: number };
+@@ -48,6 +49,7 @@ export function createFrontShader(): CardShader<FrontUniforms> {
+     uMaskMode: { value: 0 },
+     uArtBox: { value: new Vector4(ART_BOX.minU, ART_BOX.minV, ART_BOX.maxU, ART_BOX.maxV) },
+     uFrameInset: { value: new Vector2(0, 0) },
++    uPremium: { value: 0 },
+     uFinish: { value: 0 },
+     uIntensity: { value: 1 },
+     uGlare: { value: 0.6 },
+diff --git a/src/holo/cardRig.ts b/src/holo/cardRig.ts
+index 18453d3..b0fcddd 100644
+--- a/src/holo/cardRig.ts
++++ b/src/holo/cardRig.ts
+@@ -38,6 +38,8 @@ export interface CardLook {
+   readonly glare: number;
+   /** Printed border width in card uv (x, y); see frames.ts. */
+   readonly frameInset: readonly [number, number];
++  /** Embossed foil layer strength; 0 for every rarity except SAR and UR (see premium.ts). */
++  readonly premium: number;
+ }
+ 
+ export interface CardFrameInput {
+@@ -127,13 +129,14 @@ export class CardRig {
+     }
+   }
+ 
+-  setLook({ finishIndex, maskIndex, intensity, glare, frameInset }: CardLook): void {
++  setLook({ finishIndex, maskIndex, intensity, glare, frameInset, premium }: CardLook): void {
+     const uniforms = this.front.uniforms;
+     uniforms.uFinish.value = finishIndex;
+     uniforms.uMaskMode.value = maskIndex;
+     uniforms.uIntensity.value = intensity;
+     uniforms.uGlare.value = glare;
+     uniforms.uFrameInset.value.set(frameInset[0], frameInset[1]);
++    uniforms.uPremium.value = premium;
+     this.back.uniforms.uIntensity.value = intensity;
+   }
+ 
+diff --git a/src/holo/premium.ts b/src/holo/premium.ts
+new file mode 100644
+index 0000000..00ee55c
+--- /dev/null
++++ b/src/holo/premium.ts
+@@ -0,0 +1,16 @@
++import type { Rarity } from '../cards/model';
++
++/**
++ * Strength of the embossed foil layer. It exists only on SAR and UR cards: every other rarity returns 0,
++ * which switches the layer off in the shader. UR is pressed a little deeper than SAR.
++ */
++export function premiumStrength(rarity: Rarity): number {
++  switch (rarity) {
++    case 'SAR':
++      return 1;
++    case 'UR':
++      return 1.35;
++    default:
++      return 0;
++  }
++}
+diff --git a/src/holo/shaders/cardFront.frag.glsl b/src/holo/shaders/cardFront.frag.glsl
+index bdb9456..f6313d9 100644
+--- a/src/holo/shaders/cardFront.frag.glsl
++++ b/src/holo/shaders/cardFront.frag.glsl
+@@ -4,6 +4,7 @@ uniform vec4 uMapTransform; // xy: scale, zw: offset (cover fit of the art onto
+ uniform float uHasMask;
+ uniform int uMaskMode;
+ uniform vec4 uArtBox; // xy: min uv, zw: max uv
++uniform float uPremium; // embossed foil layer strength: 0 = off, SAR 1.0, UR 1.35 (see premium.ts)
+ uniform vec2 uFrameInset; // printed border width in uv (x, y); the "Frame edge" foil region is everything outside it
+ uniform int uFinish;
+ uniform float uIntensity;
+@@ -178,6 +179,37 @@ vec3 finishRadiant(vec3 base, vec2 uv, vec3 V, vec3 L, float mask, float tone) {
+   return mix(color, foilThroughInk(color, foil), amount);
+ }
+ 
++// Embossed foil relief for SAR / UR: a fine grid of tiny facets, each with its own tilt, like the raised
++// sand texture of a premium print. Facets facing the light glint; the rest only shade the foil slightly.
++// Fades out below about a pixel per cell so small cards never alias.
++vec3 premiumRelief(vec3 color, vec2 uv, vec3 V, vec3 L, float mask) {
++  vec2 grid = vec2(uv.x * uAspect, uv.y) * 190.0;
++  vec2 cell = floor(grid);
++  // Each facet is a rounded grain, jittered inside its cell, so the pattern reads as sand and not as tiles.
++  vec2 local = fract(grid) - 0.5 - (hash22(cell + 7.3) - 0.5) * 0.35;
++  float grain = smoothstep(0.52, 0.12, length(local));
++  vec3 N = normalize(vec3((hash22(cell + 41.7) * 2.0 - 1.0) * 0.4, 1.0));
++  vec3 H = normalize(L + V);
++  float detail = clamp(1.0 - fwidth(grid.x) * 0.9, 0.0, 1.0);
++  float glint = pow(max(dot(N, H), 0.0), 60.0) * grain * detail;
++  float shade = 1.0 + (dot(N, L) - L.z) * 0.22 * grain * detail;
++  vec3 tint = mix(vec3(1.0), spectrum(hash12(cell) * 2.0 + V.x * 1.5 + V.y), 0.35);
++  float amount = clamp(mask * uPremium, 0.0, 1.5);
++  return color * mix(1.0, shade, min(amount, 1.0)) + tint * glint * amount * 0.8;
++}
++
++// Raised edge of the hot-stamped signature plate: the foil's mask gradient acts as a height edge, and
++// only edges facing the light add a highlight, so the plate reads as embossed.
++vec3 signatureBevel(vec2 mapUv, vec3 V, vec3 L) {
++  vec2 texel = vec2(1.0 / 500.0, 1.0 / 700.0);
++  float gx = texture2D(uMask, mapUv + vec2(texel.x, 0.0)).g - texture2D(uMask, mapUv - vec2(texel.x, 0.0)).g;
++  float gy = texture2D(uMask, mapUv + vec2(0.0, texel.y)).g - texture2D(uMask, mapUv - vec2(0.0, texel.y)).g;
++  vec3 N = normalize(vec3(-gx * 1.8, -gy * 1.8, 1.0));
++  vec3 H = normalize(L + V);
++  float edge = max(0.0, pow(max(dot(N, H), 0.0), 18.0) - pow(max(H.z, 0.0), 18.0));
++  return vec3(1.0, 0.93, 0.72) * edge * 2.2;
++}
++
+ void main() {
+   vec2 uv = vUv;
+   vec2 mapUv = uv * uMapTransform.xy + uMapTransform.zw;
+@@ -200,10 +232,19 @@ void main() {
+   else if (uFinish == 6) color = finishRadiant(base, uv, V, L, mask, tone);
+   else color = shadePrint(base, V, L);
+ 
++  // Embossed relief on SAR / UR only (uPremium is 0 for every other rarity), over whatever finish is chosen.
++  if (uPremium > 0.0) {
++    color = premiumRelief(color, uv, V, L, mask);
++  }
++
+   // Signature layer (mask green channel) is always gold foil, whatever the finish.
+   // The mask is half resolution: tighten its soft edge so the foil follows the letter shapes.
+   float signature = uHasMask > 0.5 ? smoothstep(0.3, 0.7, texture2D(uMask, mapUv).g) : 0.0;
+-  color = mix(color, goldFoil(uv, V, L, 0.8), signature);
++  vec3 plate = goldFoil(uv, V, L, 0.8);
++  if (uPremium > 0.0 && signature > 0.0) {
++    plate += signatureBevel(mapUv, V, L) * uPremium;
++  }
++  color = mix(color, plate, signature);
+ 
+   // Soft light that follows the pointer while the card is hovered.
+   vec2 toPointer = (uv - uPointer) * vec2(uAspect, 1.0);
+diff --git a/src/scene/Stage.tsx b/src/scene/Stage.tsx
+index 93b9df2..23b4c75 100644
+--- a/src/scene/Stage.tsx
++++ b/src/scene/Stage.tsx
+@@ -6,6 +6,7 @@ import type { Card } from '../cards/model';
+ import { CARD_HEIGHT, CARD_WIDTH } from '../holo/cardGeometry';
+ import { FINISHES, findFinish, resolveMaskIndex, type Finish, type FinishId } from '../holo/finishes';
+ import { hasFrame } from '../holo/frames';
++import { premiumStrength } from '../holo/premium';
+ import { HoloCard } from '../holo/HoloCard';
+ import type { HoloSettings, ViewMode } from '../holo/settings';
+ import {
+@@ -134,6 +135,7 @@ function Scene({
+     [viewport.width, viewport.height],
+   );
+   const art = composed?.face ?? loadedArt ?? emptyArt;
++  const premium = source.kind === 'card' ? premiumStrength(source.card.rarity) : 0;
+   const inspectedFinish = findFinish(finishId);
+ 
+   useCameraFit(
+@@ -171,6 +173,7 @@ function Scene({
+             settings={settings}
+             light={light}
+             interaction="hover"
++            premium={premium}
+             shadowTexture={shadowTexture}
+             label={labels.get(finish.id)}
+             idlePhase={index * 1.37}
+@@ -189,6 +192,7 @@ function Scene({
+           settings={settings}
+           light={light}
+           interaction="inspect"
++          premium={premium}
+           shadowTexture={shadowTexture}
+           flipRequest={flipRequest}
+         />
