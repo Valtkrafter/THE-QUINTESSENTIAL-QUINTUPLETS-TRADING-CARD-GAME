@@ -1,7 +1,12 @@
+import type { FinishId } from '../cards/finish';
+
+export type { FinishId } from '../cards/finish';
+export { isFinishId } from '../cards/finish';
+
 export type MaskModeId = 'full' | 'artBox' | 'reverse' | 'frame' | 'highlights' | 'custom';
 
 export interface FinishDefinition {
-  readonly id: string;
+  readonly id: FinishId;
   readonly label: string;
   readonly description: string;
   /** Matches the `uFinish` branch in cardFront.frag.glsl. */
@@ -62,7 +67,6 @@ export const FINISHES = [
 ] as const satisfies readonly FinishDefinition[];
 
 export type Finish = (typeof FINISHES)[number];
-export type FinishId = Finish['id'];
 
 export interface MaskModeDefinition {
   readonly id: MaskModeId;
@@ -107,8 +111,4 @@ export function resolveMaskIndex(setting: MaskSetting, finish: Finish, hasMask: 
 
 export function isMaskSetting(value: string): value is MaskSetting {
   return value === 'auto' || MASK_MODES.some((mode) => mode.id === value);
-}
-
-export function isFinishId(value: string): value is FinishId {
-  return FINISHES.some((finish) => finish.id === value);
 }

@@ -1,5 +1,5 @@
 import type { Rarity } from '../cards/model';
-import type { FinishId } from '../holo/finishes';
+import type { FinishId } from '../cards/finish';
 
 // Pack-opening rules for the finish of a printed copy. Rarity belongs to the card design and finish to
 // the individual copy, so the two are independent: any rarity can roll any finish. What this table adds is
