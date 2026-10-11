@@ -30,7 +30,7 @@ Tuned with the computer opponents playing each other (`battle/balance.test.ts`, 
 
 - **Battle length:** median 17 turns of both players together (8 or 9 each), 90% under 25. At about a minute a turn that is the 10 minutes the design asks for.
 - **First player:** without help the player who goes first won 60% of 1,000 battles. A second free Heart in the first turn of the player who goes second brings it to 49%. An extra card for the second player did nothing (59%).
-- **Levels:** easy loses about 70% against normal and 80% against hard; normal and hard are close (the harder opponents mostly get better decks).
+- **Levels:** easy loses about 65% against normal and 78% against hard; normal loses about 70% against hard (measured with `SIM=1`, mirror decks). Normal plays a random action in about one decision in eight and picks a random move in one attack in five; hard never does and also looks ahead at what the enemy could do next turn. The harder rivals also get better decks.
 - **Weakness and resistance** are strong: a single-sister deck against the sister it is weak to wins 5 to 20% of the time. Mixed decks and the choice of deck are the answer; if it feels too harsh, the numbers are `WEAKNESS_FACTOR` and `RESISTANCE_REDUCTION` in `battle/rules.ts`.
 
 ## How it is built (`playground/src/battle`)

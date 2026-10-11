@@ -39,7 +39,7 @@ interface Style {
 
 const STYLES: Readonly<Record<AiLevel, Style>> = {
   easy: { blunder: 0.25, sloppyAttack: 0.45, aware: false, repositions: false },
-  normal: { blunder: 0.07, sloppyAttack: 0.1, aware: false, repositions: true },
+  normal: { blunder: 0.13, sloppyAttack: 0.2, aware: false, repositions: true },
   hard: { blunder: 0, sloppyAttack: 0, aware: true, repositions: true },
 };
 
