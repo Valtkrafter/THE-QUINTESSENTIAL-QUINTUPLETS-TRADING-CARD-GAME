@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { AI_LEVELS, type AiLevel } from './ai';
+import { OPPONENTS, STARTER_DECKS } from './roster';
 import { playMany, playMatch } from './simulate';
 import { lineDeck, simpleDeck } from './testing';
 
@@ -90,8 +91,20 @@ describe.skipIf(process.env['SIM'] === undefined)('balance report', () => {
     lengths.sort((a, b) => a - b);
     const at = (fraction: number): number => lengths[Math.min(lengths.length - 1, Math.floor(lengths.length * fraction))] ?? 0;
     const early = lengths.filter((turns) => turns <= 6).length;
-    console.log(`
-turns of both players: min ${at(0)}, 10% ${at(0.1)}, median ${at(0.5)}, 90% ${at(0.9)}, max ${lengths.at(-1)}; over by turn 6: ${percent(early, lengths.length)}; ${JSON.stringify(reasons)}`);
+    console.log(`\nturns of both players: min ${at(0)}, 10% ${at(0.1)}, median ${at(0.5)}, 90% ${at(0.9)}, max ${lengths.at(-1)}; over by turn 6: ${percent(early, lengths.length)}; ${JSON.stringify(reasons)}`);
+  }, 600_000);
+
+  it('prints how the starter decks (played normally) do against the rivals', () => {
+    const rows: string[] = [`starter deck wins against rival (starter played at normal level, ${games} games each)`, `${''.padEnd(18)}${OPPONENTS.map((opponent) => `${opponent.id}/${opponent.level}`.padEnd(15)).join('')}`];
+    for (const starter of STARTER_DECKS) {
+      const cells: string[] = [];
+      for (const opponent of OPPONENTS) {
+        const tally = playMany({ decks: [starter.cards, opponent.deck.cards], levels: ['normal', opponent.level] }, games, `starter-${starter.id}-${opponent.id}`);
+        cells.push(percent(tally.wins[0], tally.games - tally.draws).padEnd(15));
+      }
+      rows.push(`${starter.id.padEnd(18)}${cells.join('')}`);
+    }
+    console.log(`\n${rows.join('\n')}`);
   }, 600_000);
 
   it('prints the matchups between the five line decks', () => {

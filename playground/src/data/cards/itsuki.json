@@ -247,13 +247,13 @@
           "star",
           "study"
         ],
-        "damage": 30,
+        "damage": 40,
         "damageSuffix": "×",
-        "text": "30 damage for each Nakano sister you have in play.",
+        "text": "40 damage for each Nakano sister you have in play.",
         "effects": [
           {
             "type": "damagePerCount",
-            "amount": 30,
+            "amount": 40,
             "count": "ownSisters"
           }
         ]
@@ -389,13 +389,13 @@
           "star",
           "study"
         ],
-        "damage": 40,
+        "damage": 50,
         "damageSuffix": "×",
-        "text": "40 damage for each Nakano sister you have in play.",
+        "text": "50 damage for each Nakano sister you have in play.",
         "effects": [
           {
             "type": "damagePerCount",
-            "amount": 40,
+            "amount": 50,
             "count": "ownSisters"
           }
         ]
@@ -434,13 +434,13 @@
           "star",
           "star"
         ],
-        "damage": 50,
+        "damage": 60,
         "damageSuffix": "×",
-        "text": "50 damage for each Nakano sister you have in play.",
+        "text": "60 damage for each Nakano sister you have in play.",
         "effects": [
           {
             "type": "damagePerCount",
-            "amount": 50,
+            "amount": 60,
             "count": "ownSisters"
           }
         ]

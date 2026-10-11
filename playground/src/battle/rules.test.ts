@@ -110,7 +110,8 @@ describe('damage before and after the defender', () => {
       throw new Error('no active');
     }
     expect(baseDamage(encore, owner.active, owner)).toBe(70 + 30 * 3);
-    expect(baseDamage(five, owner.active, owner)).toBe(30 * 3);
+    // Three Characters are in play: the printed amount for each of them.
+    expect(baseDamage(five, owner.active, owner)).toBe((five.damage ?? 0) * 3);
   });
 
   it('doubles for weakness, lowers by 30 for resistance, in that order', () => {
