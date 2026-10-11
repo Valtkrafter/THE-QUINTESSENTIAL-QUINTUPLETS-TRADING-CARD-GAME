@@ -27,19 +27,27 @@ describe('rollCondition', () => {
     const rng = createRng('condition');
     let sum = 0;
     let perfect = 0;
+    // Counting bad values and asserting once keeps this test fast: 80,000 separate expect calls took seconds on a busy machine.
+    let outOfRange = 0;
+    let notOneDecimal = 0;
     const draws = 20000;
     for (let i = 0; i < draws; i += 1) {
       const condition = rollCondition(rng);
       for (const value of Object.values(condition)) {
-        expect(value).toBeGreaterThanOrEqual(1);
-        expect(value).toBeLessThanOrEqual(10);
-        expect(Math.abs(value * 10 - Math.round(value * 10))).toBeLessThan(1e-9);
+        if (value < 1 || value > 10) {
+          outOfRange += 1;
+        }
+        if (Math.abs(value * 10 - Math.round(value * 10)) >= 1e-9) {
+          notOneDecimal += 1;
+        }
         sum += value;
         if (value === 10) {
           perfect += 1;
         }
       }
     }
+    expect(outOfRange).toBe(0);
+    expect(notOneDecimal).toBe(0);
     const mean = sum / (draws * 4);
     expect(mean).toBeGreaterThan(8.7);
     expect(mean).toBeLessThan(9.1);

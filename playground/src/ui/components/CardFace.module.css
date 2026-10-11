@@ -68,6 +68,32 @@
 }
 
 /*
+ * The real foil shader of the 3D card, drawn into this canvas while the card is on screen (see useHoloTile). It lies over
+ * the flat picture and fades in with its first picture; from then on the CSS imitation below is switched off. When the
+ * shader cannot run, the canvas just stays clear and the CSS imitation keeps working.
+ */
+.live {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--medium) var(--ease);
+}
+
+.face[data-live='on'] .live {
+  opacity: 1;
+}
+
+.face[data-live='on'] .foil,
+.face[data-live='on'] .sheen {
+  display: none;
+}
+
+/*
  * The standing shimmer of a finish, always visible so a foil card can be told from a plain one at a glance. It lies over
  * the picture and is cut to the foil mask of the card (the printed text stays clean, like the foil layer of the 3D card).
  * Two moving layers per finish; they only move with transforms, which the graphics chip does by itself.

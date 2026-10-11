@@ -17,7 +17,16 @@ Routing is hash-based (`wouter/use-hash-location`), so the game also works from 
 
 ## Why thumbnails
 
-A binder with 80 cards cannot run 80 WebGL views. Each card face is painted once with the same 2D code as the 3D card (`cardface/thumbnails.ts`), shrunk to 360×504, kept as a WebP and shown as an `<img>`. Painting is queued and starts only when a tile comes near the screen. A CSS layer per finish (`ui/components/CardFace.module.css`) hints at the foil while the pointer moves over a tile; the real shader runs only in the inspect view. WebP is used because JPEG encoding was about 25 times slower in the browser pane (1 s against 40 ms per card).
+A binder with 80 cards cannot run 80 WebGL views. Each card face is painted once with the same 2D code as the 3D card (`cardface/thumbnails.ts`), shrunk to 360×504, kept as a WebP and shown as an `<img>`. Painting is queued and starts only when a tile comes near the screen. WebP is used because JPEG encoding was about 25 times slower in the browser pane (1 s against 40 ms per card). Next to the picture the thumbnail keeps two foil masks: a small alpha mask for a CSS shimmer (`ui/components/CardFace.module.css`, the fallback) and the raw mask the shader reads.
+
+## Live foil tiles
+
+Cards with a finish run the real foil shader of the 3D card, in every grid (binder, Card-Dex, showcase). `holo/tileRenderer.ts` owns ONE hidden WebGL renderer for the whole page: every frame it draws the cards that are on screen with `createFrontShader()` (the same shader and the same tilt and light maths as the inspect view, see `holo/tileMath.ts`) and copies each picture into that card's own 2D canvas. The page then clips, scrolls and stacks the cards like any other element, and the number of WebGL views stays at one. `ui/hooks/useHoloTile.ts` connects a `CardFace` to it (visibility through an `IntersectionObserver`, pointer tilt, canvas size) and loads the renderer on demand, so the binder still starts without three.js and shows flat pictures first.
+
+- Only visible cards cost anything. Cards that nobody touches are redrawn about 40 times a second (24 on "normal" graphics, once for a still card), the card under the pointer in every frame; at most 10 pictures per frame, and when frames get slow the idle cards are redrawn less often. A card that was off screen for 4 s gives its textures back, after 20 s its canvas; with no card left the renderer is thrown away after 15 s.
+- The CSS shimmer stays as the fallback: low graphics, no WebGL, a graphics chip reset, or a picture that has not been drawn yet. `CardFace` gets `live={false}` where a picture must stay flat (inside the pack show, the poster under the inspect view).
+- The plain finish stays a flat picture with the CSS light show on hover: it has no foil to draw.
+- Development check: in the browser, `await import(<url of tileRenderer in the Network list>)` then `holoTileStats()` gives cards served, pictures drawn and the time spent drawing.
 
 ## State
 

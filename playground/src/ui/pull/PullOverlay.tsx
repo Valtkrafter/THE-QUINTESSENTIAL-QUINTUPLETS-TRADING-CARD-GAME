@@ -244,7 +244,7 @@ export default function PullOverlay({ openings, preview = false, onClose, onAgai
                 const seen = pullIndex !== undefined && revealed.has(pullIndex);
                 return (
                   <li key={slot} className={cx(styles.slot, seen && styles.seen, slot === snapshot.card && styles.here)} style={pull === undefined ? undefined : tierStyleOf(pull.card.rarity)}>
-                    {seen && pull !== undefined && <CardFace card={pull.card} finish={pull.owned.finish} interactive={false} />}
+                    {seen && pull !== undefined && <CardFace card={pull.card} finish={pull.owned.finish} interactive={false} live={false} />}
                   </li>
                 );
               })}

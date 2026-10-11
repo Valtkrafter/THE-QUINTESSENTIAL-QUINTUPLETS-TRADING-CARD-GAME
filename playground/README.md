@@ -23,7 +23,7 @@ Lower layers never import higher ones (enforced by `src/architecture.test.ts`); 
 | `src/domain`, `src/packs` | Game rules as pure code: seeded random, save game, collection views, pull weights; later grading, economy, battle |
 | `src/state` | The running game and the settings (Zustand), saving to IndexedDB |
 | `src/cardface` | Draws a card face on a 2D canvas (frames, text, signatures) and the flat thumbnails |
-| `src/holo` | WebGL finishes and shaders |
+| `src/holo` | WebGL finishes and shaders, and the one shared renderer that puts them on every card of a grid (`tileRenderer.ts`) |
 | `src/scene` | The 3D card view |
 | `src/ui` | Screens, components, theme tokens (`src/ui/theme/tokens.css`), all texts (`src/ui/text.ts`) |
 

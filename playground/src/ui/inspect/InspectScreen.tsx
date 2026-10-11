@@ -100,7 +100,7 @@ export default function InspectScreen({ uid }: { readonly uid: string }) {
             fallback={() => (
               <div className={styles.flat}>
                 <div className={styles.flatCard}>
-                  <CardFace card={card} finish={copy.finish} interactive={false} />
+                  <CardFace card={card} finish={copy.finish} interactive={false} live={false} />
                 </div>
                 <p>{text.inspect.noWebgl}</p>
               </div>

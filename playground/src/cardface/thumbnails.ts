@@ -1,7 +1,7 @@
 // Small flat pictures of card faces for the binder, the Dex and the showcase. A screen with 80 cards cannot run 80 WebGL
-// views, so each face is painted once with the same code as the 3D card, shrunk, and kept as an image. Next to it comes a
-// small mask of the places where foil may shine (not the printed text), so the screens can lay a shimmer over the picture
-// that stays out of the writing, like the real foil layer of the 3D card.
+// views, so each face is painted once with the same code as the 3D card, shrunk, and kept as an image. Next to it come two
+// masks of the places where foil may shine (not the printed text): a small one for a CSS shimmer that works everywhere, and
+// the real one the foil shader reads, so the cards that are on screen can run the very shader of the 3D card (holo/tileRenderer).
 // Painting is queued and yields to the browser between cards, so scrolling stays smooth while thumbnails fill in.
 // The pictures are WebP: in the browsers tried, encoding JPEG took about a second per card and WebP about 40 ms.
 
@@ -22,6 +22,8 @@ export interface Thumbnail {
   readonly face: string;
   /** A picture that is solid where foil may shine and clear on the printed text, or null when it could not be made. */
   readonly foil: string | null;
+  /** The foil mask exactly as the foil shader reads it (red: foil, green: signature, blue: text), or null when it could not be made. */
+  readonly mask: string | null;
 }
 
 const cache = new Map<string, Promise<Thumbnail | null>>();
@@ -63,6 +65,12 @@ async function foilMaskUrl(mask: HTMLCanvasElement): Promise<string | null> {
   return blob === null ? null : URL.createObjectURL(blob);
 }
 
+/** The foil mask as the shader reads it. Lossless, because its colour channels are data and not colours. */
+async function rawMaskUrl(mask: HTMLCanvasElement): Promise<string | null> {
+  const blob = await toBlob(mask, 'image/png');
+  return blob === null ? null : URL.createObjectURL(blob);
+}
+
 async function paint(card: Card, style: FrameStyle): Promise<Thumbnail | null> {
   const url = artUrlFor(card.art);
   const [image] = await Promise.all([url === null ? Promise.resolve(null) : loadImage(url), ensureCardFonts(card)]);
@@ -81,8 +89,8 @@ async function paint(card: Card, style: FrameStyle): Promise<Thumbnail | null> {
     return null;
   }
   // The shimmer is a bonus: a card without it is still a complete picture.
-  const foil = await foilMaskUrl(mask).catch(() => null);
-  return { face: URL.createObjectURL(blob), foil };
+  const [foil, shaderMask] = await Promise.all([foilMaskUrl(mask).catch(() => null), rawMaskUrl(mask).catch(() => null)]);
+  return { face: URL.createObjectURL(blob), foil, mask: shaderMask };
 }
 
 /** The picture of a card face in the given frame style. The same promise is returned for repeated requests. */
