@@ -1,0 +1,333 @@
+.root {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: var(--space-5);
+  overflow: auto;
+  background:
+    radial-gradient(70% 60% at 50% 40%, color-mix(in oklab, var(--band) 14%, transparent), transparent 70%),
+    rgba(8, 10, 16, 0.98);
+  /* No blur or filter here: either would make this box the frame of the fixed backdrop inside it, and the backdrop would scroll away. */
+  outline: none;
+  animation: fadeIn 300ms var(--ease) both;
+}
+
+.stage {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(220px, 300px) minmax(280px, 400px);
+  gap: var(--space-7);
+  align-items: center;
+  width: min(100%, 860px);
+}
+
+.side {
+  width: 100%;
+}
+
+.inspecting {
+  position: relative;
+  overflow: hidden;
+  border-radius: 5% / 3.6%;
+  box-shadow: var(--shadow-lift);
+}
+
+/* A band of light that sweeps down the card while it is being checked. */
+.scan {
+  position: absolute;
+  right: 0;
+  left: 0;
+  top: -24%;
+  height: 24%;
+  background: linear-gradient(180deg, transparent, color-mix(in oklab, var(--accent-strong) 60%, transparent), transparent);
+  mix-blend-mode: screen;
+  pointer-events: none;
+  animation: scan 1.5s linear infinite;
+}
+
+.slabbed {
+  animation: slabIn 620ms var(--ease) both;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.kicker {
+  color: var(--text-soft);
+  font-size: var(--text-md);
+  font-weight: 600;
+}
+
+.marks {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mark {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'head value'
+    'bar bar';
+  gap: 6px var(--space-3);
+  opacity: 0.35;
+  transition: opacity 320ms var(--ease);
+}
+
+.revealed {
+  opacity: 1;
+}
+
+.mark[data-tone='great'] {
+  --tone: var(--ok);
+}
+
+.mark[data-tone='fair'] {
+  --tone: var(--warn);
+}
+
+.mark[data-tone='poor'] {
+  --tone: var(--danger);
+}
+
+.markHead {
+  display: flex;
+  flex-direction: column;
+  grid-area: head;
+  min-width: 0;
+}
+
+.markHead strong {
+  font-size: var(--text-md);
+}
+
+.markHead span {
+  color: var(--text-faint);
+  font-size: var(--text-xs);
+}
+
+.value {
+  grid-area: value;
+  align-self: center;
+  font-size: var(--text-xl);
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+}
+
+.revealed .value {
+  color: var(--tone);
+  animation: pop 420ms var(--ease) both;
+}
+
+.bar {
+  grid-area: bar;
+  height: 6px;
+  overflow: hidden;
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.bar i {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--tone, var(--accent));
+  transition: width 760ms var(--ease);
+}
+
+.revealed .bar i {
+  width: calc(var(--fill) * 100%);
+}
+
+.result {
+  display: grid;
+  gap: var(--space-2);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--line);
+}
+
+.score {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-4);
+}
+
+.score strong {
+  color: var(--band);
+  font-size: clamp(64px, 11vw, 104px);
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  text-shadow: 0 0 44px color-mix(in oklab, var(--band) 55%, transparent);
+  animation: stamp 560ms var(--ease) both;
+}
+
+.score span {
+  color: var(--band);
+  font-size: var(--text-xl);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.verdict {
+  color: var(--text);
+  font-size: var(--text-md);
+}
+
+.worth {
+  color: var(--horizon);
+  font-size: var(--text-lg);
+  font-weight: 700;
+}
+
+.fee {
+  color: var(--text-faint);
+  font-size: var(--text-sm);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  min-height: 40px;
+}
+
+/* A very good card: sparkles for a 10 and a 9.5, and for a 10 a slow wheel of golden rays. They fill the screen without making it scroll. */
+.backdrop {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.rays {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 150vmax;
+  height: 150vmax;
+  margin: -75vmax 0 0 -75vmax;
+  background: repeating-conic-gradient(from 0deg, color-mix(in oklab, var(--band) 16%, transparent) 0deg 6deg, transparent 6deg 18deg);
+  mask-image: radial-gradient(circle, #000 0%, transparent 55%);
+  animation: spin 40s linear infinite;
+}
+
+.sparkle {
+  position: absolute;
+  background: var(--band);
+  clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%);
+  opacity: 0;
+  animation: twinkle 2.4s ease-in-out infinite;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@media (max-width: 760px) {
+  .stage {
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: center;
+    gap: var(--space-5);
+  }
+
+  .side {
+    width: min(58vw, 230px);
+  }
+
+  .panel {
+    width: 100%;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes scan {
+  to {
+    top: 100%;
+  }
+}
+
+@keyframes slabIn {
+  from {
+    opacity: 0.2;
+    filter: brightness(2.2);
+    transform: scale(0.86) rotate(-1.5deg);
+  }
+}
+
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: scale(1.5);
+  }
+}
+
+@keyframes stamp {
+  from {
+    opacity: 0;
+    transform: scale(1.9) rotate(-7deg);
+  }
+  60% {
+    transform: scale(0.94) rotate(1deg);
+  }
+}
+
+@keyframes twinkle {
+  0%,
+  100% {
+    opacity: 0;
+    transform: scale(0.3) rotate(0deg);
+  }
+  50% {
+    opacity: 0.95;
+    transform: scale(1) rotate(45deg);
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .root,
+  .scan,
+  .slabbed,
+  .revealed .value,
+  .score strong,
+  .rays,
+  .sparkle {
+    animation: none;
+  }
+
+  .sparkle {
+    opacity: 0.7;
+  }
+
+  .bar i {
+    transition: none;
+  }
+}

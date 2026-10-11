@@ -1,0 +1,69 @@
+.ladder {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.ladder caption {
+  padding-bottom: var(--space-2);
+  color: var(--text-soft);
+  font-weight: 650;
+  text-align: left;
+}
+
+.ladder th,
+.ladder td {
+  padding: 5px 0;
+  border-bottom: 1px solid var(--line);
+  font-weight: 500;
+}
+
+.ladder th {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  text-align: left;
+}
+
+.ladder th strong {
+  min-width: 5.2em;
+  color: var(--band, var(--text));
+  font-weight: 750;
+}
+
+.ladder th span {
+  color: var(--text-faint);
+  font-size: var(--text-xs);
+}
+
+.ladder td {
+  text-align: right;
+}
+
+.dot {
+  align-self: center;
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--band);
+}
+
+.loose th,
+.loose td {
+  color: var(--text-soft);
+}
+
+/* A score that leaves the card worth less than it was loose. */
+.below td {
+  color: var(--danger);
+}
+
+.ladder tfoot td {
+  padding-top: var(--space-2);
+  border-bottom: 0;
+  color: var(--text-faint);
+  font-size: var(--text-xs);
+  text-align: left;
+}

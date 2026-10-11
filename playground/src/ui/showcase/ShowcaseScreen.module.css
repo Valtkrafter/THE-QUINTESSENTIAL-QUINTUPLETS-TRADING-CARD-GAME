@@ -47,6 +47,16 @@
   width: 100%;
 }
 
+/* The score of a graded card, on the front edge of its shelf slot. It does not take clicks, the card under it does. */
+.grade {
+  position: absolute;
+  bottom: -14px;
+  left: 50%;
+  z-index: 2;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
 .empty {
   display: flex;
   flex-direction: column;

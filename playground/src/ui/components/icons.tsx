@@ -35,6 +35,17 @@ export function BinderIcon(props: IconProps) {
   );
 }
 
+export function GradingIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <rect x="5.5" y="3" width="13" height="18" rx="2.4" />
+      <path d="M8.5 6.4h7" />
+      <rect x="8.5" y="9.2" width="7" height="8.3" rx="1.2" />
+      <path d="m12 10.9.75 1.55 1.7.25-1.23 1.2.29 1.7L12 14.8l-1.51.8.29-1.7-1.23-1.2 1.7-.25Z" />
+    </Icon>
+  );
+}
+
 export function DexIcon(props: IconProps) {
   return (
     <Icon {...props}>

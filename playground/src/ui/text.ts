@@ -5,8 +5,9 @@
 import type { AiLevel } from '../battle/ai';
 import type { CardReason, EndReason, FigureReason } from '../battle/types';
 import type { FrameStyle } from '../cards/frameStyle';
-import type { SortKey } from '../domain/collection';
+import type { GradingState, SortKey } from '../domain/collection';
 import type { DeckProblem } from '../domain/decks';
+import type { GradeBandId, GradingErrorCode } from '../domain/grading';
 import type { SaveErrorCode } from '../domain/save';
 import type { PackErrorCode } from '../packs/openPack';
 import type { GraphicsLevel, PullAnimation } from '../state/preferences';
@@ -29,6 +30,7 @@ export const text = {
   nav: {
     packs: 'Packs',
     binder: 'Binder',
+    grading: 'Grading',
     battle: 'Battle',
     decks: 'Decks',
     shop: 'Shop',
@@ -75,11 +77,14 @@ export const text = {
       rarity: 'Rarity',
       finish: 'Finish',
       newest: 'Newest first',
+      grade: 'Score',
     } satisfies Record<SortKey, string>,
     filter: (active: number) => (active === 0 ? 'Filter' : `Filter (${active})`),
     filterCharacter: 'Character',
     filterRarity: 'Rarity',
     filterFinish: 'Finish',
+    filterGrading: 'Grading',
+    gradingOptions: { graded: 'Graded', raw: 'Not graded' } satisfies Record<GradingState, string>,
     filterReset: 'Reset filters',
     emptyTitle: 'Your binder is empty',
     emptyBody: 'Every card you get lands here. You have ¥1,500, enough to open your first pack right now.',
@@ -265,6 +270,87 @@ export const text = {
     },
   },
 
+  grading: {
+    title: 'Grading',
+    subtitle: 'Send a card in and get a score from 1 to 10, sealed in a clear case. A high score makes a card worth much more.',
+    yen: 'Your money',
+    tabs: { send: 'Send a card', slabs: 'Your slabs' },
+    howTitle: 'How it works',
+    how: [
+      'Every card has four hidden marks: centering, corners, edges and surface. The score is their average.',
+      'You can see the wear in the 3D view: scratches, white edges and a crooked print mean a low score.',
+      'You pay the fee whatever the score is. So send in the cards that look good.',
+    ],
+    odds: 'About half of all cards score 9 or better. About 1 in 8 reaches 9.5. A perfect 10 is very rare: about 1 in 60.',
+    parts: {
+      centering: { name: 'Centering', hint: 'Is the print in the middle of the card?' },
+      corners: { name: 'Corners', hint: 'Are the four corners sharp?' },
+      edges: { name: 'Edges', hint: 'Are the edges clean, with no white chips?' },
+      surface: { name: 'Surface', hint: 'Is the front free of scratches?' },
+    },
+    send: {
+      search: 'Search your cards …',
+      searchLabel: 'Search your cards',
+      sort: 'Sort by',
+      none: 'You have no card that can be graded yet. Open some packs first.',
+      allDone: 'All your cards are graded.',
+      noMatch: 'No card matches your search.',
+      choose: 'Choose a card on the left.',
+      chosen: 'Chosen card',
+      fee: 'Fee',
+      short: (yen: number) => `${money(yen)} short`,
+      button: (fee: number) => `Send in for ${money(fee)}`,
+      look: 'Look at it in 3D first',
+      ladderTitle: 'What it is worth in its case',
+      ladderLoose: 'Loose card',
+      ladderScore: (score: number) => (score <= 6.5 ? '6.5 or less' : String(score)),
+      ladderNote: 'Below about 7 a card in a case is worth less than a loose one.',
+      confirmTitle: 'Send this card in?',
+      confirm: (name: string, fee: number) => `${name} goes to Grading for ${money(fee)}. The fee is paid whatever the score is. The card comes back in its case.`,
+      confirmYes: 'Yes, send it in',
+      cancel: 'Cancel',
+      errors: {
+        'unknown-copy': 'This card is not in your binder.',
+        'already-graded': 'This card has been graded already.',
+        'not-enough-yen': 'You do not have enough money for that.',
+      } satisfies Record<GradingErrorCode, string>,
+    },
+    slabs: {
+      none: 'You have no graded cards yet. Send a card in and it comes back in a case.',
+      summary: (count: number, yen: number) => `${plural(count, 'slab', 'slabs')} · worth ${money(yen)} together`,
+      report: 'Your scores',
+      reportNote: 'How many of your slabs have each score.',
+      worth: (yen: number) => `Worth ${money(yen)}`,
+    },
+    ceremony: {
+      label: 'Grading',
+      checking: 'Checking your card …',
+      score: 'Score',
+      skip: 'Skip',
+      done: 'Done',
+      seeSlab: 'See the slab',
+      worth: (yen: number) => `Worth ${money(yen)} now`,
+      fee: (yen: number) => `Fee paid: ${money(yen)}`,
+      verdict: {
+        pristine: 'A perfect 10! Very few cards get this.',
+        gem: 'Gem Mint. Almost perfect.',
+        mint: 'Mint. A very clean card.',
+        near: 'Near Mint. Only small flaws.',
+        excellent: 'Excellent. Some wear shows.',
+        good: 'Good. The card shows clear wear.',
+        played: 'Played. The card is worn out.',
+      } satisfies Record<GradeBandId, string>,
+    },
+    sell: {
+      button: (yen: number) => `Sell slab · ${money(yen)}`,
+      title: 'Sell this slab?',
+      confirm: (name: string, score: string, yen: number) => `${name} (score ${score}) will be sold for ${money(yen)}. The card leaves your binder for good.`,
+      yes: 'Yes, sell',
+      cancel: 'Cancel',
+      sold: (yen: number) => `Slab sold for ${money(yen)}.`,
+    },
+  },
+
   inspect: {
     back: 'Binder',
     flip: 'Flip',
@@ -283,7 +369,11 @@ export const text = {
     obtained: 'Obtained',
     obtainedVia: { starter: 'starter card', pack: 'from a pack', shop: 'bought in the shop', reward: 'as a reward' },
     condition: 'Condition',
-    conditionUnknown: 'Not graded yet. Grading is coming, and with it real scores for your best cards.',
+    conditionUnknown: 'Not graded. Scratches, white edges and a crooked print hint at a low score. Send the card to Grading to find out.',
+    grade: (fee: number) => `Grade it · ${money(fee)}`,
+    score: 'Score',
+    gradedOn: (date: string) => `Graded on ${date}`,
+    worth: 'Worth',
     missing: 'This card does not exist (anymore).',
     noWebgl: 'The 3D view cannot start on this device. Here is the card flat.',
     preparing: 'Painting the card …',

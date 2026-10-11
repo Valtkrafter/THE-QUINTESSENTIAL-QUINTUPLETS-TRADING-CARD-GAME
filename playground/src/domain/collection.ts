@@ -6,22 +6,29 @@ import { FINISH_IDS, type FinishId } from '../cards/finish';
 import { RARITIES, type Card, type CharacterId, type Rarity } from '../cards/model';
 import type { OwnedCard } from './ownership';
 
-export const SORT_KEYS = ['number', 'rarity', 'finish', 'newest'] as const;
+export const SORT_KEYS = ['number', 'rarity', 'finish', 'newest', 'grade'] as const;
 export type SortKey = (typeof SORT_KEYS)[number];
+
+/** A copy is either still loose ("raw") or has been sent to Grading and sits in its case. */
+export const GRADING_STATES = ['graded', 'raw'] as const;
+export type GradingState = (typeof GRADING_STATES)[number];
 
 export interface CollectionFilter {
   /** Free text: matches the name (English or Japanese), the title and the card id. Empty matches everything. */
   readonly query: string;
-  /** Empty list = no restriction, for each of the three lists below. */
+  /** Empty list = no restriction, for each of the four lists below. */
   readonly characters: readonly CharacterId[];
   readonly rarities: readonly Rarity[];
   readonly finishes: readonly FinishId[];
+  readonly grading: readonly GradingState[];
 }
 
-export const NO_FILTER: CollectionFilter = { query: '', characters: [], rarities: [], finishes: [] };
+export const NO_FILTER: CollectionFilter = { query: '', characters: [], rarities: [], finishes: [], grading: [] };
 
 export function activeFilterCount(filter: CollectionFilter): number {
-  return (filter.query.trim() === '' ? 0 : 1) + [filter.characters, filter.rarities, filter.finishes].filter((list) => list.length > 0).length;
+  return (
+    (filter.query.trim() === '' ? 0 : 1) + [filter.characters, filter.rarities, filter.finishes, filter.grading].filter((list) => list.length > 0).length
+  );
 }
 
 const RARITY_RANK: Readonly<Record<string, number>> = Object.fromEntries(RARITIES.map((rarity) => [rarity.id, rarity.tier]));
@@ -55,7 +62,8 @@ export function filterCollection(collection: readonly OwnedCard[], filter: Colle
       matchesQuery(card, filter.query) &&
       (filter.characters.length === 0 || filter.characters.includes(card.character)) &&
       (filter.rarities.length === 0 || filter.rarities.includes(card.rarity)) &&
-      (filter.finishes.length === 0 || filter.finishes.includes(copy.finish))
+      (filter.finishes.length === 0 || filter.finishes.includes(copy.finish)) &&
+      (filter.grading.length === 0 || filter.grading.includes(copy.grade === null ? 'raw' : 'graded'))
     );
   });
 }
@@ -74,11 +82,17 @@ function byPrintOrder(a: OwnedCard, b: OwnedCard): number {
   return numberOf(a) - numberOf(b) || a.serial - b.serial;
 }
 
+/** The score of a graded copy; a loose copy counts as 0, so it comes after every slab. */
+function scoreOf(copy: OwnedCard): number {
+  return copy.grade?.overall ?? 0;
+}
+
 const COMPARE: Readonly<Record<SortKey, (a: OwnedCard, b: OwnedCard) => number>> = {
   number: byPrintOrder,
   rarity: (a, b) => rarityOf(b) - rarityOf(a) || byPrintOrder(a, b),
   finish: (a, b) => finishRank(b.finish) - finishRank(a.finish) || byPrintOrder(a, b),
   newest: (a, b) => b.obtained.at - a.obtained.at || b.uid.localeCompare(a.uid),
+  grade: (a, b) => scoreOf(b) - scoreOf(a) || rarityOf(b) - rarityOf(a) || byPrintOrder(a, b),
 };
 
 /** Returns a sorted copy of the list. */

@@ -15,6 +15,7 @@ const SORT_OPTIONS: readonly { readonly value: SortKey; readonly label: string }
   { value: 'rarity', label: text.binder.sortOptions.rarity },
   { value: 'finish', label: text.binder.sortOptions.finish },
   { value: 'newest', label: text.binder.sortOptions.newest },
+  { value: 'grade', label: text.binder.sortOptions.grade },
 ];
 
 export default function BinderScreen() {

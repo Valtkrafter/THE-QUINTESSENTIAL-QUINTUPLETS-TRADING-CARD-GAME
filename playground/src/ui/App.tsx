@@ -10,6 +10,7 @@ import DamagedScreen from './DamagedScreen';
 import DeckEditor from './decks/DeckEditor';
 import DecksScreen from './decks/DecksScreen';
 import DexScreen from './dex/DexScreen';
+import GradingScreen from './grading/GradingScreen';
 import OddsScreen from './packs/OddsScreen';
 import PacksScreen from './packs/PacksScreen';
 import { AppShell } from './shell/AppShell';
@@ -48,6 +49,7 @@ function Game() {
         <Switch>
           <Route path="/" component={BinderScreen} />
           <Route path="/shop" component={ShopScreen} />
+          <Route path="/grading" component={GradingScreen} />
           <Route path="/battle" component={BattleScreen} />
           <Route path="/decks" component={DecksScreen} />
           <Route path="/decks/new">{() => <DeckEditor key="new" source={{ kind: 'new' }} />}</Route>

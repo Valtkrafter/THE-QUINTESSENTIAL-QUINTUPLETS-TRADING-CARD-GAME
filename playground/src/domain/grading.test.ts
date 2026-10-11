@@ -1,6 +1,25 @@
 import { describe, expect, it } from 'vitest';
 import { cardById } from '../cards/catalog';
-import { GRADING_FEE_YEN, GradingError, gradeLabel, gradeMultiplier, gradingFee, overallGrade, populationReport, sellSlab, slabValue, submitForGrading, wearOf } from './grading';
+import {
+  GRADE_BANDS,
+  GRADING_FEE_YEN,
+  GradingError,
+  LADDER_SCORES,
+  gradeBand,
+  gradeLabel,
+  gradeLadder,
+  gradeMultiplier,
+  gradingFee,
+  overallGrade,
+  populationReport,
+  rawCopies,
+  sellSlab,
+  slabValue,
+  slabsOf,
+  submitForGrading,
+  valueAtScore,
+  wearOf,
+} from './grading';
 import { rollCondition } from './ownership';
 import { createRng } from './random';
 import { STARTING_YEN, addOwnedCard, newSaveGame, withShowcase, type SaveGame } from './save';
@@ -61,6 +80,33 @@ describe('the score of a copy', () => {
     expect(wearOf(1)).toBe(1);
     expect(wearOf(5.5)).toBeCloseTo(0.5);
     expect(wearOf(0)).toBe(1);
+  });
+
+  it('puts every score into one band, the best band first, and the bands are the words of the slab label', () => {
+    expect(GRADE_BANDS.map((band) => band.min)).toEqual([...GRADE_BANDS.map((band) => band.min)].sort((a, b) => b - a));
+    expect(gradeBand(10).id).toBe('pristine');
+    expect(gradeBand(9.5).id).toBe('gem');
+    expect(gradeBand(8.5).id).toBe('near');
+    expect(gradeBand(7.5).id).toBe('excellent');
+    expect(gradeBand(1).id).toBe('played');
+    expect(gradeBand(0).label).toBe('Played');
+  });
+});
+
+describe('the price ladder', () => {
+  it('has a row for every score that changes the price, best first, and falls from row to row', () => {
+    const ladder = gradeLadder('UR', 'gold');
+    expect(ladder.map((row) => row.score)).toEqual([...LADDER_SCORES]);
+    for (let index = 1; index < ladder.length; index += 1) {
+      expect(ladder[index]?.yen ?? 0).toBeLessThanOrEqual(ladder[index - 1]?.yen ?? 0);
+    }
+    expect(ladder[0]?.yen).toBe(valueAtScore('UR', 'gold', 10));
+    expect(ladder[0]?.yen).toBe(Math.round(sellPrice('UR', 'gold') * 6));
+  });
+
+  it('shows the last row below the raw price, because a battered card is worth less in a case than loose', () => {
+    const ladder = gradeLadder('SAR', 'prism');
+    expect(ladder[ladder.length - 1]?.yen).toBeLessThan(sellPrice('SAR', 'prism'));
   });
 });
 
@@ -133,5 +179,11 @@ describe('sending a card in', () => {
     expect(report.reduce((sum, row) => sum + row.count, 0)).toBe(6);
     expect(report.map((row) => row.overall)).toEqual([...report.map((row) => row.overall)].sort((a, b) => b - a));
     expect(STARTING_YEN).toBeGreaterThan(0);
+
+    const slabs = slabsOf(save.collection);
+    expect(slabs).toHaveLength(6);
+    expect(slabs.map((copy) => copy.grade?.overall ?? 0)).toEqual([...slabs.map((copy) => copy.grade?.overall ?? 0)].sort((a, b) => b - a));
+    const raw = rawCopies(save.collection);
+    expect(raw.map((copy) => copy.uid).sort()).toEqual(uids.slice(6).sort());
   });
 });

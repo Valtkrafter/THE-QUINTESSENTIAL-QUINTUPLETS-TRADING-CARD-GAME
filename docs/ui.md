@@ -4,14 +4,15 @@
 
 | Route | Screen | What it does |
 |---|---|---|
-| `#/` | Binder (`ui/binder`) | Every owned copy as a flat picture; search, filter (character, rarity, finish), sort (number, rarity, finish, newest) |
+| `#/` | Binder (`ui/binder`) | Every owned copy as a flat picture; search, filter (character, rarity, finish, graded or not), sort (number, rarity, finish, newest, score); a graded copy carries its score and a ring in the colour of its band |
+| `#/grading` | Grading (`ui/grading`) | Send a loose card in (the fee and the price ladder first, then the reveal) and look at your slabs and your scores; see "Grading" below |
 | `#/battle` | Battle (`ui/battle`) | The lobby (pick a rival and a deck) and, once a battle starts, the table; see "Battle" below |
 | `#/decks`, `#/decks/new`, `#/decks/<id>`, `#/decks/template/<id>` | Decks (`ui/decks`) | The player's decks and the loaner decks; the deck builder |
 | `#/shop` | Shop (`ui/shop`) | The Kiosk (eight single cards a day) and the buyer of spare cards; see `docs/packs-und-wirtschaft.md` section 8 |
 | `#/packs` | Packs (`ui/packs`) | Normales Pack und Halloween-Banner, Garantie-Balken, 1 oder 5 Packs öffnen, Tagesbonus, letzte Packs |
 | `#/packs/odds` | Quoten (`ui/packs`) | Alle Tabellen, Garantien und Banner-Regeln, aus denselben Daten wie die Ziehung erzeugt |
 | `#/dex` | Card-Dex (`ui/dex`) | All 79 designs, owned ones in colour, missing ones dim; progress overall and per character |
-| `#/card/<uid>` | Inspect (`ui/inspect`) | One copy in 3D (drag to turn, double-click to flip), facts, showcase toggle, arrow keys to the neighbours |
+| `#/card/<uid>` | Inspect (`ui/inspect`) | One copy in 3D (drag to turn, double-click to flip) with the wear of its hidden marks, facts, showcase toggle, arrow keys to the neighbours; a loose copy has a "Grade it" button, a graded copy sits in its 3D slab and shows its score, marks and value, with "Sell slab" |
 | `#/showcase` | Showcase (`ui/showcase`) | Up to 6 copies on display; picker dialog |
 | `#/settings` | Settings (`ui/settings`) | Frame style, graphics level, idle motion, save export/import/reset, development grants (dev build only) |
 | `#/lab` | Holo Lab (`ui/lab`) | The old playground, kept as a dev tool |
@@ -40,6 +41,16 @@ Cards with a finish run the real foil shader of the 3D card, in every grid (bind
 ## Decks (Stage 4)
 
 `ui/decks/DecksScreen.tsx` lists the player's decks (edit, copy, delete) and the loaner decks (use as a template). `DeckEditor.tsx` is the deck builder: the player's cards on the left (search, characters or supporters; a card that cannot be added says why on hover), the deck on the right with one row per design and minus and plus, the rules check in plain words, and the card under the pointer enlarged. A template keeps the cards the player does not own and marks them. Decks may be saved unfinished. The rules of changing a deck are pure and tested (`editing.ts`).
+
+## Grading (Stage 6)
+
+**The rules** are pure code in `domain/grading.ts`: the score of a copy is the average of its four hidden marks (rolled when the copy was printed, see `domain/ownership.ts`) rounded down to half a point, and 9.75 or more is a 10; the fee depends on the rarity; the value is the price of the card times what the score adds (`gradeMultiplier`); `submitForGrading`, `sellSlab`, `populationReport` and `gradeLadder` (what a card is worth at every score) are all tested. The numbers are in `docs/packs-und-wirtschaft.md` section 9.
+
+**The wear** is what makes the marks visible before a card is graded. `holo/shaders/cardFront.frag.glsl` takes four wear values (`holo/wear.ts` turns a mark into 0 for a perfect one and 1 for the worst): an off-centre print (a white strip on one side), whitened corners and edges, scratches that flash when the light slides along them, and a dull haze. `wearSeed` (from the copy's uid) makes every worn copy wear differently. The inspect view uses it; grids stay clean.
+
+**The slab** is built in `holo/slabShape.ts` and `holo/Slab.tsx` as a child of the card, so it turns, tilts and flips with it: a dark insert with a window for the card, the paper label above it (`holo/slabLabel.ts` paints it on a 2D canvas: logo, name, the four marks and the score in a box, in three palettes: gold for a 10, silver for 9 to 9.5, paper for the rest) and a shell of clear plastic (`shaders/slab.frag.glsl`: a faint tint, a glow along the edges, a glint of the light, a soft reflection that slides over it). No glass and no environment map, so it costs one cheap pass on every graphics card. Without WebGL the flat `ui/grading/SlabFlat.tsx` shows the same label over the card.
+
+**The screens.** `GradingScreen.tsx` has two tabs. "Send a card" lists the loose cards (search and sort); on a wide screen a side panel shows the chosen card, the fee and the price ladder (`PriceLadder.tsx`), on a narrow one a tap opens the question at once. `GradeFlow.tsx` is that question (also opened from the inspect view): the ladder, the fee, "Yes, send it in". The save is written first, then `Ceremony.tsx` plays the reveal: the card is checked, the four marks appear one by one with a bell for each, the score is stamped (a 10 gets golden rays and sparkles, a 9.5 sparkles), and the card slides into its case. It can be skipped at any moment (click, Space, Enter, Escape or the button) and it shows everything at once for people who asked their system for reduced motion. "Your slabs" shows the population report (how many slabs have each score), the total value and every slab, best first.
 
 ## State
 

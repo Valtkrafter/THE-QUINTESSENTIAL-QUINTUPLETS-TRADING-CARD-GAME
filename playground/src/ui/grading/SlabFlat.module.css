@@ -1,0 +1,59 @@
+/*
+ * The flat slab. Everything is measured in the width of the case (cqw), the way the 3D slab is built: 2.62 wide label above a
+ * 2.5 wide card inside a case 3.02 wide and 4.85 high, so the two look alike.
+ */
+
+.slab {
+  container-type: inline-size;
+  width: 100%;
+}
+
+.case {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3.3cqw;
+  width: 100%;
+  aspect-ratio: 3.02 / 4.85;
+  padding: 7.9cqw 8.6cqw 8.9cqw;
+  border-radius: 6.6cqw;
+  background: #1b1f31;
+  box-shadow:
+    0 0 0 0.5cqw color-mix(in oklab, var(--band) 55%, rgba(255, 255, 255, 0.35)),
+    0 22px 40px -18px rgba(0, 0, 0, 0.85);
+}
+
+.label {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 1.4cqw;
+}
+
+.wait {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1280 / 362;
+  border-radius: 1.4cqw;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.window {
+  width: 82.8cqw;
+  flex: none;
+}
+
+/* The clear plastic over everything: a bright rim, a soft glow inside it and a slanted gleam. */
+.shell {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background:
+    linear-gradient(125deg, rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0) 24%, rgba(255, 255, 255, 0) 68%, rgba(255, 255, 255, 0.14)),
+    linear-gradient(0deg, rgba(190, 205, 255, 0.05), rgba(190, 205, 255, 0.05));
+  box-shadow:
+    inset 0 0 0 1.2cqw rgba(255, 255, 255, 0.07),
+    inset 0 0 4cqw color-mix(in oklab, var(--band) 45%, rgba(190, 205, 255, 0.4));
+  pointer-events: none;
+}

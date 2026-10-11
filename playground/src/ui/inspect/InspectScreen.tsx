@@ -4,6 +4,7 @@ import { cardById, SET_CODE, SET_SIZE } from '../../cards/catalog';
 import { AFFINITY_INFO, CHARACTERS } from '../../cards/characters';
 import { RARITIES } from '../../cards/model';
 import { sortCollection } from '../../domain/collection';
+import { GradingError, gradingFee, sellSlab, slabValue } from '../../domain/grading';
 import { SHOWCASE_SLOTS, withShowcase } from '../../domain/save';
 import { findFinish } from '../../holo/finishes';
 import { DEFAULT_SETTINGS, type HoloSettings } from '../../holo/settings';
@@ -12,11 +13,17 @@ import { gameStore, usePreferences, useSave } from '../../state/app';
 import { MAX_PIXEL_RATIO } from '../../state/preferences';
 import { CardFace } from '../components/CardFace';
 import { Button, Pill } from '../components/controls';
+import { Dialog } from '../components/Dialog';
 import { ErrorBoundary } from '../components/ErrorBoundary';
-import { ArrowLeftIcon, FlipIcon, SparkleIcon } from '../components/icons';
+import { ArrowLeftIcon, FlipIcon, GradingIcon, SparkleIcon } from '../components/icons';
 import { EmptyState } from '../components/PageHeader';
 import { FINISH_SWATCH } from '../finishStyle';
-import { formatCardNumber, formatDate } from '../format';
+import { formatCardNumber, formatDate, formatGrade, formatSubGrade, formatYen } from '../format';
+import { GradeBadge } from '../grading/GradeBadge';
+import { GradeFlow } from '../grading/GradeFlow';
+import { MARKS } from '../grading/marks';
+import { slabLabelInfo } from '../grading/slabInfo';
+import { SlabFlat } from '../grading/SlabFlat';
 import { text } from '../text';
 import styles from './InspectScreen.module.css';
 
@@ -28,12 +35,19 @@ function goBack(navigate: (to: string) => void): void {
   }
 }
 
+/** True while a dialog or the grading reveal is open: the keys then belong to it, not to the page behind. */
+function modalIsOpen(): boolean {
+  return document.querySelector('dialog[open], [role="dialog"][aria-modal="true"]') !== null;
+}
+
 export default function InspectScreen({ uid }: { readonly uid: string }) {
   const save = useSave();
   const preferences = usePreferences();
   const [, navigate] = useLocation();
   const [flipRequest, setFlipRequest] = useState(0);
   const [ready, setReady] = useState(false);
+  const [grading, setGrading] = useState(false);
+  const [selling, setSelling] = useState(false);
 
   const copy = save.collection.find((owned) => owned.uid === uid);
   const card = copy === undefined ? undefined : cardById(copy.cardId);
@@ -47,12 +61,13 @@ export default function InspectScreen({ uid }: { readonly uid: string }) {
     () => ({ ...DEFAULT_SETTINGS, frameStyle: preferences.frameStyle, idleMotion: preferences.idleMotion }),
     [preferences.frameStyle, preferences.idleMotion],
   );
+  const slab = useMemo(() => (copy === undefined ? null : slabLabelInfo(copy)), [copy]);
 
   const markReady = useCallback(() => setReady(true), []);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if (event.target instanceof HTMLElement && ['INPUT', 'SELECT', 'TEXTAREA'].includes(event.target.tagName)) {
+      if (modalIsOpen() || (event.target instanceof HTMLElement && ['INPUT', 'SELECT', 'TEXTAREA'].includes(event.target.tagName))) {
         return;
       }
       if (event.key === 'ArrowLeft' && previous !== undefined) {
@@ -80,11 +95,28 @@ export default function InspectScreen({ uid }: { readonly uid: string }) {
   const character = CHARACTERS[card.character];
   const onShowcase = save.showcase.includes(copy.uid);
   const showcaseFull = !onShowcase && save.showcase.length >= SHOWCASE_SLOTS;
+  const grade = copy.grade;
 
   const toggleShowcase = () => {
     gameStore.getState().change((current) =>
       withShowcase(current, onShowcase ? current.showcase.filter((entry) => entry !== copy.uid) : [...current.showcase, copy.uid], Date.now()),
     );
+  };
+
+  const sell = () => {
+    try {
+      gameStore.getState().transact((current) => {
+        const sold = sellSlab(current, copy.uid, Date.now());
+        return { save: sold.save, value: sold };
+      });
+      navigate('/', { replace: true });
+    } catch (failure) {
+      // The slab is already gone (another tab sold it): nothing more to do than close the question.
+      if (!(failure instanceof GradingError)) {
+        throw failure;
+      }
+    }
+    setSelling(false);
   };
 
   return (
@@ -100,7 +132,7 @@ export default function InspectScreen({ uid }: { readonly uid: string }) {
             fallback={() => (
               <div className={styles.flat}>
                 <div className={styles.flatCard}>
-                  <CardFace card={card} finish={copy.finish} interactive={false} live={false} />
+                  {grade === null ? <CardFace card={card} finish={copy.finish} interactive={false} live={false} /> : <SlabFlat copy={copy} />}
                 </div>
                 <p>{text.inspect.noWebgl}</p>
               </div>
@@ -114,6 +146,7 @@ export default function InspectScreen({ uid }: { readonly uid: string }) {
               flipRequest={flipRequest}
               condition={copy.condition}
               wearKey={copy.uid}
+              slab={slab}
               onReady={markReady}
             />
           </ErrorBoundary>
@@ -182,8 +215,31 @@ export default function InspectScreen({ uid }: { readonly uid: string }) {
           </div>
           <div>
             <dt>{text.inspect.condition}</dt>
-            <dd className={styles.muted}>{text.inspect.conditionUnknown}</dd>
+            <dd>
+              {grade === null ? (
+                <span className={styles.muted}>{text.inspect.conditionUnknown}</span>
+              ) : (
+                <div className={styles.grade}>
+                  <GradeBadge grade={grade} size="large" />
+                  <ul className={styles.marks} aria-label={text.inspect.condition}>
+                    {MARKS.map((mark) => (
+                      <li key={mark}>
+                        <span>{text.grading.parts[mark].name}</span>
+                        <strong>{formatSubGrade(grade.sub[mark])}</strong>
+                      </li>
+                    ))}
+                  </ul>
+                  <span className={styles.muted}>{text.inspect.gradedOn(formatDate(grade.gradedAt))}</span>
+                </div>
+              )}
+            </dd>
           </div>
+          {grade !== null && (
+            <div>
+              <dt>{text.inspect.worth}</dt>
+              <dd>{formatYen(slabValue(copy))}</dd>
+            </div>
+          )}
         </dl>
 
         <div className={styles.actions}>
@@ -195,8 +251,33 @@ export default function InspectScreen({ uid }: { readonly uid: string }) {
             <SparkleIcon size={16} />
             {onShowcase ? text.inspect.removeFromShowcase : text.inspect.addToShowcase}
           </Button>
+          {grade === null ? (
+            <Button onClick={() => setGrading(true)}>
+              <GradingIcon size={16} />
+              {text.inspect.grade(gradingFee(card.rarity))}
+            </Button>
+          ) : (
+            <Button kind="danger" onClick={() => setSelling(true)}>
+              {text.grading.sell.button(slabValue(copy))}
+            </Button>
+          )}
         </div>
       </aside>
+
+      {grading && <GradeFlow uid={copy.uid} onClose={() => setGrading(false)} />}
+      {selling && grade !== null && (
+        <Dialog title={text.grading.sell.title} onClose={() => setSelling(false)}>
+          <div className={styles.confirm}>
+            <p>{text.grading.sell.confirm(card.name.en, formatGrade(grade.overall), slabValue(copy))}</p>
+            <div className={styles.confirmActions}>
+              <Button onClick={() => setSelling(false)}>{text.grading.sell.cancel}</Button>
+              <Button kind="danger" onClick={sell}>
+                {text.grading.sell.yes}
+              </Button>
+            </div>
+          </div>
+        </Dialog>
+      )}
     </div>
   );
 }

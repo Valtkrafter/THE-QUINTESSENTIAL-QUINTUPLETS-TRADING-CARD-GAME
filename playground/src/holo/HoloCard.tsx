@@ -1,5 +1,5 @@
 import { useFrame, type ThreeEvent } from '@react-three/fiber';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { MeshBasicMaterial, PlaneGeometry, Vector3, type Group, type Mesh, type Texture } from 'three';
 import { CARD_HEIGHT, CARD_THICKNESS, CARD_WIDTH, getCardGeometries } from './cardGeometry';
 import { CardRig } from './cardRig';
@@ -10,6 +10,13 @@ import type { CardTexture } from './textures';
 
 /** `hover`: tilt toward the pointer, click to select. `inspect`: also drag to spin and double-click to flip. */
 export type CardInteraction = 'hover' | 'inspect';
+
+export interface CardReach {
+  readonly width: number;
+  readonly height: number;
+  /** How far the middle of the box lies above the middle of the card. */
+  readonly centerY: number;
+}
 
 export interface HoloCardProps {
   readonly position: [number, number, number];
@@ -28,6 +35,10 @@ export interface HoloCardProps {
   readonly wear?: readonly [number, number, number, number] | undefined;
   readonly wearSeed?: number | undefined;
   readonly shadowTexture: Texture;
+  /** Something that goes around the card and moves with it, like the case of a slab. */
+  readonly children?: ReactNode;
+  /** The box around the card that takes the pointer and casts the shadow, when it is bigger than the card (a slab is). */
+  readonly reach?: CardReach | undefined;
   readonly label?: Texture | undefined;
   /** Increment to flip the card over. */
   readonly flipRequest?: number | undefined;
@@ -55,6 +66,8 @@ export function HoloCard({
   wear,
   wearSeed,
   shadowTexture,
+  children,
+  reach,
   label,
   flipRequest = 0,
   idlePhase = 0,
@@ -192,11 +205,18 @@ export function HoloCard({
     );
   });
 
+  const hitScale: [number, number, number] =
+    reach === undefined
+      ? [1, 1, 1]
+      : [Math.max(1, reach.width / (CARD_WIDTH * 1.12)), Math.max(1, (Math.abs(reach.centerY) + reach.height / 2) / ((CARD_HEIGHT * 1.12) / 2)), 1];
+  const shadowFit: [number, number, number] = reach === undefined ? [1, 1, 1] : [reach.width / CARD_WIDTH, reach.height / CARD_HEIGHT, 1];
+
   return (
     <group position={position}>
       <mesh
         ref={hitRef}
         geometry={hitGeometry}
+        scale={hitScale}
         visible={false}
         onPointerEnter={handlePointerEnter}
         onPointerMove={handlePointerMove}
@@ -205,11 +225,14 @@ export function HoloCard({
         onClick={handleClick}
         onDoubleClick={handleDoubleClick}
       />
-      <mesh ref={shadowRef} geometry={shadowGeometry} material={rig.shadowMaterial} renderOrder={-1} />
+      <group position={[0, reach?.centerY ?? 0, 0]} scale={shadowFit}>
+        <mesh ref={shadowRef} geometry={shadowGeometry} material={rig.shadowMaterial} renderOrder={-1} />
+      </group>
       <group ref={pivotRef}>
         <mesh geometry={geometries.edge} material={rig.edgeMaterials} />
         <mesh ref={frontRef} geometry={geometries.front} material={rig.front.material} position={[0, 0, CARD_THICKNESS / 2]} />
         <mesh ref={backRef} geometry={geometries.back} material={rig.back.material} position={[0, 0, -CARD_THICKNESS / 2]} />
+        {children}
       </group>
       {labelMaterial !== null && (
         <mesh geometry={labelGeometry} material={labelMaterial} position={[0, -CARD_HEIGHT / 2 - 0.42, 0]} />

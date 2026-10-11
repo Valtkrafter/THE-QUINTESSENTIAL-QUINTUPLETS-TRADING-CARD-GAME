@@ -12,6 +12,10 @@ import { hasFrame } from '../holo/frames';
 import { HoloCard } from '../holo/HoloCard';
 import { premiumStrength } from '../holo/premium';
 import type { HoloSettings } from '../holo/settings';
+import { Slab } from '../holo/Slab';
+import { SLAB_EXTENT } from '../holo/slabShape';
+import type { SlabLabelInfo } from '../holo/slabLabel';
+import { useSlabLabel } from '../holo/useSlabLabel';
 import { wearSeedOf, wearVector } from '../holo/wear';
 import { createShadowTexture } from '../holo/textures';
 import { DEFAULT_LIGHT, useCameraFit, useSceneLight } from './sceneKit';
@@ -28,6 +32,8 @@ export interface CardViewerProps {
   readonly condition?: Condition | null | undefined;
   /** Makes the wear of this copy its own (the copy's uid). */
   readonly wearKey?: string | undefined;
+  /** The label of the slab around a graded copy. Left out, the card is shown bare. */
+  readonly slab?: SlabLabelInfo | null | undefined;
   /** Called once the card face is painted and on screen. */
   readonly onReady?: (() => void) | undefined;
 }
@@ -45,30 +51,35 @@ export function CardViewer(props: CardViewerProps) {
   );
 }
 
-function ViewerScene({ card, finishId, settings, flipRequest, onReady, condition, wearKey }: CardViewerProps) {
+function ViewerScene({ card, finishId, settings, flipRequest, onReady, condition, wearKey, slab }: CardViewerProps) {
   const composed = useComposedCard(card, settings.frameStyle);
+  const slabLabel = useSlabLabel(slab ?? null);
   const wear = useMemo(() => (condition === null || condition === undefined ? undefined : wearVector(condition)), [condition]);
   const wearSeed = useMemo(() => wearSeedOf(wearKey ?? ''), [wearKey]);
   const shadowTexture = useMemo(() => createShadowTexture(), []);
   const light = useSceneLight(settings.lightFollowsPointer);
   const finish = findFinish(finishId);
+  const slabbed = slab !== null && slab !== undefined;
+  // A slab is shown only once its label is painted, so the bare card never flashes before the case appears.
+  const ready = composed !== null && (!slabbed || slabLabel !== null);
 
   useEffect(() => () => shadowTexture.dispose(), [shadowTexture]);
   useEffect(() => {
-    if (composed !== null) {
+    if (ready) {
       onReady?.();
     }
-  }, [composed, onReady]);
+  }, [ready, onReady]);
 
-  useCameraFit(CARD_WIDTH * 1.3, CARD_HEIGHT * 1.14);
+  useCameraFit(slabbed ? SLAB_EXTENT.width * 1.22 : CARD_WIDTH * 1.3, slabbed ? SLAB_EXTENT.height * 1.1 : CARD_HEIGHT * 1.14);
 
   return (
     <>
       <ambientLight intensity={0.7} />
       <directionalLight position={[DEFAULT_LIGHT.x, DEFAULT_LIGHT.y, DEFAULT_LIGHT.z]} intensity={1.4} />
-      {composed !== null && (
+      {composed !== null && ready && (
         <HoloCard
-          position={[0, 0, 0]}
+          position={[0, slabbed ? -SLAB_EXTENT.centerY : 0, 0]}
+          reach={slabbed ? SLAB_EXTENT : undefined}
           finish={finish}
           maskIndex={resolveMaskIndex(settings.maskSetting, finish, true, hasFrame(settings.frameStyle))}
           art={composed.face}
@@ -82,7 +93,9 @@ function ViewerScene({ card, finishId, settings, flipRequest, onReady, condition
           wearSeed={wearSeed}
           shadowTexture={shadowTexture}
           flipRequest={flipRequest}
-        />
+        >
+          {slabbed && slabLabel !== null && <Slab label={slabLabel} band={slab.band} light={light} />}
+        </HoloCard>
       )}
     </>
   );

@@ -47,8 +47,22 @@ describe('filterCollection', () => {
 
   it('counts the active filters for the button label', () => {
     expect(activeFilterCount(NO_FILTER)).toBe(0);
-    expect(activeFilterCount({ query: ' ', characters: [], rarities: [], finishes: [] })).toBe(0);
-    expect(activeFilterCount({ query: 'x', characters: ['nino', 'miku'], rarities: [], finishes: ['gold'] })).toBe(3);
+    expect(activeFilterCount({ ...NO_FILTER, query: ' ' })).toBe(0);
+    expect(activeFilterCount({ ...NO_FILTER, query: 'x', characters: ['nino', 'miku'], finishes: ['gold'] })).toBe(3);
+    expect(activeFilterCount({ ...NO_FILTER, grading: ['graded'] })).toBe(1);
+  });
+
+  it('tells graded copies from loose ones', () => {
+    const gradedCopy = save.collection[0];
+    expect(gradedCopy).toBeDefined();
+    if (gradedCopy === undefined) {
+      return;
+    }
+    const sub = { centering: 9, corners: 9, edges: 9, surface: 9 };
+    const mixed = save.collection.map((copy) => (copy.uid === gradedCopy.uid ? { ...copy, grade: { overall: 9, sub, gradedAt: NOW } } : copy));
+    expect(ids(filterCollection(mixed, { ...NO_FILTER, grading: ['graded'] }))).toEqual([gradedCopy.uid]);
+    expect(filterCollection(mixed, { ...NO_FILTER, grading: ['raw'] })).toHaveLength(4);
+    expect(filterCollection(mixed, { ...NO_FILTER, grading: ['raw', 'graded'] })).toHaveLength(5);
   });
 });
 
@@ -67,6 +81,16 @@ describe('sortCollection', () => {
     expect(sortCollection(save.collection, 'rarity')[0]?.cardId).toBe('TQQ01-012');
     expect(sortCollection(save.collection, 'finish').map((copy) => copy.finish)).toEqual(['prism', 'gold', 'rainbow', 'standard', 'standard']);
     expect(ids(sortCollection(save.collection, 'newest'))).toEqual(['c000005', 'c000004', 'c000003', 'c000002', 'c000001']);
+  });
+
+  it('sorts by score, best slab first and every loose copy after the slabs', () => {
+    const sub = { centering: 9, corners: 9, edges: 9, surface: 9 };
+    const scored = save.collection.map((copy, index) =>
+      index === 1 ? { ...copy, grade: { overall: 9.5, sub, gradedAt: NOW } } : index === 3 ? { ...copy, grade: { overall: 7, sub, gradedAt: NOW } } : copy,
+    );
+    const order = sortCollection(scored, 'grade');
+    expect(order.slice(0, 2).map((copy) => copy.grade?.overall)).toEqual([9.5, 7]);
+    expect(order.slice(2).every((copy) => copy.grade === null)).toBe(true);
   });
 
   it('does not change the list it was given', () => {

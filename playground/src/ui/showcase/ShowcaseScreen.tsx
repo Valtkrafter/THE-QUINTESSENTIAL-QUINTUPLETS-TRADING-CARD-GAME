@@ -10,6 +10,7 @@ import { CardTile } from '../components/CardTile';
 import { Dialog } from '../components/Dialog';
 import { CloseIcon, PlusIcon } from '../components/icons';
 import { PageHeader } from '../components/PageHeader';
+import { GradeBadge } from '../grading/GradeBadge';
 import { text } from '../text';
 import styles from './ShowcaseScreen.module.css';
 
@@ -64,6 +65,11 @@ export default function ShowcaseScreen() {
                 <Link href={`/card/${copy.uid}`} className={styles.hit} aria-label={`${card.name.en} · ${card.title}`}>
                   <CardFace card={card} finish={copy.finish} />
                 </Link>
+                {copy.grade !== null && (
+                  <span className={styles.grade}>
+                    <GradeBadge grade={copy.grade} size="large" />
+                  </span>
+                )}
                 <button
                   type="button"
                   className={styles.remove}

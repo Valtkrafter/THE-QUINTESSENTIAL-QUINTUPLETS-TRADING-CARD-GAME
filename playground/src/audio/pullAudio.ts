@@ -1,6 +1,7 @@
 // The sound of the pull show, made in the browser with Tone.js (no sound files). Every cue is built from a few layers:
 // a riser for the flight, a deep hit with a crash for the impact, a bell arpeggio that grows with the rarity for each
-// reveal. Tone.js is loaded only when the first pack is opened, so the rest of the game does not carry it.
+// reveal. The grading reveal borrows the same instruments (a bell for each mark, a stamp for the score). Tone.js is
+// loaded only when the first pack is opened or the first card is graded, so the rest of the game does not carry it.
 
 import type { Rarity } from '../cards/model';
 
@@ -36,6 +37,10 @@ export interface PullAudio {
   reveal(rarity: Rarity, tier: SoundTier, isNew: boolean): void;
   tap(): void;
   summary(): void;
+  /** One mark of a grading label is shown: a bell note that climbs with its place in the row and grows with the mark (1 to 10). */
+  gradeMark(index: number, mark: number): void;
+  /** The score is stamped: a thud, and a chord and a flourish that grow with the score. */
+  gradeStamp(score: number): void;
   /** Cuts the sound of the flight, for example when the player skips it. */
   stop(): void;
   /** Volume from 0 to 1 (a gentle curve is applied) and a mute switch. */
@@ -69,6 +74,23 @@ const ROOT: Readonly<Record<SoundTier, string>> = { blue: 'A1', violet: 'C2', ro
 
 function tierRank(tier: SoundTier): number {
   return ['blue', 'violet', 'rose', 'gold', 'rainbow'].indexOf(tier);
+}
+
+/** Notes of the four marks of a grading label, rising. */
+const MARK_NOTES: readonly string[] = ['E5', 'G#5', 'B5', 'E6'];
+
+/** A grading score sounds like a card of the matching rarity: a 10 like an Ultra Rare, a score below 8 like a Common. */
+function tierOfScore(score: number): SoundTier {
+  if (score >= 10) {
+    return 'rainbow';
+  }
+  if (score >= 9.5) {
+    return 'gold';
+  }
+  if (score >= 9) {
+    return 'rose';
+  }
+  return score >= 8 ? 'violet' : 'blue';
 }
 
 interface ActiveFlight {
@@ -368,6 +390,28 @@ export async function createPullAudio(): Promise<PullAudio> {
       arpeggio(['E5', 'A5', 'B5', 'E6'], start + 0.1, 0.12, 0.5);
     },
 
+    gradeMark(index, mark) {
+      const start = Tone.now() + 0.02;
+      const strength = 0.4 + 0.4 * Math.min(1, Math.max(0, (mark - 5) / 5));
+      bell.triggerAttackRelease(MARK_NOTES[index] ?? 'E6', 0.9, start, strength);
+      tick.triggerAttackRelease('A5', 0.05, start, 0.5);
+    },
+
+    gradeStamp(score) {
+      const tier = tierOfScore(score);
+      const rank = tierRank(tier);
+      const start = Tone.now() + 0.03;
+      boom.triggerAttackRelease(ROOT[tier], 0.7, start, 0.55 + rank * 0.1);
+      pad.triggerAttackRelease([...CHORD[tier]], 1.4 + rank * 0.4, start, 0.35 + rank * 0.08);
+      arpeggio(ARPEGGIO[tier].slice(0, 2 + rank), start + 0.06, 0.07, 0.45 + rank * 0.06);
+      if (rank >= 3) {
+        metal.triggerAttackRelease(420 + rank * 40, '2n', start, 0.5);
+        for (let i = 0; i < 4 + rank * 2; i += 1) {
+          sparkle.triggerAttackRelease(ARPEGGIO[tier][(i * 2) % ARPEGGIO[tier].length] ?? 'E6', 0.08, start + 0.3 + i * 0.07, 0.3);
+        }
+      }
+    },
+
     stop() {
       cutFlight();
     },
@@ -389,7 +433,7 @@ export async function createPullAudio(): Promise<PullAudio> {
     try {
       run();
     } catch (error) {
-      console.warn('A sound of the pull show failed.', error);
+      console.warn('A sound of the pull show or the grading reveal failed.', error);
     }
   };
   return {
@@ -401,6 +445,8 @@ export async function createPullAudio(): Promise<PullAudio> {
     reveal: (rarity, tier, isNew) => attempt(() => raw.reveal(rarity, tier, isNew)),
     tap: () => attempt(() => raw.tap()),
     summary: () => attempt(() => raw.summary()),
+    gradeMark: (index, mark) => attempt(() => raw.gradeMark(index, mark)),
+    gradeStamp: (score) => attempt(() => raw.gradeStamp(score)),
     stop: () => attempt(() => raw.stop()),
     setVolume: (volume, muted) => attempt(() => raw.setVolume(volume, muted)),
     dispose: () => attempt(() => raw.dispose()),

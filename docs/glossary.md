@@ -21,7 +21,11 @@ Everything in the game is written in English, in plain words. This list is the s
 | **Finish** | How one printed copy shines: Standard, Rainbow Holo, Sparkle, Cosmos, Gold Foil, Prism Crystal, Radiant. Luck, not design. |
 | **Binder** | All your cards. **Card Dex** shows how many of the 79 designs you have found. **Showcase** shows your six favorites. |
 | **Guarantee** | A card that is sure to come after a number of packs without one. |
-| **Grading** | Later: send a card in and get a score from 1 to 10 in a sealed case. |
+| **Grading** | Send a loose card in (¥200 to ¥1,000) and get a score from 1 to 10 back, in a sealed case. A high score makes the card worth much more. |
+| **Marks** | The four hidden marks every copy has: centering, corners, edges and surface. You can see them as wear in the 3D view. The score is their average. |
+| **Score** | The grade of a card, from 1 to 10 in steps of a half. The words on the label: Pristine (10), Gem Mint (9.5), Mint (9), Near Mint (8 to 8.5), Excellent (7 to 7.5), Good (5 to 6.5), Played (below 5). |
+| **Slab** | A graded card in its clear case, with a paper label on top that shows the score and the four marks. |
+| **Loose card** | A card that has not been graded. |
 
 ## Fighting
 

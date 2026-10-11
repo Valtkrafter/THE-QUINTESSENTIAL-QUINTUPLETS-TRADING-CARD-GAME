@@ -105,11 +105,36 @@ Ziel: Wer täglich etwa 30 Minuten spielt, bekommt ungefähr ¥1.500 am Tag, als
 
 **Dex-Belohnungen** (Seite "Card Dex"): alle **10 neuen Motive 1 Gratis-Pack** (normales Pack, nicht das Banner), **¥2.000** für jede Figur, von der du alle Motive hast. Jede Belohnung gibt es nur einmal. Die Gratis-Packs werden auf der Packs-Seite geöffnet, mit der vollen Animation.
 
-**Bewertung (Stufe 6):** Keine Wartezeit, nur eine kleine Zeremonie beim Aufdecken. Gebühr ¥200 (Common bis Rare), ¥500 (Double Rare und Art Rare), ¥1.000 (Special Art Rare und Ultra Rare). Die Note ist der Durchschnitt der vier versteckten Teilnoten und verändert den Wert: 10 ×6, 9,5 ×4, 9 ×2,5, 8,5 ×1,8, 8 ×1,4, 7 ×1,1, 6,5 oder weniger ×0,8. Etwa jede zweite Karte ist eine 9 oder besser, etwa jede achte eine 9,5 oder besser, und eine 10 kommt nur bei etwa 1 von 60 Karten vor.
+## 9. Bewertung ("Grading", Stufe 6, gebaut)
+Jede Kopie hat von Anfang an **vier versteckte Teilnoten** von 1 bis 10: **Centering** (sitzt der Druck in der Mitte?), **Corners** (Ecken), **Edges** (Kanten) und **Surface** (Oberfläche). Das Spiel würfelt sie beim Drucken der Karte, die meisten verlieren etwa einen Punkt, wenige viel, manche nichts.
 
-## 9. Technik
+**Man sieht sie schon vorher.** In der 3D-Ansicht zeigt der Shader die Abnutzung: ein schiefer Druck (weißer Streifen an einer Seite), weiße Ecken und Kanten, Kratzer, die aufblitzen, wenn das Licht darüber streicht, und ein matter Schleier. Wer genau hinschaut, schickt die guten Karten ein.
+
+**Einsenden** (Menü "Grading", oder "Grade it" in der Kartenansicht): keine Wartezeit, nur eine kleine Zeremonie. Vorher zeigt das Spiel die **Gebühr** und eine **Preisleiter** (was die Karte bei jeder Note wert ist, daneben der Wert als lose Karte), damit niemand blind bezahlt. Die Gebühr wird immer bezahlt, auch bei einer schlechten Note. Das Ergebnis wird **zuerst gespeichert**, dann kommt die Zeremonie: Die vier Teilnoten erscheinen nacheinander (mit einem Glockenton), dann wird die Gesamtnote gestempelt. Eine 10 bekommt goldene Strahlen und Funken, eine 9,5 Funken. Die Zeremonie lässt sich jederzeit überspringen.
+
+| Seltenheit | Gebühr |
+|---|---|
+| Common, Uncommon, Rare | ¥200 |
+| Double Rare, Art Rare | ¥500 |
+| Special Art Rare, Ultra Rare | ¥1.000 |
+
+**Die Note** ist der Durchschnitt der vier Teilnoten, abgerundet auf halbe Punkte; ab 9,75 ist es eine 10. Die Karte kommt im **Slab** zurück (durchsichtige Hülle mit Etikett oben: Note, Wort, die vier Teilnoten, Datum) und sieht in der 3D-Ansicht auch so aus. Die Wörter: 10 Pristine, 9,5 Gem Mint, 9 Mint, 8 bis 8,5 Near Mint, 7 bis 7,5 Excellent, 5 bis 6,5 Good, darunter Played.
+
+**Der Wert** ist der Preis der Karte (Seltenheit und Finish, Abschnitt 8) mal ein Faktor der Note:
+
+| Note | 10 | 9,5 | 9 | 8,5 | 8 | 7,5 | 7 | 6,5 oder weniger |
+|---|---|---|---|---|---|---|---|---|
+| Faktor | ×6 | ×4 | ×2,5 | ×1,8 | ×1,4 | ×1,2 | ×1,1 | ×0,8 |
+| So viele Karten (gemessen) | 1,7 % | 10,3 % | 38,2 % | 29,6 % | 13,4 % | 4,8 % | 1,5 % | 0,5 % |
+
+Etwa jede zweite Karte ist eine 9 oder besser (50 %), etwa jede achte eine 9,5 oder besser (12 %), eine 10 kommt bei etwa 1 von 60 Karten vor. Im Durchschnitt macht die Note den Wert **2,3-mal** so hoch. Darum lohnt sich das Einsenden in Yen nur bei den besten Karten: Eine Ultra Rare mit Gold Foil (Wert lose ¥1.800) ist im Slab im Schnitt ¥4.100 wert (bei einer 10 sind es ¥10.800), eine Art Rare oder Special Art Rare mit Premium-Finish bringt etwa so viel, wie die Gebühr kostet, und eine Common kostet mehr Gebühr, als sie je wert sein wird. Das ist gewollt: Die Gebühr ist eine Geld-Senke, und der Slab ist vor allem ein Sammlerstück.
+
+**Slabs behalten oder verkaufen.** Ein Slab zählt beim Verkaufen von Dubletten immer als "behalten" (er taucht dort nicht auf). Einzeln verkaufen kann man ihn in der Kartenansicht ("Sell slab"), nach Bestätigung, zu seinem Wert. In "Your slabs" steht der **Bestandsbericht**: wie viele Slabs jede Note haben, der Gesamtwert, und alle Slabs mit der besten Note zuerst. Im Binder gibt es dafür den Filter "Graded" und die Sortierung nach Note.
+
+## 10. Technik
 - `src/data/packs.json`: Preise, Slots, Garantien, Banner. Eine Prüfung stoppt das Spiel mit einer klaren Meldung, wenn etwas nicht stimmt (Tabellen, Phasen, Hauptkarten).
 - `src/packs/rollPack.ts`: die Würfe. `src/packs/openPack.ts`: bezahlt, würfelt, legt die Karten ab, zählt die Garantien, in einem Schritt.
 - Spielstand Version 3: Garantie-Zähler, Tagesbonus, Pack-Verlauf.
 - Tests: Quoten gegen die Tabellen (Monte Carlo), Garantien, Dublettenschutz, Banner-Fenster, 50/50, Wiederholbarkeit. Ein **Simulator** in den Einstellungen (Entwicklungsversion) öffnet viele Packs und zeigt die Zahlen aus Abschnitt 3 und 4.
 - Show: `src/scene/pull/` (Ablauf als reiner Code, Lichteffekte, Shader, Bloom nur für den Hintergrund) und `src/ui/pull/` (Oberfläche). Ton: `src/audio/`.
+- Bewertung: `src/domain/grading.ts` (Note, Gebühr, Wert, Preisleiter, Einsenden, Slab verkaufen, Bestandsbericht; alles getestet), `src/holo/wear.ts` und der Shader (Abnutzung), `src/holo/slabShape.ts`, `Slab.tsx`, `slabLabel.ts` (der 3D-Slab) und `src/ui/grading/` (Bildschirm, Frage, Zeremonie). Der Spielstand brauchte keine neue Version: Teilnoten und Note standen seit Version 1 im Besitz-Modell.

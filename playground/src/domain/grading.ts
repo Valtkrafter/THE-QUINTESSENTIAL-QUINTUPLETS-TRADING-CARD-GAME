@@ -4,6 +4,7 @@
 // for the cards that deserve it. Pure code; the screens only show the result.
 
 import { cardById } from '../cards/catalog';
+import type { FinishId } from '../cards/finish';
 import type { Rarity } from '../cards/model';
 import type { Condition, Grade, OwnedCard } from './ownership';
 import { sellPrice } from './prices';
@@ -47,28 +48,41 @@ export function gradeMultiplier(overall: number): number {
   return 0.8;
 }
 
+export type GradeBandId = 'pristine' | 'gem' | 'mint' | 'near' | 'excellent' | 'good' | 'played';
+
+export interface GradeBand {
+  readonly id: GradeBandId;
+  /** The lowest score that belongs to the band. */
+  readonly min: number;
+  /** The word printed on the label of the slab. */
+  readonly label: string;
+}
+
+const PLAYED: GradeBand = { id: 'played', min: 0, label: 'Played' };
+
+/** From the best band to the worst. */
+export const GRADE_BANDS: readonly GradeBand[] = [
+  { id: 'pristine', min: 10, label: 'Pristine' },
+  { id: 'gem', min: 9.5, label: 'Gem Mint' },
+  { id: 'mint', min: 9, label: 'Mint' },
+  { id: 'near', min: 8, label: 'Near Mint' },
+  { id: 'excellent', min: 7, label: 'Excellent' },
+  { id: 'good', min: 5, label: 'Good' },
+  PLAYED,
+];
+
+/** The band of a score: it names the slab label and picks its colours. */
+export function gradeBand(overall: number): GradeBand {
+  return GRADE_BANDS.find((band) => overall >= band.min) ?? PLAYED;
+}
+
 /** The word printed on the label of the slab. */
 export function gradeLabel(overall: number): string {
-  if (overall >= 10) {
-    return 'Pristine';
-  }
-  if (overall >= 9.5) {
-    return 'Gem Mint';
-  }
-  if (overall >= 9) {
-    return 'Mint';
-  }
-  if (overall >= 8) {
-    return 'Near Mint';
-  }
-  if (overall >= 7) {
-    return 'Excellent';
-  }
-  if (overall >= 5) {
-    return 'Good';
-  }
-  return 'Played';
+  return gradeBand(overall).label;
 }
+
+/** The scores that change what a card is worth, best first (6.5 stands for "6.5 or less"): the price ladder before a card is sent in. */
+export const LADDER_SCORES: readonly number[] = [10, 9.5, 9, 8.5, 8, 7.5, 7, 6.5];
 
 export function gradingFee(rarity: Rarity): number {
   return GRADING_FEE_YEN[rarity];
@@ -113,13 +127,28 @@ export function submitForGrading(save: SaveGame, uid: string, now: number): Grad
   return { save: { ...paid, collection: paid.collection.map((candidate) => (candidate.uid === uid ? graded : candidate)) }, copy: graded, grade, fee };
 }
 
+/** What a slab of this rarity and finish fetches at a score: the price of the card times what the score adds. */
+export function valueAtScore(rarity: Rarity, finish: FinishId, overall: number): number {
+  return Math.max(1, Math.round(sellPrice(rarity, finish) * gradeMultiplier(overall)));
+}
+
+export interface LadderRow {
+  readonly score: number;
+  readonly yen: number;
+}
+
+/** What a card would fetch at every score that matters, best first. Shown before it is sent in, so nobody pays blind. */
+export function gradeLadder(rarity: Rarity, finish: FinishId): LadderRow[] {
+  return LADDER_SCORES.map((score) => ({ score, yen: valueAtScore(rarity, finish, score) }));
+}
+
 /** What a graded copy would fetch: the price of its rarity and finish times what its score adds. */
 export function slabValue(copy: OwnedCard): number {
   const card = cardById(copy.cardId);
   if (card === undefined || copy.grade === null) {
     return 0;
   }
-  return Math.max(1, Math.round(sellPrice(card.rarity, copy.finish) * gradeMultiplier(copy.grade.overall)));
+  return valueAtScore(card.rarity, copy.finish, copy.grade.overall);
 }
 
 /** Sells one graded copy (the slab leaves the collection). Throws when the copy is missing or not graded. */
@@ -131,6 +160,18 @@ export function sellSlab(save: SaveGame, uid: string, now: number): { readonly s
   const yen = slabValue(copy);
   const kept = { ...save, collection: save.collection.filter((candidate) => candidate.uid !== uid), showcase: save.showcase.filter((shown) => shown !== uid) };
   return { save: earnYen(kept, yen, now), yen };
+}
+
+/** The graded copies, best score first (a tie goes to the more valuable print, then to the older grading). */
+export function slabsOf(collection: readonly OwnedCard[]): OwnedCard[] {
+  return collection
+    .filter((copy) => copy.grade !== null)
+    .sort((a, b) => (b.grade?.overall ?? 0) - (a.grade?.overall ?? 0) || slabValue(b) - slabValue(a) || (a.grade?.gradedAt ?? 0) - (b.grade?.gradedAt ?? 0));
+}
+
+/** The copies that have not been graded yet. */
+export function rawCopies(collection: readonly OwnedCard[]): OwnedCard[] {
+  return collection.filter((copy) => copy.grade === null);
 }
 
 export interface PopulationRow {

@@ -30,6 +30,17 @@ export async function ensureCardFonts(card: Card): Promise<void> {
   ]);
 }
 
+/** Loads the faces the label of a slab is drawn with, for the text it shows. */
+export async function ensureSlabFonts(text: string): Promise<void> {
+  const sample = `${text}${COMMON_TEXT}`;
+  await Promise.all([
+    document.fonts.load(`900 40px "${LATIN_FAMILY}"`, sample),
+    document.fonts.load(`800 40px "${LATIN_FAMILY}"`, sample),
+    document.fonts.load(`600 30px "${LATIN_FAMILY}"`, sample),
+    document.fonts.load(`italic 600 30px "${LATIN_FAMILY}"`, sample),
+  ]);
+}
+
 /** Loads the Latin face used by the playground's own canvas labels (gallery captions, empty-art pattern). */
 export async function ensureLabelFont(): Promise<void> {
   await document.fonts.load(`600 34px "${LATIN_FAMILY}"`, COMMON_TEXT);

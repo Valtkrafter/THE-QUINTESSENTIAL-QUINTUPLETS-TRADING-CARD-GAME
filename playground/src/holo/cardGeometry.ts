@@ -15,9 +15,10 @@ export interface CardGeometries {
   readonly edge: ExtrudeGeometry;
 }
 
-function createRoundedRectShape(width: number, height: number, radius: number): Shape {
+/** A rectangle with rounded corners, centred on the origin (or on `centerY` above it). */
+export function createRoundedRectShape(width: number, height: number, radius: number, centerY = 0): Shape {
   const left = -width / 2;
-  const bottom = -height / 2;
+  const bottom = centerY - height / 2;
   const right = left + width;
   const top = bottom + height;
   const shape = new Shape();

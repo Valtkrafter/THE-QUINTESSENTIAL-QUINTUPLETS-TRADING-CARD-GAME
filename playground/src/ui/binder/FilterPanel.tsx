@@ -1,7 +1,7 @@
 import { CHARACTERS } from '../../cards/characters';
 import { FINISH_IDS, type FinishId } from '../../cards/finish';
 import { CHARACTER_IDS, RARITIES, type CharacterId, type Rarity } from '../../cards/model';
-import { NO_FILTER, activeFilterCount, type CollectionFilter } from '../../domain/collection';
+import { GRADING_STATES, NO_FILTER, activeFilterCount, type CollectionFilter } from '../../domain/collection';
 import { findFinish } from '../../holo/finishes';
 import { Button, Chip } from '../components/controls';
 import { affinityColor } from '../finishStyle';
@@ -55,6 +55,16 @@ export function FilterPanel({ filter, onChange }: FilterPanelProps) {
           {FINISH_IDS.map((id: FinishId) => (
             <Chip key={id} pressed={filter.finishes.includes(id)} onToggle={() => onChange({ ...filter, finishes: toggled(filter.finishes, id) })}>
               {findFinish(id).label}
+            </Chip>
+          ))}
+        </div>
+      </div>
+      <div className={styles.group}>
+        <h3>{text.binder.filterGrading}</h3>
+        <div className={styles.chips}>
+          {GRADING_STATES.map((state) => (
+            <Chip key={state} pressed={filter.grading.includes(state)} onToggle={() => onChange({ ...filter, grading: toggled(filter.grading, state) })}>
+              {text.binder.gradingOptions[state]}
             </Chip>
           ))}
         </div>
