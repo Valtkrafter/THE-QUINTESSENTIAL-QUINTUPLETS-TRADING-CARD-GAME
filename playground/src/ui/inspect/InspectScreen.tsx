@@ -164,7 +164,9 @@ export default function InspectScreen({ uid }: { readonly uid: string }) {
           {SET_CODE} · {formatCardNumber(card.number, SET_SIZE)}
         </p>
         <h1>{card.name.en}</h1>
-        <p className={styles.ja}>{card.name.ja}</p>
+        <p className={styles.ja} lang="ja">
+          {card.name.ja}
+        </p>
         <p className={styles.title}>“{card.title}”</p>
 
         <div className={styles.pills}>

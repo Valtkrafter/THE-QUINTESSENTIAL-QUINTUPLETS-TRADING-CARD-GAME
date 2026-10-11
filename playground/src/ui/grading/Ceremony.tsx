@@ -8,6 +8,7 @@ import { cardById } from '../../cards/catalog';
 import { gradeBand, slabValue, type Graded } from '../../domain/grading';
 import { CardFace } from '../components/CardFace';
 import { Button } from '../components/controls';
+import { trapTab } from '../components/focusTrap';
 import { cx, formatGrade, formatSubGrade } from '../format';
 import { text } from '../text';
 import { usePullAudio } from '../pull/usePullAudio';
@@ -102,6 +103,9 @@ export function Ceremony({ graded, onClose }: CeremonyProps) {
   };
 
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (rootRef.current !== null) {
+      trapTab(event, rootRef.current);
+    }
     if (event.key === 'Escape') {
       event.preventDefault();
       if (done) {

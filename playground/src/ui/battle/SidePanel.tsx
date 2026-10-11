@@ -33,7 +33,7 @@ export function SidePanel({ inspected, finishOf, log }: SidePanelProps) {
       </section>
       <section className={styles.logBox}>
         <h2>{text.battle.board.log}</h2>
-        <ol ref={list} className={styles.log}>
+        <ol ref={list} className={styles.log} role="log" aria-label={text.battle.board.log}>
           {log.map((line) => (
             <li key={line.id} className={cx(styles.line, styles[`side-${line.side}`], line.heading && styles.heading)}>
               {line.text}

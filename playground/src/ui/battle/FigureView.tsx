@@ -9,6 +9,7 @@ import { cx } from '../format';
 import { text } from '../text';
 import styles from './Board.module.css';
 import type { Floater } from './floaters';
+import { useHold } from './useHold';
 
 export type Highlight = 'none' | 'ready' | 'target' | 'selected';
 
@@ -25,15 +26,19 @@ export interface FigureViewProps {
   /** Plays the lunge of an attack (towards the enemy). */
   readonly lunge: boolean;
   readonly towards: 'up' | 'down';
+  /** Nothing can be done with this Character now. It still shows its card to a pointer, a focus or a press and hold. */
   readonly disabled: boolean;
   readonly onClick: () => void;
   readonly onPoint: (cardId: string | null) => void;
+  /** Press and hold with a finger: look at the card closely. */
+  readonly onHold?: () => void;
 }
 
 const STAGE_LABEL = { basic: 'Basic', close: 'Close', bride: 'Bride', event: 'Event' } as const;
 
 /** One Character in play: its card, its health, its Hearts and what happens to it. */
-export function FigureView({ figure, size, finish, highlight, stunned, shielded, floaters, lunge, towards, disabled, onClick, onPoint }: FigureViewProps) {
+export function FigureView({ figure, size, finish, highlight, stunned, shielded, floaters, lunge, towards, disabled, onClick, onPoint, onHold }: FigureViewProps) {
+  const hold = useHold(onHold);
   const card = topCard(figure);
   const hp = currentHp(figure);
   const max = maxHp(figure);
@@ -43,10 +48,20 @@ export function FigureView({ figure, size, finish, highlight, stunned, shielded,
   return (
     <button
       type="button"
-      className={cx(styles.figure, styles[size], styles[`hl-${highlight}`], lunge && styles[towards === 'up' ? 'lungeUp' : 'lungeDown'])}
+      className={cx(styles.figure, styles[size], styles[`hl-${highlight}`], disabled && styles.inert, lunge && styles[towards === 'up' ? 'lungeUp' : 'lungeDown'])}
       style={style}
-      disabled={disabled}
-      onClick={onClick}
+      aria-disabled={disabled}
+      onClick={() => {
+        if (!hold.wasHeld() && !disabled) {
+          onClick();
+        }
+      }}
+      onPointerDown={hold.onPointerDown}
+      onPointerMove={hold.onPointerMove}
+      onPointerUp={hold.onPointerUp}
+      onPointerCancel={hold.onPointerCancel}
+      onPointerLeave={hold.onPointerLeave}
+      onContextMenu={hold.onContextMenu}
       onMouseEnter={() => onPoint(card.id)}
       onMouseLeave={() => onPoint(null)}
       onFocus={() => onPoint(card.id)}

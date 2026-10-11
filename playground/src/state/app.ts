@@ -11,6 +11,7 @@ import { dayKeyOf } from '../domain/calendar';
 import type { SaveGame } from '../domain/save';
 import { createBattleSession, type SessionActions, type SessionState } from './battleSession';
 import { createGameStore, type GameActions, type GameState } from './gameStore';
+import { chooseGraphicsLevel, probeGpu } from './gpu';
 import { createIdbPreferenceStorage, createPreferencesStore, type Preferences, type PreferencesState } from './preferences';
 import { createIdbSaveStore, createMemorySaveStore } from './saveStore';
 
@@ -23,7 +24,8 @@ export const gameStore = createGameStore({
   seed: () => crypto.randomUUID(),
 });
 
-export const preferencesStore = createPreferencesStore(createIdbPreferenceStorage());
+// The first time the game starts on a device it looks at the graphics chip and picks the graphics level that suits it.
+export const preferencesStore = createPreferencesStore(createIdbPreferenceStorage(), () => ({ graphics: chooseGraphicsLevel(probeGpu()) }));
 
 const NO_PAYOUT: Payout = { yen: 0, base: 0, bonus: 0 };
 

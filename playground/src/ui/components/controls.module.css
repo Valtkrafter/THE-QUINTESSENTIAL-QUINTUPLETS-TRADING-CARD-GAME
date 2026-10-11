@@ -245,3 +245,17 @@
   box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--accent) 60%, transparent);
   color: var(--text);
 }
+
+/* A finger needs more room than a pointer: on a touch screen the small controls grow to a comfortable size to hit. */
+@media (pointer: coarse) {
+  .button,
+  .chip,
+  .field,
+  .segmented button {
+    min-height: 44px;
+  }
+
+  .iconOnly {
+    min-width: 44px;
+  }
+}

@@ -32,6 +32,26 @@ describe('preferences', () => {
     expect(parsePreferences(storage.text).frameStyle).toBe('glass');
   });
 
+  it('sets what suits the device the first time, writes it down, and never again afterwards', async () => {
+    const storage = createMemoryPreferenceStorage();
+    const first = createPreferencesStore(storage, () => ({ graphics: 'normal' }));
+    await first.getState().start();
+    expect(first.getState().preferences).toEqual({ ...DEFAULT_PREFERENCES, graphics: 'normal' });
+    expect(parsePreferences(storage.text).graphics).toBe('normal');
+
+    // The player picks High; a later start keeps that and does not look at the device again.
+    first.getState().update({ graphics: 'high' });
+    await Promise.resolve();
+    let looked = 0;
+    const later = createPreferencesStore(storage, () => {
+      looked += 1;
+      return { graphics: 'low' };
+    });
+    await later.getState().start();
+    expect(later.getState().preferences.graphics).toBe('high');
+    expect(looked).toBe(0);
+  });
+
   it('starts with the defaults when storage fails', async () => {
     const store = createPreferencesStore({ read: () => Promise.reject(new Error('blocked')), write: () => Promise.reject(new Error('blocked')) });
     await store.getState().start();

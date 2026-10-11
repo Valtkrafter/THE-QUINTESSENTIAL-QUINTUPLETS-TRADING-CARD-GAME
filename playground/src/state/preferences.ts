@@ -92,7 +92,11 @@ export interface PreferencesState {
 
 export type PreferencesStore = StoreApi<PreferencesState>;
 
-export function createPreferencesStore(storage: PreferenceStorage): PreferencesStore {
+/**
+ * @param firstRun what to set the first time the game starts on a device (nothing was saved yet), for example the graphics
+ * level that suits this device's graphics chip. It is written down at once, so the start looks the same every time.
+ */
+export function createPreferencesStore(storage: PreferenceStorage, firstRun: () => Partial<Omit<Preferences, 'version'>> = () => ({})): PreferencesStore {
   let starting: Promise<void> | null = null;
   return createStore<PreferencesState>()((setState, getState) => ({
     loaded: false,
@@ -101,7 +105,13 @@ export function createPreferencesStore(storage: PreferenceStorage): PreferencesS
       starting ??= storage
         .read()
         .catch(() => null)
-        .then((text) => setState({ loaded: true, preferences: parsePreferences(text) }));
+        .then((text) => {
+          const preferences = text === null ? { ...DEFAULT_PREFERENCES, ...firstRun() } : parsePreferences(text);
+          setState({ loaded: true, preferences });
+          if (text === null) {
+            void storage.write(JSON.stringify(preferences)).catch(() => undefined);
+          }
+        });
       return starting;
     },
     update(change) {

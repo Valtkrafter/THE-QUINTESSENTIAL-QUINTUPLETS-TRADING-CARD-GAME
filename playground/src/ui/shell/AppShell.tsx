@@ -1,4 +1,4 @@
-import { useMemo, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, type ReactNode } from 'react';
 import { Link, useLocation } from 'wouter';
 import { buildDex, dexProgress } from '../../domain/collection';
 import { useGame, useSave } from '../../state/app';
@@ -42,20 +42,38 @@ function Brand() {
   );
 }
 
+/** The menu entry a page belongs to (the inspect screen of a card belongs to the Binder). */
+function navItemOf(location: string): NavItem | undefined {
+  if (location.startsWith('/card/')) {
+    return NAV.find((item) => item.href === '/');
+  }
+  return NAV.find((item) => (item.href === '/' ? location === '/' : location.startsWith(item.href)));
+}
+
 export function AppShell({ children }: { readonly children: ReactNode }) {
   const [location] = useLocation();
   const save = useSave();
   const persistence = useGame((state) => state.persistence);
   const writeFailed = useGame((state) => state.writeFailed);
   const progress = useMemo(() => dexProgress(buildDex(save.collection)), [save.collection]);
+  const mainRef = useRef<HTMLElement>(null);
+
+  // The title of the browser tab (and of the window in the desktop app) says where the player is, for screen readers too.
+  useEffect(() => {
+    const item = navItemOf(location);
+    document.title = item === undefined ? text.appName : `${item.label} · ${text.appName}`;
+  }, [location]);
 
   return (
     <div className={styles.shell}>
+      <button type="button" className={styles.skip} onClick={() => mainRef.current?.focus()}>
+        {text.nav.skip}
+      </button>
       <aside className={styles.rail}>
         <Brand />
         <nav aria-label={text.nav.label} className={styles.nav}>
           {NAV.map((item) => {
-            const active = item.href === '/' ? location === '/' : location.startsWith(item.href);
+            const active = navItemOf(location) === item;
             return (
               <Link key={item.href} href={item.href} className={cx(styles.link, active && styles.active)} aria-current={active ? 'page' : undefined}>
                 {item.icon}
@@ -80,7 +98,7 @@ export function AppShell({ children }: { readonly children: ReactNode }) {
         <Brand />
         <strong className={styles.walletMini}>{formatYen(save.player.yen)}</strong>
       </div>
-      <main className={styles.main}>
+      <main ref={mainRef} tabIndex={-1} className={styles.main}>
         {persistence === 'memory' && (
           <p className={styles.notice} role="status">
             {text.status.memoryOnly}

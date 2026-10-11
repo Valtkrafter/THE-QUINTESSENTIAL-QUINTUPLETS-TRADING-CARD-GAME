@@ -277,12 +277,24 @@
     box-shadow var(--fast) var(--ease);
 }
 
-.figure:not(:disabled) {
+/* A Character nothing can be done with (the enemy's, or yours while the enemy plays) still shows its card to a pointer or a press and hold. */
+.figure:not(.inert) {
   cursor: pointer;
 }
 
-.figure:not(:disabled):hover .face {
+.figure:not(.inert):hover .face {
   transform: translateY(-3px);
+}
+
+.inert {
+  --unused: 0;
+}
+
+/* Fingers also scroll the page: only the card's own press and hold should be taken. */
+.figure,
+.handCard {
+  -webkit-touch-callout: none;
+  user-select: none;
 }
 
 .hl-none,
@@ -695,7 +707,9 @@
   margin-inline: -20px;
 }
 
+/* A card that cannot be played now is dimmed with a veil over it, not a CSS filter: a filter inside the scrolling hand of a phone is not painted by every browser. */
 .handCard {
+  position: relative;
   display: block;
   width: calc(var(--hand-h) * 5 / 7);
   padding: 0;
@@ -704,28 +718,39 @@
   background: none;
   color: inherit;
   cursor: pointer;
-  filter: brightness(0.82) saturate(0.9);
   transition:
     transform var(--fast) var(--ease),
-    filter var(--fast) var(--ease),
     box-shadow var(--fast) var(--ease);
 }
 
+.handCard::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: rgba(8, 10, 16, 0.3);
+  pointer-events: none;
+  transition: opacity var(--fast) var(--ease);
+}
+
 .canPlay {
-  filter: none;
   box-shadow:
     0 0 0 1px color-mix(in oklab, var(--accent) 65%, transparent),
     0 8px 20px -8px color-mix(in oklab, var(--accent) 75%, transparent);
 }
 
+.canPlay::after,
+.picked::after,
+.handCard:hover::after {
+  opacity: 0;
+}
+
 .handCard:hover {
   z-index: 5;
-  filter: none;
   transform: translateY(-18px) scale(1.07);
 }
 
 .picked {
-  filter: none;
   transform: translateY(-22px) scale(1.08);
   box-shadow:
     0 0 0 2px var(--horizon),
@@ -929,6 +954,204 @@ button.choice:hover {
 
   .inspector {
     display: none;
+  }
+}
+
+/* --- The card that was pressed and held --- */
+
+.zoom {
+  width: min(76vw, 340px);
+  margin: 0 auto;
+}
+
+/* The hint for fingers: only where there is no hover. */
+.holdHint {
+  display: none;
+  margin: 0;
+  color: var(--text-faint);
+  font-size: var(--text-xs);
+  text-align: center;
+}
+
+@media (hover: none) {
+  .holdHint {
+    display: block;
+  }
+
+  .handCard:hover {
+    transform: none;
+  }
+
+  .handCard:not(.canPlay):not(.picked):hover::after {
+    opacity: 1;
+  }
+
+  .figure:not(.inert):hover .face {
+    transform: none;
+  }
+}
+
+/*
+ * A phone (or a narrow window): the table is built upwards instead of sideways. On each side the Active Character stands on
+ * the left, with the Bench in a row beside it; your moves sit under your Active Character; the hand is a row to scroll.
+ * Sizes follow the width of the screen now, because the width, not the height, is what is short.
+ */
+@media (max-width: 860px) {
+  .board {
+    --active-h: clamp(118px, 37.8vw, 200px);
+    --bench-h: clamp(84px, calc((73vw - 74px) * 7 / 15), 136px);
+    --hand-h: clamp(92px, 26vw, 124px);
+    gap: var(--space-3);
+    padding-bottom: 0;
+  }
+
+  /* The bars above and below the table: one line of numbers instead of three columns. */
+  .bar {
+    gap: 2px var(--space-3);
+    padding: 6px var(--space-3);
+  }
+
+  .avatar {
+    width: 32px;
+    height: 32px;
+  }
+
+  .who {
+    flex-basis: 96px;
+    min-width: 84px;
+  }
+
+  .memory svg {
+    width: 15px;
+    height: 15px;
+  }
+
+  .memories {
+    gap: 2px;
+  }
+
+  .counts {
+    order: 5;
+    justify-content: center;
+    width: 100%;
+    gap: var(--space-4);
+  }
+
+  .counts div {
+    flex-direction: row;
+    gap: 5px;
+    align-items: baseline;
+  }
+
+  .counts dt {
+    font-size: 10px;
+    white-space: nowrap;
+  }
+
+  .counts dd {
+    font-size: var(--text-sm);
+  }
+
+  .barActions {
+    order: 6;
+    margin-left: auto;
+  }
+
+  /* Each side: the Active Character left, the Bench beside it. The piles are in the bars as numbers already. */
+  .row {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas: 'active bench';
+    gap: var(--space-3);
+    align-items: center;
+    padding: var(--space-2);
+  }
+
+  .myRow {
+    grid-template-areas:
+      'active bench'
+      'moves moves';
+  }
+
+  .row .activeCell {
+    grid-area: active;
+  }
+
+  .row .benchRow {
+    grid-area: bench;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+  }
+
+  .row .piles {
+    display: none;
+  }
+
+  .row .moves {
+    grid-area: moves;
+    flex-flow: row wrap;
+    width: auto;
+    align-self: auto;
+  }
+
+  .row .move {
+    flex: 1 1 140px;
+  }
+
+  .hpBar {
+    height: 14px;
+    margin-top: 4px;
+  }
+
+  .hpBar b {
+    font-size: 10px;
+    line-height: 14px;
+  }
+
+  .slot.active {
+    height: calc(var(--active-h) + 38px);
+  }
+
+  .slot.bench {
+    height: calc(var(--bench-h) + 38px);
+  }
+
+  .floater {
+    font-size: clamp(16px, 5vw, 26px);
+  }
+
+  /* Your hand: a row to scroll sideways. A card does not overlap the next one, and is lifted a little more when chosen. */
+  .hand {
+    justify-content: flex-start;
+    min-height: calc(var(--hand-h) + 40px);
+    padding: 30px var(--space-2) var(--space-2);
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity;
+  }
+
+  .handSlot,
+  .dense .handSlot,
+  .crowded .handSlot {
+    margin-inline: 3px;
+    scroll-snap-align: center;
+  }
+
+  .handCard:hover {
+    transform: none;
+  }
+
+  .picked {
+    transform: translateY(-24px) scale(1.06);
+  }
+
+  .middle {
+    min-height: 40px;
+  }
+
+  .prompt {
+    border-radius: var(--radius-lg);
   }
 }
 

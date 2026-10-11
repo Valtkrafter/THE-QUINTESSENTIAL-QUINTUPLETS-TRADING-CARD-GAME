@@ -9,6 +9,7 @@ import { FINISH_IDS, type FinishId } from '../../cards/finish';
 import type { OwnedCard } from '../../domain/ownership';
 import { battleSession, useBattle, useSave } from '../../state/app';
 import type { FlashState } from '../../state/battleSession';
+import { CardFace } from '../components/CardFace';
 import { Button } from '../components/controls';
 import { Dialog } from '../components/Dialog';
 import { cx } from '../format';
@@ -23,6 +24,7 @@ import { PlayerBar } from './PlayerBar';
 import { CardPrompt, FigurePrompt, YesNoPrompt } from './Prompts';
 import { ResultDialog } from './ResultDialog';
 import { SidePanel } from './SidePanel';
+import { useBattleSounds } from './useBattleSounds';
 import { figureOptions, handOptions, heartsLeft, isPlayable, moodOf, moveViews, promptFor } from './viewModel';
 
 type Selection = { readonly kind: 'hand'; readonly index: number } | { readonly kind: 'figure'; readonly ref: FigureRef } | null;
@@ -108,9 +110,12 @@ function BoardView({ battle, rivalName, rivalCharacter, rivalLevel, deckName, de
   const [picked, setPicked] = useState<{ readonly at: BattleState; readonly selection: Selection }>({ at: battle, selection: null });
   const selection = picked.at === battle ? picked.selection : null;
   const [inspected, setInspected] = useState<{ readonly cardId: string; readonly side: PlayerIndex } | null>(null);
+  // The card that was pressed and held with a finger, shown large (a phone cannot hover).
+  const [zoomed, setZoomed] = useState<{ readonly cardId: string; readonly side: PlayerIndex } | null>(null);
   const [helpOpen, setHelpOpen] = useState(false);
   const [giveUpOpen, setGiveUpOpen] = useState(false);
   const { places, lunge } = useFloaters(flash);
+  useBattleSounds(flash);
 
   const mine = battle.players[0];
   const theirs = battle.players[1];
@@ -208,6 +213,7 @@ function BoardView({ battle, rivalName, rivalCharacter, rivalLevel, deckName, de
         disabled={!clickable && (side === 1 || !canAct)}
         onClick={() => clickFigure(side, ref)}
         onPoint={point(side)}
+        onHold={() => setZoomed({ cardId: topCard(figure).id, side })}
       />
     );
   };
@@ -350,6 +356,7 @@ function BoardView({ battle, rivalName, rivalCharacter, rivalLevel, deckName, de
   );
 
   const inspectorFinish = (cardId: string): FinishId => (inspected?.side === 0 ? finishOfMine(cardId) : 'standard');
+  const zoomedCard = zoomed === null ? undefined : cardById(zoomed.cardId);
 
   return (
     <div className={styles.board}>
@@ -372,7 +379,7 @@ function BoardView({ battle, rivalName, rivalCharacter, rivalLevel, deckName, de
 
         <div className={styles.middle}>{strip()}</div>
 
-        <section className={styles.row}>
+        <section className={cx(styles.row, styles.myRow)}>
           <div className={styles.activeCell}>{figureCell(0, { zone: 'active' }, 'active')}</div>
           {movesPanel}
           {benchRow(0)}
@@ -400,9 +407,26 @@ function BoardView({ battle, rivalName, rivalCharacter, rivalLevel, deckName, de
             </>
           }
         />
-        <HandView hand={mine.hand} finishOf={finishOfMine} selected={selection?.kind === 'hand' ? selection.index : null} playable={playable} onPick={clickHand} onPoint={point(0)} />
+        <HandView
+          hand={mine.hand}
+          finishOf={finishOfMine}
+          selected={selection?.kind === 'hand' ? selection.index : null}
+          playable={playable}
+          onPick={clickHand}
+          onPoint={point(0)}
+          onHold={(cardId) => setZoomed({ cardId, side: 0 })}
+        />
+        <p className={styles.holdHint}>{text.battle.board.holdHint}</p>
       </div>
       <SidePanel inspected={inspected?.cardId ?? null} finishOf={inspectorFinish} log={log} />
+
+      {zoomed !== null && zoomedCard !== undefined && (
+        <Dialog title={zoomedCard.name.en} onClose={() => setZoomed(null)}>
+          <div className={styles.zoom}>
+            <CardFace card={zoomedCard} finish={zoomed.side === 0 ? finishOfMine(zoomedCard.id) : finishOfTheirs()} interactive={false} />
+          </div>
+        </Dialog>
+      )}
 
       {prompt !== null && prompt.prompt.kind === 'card' && <CardPrompt view={prompt} finishOf={finishOfMine} onAnswer={(option) => act({ type: 'choose', option })} />}
       {prompt !== null && prompt.prompt.kind === 'yes-no' && <YesNoPrompt view={prompt} finishOf={finishOfMine} onAnswer={(option) => act({ type: 'choose', option })} />}
