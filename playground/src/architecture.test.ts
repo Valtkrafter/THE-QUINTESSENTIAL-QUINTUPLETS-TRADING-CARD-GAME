@@ -11,10 +11,11 @@ const UI_LIBRARIES = ['react', 'react-dom', 'three', '@react-three/fiber', 'zust
 const PRESENTATION_FOLDERS = ['ui', 'scene', 'holo', 'cardface', 'state'];
 
 const RULES: readonly { readonly folder: string; readonly forbidden: readonly string[] }[] = [
-  // Order, lowest first: cards (vocabulary + data) -> domain and packs (rules) -> state -> cardface/holo -> scene -> ui.
-  { folder: 'cards', forbidden: [...UI_LIBRARIES, ...PRESENTATION_FOLDERS, 'domain', 'packs'] },
-  { folder: 'domain', forbidden: [...UI_LIBRARIES, ...PRESENTATION_FOLDERS, 'packs'] },
-  { folder: 'packs', forbidden: [...UI_LIBRARIES, ...PRESENTATION_FOLDERS] },
+  // Order, lowest first: cards (vocabulary + data) -> domain, packs and battle (rules) -> state -> cardface/holo -> scene -> ui.
+  { folder: 'cards', forbidden: [...UI_LIBRARIES, ...PRESENTATION_FOLDERS, 'domain', 'packs', 'battle'] },
+  { folder: 'domain', forbidden: [...UI_LIBRARIES, ...PRESENTATION_FOLDERS, 'packs', 'battle'] },
+  { folder: 'packs', forbidden: [...UI_LIBRARIES, ...PRESENTATION_FOLDERS, 'battle'] },
+  { folder: 'battle', forbidden: [...UI_LIBRARIES, ...PRESENTATION_FOLDERS, 'packs'] },
   { folder: 'state', forbidden: ['ui', 'scene', 'holo', 'cardface'] },
   { folder: 'cardface', forbidden: ['ui', 'scene'] },
   { folder: 'holo', forbidden: ['ui', 'scene'] },
@@ -23,7 +24,7 @@ const RULES: readonly { readonly folder: string; readonly forbidden: readonly st
 ];
 
 /** The layers that hold game rules: they must stay deterministic. */
-const RULES_LAYERS = ['cards', 'domain', 'packs'];
+const RULES_LAYERS = ['cards', 'domain', 'packs', 'battle'];
 
 function sourceFiles(folder: string): string[] {
   const root = join(SRC, folder);
