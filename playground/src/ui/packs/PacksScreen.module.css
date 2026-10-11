@@ -49,9 +49,19 @@
 }
 
 .packs {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 470px), 1fr));
   gap: var(--space-5);
+  align-items: start;
+}
+
+.compareLink {
+  display: inline-block;
+  margin: calc(-1 * var(--space-2)) 0 var(--space-5);
+  color: var(--accent);
+  font-size: var(--text-sm);
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .history {

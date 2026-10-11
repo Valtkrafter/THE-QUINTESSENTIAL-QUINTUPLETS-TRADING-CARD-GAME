@@ -3,6 +3,7 @@ import { CATALOG } from '../cards/catalog';
 import { HISTORY_LIMIT, earnYen, newSaveGame, parseSave, serializeSave, type SaveGame } from '../domain/save';
 import { PackError, canOpen, openPack, pityStatus } from './openPack';
 import { packById } from './catalog';
+import type { PackDefinition } from './schema';
 
 const KNOWN = new Set(CATALOG.map((card) => card.id));
 const NOW = 1_760_000_000_000;
@@ -12,12 +13,22 @@ function rich(seed: string, yen = 100_000): SaveGame {
   return earnYen(newSaveGame(seed, NOW), yen, NOW);
 }
 
+function definition(id: string): PackDefinition {
+  const found = packById(id);
+  if (found === undefined) {
+    throw new Error(`missing pack ${id}`);
+  }
+  return found;
+}
+
+const BOOSTER_PRICE = definition('booster').price;
+
 describe('opening a pack', () => {
   it('pays the price, files five cards and counts the pack', () => {
     const save = rich('open');
     const opening = openPack(save, 'booster', TODAY, NOW + 1);
     expect(opening.pulls).toHaveLength(5);
-    expect(opening.save.player.yen).toBe(save.player.yen - 500);
+    expect(opening.save.player.yen).toBe(save.player.yen - BOOSTER_PRICE);
     expect(opening.save.collection).toHaveLength(5);
     expect(opening.save.counters.packsOpened).toBe(1);
     expect(opening.save.collection.map((copy) => copy.obtained.source)).toEqual(['pack', 'pack', 'pack', 'pack', 'pack']);
@@ -35,6 +46,8 @@ describe('opening a pack', () => {
     expect(opening.save.dexRewards.freePacks).toBe(1);
     expect(opening.save.counters.packsOpened).toBe(1);
     expect(() => openPack(waiting, 'halloween', TODAY, NOW, { free: true })).toThrow(PackError);
+    expect(() => openPack(waiting, 'select', TODAY, NOW, { free: true })).toThrow(PackError);
+    expect(() => openPack(waiting, 'premium', TODAY, NOW, { free: true })).toThrow(PackError);
     // Without the option the pack still has to be paid for.
     expect(() => openPack(waiting, 'booster', TODAY, NOW)).toThrow(/costs/);
   });
@@ -90,7 +103,7 @@ describe('opening a pack', () => {
 describe('what stops a pack from opening', () => {
   it('refuses when the purse is too small, and leaves everything as it was', () => {
     const save = newSaveGame('poor', NOW);
-    const poor = { ...save, player: { yen: 499 } };
+    const poor = { ...save, player: { yen: BOOSTER_PRICE - 1 } };
     expect(canOpen(poor, 'booster', TODAY)).toBe(false);
     expect(() => openPack(poor, 'booster', TODAY, NOW)).toThrow(PackError);
     try {
@@ -103,7 +116,7 @@ describe('what stops a pack from opening', () => {
   });
 
   it('lets a player with exactly the price open a pack and ends with an empty purse', () => {
-    const save = { ...newSaveGame('exact', NOW), player: { yen: 500 } };
+    const save = { ...newSaveGame('exact', NOW), player: { yen: BOOSTER_PRICE } };
     expect(canOpen(save, 'booster', TODAY)).toBe(true);
     expect(openPack(save, 'booster', TODAY, NOW).save.player.yen).toBe(0);
   });
@@ -145,17 +158,46 @@ describe('the guarantee counters in the save', () => {
     }
   });
 
-  it('never leave more than 90 packs without an Ultra Rare, whatever the dice do', () => {
-    let save = rich('ur-limit', 10_000_000);
+  it.each(['booster', 'select', 'premium'])('never leave more packs than the published number without an Ultra Rare in the %s pack', (id) => {
+    const pack = definition(id);
+    let save = rich(`ur-limit-${id}`, 100_000_000);
     let gap = 0;
     let longest = 0;
-    for (let i = 0; i < 500; i += 1) {
-      const opening = openPack(save, 'booster', TODAY, NOW + i);
+    for (let i = 0; i < 400; i += 1) {
+      const opening = openPack(save, id, TODAY, NOW + i);
       save = opening.save;
       gap = opening.pulls.some((pull) => pull.card.rarity === 'UR') ? 0 : gap + 1;
       longest = Math.max(longest, gap);
     }
-    expect(longest).toBeLessThan(90);
+    expect(longest).toBeLessThan(pack.pity.ur.after);
+  });
+
+  it('keeps one counter per pack, so a cheap pack does not use up the guarantee of a dear one', () => {
+    const select = definition('select');
+    const premium = definition('premium');
+    let save = rich('own-counters', 10_000_000);
+    for (let i = 0; i < 8; i += 1) {
+      save = openPack(save, 'booster', TODAY, NOW + i).save;
+    }
+    expect(pityStatus(save, select).sar.count).toBe(0);
+    expect(pityStatus(save, premium).ur.count).toBe(0);
+    save = openPack(save, 'select', TODAY, NOW + 9).save;
+    const afterSelect = pityStatus(save, select).sar.count;
+    expect(afterSelect).toBeLessThanOrEqual(1);
+    expect(pityStatus(save, premium).sar.count).toBe(0);
+  });
+
+  it('lets the first two packs carry on from the shared counter of an older save', () => {
+    const old = rich('old-save');
+    const withOldCounters: SaveGame = { ...old, counters: { ...old.counters, pity: { sar: 21, ur: 33 } } };
+    expect(pityStatus(withOldCounters, definition('booster')).sar.count).toBe(21);
+    expect(pityStatus(withOldCounters, definition('halloween')).ur.count).toBe(33);
+    expect(pityStatus(withOldCounters, definition('select')).sar.count).toBe(0);
+    expect(pityStatus(withOldCounters, definition('premium')).ur.count).toBe(0);
+    // After a pack the own counter takes over and the old one is left alone.
+    const opened = openPack(withOldCounters, 'booster', TODAY, NOW).save;
+    expect(opened.counters.pity['sar:booster']).toBeGreaterThanOrEqual(0);
+    expect(pityStatus(opened, definition('halloween')).sar.count).toBe(21);
   });
 
   it('keep the banner counter and the 50/50 memory in the save, and only for banner packs', () => {

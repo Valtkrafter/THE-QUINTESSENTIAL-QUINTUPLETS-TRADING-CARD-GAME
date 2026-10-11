@@ -17,13 +17,19 @@ function halloween(raw: Raw[]): Raw {
 }
 
 describe('pack data', () => {
-  it('has the normal booster and the Halloween banner pack, five slots each', () => {
-    expect(PACKS.map((pack) => pack.id)).toEqual(['booster', 'halloween']);
+  it('has three normal packs and the Halloween banner pack, five slots each', () => {
+    expect(PACKS.map((pack) => pack.id)).toEqual(['booster', 'select', 'premium', 'halloween']);
     for (const pack of PACKS) {
       expect(pack.slots.map((slot) => slot.role)).toEqual(['basic', 'basic', 'basic', 'plus', 'hit']);
-      expect(pack.price).toBe(500);
     }
     expect(packById('nothing')).toBeUndefined();
+  });
+
+  it('prices the normal packs from cheap to dear, and makes the dearer ones shinier', () => {
+    const normal = PACKS.filter((pack) => pack.banner === undefined);
+    expect(normal.map((pack) => pack.price)).toEqual([...normal.map((pack) => pack.price)].sort((a, b) => a - b));
+    expect(normal.map((pack) => pack.finishLean)).toEqual([...normal.map((pack) => pack.finishLean)].sort((a, b) => a - b));
+    expect(packById('booster')?.finishLean).toBe(1);
   });
 
   it('keeps every slot table at 100 so the numbers read as percent', () => {
@@ -50,7 +56,7 @@ describe('pack data', () => {
 
 describe('pack data checks', () => {
   it('accepts the shipped data again', () => {
-    expect(parsePacks(rawPacks())).toHaveLength(2);
+    expect(parsePacks(rawPacks())).toHaveLength(PACKS.length);
   });
 
   it('stops on a slot that lists a rarity no normal card has', () => {
@@ -101,7 +107,6 @@ describe('pack data checks', () => {
     const second = raw[1];
     if (second !== undefined) {
       second['id'] = 'booster';
-      delete second['banner'];
     }
     expect(() => parsePacks(raw)).toThrow(/used twice/);
   });

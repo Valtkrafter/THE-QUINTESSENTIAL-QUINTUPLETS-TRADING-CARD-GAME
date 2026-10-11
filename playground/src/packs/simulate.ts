@@ -109,10 +109,19 @@ function milestone(values: readonly number[]): CollectingMilestone {
   return { median: at(0.5), p90: at(0.9) };
 }
 
-/** Lets simulated players open packs until they own every normal design, and reports when they reached each goal. */
+/** The rarities a pack can hold in any slot (a pack without Commons cannot be used to collect the Commons). */
+function rarityKinds(pack: PackDefinition): ReadonlySet<Rarity> {
+  return new Set(pack.slots.flatMap((slot) => RARITY_IDS.filter((rarity) => slot.table[rarity] !== undefined)));
+}
+
+/**
+ * Lets simulated players open packs of one kind until they own every normal design the pack can give (all of them for the
+ * Booster, only the Rare and better for the dearer packs), and reports when they reached each goal.
+ */
 export function simulateCollecting(packId: string, runs: number, seed: string, today: DayKey, packLimit = 5000): CollectingReport {
   const pack = requirePack(packId);
-  const normal = CATALOG.filter((card) => !isLimited(card));
+  const kinds = rarityKinds(pack);
+  const normal = CATALOG.filter((card) => !isLimited(card) && kinds.has(card.rarity));
   const idsOf = (predicate: (rarity: Rarity) => boolean) => normal.filter((card) => predicate(card.rarity)).map((card) => card.id);
   const goals = {
     core: idsOf((rarity) => rarity === 'C' || rarity === 'U' || rarity === 'R' || rarity === 'RR'),

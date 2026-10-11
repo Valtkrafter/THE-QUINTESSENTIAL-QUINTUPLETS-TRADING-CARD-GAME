@@ -29,17 +29,27 @@ function finishesIn(tier: FinishTier): readonly FinishId[] {
 }
 
 /**
+ * The chance (0..1) of each finish tier for a card of this rarity. A pack with a lean above 1 (the Select and Premium
+ * packs) makes foil and premium finishes that many times as likely as the plain print, compared with the table above.
+ */
+export function tierChances(rarity: Rarity, lean = 1): Readonly<Record<FinishTier, number>> {
+  const weights = TIER_WEIGHTS[rarity];
+  const leaned: Record<FinishTier, number> = { plain: weights.plain, foil: weights.foil * lean, premium: weights.premium * lean };
+  const total = leaned.plain + leaned.foil + leaned.premium;
+  return { plain: leaned.plain / total, foil: leaned.foil / total, premium: leaned.premium / total };
+}
+
+/**
  * Rolls the finish of one printed copy. `random` must return a float in [0, 1) and is injected so pulls can
  * be seeded, replayed and tested. A tier is picked by weight, then a finish inside it uniformly.
  */
-export function pickFinish(rarity: Rarity, random: () => number): FinishId {
-  const weights = TIER_WEIGHTS[rarity];
-  const total = TIERS.reduce((sum, tier) => sum + weights[tier], 0);
-  let roll = random() * total;
+export function pickFinish(rarity: Rarity, random: () => number, lean = 1): FinishId {
+  const chances = tierChances(rarity, lean);
+  let roll = random();
   let chosen: FinishTier = 'plain';
   for (const tier of TIERS) {
     chosen = tier;
-    roll -= weights[tier];
+    roll -= chances[tier];
     if (roll < 0) {
       break;
     }

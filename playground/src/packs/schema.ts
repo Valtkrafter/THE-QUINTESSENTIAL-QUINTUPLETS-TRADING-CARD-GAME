@@ -38,10 +38,19 @@ const bannerSchema = z.strictObject({
     .min(1),
 });
 
+/** Which drawing a pack gets on the Packs screen and in the opening. */
+export const PACK_ART = ['booster', 'select', 'premium', 'halloween'] as const;
+export type PackArtKind = (typeof PACK_ART)[number];
+
 export const packSchema = z.strictObject({
   id: z.string().regex(/^[a-z][a-z0-9-]*$/),
   name: z.string().min(1),
+  /** One plain sentence on what the pack is for. */
+  tagline: z.string().min(1).max(110),
+  art: z.enum(PACK_ART),
   price: z.number().int().positive(),
+  /** How much more often the cards of this pack come out foil or premium instead of plain (1 = the normal chances). */
+  finishLean: z.number().min(1).max(6),
   slots: z.array(slotSchema).length(5),
   pity: z.strictObject({
     /** After this many packs without a Special Art Rare or Ultra Rare, the next hit slot is one. */

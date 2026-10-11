@@ -29,10 +29,10 @@ export async function turnOffPackAnimation(page: Page): Promise<void> {
   await page.getByRole('group', { name: 'Pack animation' }).getByRole('button', { name: 'Off', exact: true }).click();
 }
 
-/** Buys and opens one pack, skips the reveal (Escape) and closes its result. */
+/** Buys and opens one Booster (¥300), skips the reveal and closes its result. */
 export async function openOnePack(page: Page): Promise<void> {
   await goTo(page, 'Packs');
-  await page.getByRole('button', { name: /^Open pack · ¥500$/ }).first().click();
+  await page.getByRole('article', { name: 'TQQ01 Booster' }).getByRole('button', { name: /^Open pack · ¥300$/ }).click();
   await page.getByRole('button', { name: 'Skip', exact: true }).click();
   await expect(page.getByRole('region', { name: 'Result' })).toBeVisible();
   await page.getByRole('button', { name: 'Close', exact: true }).click();

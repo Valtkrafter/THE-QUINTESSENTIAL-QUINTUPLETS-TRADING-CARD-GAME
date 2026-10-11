@@ -22,14 +22,14 @@ export function PityMeter({ label, count, guaranteeAt, softFrom }: PityMeterProp
     <div className={styles.meter} style={style}>
       <div className={styles.row}>
         <span>{label}</span>
-        <span className={styles.value}>{left <= 1 ? text.packs.pity.next : text.packs.pity.inPacks(left)}</span>
+        <span className={styles.value}>{text.packs.pity.count(count, guaranteeAt)}</span>
       </div>
       <div className={styles.track} role="progressbar" aria-valuemin={0} aria-valuemax={guaranteeAt} aria-valuenow={count} aria-label={label}>
         {softFrom !== undefined && <span className={styles.zone} />}
         <span className={styles.fill} />
       </div>
       <p className={styles.note}>
-        {text.packs.pity.count(count, guaranteeAt)}
+        {left <= 1 ? text.packs.pity.next : text.packs.pity.inPacks(left)}
         {soft && softFrom !== undefined ? ` · ${text.packs.pity.soft(softFrom)}` : ''}
       </p>
     </div>

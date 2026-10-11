@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { cardById, CATALOG } from '../cards/catalog';
 import type { Rarity } from '../cards/model';
+import { FINISH_TIER } from '../cards/finish';
 import { createRng } from '../domain/random';
 import { eventCards, isLimited, packById } from './catalog';
 import { FRESH_STATE, activePhase, bannerHitChance, isAvailable, normalPool, rollPack, type PackState } from './rollPack';
@@ -57,31 +58,27 @@ describe('a pack', () => {
     }
   });
 
-  it('follows the published table of each slot (Monte Carlo)', () => {
+  it.each(['booster', 'select', 'premium'])('follows the published table of each slot of the %s pack (Monte Carlo)', (id) => {
+    const definition = pack(id);
     const rolls = 30_000;
-    const counts: Record<number, Partial<Record<Rarity, number>>> = { 0: {}, 3: {}, 4: {} };
+    const counts: Partial<Record<Rarity, number>>[] = definition.slots.map(() => ({}));
     for (let i = 0; i < rolls; i += 1) {
-      for (const pick of roll(`odds-${i}`, BOOSTER).picks) {
+      for (const pick of roll(`odds-${id}-${i}`, definition).picks) {
         const row = counts[pick.slot];
         if (row !== undefined) {
           row[pick.card.rarity] = (row[pick.card.rarity] ?? 0) + 1;
         }
       }
     }
-    // Four standard deviations of a 50 % event in 30,000 rolls is about 1.2 percentage points.
-    const near = (slot: number, rarity: Rarity, percent: number) => {
-      const found = ((counts[slot]?.[rarity] ?? 0) / rolls) * 100;
-      expect(Math.abs(found - percent)).toBeLessThan(1.3);
-    };
-    near(0, 'C', 60);
-    near(0, 'U', 40);
-    near(3, 'R', 44);
-    near(3, 'RR', 12);
-    near(4, 'R', 44);
-    near(4, 'RR', 28);
-    near(4, 'AR', 14);
-    near(4, 'SAR', 10);
-    near(4, 'UR', 4);
+    definition.slots.forEach((slot, index) => {
+      const total = Object.values(slot.table).reduce((sum, weight) => sum + weight, 0);
+      for (const rarity of ['C', 'U', 'R', 'RR', 'AR', 'SAR', 'UR'] as const) {
+        const wanted = ((slot.table[rarity] ?? 0) / total) * 100;
+        const found = ((counts[index]?.[rarity] ?? 0) / rolls) * 100;
+        // Four standard deviations of a 50 % event in 30,000 rolls is about 1.2 percentage points.
+        expect(Math.abs(found - wanted), `${id} slot ${index + 1} ${rarity}`).toBeLessThan(1.3);
+      }
+    });
   });
 
   it('gives each design of a rarity the same chance', () => {
@@ -94,10 +91,44 @@ describe('a pack', () => {
       }
     }
     const commons = normalPool('C');
-    const expected = (rolls * 0.6) / commons.length;
+    const expected = (rolls * ((BOOSTER.slots[0]?.table.C ?? 0) / 100)) / commons.length;
     for (const card of commons) {
       expect(Math.abs((counts.get(card.id) ?? 0) - expected) / expected).toBeLessThan(0.1);
     }
+  });
+
+  it('leaves out the weak rarities in the dearer packs', () => {
+    for (const id of ['select', 'premium']) {
+      for (let i = 0; i < 1500; i += 1) {
+        const picks = roll(`weak-${id}-${i}`, pack(id)).picks;
+        expect(picks.some((pick) => pick.card.rarity === 'C'), id).toBe(false);
+      }
+    }
+    for (let i = 0; i < 1500; i += 1) {
+      const picks = roll(`weak-premium-${i}`, pack('premium')).picks;
+      expect(picks.some((pick) => pick.card.rarity === 'U')).toBe(false);
+      // Every Premium pack holds an Art Rare or better.
+      expect(picks.some((pick) => ['AR', 'SAR', 'UR'].includes(pick.card.rarity))).toBe(true);
+    }
+  });
+
+  it('makes foil and premium finishes more common in the dearer packs', () => {
+    const premiumShare = (id: string): number => {
+      let premium = 0;
+      let total = 0;
+      for (let i = 0; i < 4000; i += 1) {
+        for (const pick of roll(`finish-${id}-${i}`, pack(id)).picks) {
+          total += 1;
+          premium += FINISH_TIER[pick.finish] === 'plain' ? 0 : 1;
+        }
+      }
+      return premium / total;
+    };
+    const booster = premiumShare('booster');
+    const select = premiumShare('select');
+    const premium = premiumShare('premium');
+    expect(select).toBeGreaterThan(booster);
+    expect(premium).toBeGreaterThan(select);
   });
 });
 
@@ -160,6 +191,14 @@ describe('the guarantees', () => {
         expect(pick.card.id).toBe(missing?.id);
       }
     }
+  });
+
+  it.each(['booster', 'select', 'premium', 'halloween'])('fire at the published pack of the %s pack', (id) => {
+    const definition = pack(id);
+    const dueSar: PackState = { ...FRESH_STATE, sar: definition.pity.sar.after - 1 };
+    expect(share(400, (picks) => picks.some((pick) => pick.card.rarity === 'SAR' || pick.card.rarity === 'UR'), definition, dueSar, owned)).toBe(1);
+    const dueUr: PackState = { ...FRESH_STATE, ur: definition.pity.ur.after - 1 };
+    expect(share(400, (picks) => picks[4]?.card.rarity === 'UR', definition, dueUr, owned)).toBe(1);
   });
 
   it('still work when the player owns every Ultra Rare', () => {

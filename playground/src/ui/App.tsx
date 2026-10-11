@@ -61,7 +61,7 @@ function Game() {
           <Route path="/decks/template/:id">{(params) => <DeckEditor key={`template-${params.id}`} source={{ kind: 'template', id: params.id }} />}</Route>
           <Route path="/decks/:id">{(params) => <DeckEditor key={params.id} source={{ kind: 'edit', id: params.id }} />}</Route>
           <Route path="/packs" component={PacksScreen} />
-          <Route path="/packs/odds" component={OddsScreen} />
+          <Route path="/packs/odds/:id?">{(params) => <OddsScreen packId={params.id} />}</Route>
           <Route path="/dex" component={DexScreen} />
           <Route path="/showcase" component={ShowcaseScreen} />
           <Route path="/settings" component={SettingsScreen} />

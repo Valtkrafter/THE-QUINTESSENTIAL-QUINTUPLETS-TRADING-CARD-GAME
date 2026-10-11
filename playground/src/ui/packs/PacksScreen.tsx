@@ -1,4 +1,5 @@
 import { lazy, Suspense, useRef, useState } from 'react';
+import { Link } from 'wouter';
 import { cardById } from '../../cards/catalog';
 import { RARITIES } from '../../cards/model';
 import { claimDailyBonus, dailyBonusWaiting, daysWaiting } from '../../domain/daily';
@@ -151,6 +152,9 @@ export default function PacksScreen() {
         </p>
       )}
 
+      <Link href="/packs/odds" className={styles.compareLink}>
+        {text.packs.compare}
+      </Link>
       <div className={styles.packs}>
         {[...available].sort((a, b) => Number(b.banner !== undefined) - Number(a.banner !== undefined)).map((pack) => (
           <PackCard key={pack.id} pack={pack} save={save} today={today} onOpen={(count) => open(pack.id, count)} />

@@ -2,26 +2,64 @@
   {
     "id": "booster",
     "name": "TQQ01 Booster",
-    "price": 500,
+    "tagline": "The everyday pack. Cheap, full of Commons and Uncommons, and a good card is a treat.",
+    "art": "booster",
+    "price": 300,
+    "finishLean": 1,
     "slots": [
-      { "role": "basic", "table": { "C": 60, "U": 40 } },
-      { "role": "basic", "table": { "C": 60, "U": 40 } },
-      { "role": "basic", "table": { "C": 60, "U": 40 } },
-      { "role": "plus", "table": { "U": 40, "R": 44, "RR": 12, "AR": 4 } },
-      { "role": "hit", "table": { "R": 44, "RR": 28, "AR": 14, "SAR": 10, "UR": 4 } }
+      { "role": "basic", "table": { "C": 68, "U": 32 } },
+      { "role": "basic", "table": { "C": 68, "U": 32 } },
+      { "role": "basic", "table": { "C": 68, "U": 32 } },
+      { "role": "plus", "table": { "U": 64, "R": 33, "RR": 2.5, "AR": 0.5 } },
+      { "role": "hit", "table": { "R": 76, "RR": 16.5, "AR": 5.5, "SAR": 1.5, "UR": 0.5 } }
     ],
-    "pity": { "sar": { "after": 30, "urShare": 0.25 }, "ur": { "after": 90 } }
+    "pity": { "sar": { "after": 50, "urShare": 0.25 }, "ur": { "after": 150 } }
+  },
+  {
+    "id": "select",
+    "name": "TQQ01 Select",
+    "tagline": "No Commons. Every pack has a Rare or better, and a fair chance at an Art Rare.",
+    "art": "select",
+    "price": 1000,
+    "finishLean": 1.6,
+    "slots": [
+      { "role": "basic", "table": { "U": 75, "R": 25 } },
+      { "role": "basic", "table": { "U": 75, "R": 25 } },
+      { "role": "basic", "table": { "R": 90, "RR": 10 } },
+      { "role": "plus", "table": { "R": 66, "RR": 30, "AR": 3.6, "SAR": 0.4 } },
+      { "role": "hit", "table": { "R": 37, "RR": 40, "AR": 15, "SAR": 6, "UR": 2 } }
+    ],
+    "pity": { "sar": { "after": 15, "urShare": 0.25 }, "ur": { "after": 45 } }
+  },
+  {
+    "id": "premium",
+    "name": "TQQ01 Premium",
+    "tagline": "An Art Rare or better in every pack, and the shiniest finishes.",
+    "art": "premium",
+    "price": 3000,
+    "finishLean": 3,
+    "slots": [
+      { "role": "basic", "table": { "R": 75, "RR": 25 } },
+      { "role": "basic", "table": { "R": 62, "RR": 38 } },
+      { "role": "basic", "table": { "RR": 92, "AR": 8 } },
+      { "role": "plus", "table": { "RR": 62, "AR": 36, "SAR": 2 } },
+      { "role": "hit", "table": { "AR": 78, "SAR": 16.5, "UR": 5.5 } }
+    ],
+    "pity": { "sar": { "after": 5, "urShare": 0.25 }, "ur": { "after": 14 } }
   },
   {
     "id": "halloween",
     "name": "Halloween Wish",
+    "tagline": "A Booster that can hold a limited Halloween card. Only until 4 November.",
+    "art": "halloween",
     "price": 500,
+    "finishLean": 1,
     "slots": [
-      { "role": "basic", "table": { "C": 60, "U": 40 } },
-      { "role": "basic", "table": { "C": 60, "U": 40 } },
-      { "role": "basic", "table": { "C": 60, "U": 40 } },
-      { "role": "plus", "table": { "U": 40, "R": 44, "RR": 12, "AR": 4 } },
-      { "role": "hit", "table": { "R": 44, "RR": 28, "AR": 14, "SAR": 10, "UR": 4 } }
+      { "role": "basic", "table": { "C": 68, "U": 32 } },
+      { "role": "basic", "table": { "C": 68, "U": 32 } },
+      { "role": "basic", "table": { "C": 68, "U": 32 } },
+      { "role": "plus", "table": { "U": 64, "R": 33, "RR": 2.5, "AR": 0.5 } },
+      { "role": "hit", "table": { "R": 76, "RR": 16.5, "AR": 5.5, "SAR": 1.5, "UR": 0.5 } }
     ],
     "pity": { "sar": { "after": 30, "urShare": 0.25 }, "ur": { "after": 90 } },
     "banner": {

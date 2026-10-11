@@ -38,9 +38,6 @@ export interface PackOpening {
   readonly pulls: readonly Pull[];
 }
 
-const SAR_KEY = 'sar';
-const UR_KEY = 'ur';
-
 function bannerKey(eventId: string): string {
   return `banner:${eventId}`;
 }
@@ -49,20 +46,34 @@ function mainSureKey(eventId: string): string {
   return `banner:${eventId}:main-sure`;
 }
 
+/** Every pack counts its own packs without a big hit. Saves of the first versions had one shared counter, named "sar" and "ur". */
+function sarKey(pack: PackDefinition): string {
+  return `sar:${pack.id}`;
+}
+
+function urKey(pack: PackDefinition): string {
+  return `ur:${pack.id}`;
+}
+
+/** The two packs of the first versions carry on from the old shared counter. The packs that came later start at zero. */
+const FIRST_PACKS: ReadonlySet<string> = new Set(['booster', 'halloween']);
+
 /** The guarantee counters of a pack, read from the save. */
 export function packStateOf(save: SaveGame, pack: PackDefinition): PackState {
   const eventId = pack.banner?.eventId;
+  const pity = save.counters.pity;
+  const old = FIRST_PACKS.has(pack.id);
   return {
-    sar: save.counters.pity[SAR_KEY] ?? 0,
-    ur: save.counters.pity[UR_KEY] ?? 0,
-    banner: eventId === undefined ? 0 : (save.counters.pity[bannerKey(eventId)] ?? 0),
+    sar: pity[sarKey(pack)] ?? (old ? (pity['sar'] ?? 0) : 0),
+    ur: pity[urKey(pack)] ?? (old ? (pity['ur'] ?? 0) : 0),
+    banner: eventId === undefined ? 0 : (pity[bannerKey(eventId)] ?? 0),
     mainSure: eventId === undefined ? false : (save.counters.flags[mainSureKey(eventId)] ?? false),
   };
 }
 
 function withPackState(save: SaveGame, pack: PackDefinition, state: PackState): SaveGame {
   const eventId = pack.banner?.eventId;
-  const pity: Record<string, number> = { ...save.counters.pity, [SAR_KEY]: state.sar, [UR_KEY]: state.ur };
+  const pity: Record<string, number> = { ...save.counters.pity, [sarKey(pack)]: state.sar, [urKey(pack)]: state.ur };
   const flags = { ...save.counters.flags };
   if (eventId !== undefined) {
     pity[bannerKey(eventId)] = state.banner;
@@ -91,8 +102,11 @@ export function canOpen(save: SaveGame, packId: string, today: DayKey): boolean 
   return pack !== undefined && isAvailable(pack, today) && save.player.yen >= pack.price;
 }
 
+/** The pack the Card-Dex gives away. */
+export const FREE_PACK_ID = 'booster';
+
 export interface OpenOptions {
-  /** Opens one of the free packs the Card-Dex paid out instead of paying. Only the normal pack can be opened this way. */
+  /** Opens one of the free packs the Card-Dex paid out instead of paying. Only the Booster can be opened this way. */
   readonly free?: boolean;
 }
 
@@ -107,7 +121,7 @@ export function openPack(save: SaveGame, packId: string, today: DayKey, now: num
   }
   const free = options.free === true;
   if (free) {
-    if (pack.banner !== undefined || save.dexRewards.freePacks < 1) {
+    if (pack.id !== FREE_PACK_ID || save.dexRewards.freePacks < 1) {
       throw new PackError('no-free-pack', `There is no free pack to open for ${pack.name}.`);
     }
   } else if (save.player.yen < pack.price) {

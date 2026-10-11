@@ -24,7 +24,7 @@ test('every screen of the menu opens, and the page title follows', async ({ page
   expect(errors).toEqual([]);
 });
 
-test('a new game starts with money, and a pack costs ¥500 and fills the binder', async ({ page }) => {
+test('a new game starts with money, and a Booster costs ¥300 and fills the binder', async ({ page }) => {
   const errors = watchErrors(page);
   await openGame(page);
   await turnOffPackAnimation(page);
@@ -32,7 +32,7 @@ test('a new game starts with money, and a pack costs ¥500 and fills the binder'
   await expect(page.getByText('¥1,500').first()).toBeVisible();
 
   await openOnePack(page);
-  await expect(page.getByText('¥1,000').first()).toBeVisible();
+  await expect(page.getByText('¥1,200').first()).toBeVisible();
 
   await goTo(page, 'Binder');
   await expect(page.getByText(/5 cards/)).toBeVisible();

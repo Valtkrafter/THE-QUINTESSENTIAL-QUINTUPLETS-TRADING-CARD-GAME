@@ -35,6 +35,7 @@ export interface PackState {
 
 export const FRESH_STATE: PackState = { sar: 0, ur: 0, banner: 0, mainSure: false };
 
+
 const NORMAL_BY_RARITY: ReadonlyMap<Rarity, readonly Card[]> = new Map(
   RARITY_IDS.map((rarity) => [rarity, CATALOG.filter((card) => card.rarity === rarity && !isLimited(card))]),
 );
@@ -113,7 +114,7 @@ export interface RollResult {
 export function rollPack(rng: Rng, { pack, today, state, owned }: RollInput): RollResult {
   const known = new Set(owned);
   const picks: Pick[] = [];
-  const finishOf = (rarity: Rarity): FinishId => pickFinish(rarity, () => rng.next());
+  const finishOf = (rarity: Rarity): FinishId => pickFinish(rarity, () => rng.next(), pack.finishLean);
   const add = (slot: number, role: SlotRole, card: Card, reason: PullReason): void => {
     known.add(card.id);
     picks.push({ slot, role, card, finish: finishOf(card.rarity), reason });

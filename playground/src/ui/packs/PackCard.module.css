@@ -1,6 +1,6 @@
 .card {
   display: grid;
-  grid-template-columns: 190px minmax(0, 1fr);
+  grid-template-columns: 150px minmax(0, 1fr);
   gap: var(--space-5);
   align-items: start;
   padding: var(--space-5);
@@ -20,9 +20,66 @@
 }
 
 .art {
-  display: grid;
-  place-items: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
   padding-top: var(--space-3);
+}
+
+.price {
+  font-size: var(--text-lg);
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Each kind of pack tints its card a little in its own colours. */
+.select {
+  background:
+    radial-gradient(80% 60% at 0% 0%, rgba(82, 216, 200, 0.14), transparent 70%),
+    var(--surface);
+}
+
+.premium {
+  border-color: color-mix(in oklab, #f6dc94 38%, transparent);
+  background:
+    radial-gradient(80% 60% at 0% 0%, rgba(246, 220, 148, 0.16), transparent 70%),
+    radial-gradient(60% 50% at 100% 100%, rgba(120, 90, 200, 0.1), transparent 70%),
+    var(--surface);
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.facts div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+}
+
+.facts dt {
+  color: var(--text-faint);
+  font-size: 11px;
+  line-height: 1.25;
+}
+
+.facts dd {
+  margin: 0;
+  font-size: var(--text-sm);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.shiny {
+  color: var(--text-faint);
+  font-size: var(--text-xs);
 }
 
 .body {
@@ -146,6 +203,12 @@
   }
 
   .art {
+    flex-direction: row;
+    justify-content: center;
     padding-top: 0;
+  }
+
+  .facts {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
