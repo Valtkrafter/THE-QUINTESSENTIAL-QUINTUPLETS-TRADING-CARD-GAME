@@ -247,17 +247,29 @@
     display: none;
   }
 
+  /* Nine entries do not fit a phone side by side: the bar scrolls sideways, and the page you are on is brought into view. */
   .nav {
     flex: 1;
+    min-width: 0;
     flex-direction: row;
-    justify-content: space-around;
+    justify-content: flex-start;
+    gap: 2px;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+  }
+
+  .nav::-webkit-scrollbar {
+    display: none;
   }
 
   .link {
+    flex: none;
     flex-direction: column;
     gap: 2px;
     padding: 6px var(--space-3);
     font-size: var(--text-xs);
+    scroll-snap-align: center;
   }
 
   .active::before {

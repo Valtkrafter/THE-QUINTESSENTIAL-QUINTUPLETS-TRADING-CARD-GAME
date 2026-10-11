@@ -57,11 +57,14 @@ export function AppShell({ children }: { readonly children: ReactNode }) {
   const writeFailed = useGame((state) => state.writeFailed);
   const progress = useMemo(() => dexProgress(buildDex(save.collection)), [save.collection]);
   const mainRef = useRef<HTMLElement>(null);
+  const navRef = useRef<HTMLElement>(null);
 
   // The title of the browser tab (and of the window in the desktop app) says where the player is, for screen readers too.
+  // On a phone the menu bar scrolls sideways, so the entry of this page is brought into view.
   useEffect(() => {
     const item = navItemOf(location);
     document.title = item === undefined ? text.appName : `${item.label} · ${text.appName}`;
+    navRef.current?.querySelector('[aria-current="page"]')?.scrollIntoView({ block: 'nearest', inline: 'center' });
   }, [location]);
 
   return (
@@ -71,7 +74,7 @@ export function AppShell({ children }: { readonly children: ReactNode }) {
       </button>
       <aside className={styles.rail}>
         <Brand />
-        <nav aria-label={text.nav.label} className={styles.nav}>
+        <nav ref={navRef} aria-label={text.nav.label} className={styles.nav}>
           {NAV.map((item) => {
             const active = navItemOf(location) === item;
             return (

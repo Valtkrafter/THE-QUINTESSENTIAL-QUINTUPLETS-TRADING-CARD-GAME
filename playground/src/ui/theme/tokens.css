@@ -20,7 +20,7 @@
   /* Text */
   --text: #e8ebf4;
   --text-soft: #aab2c6;
-  --text-faint: #7d869c;
+  --text-faint: #939cb2; /* 4.6:1 or better on every surface, tinted ones included (checked by the accessibility test in e2e/) */
 
   /* Accent: dusk periwinkle for actions and selection, a warm horizon peach for small highlights */
   --accent: #a9b8f2;

@@ -35,3 +35,7 @@ src/assets/characters/
 
 # Typed class names generated from the CSS Modules (tools/css-module-types.ts)
 *.module.d.css.ts
+
+# Playwright reports and traces
+test-results/
+playwright-report/
