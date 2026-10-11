@@ -6,10 +6,11 @@
 
 import { z } from 'zod';
 import { FINISH_IDS, type FinishId } from '../cards/finish';
+import { MAX_DECKS, deckSchema } from './decks';
 import { ownedCardSchema, rollCondition, uidFor, type ObtainSource, type OwnedCard } from './ownership';
 import { createRng, restoreRng, type Rng } from './random';
 
-export const SAVE_VERSION = 3;
+export const SAVE_VERSION = 4;
 export const SAVE_FORMAT = 'tqq-save';
 export const STARTING_YEN = 1500;
 /** How many copies fit in the showcase. */
@@ -28,6 +29,22 @@ export const packHistoryEntrySchema = z.strictObject({
 export type PackHistoryEntry = z.infer<typeof packHistoryEntrySchema>;
 
 const rngStateSchema = z.tuple([z.number().int(), z.number().int(), z.number().int(), z.number().int()]);
+
+const count = z.number().int().min(0);
+
+/** What the player has done in battles (version 4). */
+export const battleRecordSchema = z.strictObject({
+  wins: count,
+  losses: count,
+  draws: count,
+  /** Results against each rival, by the rival's id. */
+  rivals: z.record(z.string(), z.strictObject({ wins: count, losses: count })),
+  /** The day of the last win that paid the "first win of the day" bonus, or null. */
+  lastWinDay: dayKeySchema.nullable(),
+});
+export type BattleRecord = z.infer<typeof battleRecordSchema>;
+
+export const EMPTY_BATTLE_RECORD: BattleRecord = { wins: 0, losses: 0, draws: 0, rivals: {}, lastWinDay: null };
 
 export const saveGameSchema = z.strictObject({
   version: z.literal(SAVE_VERSION),
@@ -52,6 +69,10 @@ export const saveGameSchema = z.strictObject({
   packHistory: z.array(packHistoryEntrySchema).max(HISTORY_LIMIT),
   /** Uids of the copies on display, in shelf order (version 2). */
   showcase: z.array(z.string()).max(SHOWCASE_SLOTS),
+  /** The player's decks (version 4). They may be unfinished; a deck is checked when a battle starts. */
+  decks: z.array(deckSchema).max(MAX_DECKS),
+  /** The player's battle results (version 4). */
+  battle: battleRecordSchema,
   /** Where the seeded random generator stopped, so pulls continue the same way after a reload. */
   rng: rngStateSchema,
 });
@@ -70,6 +91,8 @@ export function newSaveGame(seed: string | number, now: number): SaveGame {
     daily: { lastClaim: null },
     packHistory: [],
     showcase: [],
+    decks: [],
+    battle: EMPTY_BATTLE_RECORD,
     rng: createRng(seed).state(),
   };
 }
@@ -155,6 +178,8 @@ const MIGRATIONS: readonly ((data: Record<string, unknown>) => Record<string, un
     const counters = typeof data['counters'] === 'object' && data['counters'] !== null ? data['counters'] : {};
     return { ...data, counters: { ...counters, flags: {} }, daily: { lastClaim: null }, packHistory: [] };
   },
+  // 3 -> 4: decks and battle results were added.
+  (data) => ({ ...data, decks: [], battle: EMPTY_BATTLE_RECORD }),
 ];
 
 /** Fast 32-bit checksum (FNV-1a). Catches a damaged or hand-edited file by accident; it is not a security feature. */
@@ -245,6 +270,13 @@ export function parseSave(text: string, knownCardIds: ReadonlySet<string>): Save
   }
   if (new Set(save.showcase).size !== save.showcase.length || save.showcase.some((uid) => !uids.has(uid))) {
     throw new SaveError('inconsistent', 'The showcase lists a copy that is missing or listed twice.');
+  }
+  if (new Set(save.decks.map((deck) => deck.id)).size !== save.decks.length) {
+    throw new SaveError('inconsistent', 'Two decks have the same id.');
+  }
+  const unknownInDecks = save.decks.flatMap((deck) => deck.cards).filter((cardId) => !knownCardIds.has(cardId));
+  if (unknownInDecks.length > 0) {
+    throw new SaveError('unknown-cards', `A deck contains cards this game does not know: ${[...new Set(unknownInDecks)].join(', ')}.`);
   }
   return save;
 }

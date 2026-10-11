@@ -178,9 +178,14 @@ describe('showcase', () => {
 });
 
 describe('upgrading an old save', () => {
-  function oldText(version: 1 | 2): string {
+  function oldText(version: 1 | 2 | 3): string {
     const current = addOwnedCard(newSaveGame('old', NOW), 'TQQ01-010', 'rainbow', 'starter', NOW).save;
-    const { showcase, daily: _daily, packHistory: _history, ...rest } = current;
+    const { decks: _decks, battle: _battle, ...fromThree } = current;
+    if (version === 3) {
+      const data = JSON.stringify({ ...fromThree, version });
+      return JSON.stringify({ format: 'tqq-save', checksum: checksum(data), data });
+    }
+    const { showcase, daily: _daily, packHistory: _history, ...rest } = fromThree;
     const { flags: _flags, ...counters } = rest.counters;
     const shape = version === 1 ? { ...rest, counters, version } : { ...rest, counters, showcase, version };
     const data = JSON.stringify(shape);
@@ -194,6 +199,8 @@ describe('upgrading an old save', () => {
     expect(upgraded.daily).toEqual({ lastClaim: null });
     expect(upgraded.packHistory).toEqual([]);
     expect(upgraded.counters.flags).toEqual({});
+    expect(upgraded.decks).toEqual([]);
+    expect(upgraded.battle).toEqual({ wins: 0, losses: 0, draws: 0, rivals: {}, lastWinDay: null });
     expect(upgraded.collection.map((card) => card.cardId)).toEqual(['TQQ01-010']);
   });
 
@@ -203,6 +210,32 @@ describe('upgrading an old save', () => {
     expect(upgraded.daily.lastClaim).toBeNull();
     expect(upgraded.counters.flags).toEqual({});
     expect(upgraded.collection).toHaveLength(1);
+  });
+
+  it('opens a version 3 save (before decks and battle results existed)', () => {
+    const upgraded = parseSave(oldText(3), KNOWN);
+    expect(upgraded.version).toBe(SAVE_VERSION);
+    expect(upgraded.decks).toEqual([]);
+    expect(upgraded.battle.wins).toBe(0);
+    expect(upgraded.collection).toHaveLength(1);
+  });
+});
+
+describe('decks in a save', () => {
+  const withDeck = (cards: readonly string[], id = 'd1'): string => {
+    const save = { ...newSaveGame('decks', NOW), decks: [{ id, name: 'My deck', cards: [...cards] }] };
+    return serializeSave(save);
+  };
+
+  it('are kept when the game is saved and loaded', () => {
+    const loaded = parseSave(withDeck(['TQQ01-001', 'TQQ01-002']), KNOWN);
+    expect(loaded.decks).toEqual([{ id: 'd1', name: 'My deck', cards: ['TQQ01-001', 'TQQ01-002'] }]);
+  });
+
+  it('refuse cards that the game does not know and decks with the same id', () => {
+    expect(() => parseSave(withDeck(['TQQ01-999']), KNOWN)).toThrow(/does not know/);
+    const twice = { ...newSaveGame('decks', NOW), decks: [{ id: 'd', name: 'A', cards: [] }, { id: 'd', name: 'B', cards: [] }] };
+    expect(() => parseSave(serializeSave(twice), KNOWN)).toThrow(/same id/);
   });
 });
 
