@@ -23,7 +23,8 @@ export default defineConfig({
     include: ['src/**/*.test.ts'],
   },
   server: {
-    // Native file events were missed on this machine (stale modules after edits); polling is reliable.
-    watch: { usePolling: true, interval: 200 },
+    // Native file events were missed on this machine (stale modules after edits); polling is reliable. Polling looks at every
+    // file again and again, so the folders full of build output and reports are left out (the Windows app alone has thousands).
+    watch: { usePolling: true, interval: 200, ignored: ['**/src-tauri/**', '**/test-results/**', '**/playwright-report/**', '**/dist/**', '**/.vitest/**'] },
   },
 })

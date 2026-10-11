@@ -34,7 +34,7 @@ A card can only do what is on this list (Stage 6 builds the engine that runs it)
 | `preventAttackNextTurn`, `shieldActiveNextTurn` | timed protection / stun |
 | `coinFlip {heads, tails}` | run other effects after a coin flip |
 | `damagePerHeart {amount}`, `damagePerCount {amount, count}` | extra damage (`count`: `ownSisters`, `ownBenched`) |
-| `reduceDamageTaken {amount}`, `preventBenchDamage`, `coinSurvive {hp}`, `reduceStudyCost {amount, scope: bench}` | passive rules |
+| `reduceDamageTaken {amount}`, `coinSurvive {hp}`, `reduceStudyCost {amount, scope: bench}` | passive rules |
 
 ## Owned copies and the save game
 

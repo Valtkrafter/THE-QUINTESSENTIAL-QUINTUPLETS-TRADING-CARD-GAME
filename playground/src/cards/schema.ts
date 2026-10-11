@@ -43,7 +43,6 @@ export type Effect =
   | { readonly type: 'damagePerCount'; readonly amount: number; readonly count: 'ownSisters' | 'ownBenched' }
   // Passive rules of a Character in play
   | { readonly type: 'reduceDamageTaken'; readonly amount: number }
-  | { readonly type: 'preventBenchDamage' }
   | { readonly type: 'coinSurvive'; readonly hp: number }
   | { readonly type: 'reduceStudyCost'; readonly amount: number; readonly scope: 'bench' };
 
@@ -76,7 +75,6 @@ export const effectSchema: z.ZodType<Effect> = z.lazy(() =>
     z.strictObject({ type: z.literal('damagePerHeart'), amount }),
     z.strictObject({ type: z.literal('damagePerCount'), amount, count: z.enum(['ownSisters', 'ownBenched']) }),
     z.strictObject({ type: z.literal('reduceDamageTaken'), amount }),
-    z.strictObject({ type: z.literal('preventBenchDamage') }),
     z.strictObject({ type: z.literal('coinSurvive'), hp: amount }),
     z.strictObject({ type: z.literal('reduceStudyCost'), amount: count, scope: z.literal('bench') }),
   ]),

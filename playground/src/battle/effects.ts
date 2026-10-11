@@ -362,7 +362,6 @@ export function applyEffect(run: Run, effect: Effect, queue: Effect[], context: 
     case 'damagePerHeart':
     case 'damagePerCount':
     case 'reduceDamageTaken':
-    case 'preventBenchDamage':
     case 'coinSurvive':
     case 'reduceStudyCost':
       return false;

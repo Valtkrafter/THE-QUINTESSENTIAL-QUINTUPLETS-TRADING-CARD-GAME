@@ -476,10 +476,11 @@
     "ability": {
       "name": "Sengoku Ghost",
       "timing": "passive",
-      "text": "Your Benched Characters take no damage from attacks.",
+      "text": "Attacks do 30 less damage to this Character.",
       "effects": [
         {
-          "type": "preventBenchDamage"
+          "type": "reduceDamageTaken",
+          "amount": 30
         }
       ]
     },
