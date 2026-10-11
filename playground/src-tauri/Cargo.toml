@@ -1,0 +1,26 @@
+[package]
+name = "tqq-tcg"
+version = "0.1.0"
+description = "The Quintessential Quintuplets Trading Card Game: a free, offline, fan-made card game"
+authors = ["Valtkrafter"]
+edition = "2021"
+rust-version = "1.90"
+
+[lib]
+name = "tqq_tcg_lib"
+crate-type = ["rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2.7", features = [] }
+
+[dependencies]
+tauri = { version = "2.12", features = [] }
+tauri-plugin-single-instance = "2.5"
+
+# The installer should be small: the game's own code is TypeScript in the web view, the Rust side only opens the window.
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = "s"
+panic = "abort"
+strip = true

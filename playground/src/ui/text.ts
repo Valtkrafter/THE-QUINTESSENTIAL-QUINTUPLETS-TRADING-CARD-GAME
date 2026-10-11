@@ -67,6 +67,12 @@ export const text = {
     cancel: 'Cancel',
   },
 
+  stale: {
+    title: 'The game was changed in another window',
+    body: 'This game is open in another window or tab, and that one saved a newer game. Reload this page to carry on with the newer game. Nothing is lost.',
+    reload: 'Reload',
+  },
+
   binder: {
     title: 'Binder',
     summary: (copies: number, designs: number) => `${plural(copies, 'card', 'cards')} · ${plural(designs, 'design', 'designs')}`,
@@ -703,7 +709,9 @@ export const text = {
     },
     granted: (count: number) => `${plural(count, 'card', 'cards')} added`,
     about: 'About this game',
-    aboutBody: 'A fan project about “The Quintessential Quintuplets”. Free, without real money, forever.',
+    aboutBody: 'A fan project about “The Quintessential Quintuplets”. Free, without real money, forever. It is not made or approved by the creators of the series.',
+    aboutSaved: 'Your game is saved on this device only. Download a backup now and then to keep a copy.',
+    version: (version: string) => `Version ${version}`,
     lab: 'Open the Holo Lab',
   },
 

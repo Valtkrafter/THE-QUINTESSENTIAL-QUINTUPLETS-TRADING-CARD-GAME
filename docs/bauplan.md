@@ -29,7 +29,7 @@ Stand: Oktober 2026. Das ist der Plan zum Bauen. Entscheidungen, die schon fests
 `src/domain` (Regeln, Packs, Bewertung, Wirtschaft, Battle, kein React) → `src/data` (Karten als Daten, Zod) → `src/state` (Speicher, Einstellungen) → `src/render` (Karten-Gesicht und Holo, schon vorhanden) → `src/ui` (Bildschirme). Obere Schichten dürfen untere benutzen, nie umgekehrt.
 
 ## 4. Stufen
-Status: Stufe 0 ✅, Stufe 1 ✅, Stufe 2 ✅, Stufe 3 (Packs) ✅ und Stufe 4 (Deck & Kampf), Stufe 5 (Shop) und Stufe 6 (Bewertung) gebaut und warten auf deine Prüfung. Als Nächstes kommt Stufe 7 (Politur & Release). Die Kampf-Regeln stehen in `docs/battle.md`. Die Reihenfolge wurde geändert: der Kampf kommt direkt nach den Packs (er ist die Geldquelle zum Grinden).
+Status: Stufe 0 ✅, Stufe 1 ✅, Stufe 2 ✅, Stufe 3 (Packs) ✅ und Stufe 4 (Deck & Kampf), Stufe 5 (Shop), Stufe 6 (Bewertung) und Stufe 7 (Politur & Release, Windows-App) gebaut und warten auf deine Prüfung. Die Kampf-Regeln stehen in `docs/battle.md`. Die Reihenfolge wurde geändert: der Kampf kommt direkt nach den Packs (er ist die Geldquelle zum Grinden).
 
 Größen: S = wenige Sitzungen, M = eine Woche, L = mehrere Wochen, XL = großes Projekt. Jede Stufe endet spielbar, mit grünen Tests und Build.
 
@@ -42,7 +42,7 @@ Größen: S = wenige Sitzungen, M = eine Woche, L = mehrere Wochen, XL = großes
 | 4 Deck & Kampf-System ✅ | Der Spielteil und die Geldquelle | 4a Regel-Engine mit Tests, 4b Starter-Deck + Deckbau + Legalitäts-Prüfung, 4c Kampf-Bildschirm (wie die Animation), 4d Computer-Gegner (Leicht/Normal/Schwer) + Belohnungen in Yen, Balance per KI-gegen-KI-Simulation (Ziel ~10 Minuten) | XL |
 | 5 Wirtschaft & Kiosk ✅ | Geld ausgeben und Dubletten nutzen | Kiosk (nur bis Double Rare), Dubletten verkaufen, Dex-Belohnungen, Preisformel, Balance-Simulator | M |
 | 6 Bewertung ✅ | Sammler-Belohnung | versteckte Teilnoten, sichtbare Abnutzung im Shader, Einsenden mit Preisleiter und Zeremonie, 3D-Slab mit Etikett, Slab verkaufen, Bestandsbericht, Filter und Sortierung im Binder | L |
-| 7 Politur & Release | Es wird eine App | Tauri (Windows), Qualitätsstufen für schwache Grafik (Intel UHD), Ton (Feinschliff), Deutsch/Englisch/Japanisch, Bedienhilfen, Playwright-Tests, Mehrspieler-Vorbereitung | L |
+| 7 Politur & Release ✅ | Es wird eine App | Tauri (Windows-Installer, `docs/desktop.md`), Grafik-Stufe pro Gerät (Intel-Chips Mittel), Kampf-Tisch fürs Handy, Kampf-Sounds, Bedienhilfen (axe-Prüfung), Playwright-Tests (`e2e/`). Nicht gebaut: Mehrsprachigkeit (das Spiel ist nur Englisch, so entschieden), Mehrspieler | L |
 
 Reihenfolge: 0 → 1 → 2 → 3 → 4 (Kampf) → 5 (Kiosk) → 6 (Bewertung) → 7. Nach Stufe 3 kannst du schon Packs öffnen und deine Karten ansehen.
 

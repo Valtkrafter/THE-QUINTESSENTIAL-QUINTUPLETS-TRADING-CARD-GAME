@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vitest/config'
 import { writeAllDeclarations, writeDeclaration } from './tools/css-module-types.ts'
@@ -15,9 +16,13 @@ const cssModuleTypes = {
   },
 }
 
+// The version of the game (shown in Settings), the one in package.json; the Windows app takes it from there as well.
+const version: unknown = (JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf-8')) as { version?: unknown }).version
+
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), cssModuleTypes],
+  define: { __APP_VERSION__: JSON.stringify(typeof version === 'string' ? version : 'dev') },
   test: {
     environment: 'node',
     include: ['src/**/*.test.ts'],

@@ -13,6 +13,7 @@ import { PageHeader } from '../components/PageHeader';
 import { downloadText, saveFileName } from '../download';
 import { cx } from '../format';
 import { text } from '../text';
+import { APP_VERSION } from '../version';
 import styles from './SettingsScreen.module.css';
 import { ShowPreview } from './ShowPreview';
 import { SimulatorPanel } from './SimulatorPanel';
@@ -176,6 +177,8 @@ export default function SettingsScreen() {
         <section className={styles.section}>
           <h2>{text.settings.about}</h2>
           <p className={styles.hint}>{text.settings.aboutBody}</p>
+          <p className={styles.hint}>{text.settings.aboutSaved}</p>
+          <p className={styles.hint}>{text.settings.version(APP_VERSION)}</p>
           <div className={styles.row}>
             <Link href="/lab" className={styles.link}>
               {text.settings.lab}

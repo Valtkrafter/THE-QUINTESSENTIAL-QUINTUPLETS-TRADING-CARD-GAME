@@ -36,6 +36,10 @@ Cards with a finish run the real foil shader of the 3D card, in every grid (bind
 
 `ui/battle/Lobby.tsx` lists the five rivals (portrait, level, the type they play and what it is weak to, what a win pays) and the decks the player can take: their own (a deck that is not ready says why) and the loaner decks. `Board.tsx` is the table: the rival on top, the player below, the hand under that, a side panel with the card under the pointer enlarged and the battle log. Sizes follow the window height (`--active-h`) so the table fits one screen. Clicking a hand card or a Character selects it and the buttons for what it can do appear in the strip in the middle (give the free Heart, use the ability, retreat, play the Supporter, end the turn); the moves of the Active Character are buttons next to it with what they would really do to the enemy. A Basic goes to the Bench with one click. Questions of the engine are answered on the table (the possible targets glow) or, for cards, in a sheet. The pure parts are tested: `viewModel.ts` (what can be done with a card or a Character), `floaters.ts` (the floating numbers), `choices.ts` (which decks can be taken).
 
+**On a phone** (a window narrower than 860 px) the table is built upwards instead of sideways (`@media (max-width: 860px)` in `Board.module.css`): on each side the Active Character stands on the left and the Bench is a row beside it, your moves sit under your Active Character, the piles are only numbers in the bars, and the hand is a row to scroll sideways. Sizes follow the width of the screen there, not the height. A phone cannot hover, so a card is looked at by pressing and holding it (`useHold.ts`: about half a second with a finger or pen, a mouse keeps hovering); it opens large in a dialog. The Characters of the enemy answer to a press and hold as well, they only do nothing else.
+
+**Sound.** Every step of the engine also makes sound (`ui/battle/sounds.ts` turns the events into cues, `audio/battleAudio.ts` makes them with Tone.js, like the pack show): a card is placed or evolves, a Heart is given, an attack swishes and lands (heavier with more damage, bright for a weakness, dull for a resistance, a metal ping when blocked), a heal, a swap, a knock-out (bigger for a Prime), the start of your turn, and the end of the battle. The volume is the one setting for all sound; Tone.js loads when the first battle starts.
+
 `state/battleSession.ts` runs the battle: it holds the engine's state and the log, lets the rival act one action at a time with a short pause, does the rival's setup at once and writes the result into the save game when the battle ends (`battle/rewards.ts`). A battle is not saved: closing the page ends it. In the development server `window.__battle` gives the session, the roster and a few helpers for looking at a situation in the console.
 
 ## Decks (Stage 4)
@@ -58,6 +62,14 @@ Cards with a finish run the real foil shader of the 3D card, in every grid (bind
 - `state/preferences.ts`: per-device settings (frame style, graphics, idle motion), separate from the save so an exported save does not carry them.
 - `state/app.ts`: the one game and the one set of preferences of the page, plus `useGame` / `useSave` / `usePreferences`.
 - Save version 2 added the showcase, version 3 the daily bonus, the pack history and the guarantee memories (`domain/save.ts`, migrations tested).
+
+## Graphics level
+
+Three levels (High, Medium, Low in Settings) change how sharp and how busy the 3D and foil drawing is: the pixel ratio of the 3D card (2, 1.5, 1), how often the live foil tiles are redrawn (40, 24 per second; none on Low, where the CSS shimmer stays), and, in the pack show, the size of the glowing background (which also shrinks by itself when the show runs slowly). The first time the game starts on a device it looks at the graphics chip once (`state/gpu.ts`) and picks the starting level: Low without WebGL or with a software renderer, Medium on a phone or tablet and on the graphics chip built into an Intel processor (UHD, HD, Iris, Xe), High otherwise (NVIDIA, AMD, Apple, Intel Arc, or a browser that does not say). The choice is saved with the other settings, so it is made only once, and the player can change it at any time.
+
+## Accessibility
+
+Every screen is checked by axe-core in the end-to-end tests (`e2e/accessibility.spec.ts`; serious and critical problems fail the build). What is in place: a skip link and a title for every page, landmarks (menu, main, side panels), a focus ring on everything that takes focus, names for every button and picture, native dialogs (focus stays inside, Escape closes) and a Tab trap in the full-screen grading reveal, a `role="log"` for the battle log, bigger controls on touch screens (`pointer: coarse`), motion switched off for people who asked their system for less of it, `lang="ja"` on Japanese names, and text colours that keep the contrast limit on every surface. Not done yet: a full keyboard play of the battle table (it works with Tab, Enter and Space, but has no shortcuts) and a read-aloud description of what the 3D card looks like.
 
 ## Theme "Dämmerung"
 

@@ -39,3 +39,7 @@ src/assets/characters/
 # Playwright reports and traces
 test-results/
 playwright-report/
+
+# The Windows app (Tauri): build output and generated schemas
+src-tauri/target/
+src-tauri/gen/

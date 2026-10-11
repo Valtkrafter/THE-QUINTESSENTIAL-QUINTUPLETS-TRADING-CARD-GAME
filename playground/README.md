@@ -31,6 +31,10 @@ Lower layers never import higher ones (enforced by `src/architecture.test.ts`); 
 
 Styling is CSS Modules plus the theme variables. `tools/css-module-types.ts` writes `*.module.d.css.ts` next to every stylesheet (git-ignored) so a misspelled class name is a compile error; `npm run typecheck` and `npm run build` run it, and the dev server keeps it current.
 
+## The Windows app
+
+`npm run desktop:build` wraps the game in a native window with Tauri and makes a Windows installer (`src-tauri/target/release/bundle/nsis/`). It needs Rust and the Visual Studio C++ build tools. See `../docs/desktop.md`.
+
 ## End-to-end tests
 
 `e2e/` holds Playwright tests that play the game in a real browser against the production build (`npm run test:e2e` builds it, starts `vite preview` on port 4173 and runs everything): every screen of the menu, a pack, a card in 3D, a card graded into a slab and sold, a battle that is given up, the screens on a phone (no sideways scrolling, press and hold shows a card large) and an accessibility check with axe-core on every screen (serious and critical problems fail the test). Every test starts with a new browser profile, so a new game; your own saves are never touched.
