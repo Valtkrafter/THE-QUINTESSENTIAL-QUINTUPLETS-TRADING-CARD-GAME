@@ -61,7 +61,7 @@ export function describeEvent(event: BattleEvent, names: Names = YOU_AND_THEM): 
     case 'heart':
       return `${names.subject(event.player)} gave ${plural(event.count, 'Heart')} to ${place(event.target)}.`;
     case 'supporter':
-      return `${names.subject(event.player)} played ${cardName(event.cardId)}.`;
+      return `${names.subject(event.player)} played ${cardById(event.cardId)?.title ?? 'a Supporter'}.`;
     case 'ability':
       return `${names.subject(event.player)} used ${event.name}.`;
     case 'attack': {

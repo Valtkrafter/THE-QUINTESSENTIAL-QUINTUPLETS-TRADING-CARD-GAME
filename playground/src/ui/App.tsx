@@ -4,6 +4,7 @@ import { useHashLocation } from 'wouter/use-hash-location';
 import { gameStore, preferencesStore, useGame } from '../state/app';
 import { useStore } from 'zustand';
 import { ArrowLeftIcon } from './components/icons';
+import BattleScreen from './battle/BattleScreen';
 import BinderScreen from './binder/BinderScreen';
 import DamagedScreen from './DamagedScreen';
 import DexScreen from './dex/DexScreen';
@@ -43,6 +44,7 @@ function Game() {
       <Suspense fallback={<Splash />}>
         <Switch>
           <Route path="/" component={BinderScreen} />
+          <Route path="/battle" component={BattleScreen} />
           <Route path="/packs" component={PacksScreen} />
           <Route path="/packs/odds" component={OddsScreen} />
           <Route path="/dex" component={DexScreen} />

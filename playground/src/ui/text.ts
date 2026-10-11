@@ -2,8 +2,11 @@
 // languages; until then no screen writes its own text. The words for the game's own things (Pack, Finish, Banner, the
 // seven rarities ...) are listed in docs/glossary.md; the names of the rarities, finishes and stages live next to their data.
 
+import type { AiLevel } from '../battle/ai';
+import type { CardReason, EndReason, FigureReason } from '../battle/types';
 import type { FrameStyle } from '../cards/frameStyle';
 import type { SortKey } from '../domain/collection';
+import type { DeckProblem } from '../domain/decks';
 import type { SaveErrorCode } from '../domain/save';
 import type { PackErrorCode } from '../packs/openPack';
 import type { GraphicsLevel, PullAnimation } from '../state/preferences';
@@ -26,6 +29,8 @@ export const text = {
   nav: {
     packs: 'Packs',
     binder: 'Binder',
+    battle: 'Battle',
+    decks: 'Decks',
     dex: 'Card Dex',
     showcase: 'Showcase',
     settings: 'Settings',
@@ -239,6 +244,211 @@ export const text = {
     pickerAllShown: 'All your cards are already in the showcase.',
     close: 'Close',
     nothingYet: 'Your showcase is empty. Once you have cards, you can display up to six of them here.',
+  },
+
+  decks: {
+    title: 'Decks',
+    subtitle: 'A deck has 30 cards. Build your own from your binder, or borrow a ready-made one.',
+    mine: 'Your decks',
+    loaners: 'Loaner decks',
+    loanersHint: 'Free to use in every battle. You cannot change them, but you can copy one and make it yours.',
+    newDeck: 'New deck',
+    copy: 'Make a copy',
+    copyName: (name: string) => `${name} (copy)`,
+    edit: 'Edit',
+    remove: 'Delete',
+    removeConfirm: (name: string) => `Delete “${name}”? The cards stay in your binder.`,
+    removeYes: 'Yes, delete',
+    cancel: 'Cancel',
+    cards: (count: number) => `${count} / 30 cards`,
+    ready: 'Ready for battle',
+    noneYet: 'You have no decks yet. Make a new deck or copy a loaner deck.',
+    full: 'You can keep up to 8 decks.',
+    name: 'Deck name',
+    namePlaceholder: 'Give your deck a name',
+    save: 'Save deck',
+    saved: 'Saved',
+    back: 'Back to Decks',
+    fromBinder: 'Your cards',
+    inDeck: 'In this deck',
+    searchCards: 'Search your cards …',
+    searchLabel: 'Search your cards',
+    add: 'Add',
+    take: 'Take out',
+    emptyDeck: 'This deck is empty. Add cards from your binder on the left.',
+    nothingOwned: 'You have no cards yet. Open some packs first, or borrow a loaner deck.',
+    allUsed: 'All copies of this card are in the deck.',
+    stats: (characters: number, supporters: number, primes: number) =>
+      `${plural(characters, 'Character', 'Characters')} · ${plural(supporters, 'Supporter', 'Supporters')} · ${plural(primes, 'Prime card', 'Prime cards')}`,
+    problems: {
+      size: (problem: Extract<DeckProblem, { code: 'size' }>) => `A deck needs exactly ${problem.want} cards. This one has ${problem.have}.`,
+      'unknown-card': () => 'This deck contains a card the game does not know.',
+      copies: (problem: Extract<DeckProblem, { code: 'copies' }>, name: string) =>
+        `${name}: at most ${problem.max} ${problem.max === 1 ? 'copy' : 'copies'} in a deck (it has ${problem.have}).`,
+      prime: (problem: Extract<DeckProblem, { code: 'prime' }>) => `At most ${problem.max} Prime cards in a deck (it has ${problem.have}).`,
+      basics: () => 'A deck needs at least one Basic or Event Character to start with.',
+      'not-owned': (problem: Extract<DeckProblem, { code: 'not-owned' }>, name: string) =>
+        problem.have === 0 ? `${name}: you do not own this card.` : `${name}: you own ${problem.have}, the deck uses ${problem.need}.`,
+    },
+  },
+
+  battle: {
+    title: 'Battle',
+    subtitle: 'Beat a rival to earn money. Every battle pays something, and a win pays more.',
+    howTo: 'How to play',
+    chooseRival: 'Choose a rival',
+    chooseDeck: 'Choose your deck',
+    start: 'Start battle',
+    levels: { easy: 'Easy', normal: 'Normal', hard: 'Hard' } satisfies Record<AiLevel, string>,
+    winPays: (yen: number) => `${money(yen)} for a win`,
+    firstWin: (yen: number) => `First win of the day: +${money(yen)}`,
+    lossPays: (yen: number) => `${money(yen)} even if you lose`,
+    record: (wins: number, losses: number) => (wins + losses === 0 ? 'Not played yet' : `${plural(wins, 'win', 'wins')} · ${plural(losses, 'loss', 'losses')}`),
+    plays: (type: string) => `Plays ${type}`,
+    weakTo: (type: string) => `weak to ${type}`,
+    loaner: 'Loaner',
+    yours: 'Your deck',
+    ready: 'Ready',
+    notReady: 'Not ready',
+    noOwnDecks: 'You have no decks of your own yet. You can borrow a loaner deck, or build a deck in Decks.',
+    goToDecks: 'Go to Decks',
+    inProgress: (rival: string) => `Your battle against ${rival} is still going.`,
+    resume: 'Back to the battle',
+    giveUp: 'Give up',
+    giveUpConfirm: 'If you give up, the battle counts as lost and pays nothing.',
+    giveUpYes: 'Yes, give up',
+    keepPlaying: 'Keep playing',
+    pick: 'Pick a rival and a deck to start.',
+    prompts: {
+      heal: 'Choose a Character to heal',
+      'give-heart': 'Choose a Character to give a Heart to',
+      'swap-in': 'Choose the Benched Character to bring to the front',
+      'send-to-front': 'Choose the enemy Character that has to come to the front',
+      promote: 'Your Active Character was knocked out. Choose who steps up',
+      'take-from-top': 'Take one of these cards into your hand. The others go to the bottom of your deck',
+      'find-basic': 'Choose a Basic Character to put on your Bench',
+      'find-supporter': 'Choose a Supporter to take into your hand',
+      'move-to-bottom': 'Move this card to the bottom of your deck?',
+    } satisfies Record<FigureReason | CardReason | 'move-to-bottom', string>,
+    board: {
+      yourTurn: 'Your turn',
+      you: 'You',
+      theirTurn: (name: string) => `${name} is playing …`,
+      setupTitle: 'Get ready',
+      setupHelp: 'Put one Character in front and up to 3 on your Bench. Click a card in your hand to place it, then press Ready.',
+      waitingSetup: (name: string) => `${name} is ready. Set up your side.`,
+      ready: 'Ready',
+      endTurn: 'End turn',
+      goesFirst: (name: string) => `${name} goes first.`,
+      memories: 'Memories',
+      deck: 'Deck',
+      hand: 'Hand',
+      discard: 'Discard pile',
+      freeHearts: (count: number) => (count === 0 ? 'No free Heart left' : plural(count, 'free Heart left', 'free Hearts left')),
+      giveHeart: 'Give a free Heart',
+      useAbility: (name: string) => `Use ${name}`,
+      retreat: (cost: number) => (cost === 0 ? 'Swap places' : `Retreat (${plural(cost, 'Heart', 'Hearts')})`),
+      playBasic: 'Put on Bench',
+      playSupporter: 'Play Supporter',
+      evolve: 'Evolve',
+      pickTarget: 'Click a glowing Character.',
+      moves: 'Moves',
+      attack: 'Attack',
+      noMoves: 'No moves',
+      stunned: 'Cannot attack this turn',
+      shielded: 'Takes no damage this turn',
+      cannotAttackFirst: 'The first player cannot attack in the first turn.',
+      weakness: 'Weakness!',
+      resisted: 'Resisted',
+      notEnoughHearts: 'Needs more Hearts',
+      skip: 'Skip',
+      yes: 'Yes',
+      no: 'No',
+      log: 'Battle log',
+      inspect: 'Point at a card to read it.',
+      turn: (number: number) => `Turn ${number}`,
+      active: 'Active',
+      bench: 'Bench',
+      empty: 'Empty',
+      cardsInDeck: (count: number) => plural(count, 'card', 'cards'),
+      opponentHand: (count: number) => plural(count, 'card in hand', 'cards in hand'),
+      hearts: (count: number) => plural(count, 'Heart', 'Hearts'),
+      menu: 'Battle menu',
+      hidden: 'Hidden',
+      level: (level: string) => `${level} rival`,
+    },
+    result: {
+      win: 'Victory!',
+      loss: 'Defeat',
+      draw: 'A draw',
+      why: (outcome: 'win' | 'loss' | 'draw', reason: EndReason, rival: string): string => {
+        if (reason === 'concede') {
+          return outcome === 'win' ? `${rival} gave up.` : 'You gave up.';
+        }
+        if (reason === 'memories') {
+          return outcome === 'win' ? 'You collected 6 Memories.' : `${rival} collected 6 Memories.`;
+        }
+        if (reason === 'no-fighters') {
+          return outcome === 'win' ? `${rival} has no Characters left.` : 'You have no Characters left.';
+        }
+        if (reason === 'deck-out') {
+          return outcome === 'win' ? `${rival} could not draw a card.` : 'You could not draw a card.';
+        }
+        return outcome === 'draw' ? 'Nobody led after 80 turns.' : outcome === 'win' ? 'You led after 80 turns.' : `${rival} led after 80 turns.`;
+      },
+      earned: (yen: number) => `You earned ${money(yen)}`,
+      breakdown: (base: number, bonus: number) => (bonus > 0 ? `${money(base)} for the battle + ${money(bonus)} first win of the day` : `${money(base)} for the battle`),
+      nothing: 'Giving up pays nothing.',
+      stats: (turns: number, you: number, them: number) => `${plural(turns, 'turn', 'turns')} · Memories ${you} : ${them}`,
+      rematch: 'Rematch',
+      back: 'Back to the lobby',
+    },
+    howToPlay: {
+      title: 'How to play',
+      close: 'Got it',
+      sections: [
+        {
+          title: 'The goal',
+          lines: ['Collect 6 Memories to win.', 'You get a Memory when you knock out the enemy Active Character: 1 Memory, or 2 if it is a Prime card.'],
+        },
+        {
+          title: 'Getting ready',
+          lines: [
+            'Both players start with 5 cards. Put one Character in front: your Active Character. Put up to 3 more on your Bench.',
+            'If you have no Basic or Event Character in your hand, the cards are shown and you draw 5 new ones.',
+          ],
+        },
+        {
+          title: 'Your turn',
+          lines: [
+            'You draw a card. Then you can do these things, in any order:',
+            'Give 1 free Heart to one of your Characters. Whoever goes second gets 2 in their first turn.',
+            'Put Basic Characters from your hand on your Bench.',
+            'Evolve: put a Close card on a Basic card of the same sister, or a Bride card on a Close card. Hearts and damage stay.',
+            'Play 1 Supporter.',
+            'Use an ability that says “Once per turn”.',
+            'Retreat once: pay the retreat cost in Hearts and swap your Active Character with a Benched one.',
+            'Attack. An attack ends your turn. Whoever goes first cannot attack in their first turn.',
+          ],
+        },
+        {
+          title: 'Attacking',
+          lines: [
+            'A move needs the Hearts shown next to it. The grey Heart can be paid with any Heart. Hearts stay on the Character after the move.',
+            'If the attacker’s type is the defender’s weakness, the damage is doubled. If it is the defender’s resistance, the damage is 30 lower.',
+            'When a Character is knocked out, its owner moves a Benched Character to the front. Nobody left? The battle is lost.',
+          ],
+        },
+        {
+          title: 'Good to know',
+          lines: [
+            'Each type hits the next one hard: Heart → Star → Clover → Melody → Butterfly → Heart.',
+            'You lose if you cannot draw a card at the start of your turn. Do not draw your whole deck!',
+            'Hover over any card to read it.',
+          ],
+        },
+      ],
+    },
   },
 
   settings: {

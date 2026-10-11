@@ -1,0 +1,173 @@
+import { useMemo, useState, type CSSProperties } from 'react';
+import { Link } from 'wouter';
+import { profileOf } from '../../battle/deckProfile';
+import { FIRST_WIN_BONUS_YEN, LOSS_YEN, WIN_YEN } from '../../battle/rewards';
+import { OPPONENTS, type Opponent } from '../../battle/roster';
+import { AFFINITY_INFO } from '../../cards/characters';
+import type { Affinity } from '../../cards/model';
+import { battleSession, useSave } from '../../state/app';
+import { Button } from '../components/controls';
+import { PageHeader } from '../components/PageHeader';
+import { cx } from '../format';
+import { text } from '../text';
+import { deckChoices, describeProblem, type DeckChoice } from './choices';
+import { HowToPlay } from './HowToPlay';
+import { portraitOf } from './portraits';
+import styles from './Lobby.module.css';
+
+function TypeLine({ affinity, weakTo }: { readonly affinity: Affinity | null; readonly weakTo: Affinity | null }) {
+  if (affinity === null) {
+    return null;
+  }
+  const info = AFFINITY_INFO[affinity];
+  return (
+    <span className={styles.type}>
+      <i className={styles.dot} style={{ '--dot': info.color } as CSSProperties} />
+      {text.battle.plays(info.label)}
+      {weakTo !== null && ` · ${text.battle.weakTo(AFFINITY_INFO[weakTo].label)}`}
+    </span>
+  );
+}
+
+function RivalTile({ rival, selected, onPick }: { readonly rival: Opponent; readonly selected: boolean; readonly onPick: () => void }) {
+  const save = useSave();
+  const profile = profileOf(rival.deck.cards);
+  const record = save.battle.rivals[rival.id] ?? { wins: 0, losses: 0 };
+  const tint = profile.affinity === null ? undefined : AFFINITY_INFO[profile.affinity].color;
+  return (
+    <button type="button" className={styles.rival} aria-pressed={selected} onClick={onPick} style={tint === undefined ? undefined : ({ '--tint': tint } as CSSProperties)}>
+      <img className={styles.portrait} src={portraitOf(rival.character)} alt="" draggable={false} />
+      <span className={styles.rivalBody}>
+        <span className={styles.nameRow}>
+          <span className={styles.name}>{rival.name}</span>
+          <span className={cx(styles.level, styles[rival.level])}>{text.battle.levels[rival.level]}</span>
+        </span>
+        <span className={styles.blurb}>{rival.blurb}</span>
+        <span className={styles.facts}>
+          <TypeLine affinity={profile.affinity} weakTo={profile.weakTo} />
+          <span>
+            <strong>{text.battle.winPays(WIN_YEN[rival.level])}</strong> · {text.battle.lossPays(LOSS_YEN)}
+          </span>
+          <span>{text.battle.record(record.wins, record.losses)}</span>
+        </span>
+      </span>
+    </button>
+  );
+}
+
+function DeckTile({ choice, selected, onPick }: { readonly choice: DeckChoice; readonly selected: boolean; readonly onPick: () => void }) {
+  const profile = profileOf(choice.cards);
+  const lead = profile.lead === null ? undefined : portraitOf(profile.lead);
+  const tint = profile.affinity === null ? undefined : AFFINITY_INFO[profile.affinity].color;
+  const problem = choice.problems[0];
+  return (
+    <button
+      type="button"
+      className={styles.deck}
+      aria-pressed={selected}
+      disabled={problem !== undefined}
+      onClick={onPick}
+      style={tint === undefined ? undefined : ({ '--tint': tint } as CSSProperties)}
+    >
+      <img className={styles.deckArt} src={lead} alt="" draggable={false} />
+      <span className={styles.deckBody}>
+        <span className={styles.deckName}>{choice.name}</span>
+        <span className={styles.deckMeta}>
+          <TypeLine affinity={profile.affinity} weakTo={null} />
+          {choice.loaner && <span>· {text.battle.loaner}</span>}
+        </span>
+        {problem === undefined ? (
+          <span className={cx(styles.deckMeta, styles.ready)}>{text.battle.ready}</span>
+        ) : (
+          <span className={styles.problem}>{describeProblem(problem)}</span>
+        )}
+      </span>
+    </button>
+  );
+}
+
+/** Pick a rival and a deck, then start. */
+export function Lobby() {
+  const save = useSave();
+  const choices = useMemo(() => deckChoices(save), [save]);
+  const [rivalId, setRivalId] = useState<string>(OPPONENTS[0]?.id ?? '');
+  const [deckKey, setDeckKey] = useState<string | null>(null);
+  const [helpOpen, setHelpOpen] = useState(false);
+
+  const rival = OPPONENTS.find((candidate) => candidate.id === rivalId);
+  const ready = choices.filter((choice) => choice.problems.length === 0);
+  const chosen = choices.find((choice) => choice.key === deckKey && choice.problems.length === 0) ?? ready[0];
+  const own = choices.filter((choice) => !choice.loaner);
+  const loaners = choices.filter((choice) => choice.loaner);
+
+  const start = () => {
+    if (rival !== undefined && chosen !== undefined) {
+      battleSession.getState().start(rival, { name: chosen.name, cards: chosen.cards, loaner: chosen.loaner });
+    }
+  };
+
+  return (
+    <>
+      <PageHeader title={text.battle.title} subtitle={text.battle.subtitle} actions={<Button onClick={() => setHelpOpen(true)}>{text.battle.howTo}</Button>} />
+      <div className={styles.layout}>
+        <section className={styles.section}>
+          <h2>{text.battle.chooseRival}</h2>
+          <div className={styles.rivals}>
+            {OPPONENTS.map((candidate) => (
+              <RivalTile key={candidate.id} rival={candidate} selected={candidate.id === rivalId} onPick={() => setRivalId(candidate.id)} />
+            ))}
+          </div>
+        </section>
+
+        <section className={styles.section}>
+          <h2>{text.battle.chooseDeck}</h2>
+          <div className={styles.deckGroups}>
+            <div>
+              <h3 className={styles.groupTitle}>{text.decks.mine}</h3>
+              {own.length === 0 ? (
+                <p className={styles.empty}>
+                  {text.battle.noOwnDecks} <Link href="/decks">{text.battle.goToDecks}</Link>
+                </p>
+              ) : (
+                <div className={styles.decks}>
+                  {own.map((choice) => (
+                    <DeckTile key={choice.key} choice={choice} selected={choice.key === chosen?.key} onPick={() => setDeckKey(choice.key)} />
+                  ))}
+                </div>
+              )}
+            </div>
+            <div>
+              <h3 className={styles.groupTitle}>{text.decks.loaners}</h3>
+              <div className={styles.decks}>
+                {loaners.map((choice) => (
+                  <DeckTile key={choice.key} choice={choice} selected={choice.key === chosen?.key} onPick={() => setDeckKey(choice.key)} />
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <div className={styles.startBar}>
+          <div className={styles.versus}>
+            {rival !== undefined && chosen !== undefined ? (
+              <>
+                {chosen.name}
+                <span>vs</span>
+                {rival.name}
+                <span>
+                  {text.battle.levels[rival.level]} · {text.battle.firstWin(FIRST_WIN_BONUS_YEN)}
+                </span>
+              </>
+            ) : (
+              <span>{text.battle.pick}</span>
+            )}
+          </div>
+          <Button kind="primary" disabled={rival === undefined || chosen === undefined} onClick={start}>
+            {text.battle.start}
+          </Button>
+        </div>
+      </div>
+      {helpOpen && <HowToPlay onClose={() => setHelpOpen(false)} />}
+    </>
+  );
+}

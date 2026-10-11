@@ -153,3 +153,48 @@ export function PacksIcon(props: IconProps) {
     </Icon>
   );
 }
+
+export function BattleIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M4.5 4.5 13 13M10 14l4-4M13 13l4 4" />
+      <circle cx="18" cy="18" r="1.1" />
+      <path d="M19.5 4.5 11 13M14 14l-4-4M11 13l-4 4" />
+      <circle cx="6" cy="18" r="1.1" />
+    </Icon>
+  );
+}
+
+export function DecksIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <rect x="8" y="3.5" width="11" height="15" rx="2.2" />
+      <path d="M5 7v11.5a2.2 2.2 0 0 0 2.2 2.2H15" />
+      <path d="m13.5 8.4.8 1.7 1.8.25-1.3 1.25.3 1.8-1.6-.85-1.6.85.3-1.8-1.3-1.25 1.8-.25Z" />
+    </Icon>
+  );
+}
+
+export function HeartIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.4A4 4 0 0 1 19 10c0 5.6-7 10-7 10Z" />
+    </Icon>
+  );
+}
+
+export function ShieldIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M12 3.5 5 6v5.5c0 4.4 3 7.6 7 9 4-1.4 7-4.6 7-9V6Z" />
+    </Icon>
+  );
+}
+
+export function HourglassIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M6.5 3.5h11M6.5 20.5h11M7.5 3.5c0 4 4.5 5.5 4.5 8.5s-4.5 4.5-4.5 8.5M16.5 3.5c0 4-4.5 5.5-4.5 8.5s4.5 4.5 4.5 8.5" />
+    </Icon>
+  );
+}
