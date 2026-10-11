@@ -7,6 +7,8 @@ import { ArrowLeftIcon } from './components/icons';
 import BattleScreen from './battle/BattleScreen';
 import BinderScreen from './binder/BinderScreen';
 import DamagedScreen from './DamagedScreen';
+import DeckEditor from './decks/DeckEditor';
+import DecksScreen from './decks/DecksScreen';
 import DexScreen from './dex/DexScreen';
 import OddsScreen from './packs/OddsScreen';
 import PacksScreen from './packs/PacksScreen';
@@ -45,6 +47,10 @@ function Game() {
         <Switch>
           <Route path="/" component={BinderScreen} />
           <Route path="/battle" component={BattleScreen} />
+          <Route path="/decks" component={DecksScreen} />
+          <Route path="/decks/new">{() => <DeckEditor key="new" source={{ kind: 'new' }} />}</Route>
+          <Route path="/decks/template/:id">{(params) => <DeckEditor key={`template-${params.id}`} source={{ kind: 'template', id: params.id }} />}</Route>
+          <Route path="/decks/:id">{(params) => <DeckEditor key={params.id} source={{ kind: 'edit', id: params.id }} />}</Route>
           <Route path="/packs" component={PacksScreen} />
           <Route path="/packs/odds" component={OddsScreen} />
           <Route path="/dex" component={DexScreen} />

@@ -3,7 +3,7 @@
 // before it can be taken into a battle.
 
 import type { SaveGame } from './save';
-import { MAX_DECKS, checkDeck, deckSchema, ownedCounts, type Deck, type DeckProblem } from './decks';
+import { DECK_NAME_LENGTH, DECK_SIZE, MAX_DECKS, checkDeck, deckSchema, ownedCounts, type Deck, type DeckProblem } from './decks';
 
 /** An id that no deck of the save has yet ("deck-1", "deck-2", ...). */
 export function nextDeckId(decks: readonly Deck[]): string {
@@ -23,7 +23,7 @@ export function deckById(save: SaveGame, id: string): Deck | undefined {
 export function saveDeck(save: SaveGame, deck: Deck, now: number): SaveGame {
   const checked = deckSchema.safeParse(deck);
   if (!checked.success) {
-    throw new Error('This deck cannot be saved: it needs a name of up to 24 letters and at most 30 cards.');
+    throw new Error(`This deck cannot be saved: it needs a name of up to ${DECK_NAME_LENGTH} letters and at most ${DECK_SIZE} cards.`);
   }
   const exists = save.decks.some((candidate) => candidate.id === deck.id);
   if (!exists && save.decks.length >= MAX_DECKS) {

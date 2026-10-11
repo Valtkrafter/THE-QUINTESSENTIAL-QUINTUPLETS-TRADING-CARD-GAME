@@ -15,7 +15,7 @@ export const MAX_PRIME = 6;
 export const MIN_BASICS = 1;
 /** How many decks the save game can keep. */
 export const MAX_DECKS = 8;
-export const DECK_NAME_LENGTH = 24;
+export const DECK_NAME_LENGTH = 32;
 
 export const deckSchema = z.strictObject({
   id: z.string().min(1).max(40),
