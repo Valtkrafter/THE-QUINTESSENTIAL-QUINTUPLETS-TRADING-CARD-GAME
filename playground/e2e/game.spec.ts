@@ -113,3 +113,22 @@ test('the choice of the graphics level is kept', async ({ page }) => {
   await page.reload();
   await expect(page.getByRole('group', { name: 'Graphics', exact: true }).getByRole('button', { name: 'Low' })).toHaveAttribute('aria-pressed', 'true');
 });
+
+test('a second window of the game stops when the first one saved, so nothing is overwritten', async ({ context }) => {
+  const first = await context.newPage();
+  await openGame(first);
+  const second = await context.newPage();
+  await openGame(second);
+
+  // The second window saves a newer game (the daily bonus) ...
+  await goTo(second, 'Packs');
+  await second.getByRole('button', { name: /^Claim ¥/ }).click();
+  await expect(second.getByText(/daily bonus received/)).toBeVisible();
+
+  // ... so the first one, which holds an older game, asks for a reload instead of ever writing it.
+  await expect(first.getByRole('heading', { name: 'The game was changed in another window' })).toBeVisible();
+  await first.getByRole('button', { name: 'Reload' }).click();
+  await expect(first.getByRole('navigation', { name: 'Main menu' })).toBeVisible();
+  await goTo(first, 'Packs');
+  await expect(first.getByText('¥1,900').first()).toBeVisible();
+});

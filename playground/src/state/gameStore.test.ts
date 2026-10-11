@@ -139,3 +139,75 @@ describe('game store', () => {
     expect(loads).toBe(1);
   });
 });
+
+/** Two windows of the game on one device, as far as the store knows of them. */
+function fakeWindows() {
+  const handlers: (() => void)[] = [];
+  let announced = 0;
+  return {
+    sync: {
+      announce: () => {
+        announced += 1;
+      },
+      onOtherSaved: (handler: () => void) => {
+        handlers.push(handler);
+      },
+    },
+    announced: () => announced,
+    /** The other window saves. */
+    otherSaves: () => handlers.forEach((handler) => handler()),
+  };
+}
+
+describe('a second window of the game', () => {
+  it('is told about every write of this window', async () => {
+    const windows = fakeWindows();
+    const game = createGameStore({ ...deps(rawStore(null)), sync: windows.sync });
+    await game.getState().start();
+    await game.getState().settled();
+    expect(windows.announced()).toBe(1);
+    game.getState().change((save) => addOwnedCard(save, 'TQQ01-010', 'rainbow', 'pack', NOW).save);
+    await game.getState().settled();
+    expect(windows.announced()).toBe(2);
+  });
+
+  it('makes this window stop, so that its older game cannot overwrite the newer one', async () => {
+    const windows = fakeWindows();
+    const store = rawStore(null);
+    const game = createGameStore({ ...deps(store), sync: windows.sync });
+    await game.getState().start();
+    await game.getState().settled();
+    const written = store.text;
+
+    windows.otherSaves();
+    expect(game.getState().stale).toBe(true);
+
+    game.getState().change((save) => addOwnedCard(save, 'TQQ01-010', 'rainbow', 'pack', NOW).save);
+    expect(game.getState().transact((save) => ({ save: addOwnedCard(save, 'TQQ01-011', 'gold', 'pack', NOW).save, value: 1 }))).toBeUndefined();
+    game.getState().replace(addOwnedCard(newSaveGame('other', NOW), 'TQQ01-012', 'prism', 'pack', NOW).save);
+    await game.getState().startOver();
+    await game.getState().settled();
+
+    expect(game.getState().save).toEqual(newSaveGame('seed', NOW));
+    expect(store.text).toBe(written);
+  });
+
+  it('is not made stale while the game is still loading', async () => {
+    const windows = fakeWindows();
+    const game = createGameStore({ ...deps(rawStore(null)), sync: windows.sync });
+    windows.otherSaves();
+    expect(game.getState().stale).toBe(false);
+    await game.getState().start();
+    expect(game.getState().phase).toBe('ready');
+  });
+
+  it('does not change how a game works without other windows', async () => {
+    const store = rawStore(null);
+    const game = createGameStore(deps(store));
+    await game.getState().start();
+    game.getState().change((save) => addOwnedCard(save, 'TQQ01-010', 'rainbow', 'pack', NOW).save);
+    await game.getState().settled();
+    expect(game.getState().stale).toBe(false);
+    expect(game.getState().save?.collection).toHaveLength(1);
+  });
+});

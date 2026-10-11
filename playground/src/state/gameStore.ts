@@ -17,6 +17,11 @@ export interface GameState {
   readonly persistence: Persistence;
   /** True while the last attempt to write the save failed. */
   readonly writeFailed: boolean;
+  /**
+   * True once another window of the game has saved a game. This window then stops changing and writing, because what it holds
+   * is older and would overwrite the newer game; the screen asks the player to reload.
+   */
+  readonly stale: boolean;
 }
 
 export interface GameActions {
@@ -41,6 +46,14 @@ export interface GameActions {
 
 export type GameStore = StoreApi<GameState & GameActions>;
 
+/** How windows of the game on one device tell each other that they saved. */
+export interface WindowSync {
+  /** This window has written the save. */
+  announce(): void;
+  /** Calls `handler` whenever another window has written the save. */
+  onOtherSaved(handler: () => void): void;
+}
+
 export interface GameDeps {
   readonly store: SaveStore;
   /** Used when the main store cannot be opened at all. */
@@ -48,6 +61,8 @@ export interface GameDeps {
   readonly now: () => number;
   /** A fresh seed for a new game. */
   readonly seed: () => string;
+  /** Without it a second window is not noticed (the game then simply works as it did). */
+  readonly sync?: WindowSync;
 }
 
 export function createGameStore(deps: GameDeps): GameStore {
@@ -64,12 +79,22 @@ export function createGameStore(deps: GameDeps): GameStore {
         try {
           await active.save(next);
           set({ writeFailed: false });
+          deps.sync?.announce();
         } catch {
           set({ writeFailed: true });
         }
       }
       flushing = null;
     }
+
+    // Two windows of the game on one device each keep their own copy of the save in memory, and the later write wins. So a window
+    // that hears of another one's write stops: its game is older, and writing it would throw the newer one away.
+    deps.sync?.onOtherSaved(() => {
+      if (get().phase === 'ready') {
+        pending = null;
+        set({ stale: true });
+      }
+    });
 
     function persist(save: SaveGame): void {
       pending = save;
@@ -102,6 +127,7 @@ export function createGameStore(deps: GameDeps): GameStore {
       problem: null,
       persistence: 'device',
       writeFailed: false,
+      stale: false,
 
       start() {
         starting ??= begin();
@@ -109,8 +135,8 @@ export function createGameStore(deps: GameDeps): GameStore {
       },
 
       change(update) {
-        const { phase, save } = get();
-        if (phase !== 'ready' || save === null) {
+        const { phase, save, stale } = get();
+        if (phase !== 'ready' || save === null || stale) {
           return;
         }
         const next = update(save);
@@ -119,8 +145,8 @@ export function createGameStore(deps: GameDeps): GameStore {
       },
 
       transact(rule) {
-        const { phase, save } = get();
-        if (phase !== 'ready' || save === null) {
+        const { phase, save, stale } = get();
+        if (phase !== 'ready' || save === null || stale) {
           return undefined;
         }
         const result = rule(save);
@@ -130,11 +156,17 @@ export function createGameStore(deps: GameDeps): GameStore {
       },
 
       replace(save) {
+        if (get().stale) {
+          return;
+        }
         set({ phase: 'ready', save, problem: null });
         persist(save);
       },
 
       async startOver() {
+        if (get().stale) {
+          return;
+        }
         try {
           await active.clear();
         } catch {

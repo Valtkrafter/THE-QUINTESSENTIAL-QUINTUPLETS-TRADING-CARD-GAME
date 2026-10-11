@@ -12,6 +12,8 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: true,
   retries: 0,
+  // The 3D screens load three.js on demand, which takes a moment when several browsers share the machine.
+  expect: { timeout: 15_000 },
   reporter: [['list']],
   use: {
     baseURL: 'http://localhost:4173',

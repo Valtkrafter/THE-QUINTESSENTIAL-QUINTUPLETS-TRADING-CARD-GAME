@@ -10,18 +10,33 @@ import { CATALOG } from '../cards/catalog';
 import { dayKeyOf } from '../domain/calendar';
 import type { SaveGame } from '../domain/save';
 import { createBattleSession, type SessionActions, type SessionState } from './battleSession';
-import { createGameStore, type GameActions, type GameState } from './gameStore';
+import { createGameStore, type GameActions, type GameState, type WindowSync } from './gameStore';
 import { chooseGraphicsLevel, probeGpu } from './gpu';
 import { createIdbPreferenceStorage, createPreferencesStore, type Preferences, type PreferencesState } from './preferences';
 import { createIdbSaveStore, createMemorySaveStore } from './saveStore';
 
 export const KNOWN_CARD_IDS: ReadonlySet<string> = new Set(CATALOG.map((card) => card.id));
 
+/** Windows (tabs) of the game on this device tell each other when one of them saved, so an old one cannot overwrite a newer game. */
+function createWindowSync(): WindowSync | undefined {
+  if (typeof window === 'undefined' || typeof BroadcastChannel === 'undefined') {
+    return undefined;
+  }
+  const channel = new BroadcastChannel('tqq-save');
+  return {
+    announce: () => channel.postMessage('saved'),
+    onOtherSaved: (handler) => channel.addEventListener('message', () => handler()),
+  };
+}
+
+const windowSync = createWindowSync();
+
 export const gameStore = createGameStore({
   store: createIdbSaveStore(KNOWN_CARD_IDS),
   fallback: () => createMemorySaveStore(KNOWN_CARD_IDS),
   now: () => Date.now(),
   seed: () => crypto.randomUUID(),
+  ...(windowSync === undefined ? {} : { sync: windowSync }),
 });
 
 // The first time the game starts on a device it looks at the graphics chip and picks the graphics level that suits it.

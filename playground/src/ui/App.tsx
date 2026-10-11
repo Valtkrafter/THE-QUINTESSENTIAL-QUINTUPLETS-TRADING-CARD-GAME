@@ -17,6 +17,7 @@ import { AppShell } from './shell/AppShell';
 import SettingsScreen from './settings/SettingsScreen';
 import ShopScreen from './shop/ShopScreen';
 import ShowcaseScreen from './showcase/ShowcaseScreen';
+import StaleScreen from './StaleScreen';
 import { text } from './text';
 import styles from './App.module.css';
 
@@ -35,10 +36,14 @@ function Splash() {
 
 function Game() {
   const phase = useGame((state) => state.phase);
+  const stale = useGame((state) => state.stale);
   const preferencesLoaded = useStore(preferencesStore, (state) => state.loaded);
 
   if (phase === 'damaged') {
     return <DamagedScreen />;
+  }
+  if (stale) {
+    return <StaleScreen />;
   }
   if (phase !== 'ready' || !preferencesLoaded) {
     return <Splash />;
