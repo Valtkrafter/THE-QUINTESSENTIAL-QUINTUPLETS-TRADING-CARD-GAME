@@ -5,12 +5,14 @@ import { Canvas } from '@react-three/fiber';
 import { useEffect, useMemo } from 'react';
 import { useComposedCard } from '../cardface/useComposedCard';
 import type { Card } from '../cards/model';
+import type { Condition } from '../domain/ownership';
 import { CARD_HEIGHT, CARD_WIDTH } from '../holo/cardGeometry';
 import { findFinish, resolveMaskIndex, type FinishId } from '../holo/finishes';
 import { hasFrame } from '../holo/frames';
 import { HoloCard } from '../holo/HoloCard';
 import { premiumStrength } from '../holo/premium';
 import type { HoloSettings } from '../holo/settings';
+import { wearSeedOf, wearVector } from '../holo/wear';
 import { createShadowTexture } from '../holo/textures';
 import { DEFAULT_LIGHT, useCameraFit, useSceneLight } from './sceneKit';
 
@@ -22,6 +24,10 @@ export interface CardViewerProps {
   readonly maxPixelRatio: number;
   /** Increment to flip the card over. */
   readonly flipRequest: number;
+  /** How handled the copy is: scratches, white edges and an off-centre print show in the shader. Left out, the card is perfect. */
+  readonly condition?: Condition | null | undefined;
+  /** Makes the wear of this copy its own (the copy's uid). */
+  readonly wearKey?: string | undefined;
   /** Called once the card face is painted and on screen. */
   readonly onReady?: (() => void) | undefined;
 }
@@ -39,8 +45,10 @@ export function CardViewer(props: CardViewerProps) {
   );
 }
 
-function ViewerScene({ card, finishId, settings, flipRequest, onReady }: CardViewerProps) {
+function ViewerScene({ card, finishId, settings, flipRequest, onReady, condition, wearKey }: CardViewerProps) {
   const composed = useComposedCard(card, settings.frameStyle);
+  const wear = useMemo(() => (condition === null || condition === undefined ? undefined : wearVector(condition)), [condition]);
+  const wearSeed = useMemo(() => wearSeedOf(wearKey ?? ''), [wearKey]);
   const shadowTexture = useMemo(() => createShadowTexture(), []);
   const light = useSceneLight(settings.lightFollowsPointer);
   const finish = findFinish(finishId);
@@ -70,6 +78,8 @@ function ViewerScene({ card, finishId, settings, flipRequest, onReady }: CardVie
           light={light}
           interaction="inspect"
           premium={premiumStrength(card.rarity)}
+          wear={wear}
+          wearSeed={wearSeed}
           shadowTexture={shadowTexture}
           flipRequest={flipRequest}
         />

@@ -42,6 +42,8 @@ export const battleSession = createBattleSession({
 });
 
 if (import.meta.env.DEV) {
+  // For trying things in the browser console: __game.getState().change((save) => ...) edits the save, e.g. to make a copy look worn.
+  Reflect.set(window, '__game', gameStore);
   // For looking at a battle in the browser console: __battle.session.getState().start(__battle.roster.opponents[0], { name: 'x', cards: __battle.roster.starters[0].cards, loaner: true })
   Reflect.set(window, '__battle', { session: battleSession, roster: ROSTER, legalActions, observe, createAi });
 }

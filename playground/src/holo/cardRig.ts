@@ -40,6 +40,10 @@ export interface CardLook {
   readonly frameInset: readonly [number, number];
   /** Embossed foil layer strength; 0 for every rarity except SAR and UR (see premium.ts). */
   readonly premium: number;
+  /** How worn the copy is: centering, corners, edges, surface, each from 0 (perfect) to 1 (ruined). */
+  readonly wear?: readonly [number, number, number, number] | undefined;
+  /** 0..1, different for every copy, so no two worn cards wear alike. */
+  readonly wearSeed?: number | undefined;
 }
 
 export interface CardFrameInput {
@@ -129,7 +133,7 @@ export class CardRig {
     }
   }
 
-  setLook({ finishIndex, maskIndex, intensity, glare, frameInset, premium }: CardLook): void {
+  setLook({ finishIndex, maskIndex, intensity, glare, frameInset, premium, wear, wearSeed }: CardLook): void {
     const uniforms = this.front.uniforms;
     uniforms.uFinish.value = finishIndex;
     uniforms.uMaskMode.value = maskIndex;
@@ -137,6 +141,8 @@ export class CardRig {
     uniforms.uGlare.value = glare;
     uniforms.uFrameInset.value.set(frameInset[0], frameInset[1]);
     uniforms.uPremium.value = premium;
+    uniforms.uWear.value.set(wear?.[0] ?? 0, wear?.[1] ?? 0, wear?.[2] ?? 0, wear?.[3] ?? 0);
+    uniforms.uWearSeed.value = wearSeed ?? 0;
     this.back.uniforms.uIntensity.value = intensity;
   }
 

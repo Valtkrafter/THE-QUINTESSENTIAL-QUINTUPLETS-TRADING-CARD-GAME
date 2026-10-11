@@ -23,6 +23,8 @@ export type FrontUniforms = {
   uCameraLocal: { value: Vector3 };
   uLightLocal: { value: Vector3 };
   uAspect: { value: number };
+  uWear: { value: Vector4 };
+  uWearSeed: { value: number };
 };
 
 export type BackUniforms = {
@@ -59,6 +61,8 @@ export function createFrontShader(): CardShader<FrontUniforms> {
     uCameraLocal: { value: new Vector3(0, 0, 10) },
     uLightLocal: { value: new Vector3(0, 0, 10) },
     uAspect: { value: CARD_ASPECT },
+    uWear: { value: new Vector4(0, 0, 0, 0) },
+    uWearSeed: { value: 0 },
   };
   const material = new ShaderMaterial({
     vertexShader: cardVertexShader,

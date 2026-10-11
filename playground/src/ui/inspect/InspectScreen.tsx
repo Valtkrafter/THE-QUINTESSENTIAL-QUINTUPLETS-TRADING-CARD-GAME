@@ -112,6 +112,8 @@ export default function InspectScreen({ uid }: { readonly uid: string }) {
               settings={settings}
               maxPixelRatio={MAX_PIXEL_RATIO[preferences.graphics]}
               flipRequest={flipRequest}
+              condition={copy.condition}
+              wearKey={copy.uid}
               onReady={markReady}
             />
           </ErrorBoundary>

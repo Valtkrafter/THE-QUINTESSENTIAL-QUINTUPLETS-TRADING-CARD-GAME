@@ -15,6 +15,8 @@ uniform float uTime;
 uniform vec3 uCameraLocal; // camera position in this face's local space
 uniform vec3 uLightLocal; // light position in this face's local space
 uniform float uAspect; // card width / height
+uniform vec4 uWear; // how worn each part of this copy is, 0 = perfect, 1 = ruined: x centering, y corners, z edges, w surface
+uniform float uWearSeed; // 0..1, different for every copy, so no two worn cards wear alike
 
 varying vec2 vUv;
 varying vec3 vLocalPosition;
@@ -236,9 +238,60 @@ vec3 signatureBevel(vec2 mapUv, vec3 V, vec3 L) {
   return vec3(1.0, 0.93, 0.72) * edge * 2.2;
 }
 
+// Wear of a printed copy. These are the strongest cases (wear 1); a normal copy shows only a hint.
+// Centering: the print sits off centre on the card stock, so one side shows a white strip and the other loses a little.
+vec2 centeringShift(float wear, float seed) {
+  float angle = seed * TAU;
+  return vec2(cos(angle), sin(angle)) * wear * 0.05;
+}
+
+// Whitened corners and edges, scratches that flash when the light slides along them, and a dull haze on the surface.
+vec3 applyWear(vec3 color, vec2 uv, vec3 V, vec3 L) {
+  float corners = uWear.y;
+  float edges = uWear.z;
+  float surface = uWear.w;
+  if (corners + edges + surface <= 0.001) {
+    return color;
+  }
+  vec2 p = vec2(uv.x * uAspect, uv.y);
+  vec2 inner = min(p, vec2(uAspect, 1.0) - p);
+  float edgeDistance = min(inner.x, inner.y);
+  float cornerDistance = length(inner);
+  float coarse = valueNoise(p * 60.0 + uWearSeed * 37.0);
+  float fine = valueNoise(p * 240.0 + 11.0);
+  vec3 stock = vec3(0.94, 0.92, 0.88);
+
+  float edgeWidth = 0.004 + 0.02 * edges;
+  float edgeChips = smoothstep(0.35, 0.8, coarse * 0.55 + fine * 0.45 + edges * 0.45);
+  float edgeAmount = smoothstep(edgeWidth, 0.0, edgeDistance) * edgeChips * min(1.0, edges * 1.6);
+  float cornerSize = 0.012 + 0.05 * corners;
+  float cornerAmount = smoothstep(cornerSize, 0.0, cornerDistance) * (0.7 + 0.3 * fine) * min(1.0, corners * 1.6);
+  color = mix(color, stock, clamp(max(edgeAmount, cornerAmount), 0.0, 0.95));
+
+  vec3 H = normalize(L + V);
+  float flash = 0.3 + 0.7 * pow(max(H.z, 0.0), 3.0 + 10.0 * (1.0 - surface));
+  float scratches = 0.0;
+  for (int i = 0; i < 7; i++) {
+    if (float(i) >= surface * 7.0 + 0.001) {
+      break;
+    }
+    vec2 seed2 = vec2(float(i) * 1.37, uWearSeed * 19.0);
+    vec2 center = hash22(seed2) * vec2(uAspect, 1.0);
+    float angle = hash12(seed2 + 5.3) * PI;
+    vec2 along = vec2(cos(angle), sin(angle));
+    vec2 across = vec2(-along.y, along.x);
+    float reach = 0.12 + 0.3 * hash12(seed2 + 9.1);
+    vec2 d = p - center;
+    float line = smoothstep(0.0016, 0.0, abs(dot(d, across))) * smoothstep(reach, reach * 0.6, abs(dot(d, along)));
+    scratches = max(scratches, line);
+  }
+  color += vec3(0.5) * scratches * flash * 0.8;
+  return mix(color, color * 0.9 + 0.04, surface * 0.35 * (0.5 + 0.5 * coarse));
+}
+
 void main() {
   vec2 uv = vUv;
-  vec2 mapUv = uv * uMapTransform.xy + uMapTransform.zw;
+  vec2 mapUv = (uv - centeringShift(uWear.x, uWearSeed)) * uMapTransform.xy + uMapTransform.zw;
   // "Contain" fit leaves card area outside the image; fill it with a plain backdrop.
   vec2 inRange = step(vec2(0.0), mapUv) * step(mapUv, vec2(1.0));
   vec3 base = mix(ART_BACKDROP, texture2D(uMap, mapUv).rgb, inRange.x * inRange.y);
@@ -271,6 +324,8 @@ void main() {
     plate += signatureBevel(mapUv, V, L) * uPremium;
   }
   color = mix(color, plate, signature);
+
+  color = applyWear(color, uv, V, L);
 
   // Soft light that follows the pointer while the card is hovered.
   vec2 toPointer = (uv - uPointer) * vec2(uAspect, 1.0);

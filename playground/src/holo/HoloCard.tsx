@@ -24,6 +24,9 @@ export interface HoloCardProps {
   readonly interaction: CardInteraction;
   /** Embossed foil layer strength (SAR / UR only); defaults to off. */
   readonly premium?: number | undefined;
+  /** How worn the copy is (centering, corners, edges, surface; 0 perfect, 1 ruined) and a seed that makes the wear its own. */
+  readonly wear?: readonly [number, number, number, number] | undefined;
+  readonly wearSeed?: number | undefined;
   readonly shadowTexture: Texture;
   readonly label?: Texture | undefined;
   /** Increment to flip the card over. */
@@ -49,6 +52,8 @@ export function HoloCard({
   light,
   interaction,
   premium = 0,
+  wear,
+  wearSeed,
   shadowTexture,
   label,
   flipRequest = 0,
@@ -87,8 +92,10 @@ export function HoloCard({
       glare: settings.glare,
       frameInset: frameInsetUv(settings.frameStyle),
       premium,
+      wear,
+      wearSeed,
     });
-  }, [rig, finish, maskIndex, settings.intensity, settings.glare, settings.frameStyle, premium]);
+  }, [rig, finish, maskIndex, settings.intensity, settings.glare, settings.frameStyle, premium, wear, wearSeed]);
 
   useEffect(() => {
     rig.setArt(art, mask, settings.artFit, settings.artFocus);
