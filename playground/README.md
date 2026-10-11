@@ -20,7 +20,8 @@ Lower layers never import higher ones (enforced by `src/architecture.test.ts`); 
 | Folder | Role |
 |---|---|
 | `src/cards` | Card vocabulary, schema, catalog |
-| `src/domain`, `src/packs` | Game rules as pure code: seeded random, save game, collection views, pull weights; later grading, economy, battle |
+| `src/domain`, `src/packs` | Game rules as pure code: seeded random, save game, collection views, deck rules, pull weights; later grading and economy |
+| `src/battle` | The battle: rules engine, card effects, computer opponents, simulator, ready-made decks (see `docs/battle.md`) |
 | `src/state` | The running game and the settings (Zustand), saving to IndexedDB |
 | `src/cardface` | Draws a card face on a 2D canvas (frames, text, signatures) and the flat thumbnails |
 | `src/holo` | WebGL finishes and shaders, and the one shared renderer that puts them on every card of a grid (`tileRenderer.ts`) |

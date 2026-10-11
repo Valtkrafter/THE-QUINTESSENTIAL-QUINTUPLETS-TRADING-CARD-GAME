@@ -5,6 +5,8 @@
 | Route | Screen | What it does |
 |---|---|---|
 | `#/` | Binder (`ui/binder`) | Every owned copy as a flat picture; search, filter (character, rarity, finish), sort (number, rarity, finish, newest) |
+| `#/battle` | Battle (`ui/battle`) | The lobby (pick a rival and a deck) and, once a battle starts, the table; see "Battle" below |
+| `#/decks`, `#/decks/new`, `#/decks/<id>`, `#/decks/template/<id>` | Decks (`ui/decks`) | The player's decks and the loaner decks; the deck builder |
 | `#/packs` | Packs (`ui/packs`) | Normales Pack und Halloween-Banner, Garantie-Balken, 1 oder 5 Packs öffnen, Tagesbonus, letzte Packs |
 | `#/packs/odds` | Quoten (`ui/packs`) | Alle Tabellen, Garantien und Banner-Regeln, aus denselben Daten wie die Ziehung erzeugt |
 | `#/dex` | Card-Dex (`ui/dex`) | All 79 designs, owned ones in colour, missing ones dim; progress overall and per character |
@@ -27,6 +29,16 @@ Cards with a finish run the real foil shader of the 3D card, in every grid (bind
 - The CSS shimmer stays as the fallback: low graphics, no WebGL, a graphics chip reset, or a picture that has not been drawn yet. `CardFace` gets `live={false}` where a picture must stay flat (inside the pack show, the poster under the inspect view).
 - The plain finish stays a flat picture with the CSS light show on hover: it has no foil to draw.
 - Development check: in the browser, `await import(<url of tileRenderer in the Network list>)` then `holoTileStats()` gives cards served, pictures drawn and the time spent drawing.
+
+## Battle (Stage 4)
+
+`ui/battle/Lobby.tsx` lists the five rivals (portrait, level, the type they play and what it is weak to, what a win pays) and the decks the player can take: their own (a deck that is not ready says why) and the loaner decks. `Board.tsx` is the table: the rival on top, the player below, the hand under that, a side panel with the card under the pointer enlarged and the battle log. Sizes follow the window height (`--active-h`) so the table fits one screen. Clicking a hand card or a Character selects it and the buttons for what it can do appear in the strip in the middle (give the free Heart, use the ability, retreat, play the Supporter, end the turn); the moves of the Active Character are buttons next to it with what they would really do to the enemy. A Basic goes to the Bench with one click. Questions of the engine are answered on the table (the possible targets glow) or, for cards, in a sheet. The pure parts are tested: `viewModel.ts` (what can be done with a card or a Character), `floaters.ts` (the floating numbers), `choices.ts` (which decks can be taken).
+
+`state/battleSession.ts` runs the battle: it holds the engine's state and the log, lets the rival act one action at a time with a short pause, does the rival's setup at once and writes the result into the save game when the battle ends (`battle/rewards.ts`). A battle is not saved: closing the page ends it. In the development server `window.__battle` gives the session, the roster and a few helpers for looking at a situation in the console.
+
+## Decks (Stage 4)
+
+`ui/decks/DecksScreen.tsx` lists the player's decks (edit, copy, delete) and the loaner decks (use as a template). `DeckEditor.tsx` is the deck builder: the player's cards on the left (search, characters or supporters; a card that cannot be added says why on hover), the deck on the right with one row per design and minus and plus, the rules check in plain words, and the card under the pointer enlarged. A template keeps the cards the player does not own and marks them. Decks may be saved unfinished. The rules of changing a deck are pure and tested (`editing.ts`).
 
 ## State
 

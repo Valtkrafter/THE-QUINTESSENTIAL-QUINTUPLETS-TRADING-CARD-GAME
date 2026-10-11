@@ -29,7 +29,7 @@ Stand: Oktober 2026. Das ist der Plan zum Bauen. Entscheidungen, die schon fests
 `src/domain` (Regeln, Packs, Bewertung, Wirtschaft, Battle, kein React) → `src/data` (Karten als Daten, Zod) → `src/state` (Speicher, Einstellungen) → `src/render` (Karten-Gesicht und Holo, schon vorhanden) → `src/ui` (Bildschirme). Obere Schichten dürfen untere benutzen, nie umgekehrt.
 
 ## 4. Stufen
-Status: Stufe 0 ✅, Stufe 1 ✅, Stufe 2 ✅ gebaut, Stufe 3 (Packs) gebaut und wartet auf deine Prüfung. Die Reihenfolge wurde geändert: der Kampf kommt direkt nach den Packs (er ist die Geldquelle zum Grinden).
+Status: Stufe 0 ✅, Stufe 1 ✅, Stufe 2 ✅, Stufe 3 (Packs) ✅ und Stufe 4 (Deck & Kampf) gebaut und wartet auf deine Prüfung. Die Kampf-Regeln stehen in `docs/battle.md`. Die Reihenfolge wurde geändert: der Kampf kommt direkt nach den Packs (er ist die Geldquelle zum Grinden).
 
 Größen: S = wenige Sitzungen, M = eine Woche, L = mehrere Wochen, XL = großes Projekt. Jede Stufe endet spielbar, mit grünen Tests und Build.
 
@@ -39,7 +39,7 @@ Größen: S = wenige Sitzungen, M = eine Woche, L = mehrere Wochen, XL = großes
 | 1 Daten & Speicher | Verlässliche Basis | Kartenschema + 79 Karten als Datendateien, Stufen-Zuordnung, Effekt-Vokabular, Besitz-Modell (Finish, versteckte Zustandswerte, Seriennummer), Seed-Zufall, Speicherstand mit Versionen | M |
 | 2 Sammelmappe & Ansicht | Du siehst, was du besitzt | App-Rahmen, ruhiges Theme, Sammelmappe (Vorschaubilder, keine 1000 WebGL-Fenster), Filter, Card-Dex x/79, Ansicht mit 3D-Holo, Vitrine | M |
 | 3 Packs ✅ | Der große Moment | Pack-Quoten (öffentlich), Finish-Würfe, Garantien, Halloween-Banner mit 50/50, Tagesbonus, Quoten-Simulator, die Pull-Animation (Sturm, Lichtnadel und Tor, Weißblitz, Sternen-Zeremonie, fünf Lichtfäden, Bloom) und Ton. Details in `packs-und-wirtschaft.md` | M |
-| 4 Deck & Kampf-System | Der Spielteil und die Geldquelle | 4a Regel-Engine mit Tests, 4b Starter-Deck + Deckbau + Legalitäts-Prüfung, 4c Kampf-Bildschirm (wie die Animation), 4d Computer-Gegner (Leicht/Normal/Schwer) + Belohnungen in Yen, Balance per KI-gegen-KI-Simulation (Ziel ~10 Minuten) | XL |
+| 4 Deck & Kampf-System ✅ | Der Spielteil und die Geldquelle | 4a Regel-Engine mit Tests, 4b Starter-Deck + Deckbau + Legalitäts-Prüfung, 4c Kampf-Bildschirm (wie die Animation), 4d Computer-Gegner (Leicht/Normal/Schwer) + Belohnungen in Yen, Balance per KI-gegen-KI-Simulation (Ziel ~10 Minuten) | XL |
 | 5 Wirtschaft & Kiosk | Geld ausgeben und Dubletten nutzen | Kiosk (nur bis Double Rare), Dubletten verkaufen, Dex-Belohnungen, Preisformel, Balance-Simulator | M |
 | 6 Bewertung | Sammler-Belohnung | versteckte Teilnoten, sichtbare Abnutzung im Shader, Einsenden und Aufdecken, 3D-Slab, Bestandsbericht | L |
 | 7 Politur & Release | Es wird eine App | Tauri (Windows), Qualitätsstufen für schwache Grafik (Intel UHD), Ton (Feinschliff), Deutsch/Englisch/Japanisch, Bedienhilfen, Playwright-Tests, Mehrspieler-Vorbereitung | L |
