@@ -7,3 +7,16 @@ export type FinishId = (typeof FINISH_IDS)[number];
 export function isFinishId(value: string): value is FinishId {
   return (FINISH_IDS as readonly string[]).includes(value);
 }
+
+/** How special a finish is: plain print, foil (Rainbow Holo, Sparkle) or premium (Cosmos, Gold Foil, Prism Crystal, Radiant). */
+export type FinishTier = 'plain' | 'foil' | 'premium';
+
+export const FINISH_TIER: Readonly<Record<FinishId, FinishTier>> = {
+  standard: 'plain',
+  rainbow: 'foil',
+  sparkle: 'foil',
+  cosmos: 'premium',
+  gold: 'premium',
+  prism: 'premium',
+  radiant: 'premium',
+};

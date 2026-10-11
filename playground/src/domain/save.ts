@@ -10,7 +10,7 @@ import { MAX_DECKS, deckSchema } from './decks';
 import { ownedCardSchema, rollCondition, uidFor, type ObtainSource, type OwnedCard } from './ownership';
 import { createRng, restoreRng, type Rng } from './random';
 
-export const SAVE_VERSION = 4;
+export const SAVE_VERSION = 5;
 export const SAVE_FORMAT = 'tqq-save';
 export const STARTING_YEN = 1500;
 /** How many copies fit in the showcase. */
@@ -46,6 +46,25 @@ export type BattleRecord = z.infer<typeof battleRecordSchema>;
 
 export const EMPTY_BATTLE_RECORD: BattleRecord = { wins: 0, losses: 0, draws: 0, rivals: {}, lastWinDay: null };
 
+/** The Kiosk: the day its offers belong to and how many of each were bought that day (version 5). */
+export const shopSchema = z.strictObject({ day: dayKeySchema.nullable(), bought: z.record(z.string(), z.number().int().min(1)) });
+export type ShopState = z.infer<typeof shopSchema>;
+
+export const EMPTY_SHOP: ShopState = { day: null, bought: {} };
+
+/** What the Card-Dex has paid out so far (version 5). */
+export const dexRewardsSchema = z.strictObject({
+  /** How many "10 new designs" rewards were taken. */
+  milestones: count,
+  /** The characters whose whole set was rewarded. */
+  characters: z.array(z.string()),
+  /** Free packs that were earned and not opened yet. */
+  freePacks: count,
+});
+export type DexRewards = z.infer<typeof dexRewardsSchema>;
+
+export const EMPTY_DEX_REWARDS: DexRewards = { milestones: 0, characters: [], freePacks: 0 };
+
 export const saveGameSchema = z.strictObject({
   version: z.literal(SAVE_VERSION),
   createdAt: z.number().int().min(0),
@@ -73,6 +92,10 @@ export const saveGameSchema = z.strictObject({
   decks: z.array(deckSchema).max(MAX_DECKS),
   /** The player's battle results (version 4). */
   battle: battleRecordSchema,
+  /** The Kiosk's purchases of the day (version 5). */
+  shop: shopSchema,
+  /** The Card-Dex rewards taken so far, and the free packs waiting (version 5). */
+  dexRewards: dexRewardsSchema,
   /** Where the seeded random generator stopped, so pulls continue the same way after a reload. */
   rng: rngStateSchema,
 });
@@ -93,6 +116,8 @@ export function newSaveGame(seed: string | number, now: number): SaveGame {
     showcase: [],
     decks: [],
     battle: EMPTY_BATTLE_RECORD,
+    shop: EMPTY_SHOP,
+    dexRewards: EMPTY_DEX_REWARDS,
     rng: createRng(seed).state(),
   };
 }
@@ -180,6 +205,8 @@ const MIGRATIONS: readonly ((data: Record<string, unknown>) => Record<string, un
   },
   // 3 -> 4: decks and battle results were added.
   (data) => ({ ...data, decks: [], battle: EMPTY_BATTLE_RECORD }),
+  // 4 -> 5: the Kiosk and the Card-Dex rewards were added.
+  (data) => ({ ...data, shop: EMPTY_SHOP, dexRewards: EMPTY_DEX_REWARDS }),
 ];
 
 /** Fast 32-bit checksum (FNV-1a). Catches a damaged or hand-edited file by accident; it is not a security feature. */

@@ -178,9 +178,14 @@ describe('showcase', () => {
 });
 
 describe('upgrading an old save', () => {
-  function oldText(version: 1 | 2 | 3): string {
+  function oldText(version: 1 | 2 | 3 | 4): string {
     const current = addOwnedCard(newSaveGame('old', NOW), 'TQQ01-010', 'rainbow', 'starter', NOW).save;
-    const { decks: _decks, battle: _battle, ...fromThree } = current;
+    const { shop: _shop, dexRewards: _dexRewards, ...fromFour } = current;
+    if (version === 4) {
+      const data = JSON.stringify({ ...fromFour, version });
+      return JSON.stringify({ format: 'tqq-save', checksum: checksum(data), data });
+    }
+    const { decks: _decks, battle: _battle, ...fromThree } = fromFour;
     if (version === 3) {
       const data = JSON.stringify({ ...fromThree, version });
       return JSON.stringify({ format: 'tqq-save', checksum: checksum(data), data });
@@ -209,6 +214,14 @@ describe('upgrading an old save', () => {
     expect(upgraded.version).toBe(SAVE_VERSION);
     expect(upgraded.daily.lastClaim).toBeNull();
     expect(upgraded.counters.flags).toEqual({});
+    expect(upgraded.collection).toHaveLength(1);
+  });
+
+  it('opens a version 4 save (before the Kiosk and the Dex rewards existed)', () => {
+    const upgraded = parseSave(oldText(4), KNOWN);
+    expect(upgraded.version).toBe(SAVE_VERSION);
+    expect(upgraded.shop).toEqual({ day: null, bought: {} });
+    expect(upgraded.dexRewards).toEqual({ milestones: 0, characters: [], freePacks: 0 });
     expect(upgraded.collection).toHaveLength(1);
   });
 

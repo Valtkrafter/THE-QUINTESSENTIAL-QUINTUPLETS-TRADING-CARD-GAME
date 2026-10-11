@@ -62,8 +62,8 @@ Schlimmster Fall durch die Garantien: höchstens 5 × 90 = 450 Packs allein für
 | Startgeld | ¥1.500 (3 Packs) |
 | Tagesbonus | ¥400 pro Tag. Verpasste Tage sammeln sich bis zu 3 Tage an. Wird heute schon abgeholt über die Packs-Seite |
 | Kämpfe (Stufe 4) | Sieg ¥150 / ¥250 / ¥400 (Leicht / Normal / Schwer), Niederlage ¥50, erster Sieg des Tages +¥200. Das ist die Haupt-Geldquelle |
-| Dubletten verkaufen (Stufe 5) | siehe Abschnitt 8 |
-| Dex-Belohnungen (Stufe 5) | alle 10 neuen Motive 1 Gratis-Pack, ¥2.000 für jede komplette Figur |
+| Dubletten verkaufen (Stufe 5) | siehe Abschnitt 8 (gebaut) |
+| Dex-Belohnungen (Stufe 5) | alle 10 neuen Motive 1 Gratis-Pack, ¥2.000 für jede komplette Figur (gebaut) |
 
 Ziel: Wer täglich etwa 30 Minuten spielt, bekommt ungefähr ¥1.500 am Tag, also 3 Packs. Die genauen Kampf-Belohnungen werden in Stufe 4 mit einer Simulation geprüft und gegebenenfalls angepasst.
 
@@ -91,8 +91,8 @@ Ziel: Wer täglich etwa 30 Minuten spielt, bekommt ungefähr ¥1.500 am Tag, als
 4. **Einstellungen:** Pack-Animation Ausführlich, Kurz oder Aus. Lautstärke und Ton aus. Bei "Verringerte Bewegung" im Betriebssystem läuft automatisch die kurze Version.
 5. **Ton (Tone.js):** Wind und tiefes Dröhnen beim Sturm, Aufstieg beim Flug, Herzschlag, Aufschlag mit tiefem Schlag und Rauschen, bei der Zeremonie eine Glocke pro Stern (jede höher als die davor), Glockenklänge die mit der Seltenheit wachsen, Funkeln bei neuen Karten.
 
-## 8. Später (Entwurf, ich frage dann nochmal)
-**Kiosk (Stufe 5):** Damit gute Karten ein Grind bleiben, verkauft der Kiosk nur bis **Double Rare**, immer mit normalem Finish. Art Rare, Special Art Rare, Ultra Rare und die Halloween-Karten gibt es nur aus Packs. Täglich wechselnde Angebote.
+## 8. Kiosk, Verkaufen und Dex-Belohnungen (Stufe 5, gebaut)
+**Kiosk** (Menü "Shop"): Damit gute Karten ein Grind bleiben, verkauft der Kiosk nur bis **Double Rare**, immer mit normalem Finish. Art Rare, Special Art Rare, Ultra Rare und die Halloween-Karten gibt es nur aus Packs. Jeden Tag liegen **8 Karten** im Regal (3 Common, 2 Uncommon, 2 Rare, 1 Double Rare), für den ganzen Tag dieselben, am nächsten Tag andere. Jedes Angebot kann pro Tag **2-mal** gekauft werden.
 
 | Seltenheit | Kiosk-Preis |
 |---|---|
@@ -101,7 +101,9 @@ Ziel: Wer täglich etwa 30 Minuten spielt, bekommt ungefähr ¥1.500 am Tag, als
 | Rare | ¥250 |
 | Double Rare | ¥800 |
 
-**Verkaufen (Stufe 5):** Nur Dubletten. Common ¥3, Uncommon ¥8, Rare ¥25, Double Rare ¥70, Art Rare ¥120, Special Art Rare ¥250, Ultra Rare ¥600. Finish multipliziert: Foil ×1,6, Premium ×3. Das sind etwa 35 bis 40 % des Packpreises, wenn man einen ganzen Pack verkauft.
+**Verkaufen** (Shop, Reiter "Sell spare cards"): Nur **Dubletten**. Common ¥3, Uncommon ¥8, Rare ¥25, Double Rare ¥70, Art Rare ¥120, Special Art Rare ¥250, Ultra Rare ¥600. Finish multipliziert: Foil (Rainbow Holo, Sparkle) ×1,6, Premium (Cosmos, Gold Foil, Prism Crystal, Radiant) ×3. Ein typisches Pack bringt verkauft unter ¥100 (ein Fünftel des Preises); nur die besten Packs mit Premium-Karten bringen mehr als sie kosten. Behalten wird immer: **eine Kopie jedes Motivs** (die mit dem schönsten Finish und dem besten Zustand), **so viele Kopien, wie dein größtes Deck braucht**, jede Kopie in der **Vitrine** und jede **bewertete** Karte. Der Rest kann verkauft werden, nach Bestätigung.
+
+**Dex-Belohnungen** (Seite "Card Dex"): alle **10 neuen Motive 1 Gratis-Pack** (normales Pack, nicht das Banner), **¥2.000** für jede Figur, von der du alle Motive hast. Jede Belohnung gibt es nur einmal. Die Gratis-Packs werden auf der Packs-Seite geöffnet, mit der vollen Animation.
 
 **Bewertung (Stufe 6):** Keine Wartezeit, nur eine kleine Zeremonie beim Aufdecken. Gebühr ¥200 (Common bis Rare), ¥500 (Double Rare und Art Rare), ¥1.000 (Special Art Rare und Ultra Rare). Die Note ist der Durchschnitt der vier versteckten Teilnoten und verändert den Wert: 10 ×6, 9,5 ×4, 9 ×2,5, 8,5 ×1,8, 8 ×1,4, 7 ×1,1, 6,5 oder weniger ×0,8. Etwa jede zweite Karte ist eine 9 oder besser, etwa jede achte eine 9,5 oder besser, und eine 10 kommt nur bei etwa 1 von 60 Karten vor.
 

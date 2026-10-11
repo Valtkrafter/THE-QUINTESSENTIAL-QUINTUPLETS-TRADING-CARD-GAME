@@ -31,6 +31,7 @@ export const text = {
     binder: 'Binder',
     battle: 'Battle',
     decks: 'Decks',
+    shop: 'Shop',
     dex: 'Card Dex',
     showcase: 'Showcase',
     settings: 'Settings',
@@ -131,7 +132,13 @@ export const text = {
       'unknown-pack': 'This pack does not exist.',
       'not-available': 'This pack is not on sale right now.',
       'not-enough-yen': 'You do not have enough money for that.',
+      'no-free-pack': 'You have no free pack to open.',
     } satisfies Record<PackErrorCode, string>,
+    free: {
+      title: 'Free packs',
+      waiting: (count: number) => (count === 1 ? 'You have 1 free pack. It came from your Card-Dex.' : `You have ${count} free packs. They came from your Card-Dex.`),
+      open: 'Open a free pack',
+    },
     odds: 'View odds',
     history: 'Recent packs',
     historyEmpty: 'You have not opened a pack yet.',
@@ -202,6 +209,60 @@ export const text = {
     unknown: 'Not found yet',
     owned: (count: number) => (count > 1 ? `×${count}` : ''),
     progress: (found: number, total: number) => `${found}/${total}`,
+    rewards: {
+      title: 'Dex rewards',
+      next: (left: number) => `Find ${plural(left, 'more design', 'more designs')} for the next free pack.`,
+      complete: 'You found every design of the set. Well done!',
+      waiting: (packs: number, yen: number, characters: number) => {
+        const parts: string[] = [];
+        if (packs > 0) {
+          parts.push(plural(packs, 'free pack', 'free packs'));
+        }
+        if (characters > 0) {
+          parts.push(`${money(yen)} for ${plural(characters, 'complete character', 'complete characters')}`);
+        }
+        return `Waiting for you: ${parts.join(' and ')}.`;
+      },
+      claim: 'Take the rewards',
+      got: (packs: number, yen: number) => (yen > 0 && packs > 0 ? `${plural(packs, 'free pack', 'free packs')} and ${money(yen)} received` : yen > 0 ? `${money(yen)} received` : `${plural(packs, 'free pack', 'free packs')} received`),
+      rule: 'Every 10 designs you find give a free pack. Finding every design of a character gives ¥2,000.',
+    },
+  },
+
+  shop: {
+    title: 'Shop',
+    subtitle: 'Buy single cards at the Kiosk, or sell the copies you do not need.',
+    yen: 'Your money',
+    tabs: { buy: 'Kiosk', sell: 'Sell spare cards' },
+    kiosk: {
+      title: 'Today at the Kiosk',
+      note: 'The same eight cards all day, always the plain print. Better cards only come from packs.',
+      stock: (left: number) => (left === 0 ? 'Sold out' : `${left} left today`),
+      buy: 'Buy',
+      short: (yen: number) => `${money(yen)} short`,
+      bought: (name: string) => `${name} is in your binder now.`,
+      errors: {
+        'not-offered': 'This card is not on the shelf today.',
+        'sold-out': 'Sold out for today.',
+        'not-enough-yen': 'You do not have enough money for that.',
+      },
+    },
+    sell: {
+      title: 'Spare cards',
+      note: 'You always keep one copy of every card, and every copy that a deck uses, that is in your showcase or that is graded. Only the rest can be sold.',
+      none: 'You have no spare cards right now. Open some packs first.',
+      selectPlain: 'Select plain prints',
+      selectAll: 'Select all',
+      clear: 'Clear',
+      total: (count: number, yen: number) => (count === 0 ? 'Nothing selected' : `${plural(count, 'card', 'cards')} · ${money(yen)}`),
+      sell: (count: number) => `Sell ${plural(count, 'card', 'cards')}`,
+      confirmTitle: 'Sell these cards?',
+      confirm: (count: number, yen: number) => `${plural(count, 'card', 'cards')} will be sold for ${money(yen)}. This cannot be undone.`,
+      confirmYes: 'Yes, sell',
+      cancel: 'Cancel',
+      sold: (count: number, yen: number) => `Sold ${plural(count, 'card', 'cards')} for ${money(yen)}.`,
+      worth: (yen: number) => money(yen),
+    },
   },
 
   inspect: {

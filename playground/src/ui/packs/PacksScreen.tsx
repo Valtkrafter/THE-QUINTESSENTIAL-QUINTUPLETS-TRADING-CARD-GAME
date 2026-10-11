@@ -80,7 +80,9 @@ export default function PacksScreen() {
     setMessage(amount === undefined || amount === 0 ? null : text.packs.daily.got(amount));
   };
 
-  const open = (packId: string, count: number) => {
+  const freePacks = save.dexRewards.freePacks;
+
+  const open = (packId: string, count: number, free = false) => {
     // Asking for sound inside the click lets the browser play it later in the show.
     void startAudio();
     setMessage(null);
@@ -88,7 +90,7 @@ export default function PacksScreen() {
     try {
       for (let i = 0; i < count; i += 1) {
         const opening = gameStore.getState().transact((current) => {
-          const result = openPack(current, packId, today, Date.now());
+          const result = openPack(current, packId, today, Date.now(), { free });
           return { save: result.save, value: result };
         });
         if (opening === undefined) {
@@ -132,6 +134,17 @@ export default function PacksScreen() {
           {waiting > 0 ? text.packs.daily.claim(waiting) : text.packs.daily.title}
         </Button>
       </section>
+      {freePacks > 0 && (
+        <section className={styles.daily} aria-label={text.packs.free.title}>
+          <div>
+            <h2>{text.packs.free.title}</h2>
+            <p>{text.packs.free.waiting(freePacks)}</p>
+          </div>
+          <Button kind="primary" onClick={() => open('booster', 1, true)}>
+            {text.packs.free.open}
+          </Button>
+        </section>
+      )}
       {message !== null && (
         <p className={styles.message} role="status">
           {message}

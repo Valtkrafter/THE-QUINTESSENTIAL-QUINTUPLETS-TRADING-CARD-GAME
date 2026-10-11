@@ -1,13 +1,14 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'wouter';
 import { SET_CODE } from '../../cards/catalog';
 import { CHARACTERS } from '../../cards/characters';
 import { CHARACTER_IDS, type CharacterId } from '../../cards/model';
 import { buildDex, dexProgress, dexProgressByCharacter, type DexEntry } from '../../domain/collection';
+import { DEX_PACK_EVERY, claimDexRewards, pendingDexRewards } from '../../domain/dexRewards';
 import { findFinish } from '../../holo/finishes';
-import { useSave } from '../../state/app';
+import { gameStore, useSave } from '../../state/app';
 import { CardFace } from '../components/CardFace';
-import { ProgressBar } from '../components/controls';
+import { Button, ProgressBar } from '../components/controls';
 import { PageHeader } from '../components/PageHeader';
 import { affinityColor } from '../finishStyle';
 import { cx, formatCardNumber } from '../format';
@@ -44,10 +45,22 @@ function DexTile({ entry, total }: { readonly entry: DexEntry; readonly total: n
 }
 
 export default function DexScreen() {
-  const { collection } = useSave();
+  const save = useSave();
+  const { collection } = save;
   const entries = useMemo(() => buildDex(collection), [collection]);
   const overall = useMemo(() => dexProgress(entries), [entries]);
   const perCharacter = useMemo(() => dexProgressByCharacter(entries), [entries]);
+  const pending = pendingDexRewards(save);
+  const waiting = pending.packs > 0 || pending.characters.length > 0;
+  const [message, setMessage] = useState<string | null>(null);
+
+  const claim = (): void => {
+    const claimed = gameStore.getState().transact((current) => {
+      const result = claimDexRewards(current, Date.now());
+      return { save: result.save, value: result.claimed };
+    });
+    setMessage(claimed === undefined ? null : text.dex.rewards.got(claimed.packs, claimed.yen));
+  };
 
   return (
     <>
@@ -55,6 +68,25 @@ export default function DexScreen() {
       <div className={styles.overall}>
         <ProgressBar value={overall.found} max={overall.total} label={text.dex.title} />
       </div>
+      <section className={styles.rewards} aria-label={text.dex.rewards.title}>
+        <div>
+          <h2>{text.dex.rewards.title}</h2>
+          <p>
+            {waiting
+              ? text.dex.rewards.waiting(pending.packs, pending.yen, pending.characters.length)
+              : overall.found >= overall.total
+                ? text.dex.rewards.complete
+                : text.dex.rewards.next(DEX_PACK_EVERY - (overall.found % DEX_PACK_EVERY))}
+          </p>
+          <p className={styles.note}>{text.dex.rewards.rule}</p>
+          {message !== null && <p className={styles.got}>{message}</p>}
+        </div>
+        {waiting && (
+          <Button kind="primary" onClick={claim}>
+            {text.dex.rewards.claim}
+          </Button>
+        )}
+      </section>
       {CHARACTER_IDS.map((id: CharacterId) => {
         const info = CHARACTERS[id];
         const progress = perCharacter.get(id);

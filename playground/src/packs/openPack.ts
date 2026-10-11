@@ -10,7 +10,7 @@ import { packById } from './catalog';
 import { isAvailable, rollPack, type PackState, type PullReason } from './rollPack';
 import type { PackDefinition } from './schema';
 
-export type PackErrorCode = 'unknown-pack' | 'not-available' | 'not-enough-yen';
+export type PackErrorCode = 'unknown-pack' | 'not-available' | 'not-enough-yen' | 'no-free-pack';
 
 export class PackError extends Error {
   readonly code: PackErrorCode;
@@ -91,8 +91,13 @@ export function canOpen(save: SaveGame, packId: string, today: DayKey): boolean 
   return pack !== undefined && isAvailable(pack, today) && save.player.yen >= pack.price;
 }
 
+export interface OpenOptions {
+  /** Opens one of the free packs the Card-Dex paid out instead of paying. Only the normal pack can be opened this way. */
+  readonly free?: boolean;
+}
+
 /** Buys and opens one pack. Throws a PackError when the pack is unknown, not running or too expensive. */
-export function openPack(save: SaveGame, packId: string, today: DayKey, now: number): PackOpening {
+export function openPack(save: SaveGame, packId: string, today: DayKey, now: number, options: OpenOptions = {}): PackOpening {
   const pack = packById(packId);
   if (pack === undefined) {
     throw new PackError('unknown-pack', `There is no pack called ${packId}.`);
@@ -100,7 +105,12 @@ export function openPack(save: SaveGame, packId: string, today: DayKey, now: num
   if (!isAvailable(pack, today)) {
     throw new PackError('not-available', `${pack.name} is not running on ${today}.`);
   }
-  if (save.player.yen < pack.price) {
+  const free = options.free === true;
+  if (free) {
+    if (pack.banner !== undefined || save.dexRewards.freePacks < 1) {
+      throw new PackError('no-free-pack', `There is no free pack to open for ${pack.name}.`);
+    }
+  } else if (save.player.yen < pack.price) {
     throw new PackError('not-enough-yen', `${pack.name} costs ${pack.price} yen, the purse holds ${save.player.yen}.`);
   }
 
@@ -109,7 +119,7 @@ export function openPack(save: SaveGame, packId: string, today: DayKey, now: num
     rollPack(rng, { pack, today, state: packStateOf(save, pack), owned: ownedIds }),
   );
 
-  let current = spendYen(rolledSave, pack.price, now);
+  let current = free ? { ...rolledSave, dexRewards: { ...rolledSave.dexRewards, freePacks: rolledSave.dexRewards.freePacks - 1 } } : spendYen(rolledSave, pack.price, now);
   const pulls: Pull[] = [];
   for (const pick of rolled.picks) {
     const added = addOwnedCard(current, pick.card.id, pick.finish, 'pack', now);

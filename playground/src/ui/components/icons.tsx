@@ -154,6 +154,16 @@ export function PacksIcon(props: IconProps) {
   );
 }
 
+export function ShopIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M5 9h14l-1.1 10.2a1.6 1.6 0 0 1-1.6 1.4H7.7a1.6 1.6 0 0 1-1.6-1.4Z" />
+      <path d="M8.5 9V7.5a3.5 3.5 0 0 1 7 0V9" />
+      <path d="M9.5 13.5a2.5 2.5 0 0 0 5 0" />
+    </Icon>
+  );
+}
+
 export function BattleIcon(props: IconProps) {
   return (
     <Icon {...props}>

@@ -7,6 +7,7 @@
 | `#/` | Binder (`ui/binder`) | Every owned copy as a flat picture; search, filter (character, rarity, finish), sort (number, rarity, finish, newest) |
 | `#/battle` | Battle (`ui/battle`) | The lobby (pick a rival and a deck) and, once a battle starts, the table; see "Battle" below |
 | `#/decks`, `#/decks/new`, `#/decks/<id>`, `#/decks/template/<id>` | Decks (`ui/decks`) | The player's decks and the loaner decks; the deck builder |
+| `#/shop` | Shop (`ui/shop`) | The Kiosk (eight single cards a day) and the buyer of spare cards; see `docs/packs-und-wirtschaft.md` section 8 |
 | `#/packs` | Packs (`ui/packs`) | Normales Pack und Halloween-Banner, Garantie-Balken, 1 oder 5 Packs öffnen, Tagesbonus, letzte Packs |
 | `#/packs/odds` | Quoten (`ui/packs`) | Alle Tabellen, Garantien und Banner-Regeln, aus denselben Daten wie die Ziehung erzeugt |
 | `#/dex` | Card-Dex (`ui/dex`) | All 79 designs, owned ones in colour, missing ones dim; progress overall and per character |

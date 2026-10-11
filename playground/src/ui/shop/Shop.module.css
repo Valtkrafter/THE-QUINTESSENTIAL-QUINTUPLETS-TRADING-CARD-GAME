@@ -1,0 +1,175 @@
+.tabs {
+  margin-bottom: var(--space-5);
+}
+
+.note {
+  margin-bottom: var(--space-4);
+  color: var(--text-faint);
+  font-size: var(--text-sm);
+}
+
+.message {
+  margin-bottom: var(--space-4);
+  color: var(--accent-strong);
+  font-size: var(--text-sm);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.offer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.face {
+  display: block;
+  border-radius: 5% / 3.6%;
+}
+
+.soldOut .face {
+  filter: grayscale(0.8) brightness(0.6);
+}
+
+.info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0 var(--space-1);
+}
+
+.name {
+  overflow: hidden;
+  font-size: var(--text-sm);
+  font-weight: 580;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--text-faint);
+  font-size: var(--text-xs);
+}
+
+.price {
+  color: var(--horizon);
+  font-size: var(--text-md);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.stock {
+  color: var(--text-faint);
+  font-size: var(--text-xs);
+}
+
+/* --- Selling --- */
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+.pick {
+  position: relative;
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 5% / 3.6%;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  transition: transform var(--fast) var(--ease);
+}
+
+.pick:hover {
+  transform: translateY(-3px);
+}
+
+.pick[aria-pressed='true'] .face {
+  box-shadow:
+    0 0 0 3px var(--horizon),
+    0 10px 24px -10px rgba(0, 0, 0, 0.7);
+}
+
+.pick[aria-pressed='true']::after {
+  content: '✓';
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--horizon);
+  color: var(--accent-ink);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.worth {
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  padding: 1px 8px;
+  border-radius: var(--radius-pill);
+  background: rgba(10, 12, 18, 0.85);
+  box-shadow: 0 0 0 1px var(--line-strong);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+.sellBar {
+  position: sticky;
+  bottom: var(--space-4);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  margin-top: var(--space-5);
+  padding: var(--space-3) var(--space-5);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-lg);
+  background: color-mix(in oklab, var(--surface) 92%, transparent);
+  backdrop-filter: blur(12px);
+  box-shadow: var(--shadow-soft);
+}
+
+.sellBar strong {
+  font-size: var(--text-md);
+}
+
+.confirm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.confirmActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-3);
+}
+
+.empty {
+  padding: var(--space-6) 0;
+  color: var(--text-soft);
+  text-align: center;
+}

@@ -3,7 +3,7 @@ import { Link, useLocation } from 'wouter';
 import { buildDex, dexProgress } from '../../domain/collection';
 import { useGame, useSave } from '../../state/app';
 import { ProgressBar } from '../components/controls';
-import { BattleIcon, BinderIcon, DecksIcon, DexIcon, PacksIcon, SettingsIcon, ShowcaseIcon } from '../components/icons';
+import { BattleIcon, BinderIcon, DecksIcon, DexIcon, PacksIcon, SettingsIcon, ShopIcon, ShowcaseIcon } from '../components/icons';
 import { cx, formatYen } from '../format';
 import { text } from '../text';
 import styles from './AppShell.module.css';
@@ -16,6 +16,7 @@ interface NavItem {
 
 const NAV: readonly NavItem[] = [
   { href: '/packs', label: text.nav.packs, icon: <PacksIcon /> },
+  { href: '/shop', label: text.nav.shop, icon: <ShopIcon /> },
   { href: '/', label: text.nav.binder, icon: <BinderIcon /> },
   { href: '/battle', label: text.nav.battle, icon: <BattleIcon /> },
   { href: '/decks', label: text.nav.decks, icon: <DecksIcon /> },

@@ -1,21 +1,11 @@
 import type { Rarity } from '../cards/model';
-import type { FinishId } from '../cards/finish';
+import { FINISH_TIER, type FinishId, type FinishTier } from '../cards/finish';
+
+export { FINISH_TIER, type FinishTier };
 
 // Pack-opening rules for the finish of a printed copy. Rarity belongs to the card design and finish to
 // the individual copy, so the two are independent: any rarity can roll any finish. What this table adds is
 // a lean: the higher the rarity, the more likely the finish is a premium one.
-
-export type FinishTier = 'plain' | 'foil' | 'premium';
-
-export const FINISH_TIER: Readonly<Record<FinishId, FinishTier>> = {
-  standard: 'plain',
-  rainbow: 'foil',
-  sparkle: 'foil',
-  cosmos: 'premium',
-  gold: 'premium',
-  prism: 'premium',
-  radiant: 'premium',
-};
 
 /**
  * Relative weight of each finish tier per rarity (they need not sum to 100). SAR and UR cards lean hard

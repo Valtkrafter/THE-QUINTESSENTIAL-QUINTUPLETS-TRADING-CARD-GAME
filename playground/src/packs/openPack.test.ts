@@ -25,6 +25,20 @@ describe('opening a pack', () => {
     expect(opening.pulls.map((pull) => pull.card.id)).toEqual(opening.save.collection.map((copy) => copy.cardId));
   });
 
+  it('opens a free pack from the Card-Dex without paying, and only the normal pack', () => {
+    const empty = { ...newSaveGame('free', NOW), player: { yen: 0 } };
+    expect(() => openPack(empty, 'booster', TODAY, NOW, { free: true })).toThrow(PackError);
+    const waiting: SaveGame = { ...empty, dexRewards: { milestones: 1, characters: [], freePacks: 2 } };
+    const opening = openPack(waiting, 'booster', TODAY, NOW + 1, { free: true });
+    expect(opening.pulls).toHaveLength(5);
+    expect(opening.save.player.yen).toBe(0);
+    expect(opening.save.dexRewards.freePacks).toBe(1);
+    expect(opening.save.counters.packsOpened).toBe(1);
+    expect(() => openPack(waiting, 'halloween', TODAY, NOW, { free: true })).toThrow(PackError);
+    // Without the option the pack still has to be paid for.
+    expect(() => openPack(waiting, 'booster', TODAY, NOW)).toThrow(/costs/);
+  });
+
   it('does not change the save it was given', () => {
     const save = rich('pure');
     const before = serializeSave(save);

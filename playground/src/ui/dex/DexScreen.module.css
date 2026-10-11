@@ -110,3 +110,33 @@
     gap: var(--space-4) var(--space-3);
   }
 }
+
+.rewards {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+  padding: var(--space-4) var(--space-5);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+
+.rewards h2 {
+  font-size: var(--text-md);
+}
+
+.rewards p {
+  color: var(--text-soft);
+  font-size: var(--text-sm);
+}
+
+.rewards .note {
+  color: var(--text-faint);
+}
+
+.rewards .got {
+  color: var(--accent-strong);
+}

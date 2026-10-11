@@ -14,6 +14,7 @@ import OddsScreen from './packs/OddsScreen';
 import PacksScreen from './packs/PacksScreen';
 import { AppShell } from './shell/AppShell';
 import SettingsScreen from './settings/SettingsScreen';
+import ShopScreen from './shop/ShopScreen';
 import ShowcaseScreen from './showcase/ShowcaseScreen';
 import { text } from './text';
 import styles from './App.module.css';
@@ -46,6 +47,7 @@ function Game() {
       <Suspense fallback={<Splash />}>
         <Switch>
           <Route path="/" component={BinderScreen} />
+          <Route path="/shop" component={ShopScreen} />
           <Route path="/battle" component={BattleScreen} />
           <Route path="/decks" component={DecksScreen} />
           <Route path="/decks/new">{() => <DeckEditor key="new" source={{ kind: 'new' }} />}</Route>
