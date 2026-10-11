@@ -28,7 +28,7 @@ export interface PlayerSpec {
   readonly bench?: readonly FigureSpec[];
   readonly memories?: number;
   readonly turnsTaken?: number;
-  readonly heartGiven?: boolean;
+  readonly heartsGiven?: number;
   readonly supporterPlayed?: boolean;
   readonly retreated?: boolean;
   readonly shieldTurn?: number;
@@ -70,7 +70,7 @@ function playerFrom(spec: PlayerSpec): PlayerState {
     bench: (spec.bench ?? []).map(figureFrom),
     memories: spec.memories ?? 0,
     turnsTaken: spec.turnsTaken ?? 3,
-    heartGiven: spec.heartGiven ?? false,
+    heartsGiven: spec.heartsGiven ?? 0,
     supporterPlayed: spec.supporterPlayed ?? false,
     retreated: spec.retreated ?? false,
     shieldTurn: spec.shieldTurn ?? 0,
@@ -175,6 +175,38 @@ export function simpleDeck(character: string): string[] {
     deck.push(card.id, card.id);
   }
   return deck;
+}
+
+/** The Supporters of the example decks: draw, heal, search, hearts and a little disruption. Two copies of the first ones. */
+const SUPPORT_CORE = ['TQQ01-061', 'TQQ01-067', 'TQQ01-062', 'TQQ01-063', 'TQQ01-068', 'TQQ01-064', 'TQQ01-065', 'TQQ01-069', 'TQQ01-076', 'TQQ01-078', 'TQQ01-079', 'TQQ01-077', 'TQQ01-070'];
+
+/**
+ * A 30-card deck built around one sister's line: her Basics, Close and Bride cards (not all of them twice), a few Prime
+ * cards, and a mix of Supporters. For tests and for the first draft of the starter decks.
+ */
+export function lineDeck(character: string, options: { readonly primes?: number; readonly supporters?: readonly string[] } = {}): string[] {
+  const own = CATALOG.filter((card) => card.kind === 'character' && card.character === character);
+  const plain = own.filter((card) => card.kind === 'character' && !card.prime);
+  const basics = plain.filter((card) => card.kind === 'character' && card.stage === 'basic').map((card) => card.id);
+  const closes = plain.filter((card) => card.kind === 'character' && card.stage === 'close').map((card) => card.id);
+  const brides = plain.filter((card) => card.kind === 'character' && card.stage === 'bride').map((card) => card.id);
+  const primes = own.filter((card) => card.kind === 'character' && card.prime && card.stage !== 'event').map((card) => card.id);
+  const deck: string[] = [];
+  // Basics: two copies of each of the first three, one of the fourth. Close and Bride: two copies each.
+  basics.slice(0, 3).forEach((id) => deck.push(id, id));
+  basics.slice(3, 4).forEach((id) => deck.push(id));
+  [...closes, ...brides].forEach((id) => deck.push(id, id));
+  primes.slice(0, options.primes ?? 3).forEach((id) => deck.push(id));
+  for (const id of options.supporters ?? SUPPORT_CORE) {
+    if (deck.length >= 30) {
+      break;
+    }
+    deck.push(id);
+    if (['TQQ01-061', 'TQQ01-067'].includes(id) && deck.length < 30) {
+      deck.push(id);
+    }
+  }
+  return deck.slice(0, 30);
 }
 
 /** Places a Basic as Active and as many others as fit on the Bench, then says "done". */

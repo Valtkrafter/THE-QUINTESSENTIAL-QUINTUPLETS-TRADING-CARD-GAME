@@ -50,7 +50,7 @@ function emptyPlayer(deck: readonly string[]): PlayerState {
     bench: [],
     memories: 0,
     turnsTaken: 0,
-    heartGiven: false,
+    heartsGiven: 0,
     supporterPlayed: false,
     retreated: false,
     shieldTurn: 0,
@@ -161,7 +161,7 @@ function beginTurn(run: Run, index: PlayerIndex): void {
   state.current = index;
   const player = playerOf(run, index);
   player.turnsTaken += 1;
-  player.heartGiven = false;
+  player.heartsGiven = 0;
   player.supporterPlayed = false;
   player.retreated = false;
   emit(run, { type: 'turn', turn: state.turn, player: index });
@@ -425,7 +425,7 @@ function perform(run: Run, action: BattleAction): void {
     case 'give-heart': {
       const figure = figureAtRef(playerOf(run, me), action.target);
       if (figure !== undefined) {
-        playerOf(run, me).heartGiven = true;
+        playerOf(run, me).heartsGiven += 1;
         giveHearts(run, me, figure, 1);
       }
       break;

@@ -29,7 +29,9 @@ Everything in the game is written in English, in plain words. This list is the s
 |---|---|
 | **Character** | A card of one of the sisters. It has HP, moves and sometimes an ability. |
 | **Supporter** | A card of someone around the sisters. Play one per turn: draw, heal, search, disrupt. |
-| **Heart** | The energy that pays for moves. You get one free Heart each turn and give it to one of your Characters. A Heart always has the kind of the Character that holds it. |
+| **Heart** | The energy that pays for moves. You get one free Heart each turn and give it to one of your Characters (the player who goes second gets two in their first turn). A Heart always has the kind of the Character that holds it. |
+| **Turn** | Draw a card, then do things in any order: give your free Heart, put Characters on the Bench, evolve, play one Supporter, use abilities, retreat once. **Attacking ends your turn.** The player who goes first cannot attack in their first turn. |
+| **Setup** | Draw 5 cards (a hand with no Basic is drawn again), put one Character in front and up to 3 on the Bench. A coin picks who goes first. |
 | **Active** | Your Character in front: it attacks and takes the hits. |
 | **Bench** | Up to 3 more Characters, waiting. |
 | **HP** | Hit points. At 0 a Character is knocked out. |

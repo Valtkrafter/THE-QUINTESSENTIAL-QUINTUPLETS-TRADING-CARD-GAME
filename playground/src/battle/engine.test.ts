@@ -139,6 +139,25 @@ describe('the first turns', () => {
     expect(refused.ok).toBe(false);
   });
 
+  it('gives the player who goes second a second free Heart in their first turn', () => {
+    const board = { active: { stack: ['TQQ01-001'] }, bench: [{ stack: ['TQQ01-013'] }] } as const;
+    const second = mainState({ turn: 2, current: 1, first: 0, players: [{ turnsTaken: 1, ...board }, { turnsTaken: 1, ...board }] });
+    const afterOne = play(second, { type: 'give-heart', target: { zone: 'active' } }).state;
+    expect(legalActions(afterOne, 1).some((action) => action.type === 'give-heart')).toBe(true);
+    const afterTwo = play(afterOne, { type: 'give-heart', target: { zone: 'bench', index: 0 } }).state;
+    expect(legalActions(afterTwo, 1).some((action) => action.type === 'give-heart')).toBe(false);
+    expect(afterTwo.players[1].active?.hearts).toBe(1);
+    expect(afterTwo.players[1].bench[0]?.hearts).toBe(1);
+
+    const first = mainState({ turn: 1, current: 0, first: 0, players: [{ turnsTaken: 1, ...board }, { turnsTaken: 0, ...board }] });
+    const used = play(first, { type: 'give-heart', target: { zone: 'active' } }).state;
+    expect(legalActions(used, 0).some((action) => action.type === 'give-heart')).toBe(false);
+
+    const later = mainState({ turn: 4, current: 1, first: 0, players: [{ turnsTaken: 2, ...board }, { turnsTaken: 2, ...board }] });
+    const once = play(later, { type: 'give-heart', target: { zone: 'active' } }).state;
+    expect(legalActions(once, 1).some((action) => action.type === 'give-heart')).toBe(false);
+  });
+
   it('draws a card at the start of every turn and counts the turns', () => {
     const state = mainState({ players: [{ active: { stack: ['TQQ01-001'] } }, { active: { stack: ['TQQ01-001'] }, hand: ['TQQ01-013'] }] });
     const { state: next, events } = play(state, { type: 'end-turn' });

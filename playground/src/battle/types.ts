@@ -38,7 +38,8 @@ export interface PlayerState {
   readonly memories: number;
   /** How many turns this player has started (1 during the first turn). */
   readonly turnsTaken: number;
-  readonly heartGiven: boolean;
+  /** Free Hearts given so far this turn; see `freeHearts` in rules.ts for how many a turn allows. */
+  readonly heartsGiven: number;
   readonly supporterPlayed: boolean;
   readonly retreated: boolean;
   /** During the turn with this number the Active Character takes no damage from attacks (0 = no shield). */

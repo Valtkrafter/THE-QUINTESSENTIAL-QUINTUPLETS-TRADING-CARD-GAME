@@ -4,7 +4,7 @@
 import { cardById } from '../cards/catalog';
 import type { CharacterCard, Effect } from '../cards/model';
 import { isBasicPlayable } from '../domain/decks';
-import { BENCH_SIZE, canPayMove, figureAt, figureRefs, other, retreatCost, studyDiscount, topCard } from './rules';
+import { BENCH_SIZE, canPayMove, figureAt, figureRefs, freeHearts, other, retreatCost, studyDiscount, topCard } from './rules';
 import type { BattleAction, BattleState, Figure, FigureRef, PendingChoice, PlayerIndex, PlayerState } from './types';
 
 /** Who has to be the one acting for this action to make sense. */
@@ -153,7 +153,7 @@ function mainActions(state: BattleState, player: PlayerIndex): BattleAction[] {
     }
   });
 
-  if (!owner.heartGiven) {
+  if (owner.heartsGiven < freeHearts(state, player)) {
     for (const target of refs) {
       actions.push({ type: 'give-heart', target });
     }

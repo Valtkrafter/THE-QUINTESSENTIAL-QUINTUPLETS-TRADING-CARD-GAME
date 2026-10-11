@@ -24,7 +24,7 @@ export interface MutablePlayer {
   bench: MutableFigure[];
   memories: number;
   turnsTaken: number;
-  heartGiven: boolean;
+  heartsGiven: number;
   supporterPlayed: boolean;
   retreated: boolean;
   shieldTurn: number;

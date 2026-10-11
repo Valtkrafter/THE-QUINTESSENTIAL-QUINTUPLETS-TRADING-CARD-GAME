@@ -3,7 +3,7 @@
 
 import { cardById } from '../cards/catalog';
 import type { CharacterCard, Move, SupporterCard } from '../cards/model';
-import type { Figure, FigureRef, PlayerIndex, PlayerState } from './types';
+import type { BattleState, Figure, FigureRef, PlayerIndex, PlayerState } from './types';
 
 /** Cards in the first hand. */
 export const START_HAND = 5;
@@ -21,9 +21,19 @@ export const TURN_LIMIT = 80;
 export const MAX_MULLIGANS = 20;
 /** The coin is fair. */
 export const HEADS_CHANCE = 0.5;
+/** Hearts a player may give for free in a turn. */
+export const FREE_HEARTS_PER_TURN = 1;
+/** The player who goes second gets one more in their first turn: going first is an advantage that this evens out. */
+export const SECOND_PLAYER_BONUS_HEARTS = 1;
 
 export function other(player: PlayerIndex): PlayerIndex {
   return player === 0 ? 1 : 0;
+}
+
+/** How many free Hearts `player` may give during the turn that is being played. */
+export function freeHearts(state: Pick<BattleState, 'first' | 'players'>, player: PlayerIndex): number {
+  const secondPlayerFirstTurn = player !== state.first && state.players[player].turnsTaken <= 1;
+  return FREE_HEARTS_PER_TURN + (secondPlayerFirstTurn ? SECOND_PLAYER_BONUS_HEARTS : 0);
 }
 
 export function characterOf(cardId: string): CharacterCard | undefined {
