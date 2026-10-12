@@ -25,6 +25,11 @@ const VIOLET = pack('C', 'U', 'C', 'RR', 'U');
 const RARE = pack('C', 'U', 'C', 'RR', 'SAR');
 const INTRO = phaseDuration('full', PLAIN, 'intro', 0);
 
+/** The state right after the player opened the first pack: the storm begins. */
+function opened(packs: readonly ShowPack[], mode: PullMode): DirectorState {
+  return tap(packs, mode, startState(mode)).state;
+}
+
 /** Seconds from the start of a show to the moment its first card starts to enter. */
 function cinematicSeconds(p: ShowPack, mode: PullMode): number {
   return (['intro', 'flight', 'impact', 'ceremony'] as const).reduce((sum, phase) => sum + phaseDuration(mode, p, phase, 0), 0);
@@ -39,7 +44,8 @@ function playThrough(packs: readonly ShowPack[], mode: PullMode): { state: Direc
   let state = startState(mode);
   const events: DirectorEvent[] = [];
   for (let step = 0; step < 2000 && state.phase !== 'summary'; step += 1) {
-    const moved = state.phase === 'show' ? tap(packs, mode, state) : advance(packs, mode, state, 0.25);
+    // The player opens every pack and sends every card on.
+    const moved = state.phase === 'show' || state.phase === 'tear' ? tap(packs, mode, state) : advance(packs, mode, state, 0.25);
     state = moved.state;
     events.push(...moved.events);
   }
@@ -73,7 +79,10 @@ describe('phase lengths', () => {
     expect(phaseDuration('short', RARE, 'flip', last)).toBeLessThan(phaseDuration('full', RARE, 'flip', last));
   });
 
-  it('wait for the player in the show and summary phases', () => {
+  it('wait for the player at the closed pack, in the show and in the summary', () => {
+    for (const mode of ['full', 'short'] as const) {
+      expect(phaseDuration(mode, PLAIN, 'tear', 0)).toBe(Number.POSITIVE_INFINITY);
+    }
     expect(phaseDuration('full', PLAIN, 'show', 0)).toBe(Number.POSITIVE_INFINITY);
     expect(phaseDuration('full', PLAIN, 'summary', 0)).toBe(Number.POSITIVE_INFINITY);
   });
@@ -118,8 +127,16 @@ describe('the ceremony', () => {
 });
 
 describe('advancing time', () => {
-  it('stays in a phase until its time is up and then moves on, reporting the change once', () => {
+  it('leaves a closed pack alone, however long it takes to open it', () => {
     const start = startState('full');
+    expect(start.phase).toBe('tear');
+    const waiting = advance([PLAIN], 'full', start, 3600);
+    expect(waiting.state.phase).toBe('tear');
+    expect(waiting.events).toEqual([]);
+  });
+
+  it('stays in a phase until its time is up and then moves on, reporting the change once', () => {
+    const start = opened([PLAIN], 'full');
     expect(start.phase).toBe('intro');
     const inside = advance([PLAIN], 'full', start, 0.3);
     expect(inside.state.phase).toBe('intro');
@@ -132,13 +149,13 @@ describe('advancing time', () => {
   });
 
   it('can jump over several phases in one long frame without losing an event', () => {
-    const result = advance([PLAIN], 'full', startState('full'), cinematicSeconds(PLAIN, 'full') + 0.1);
+    const result = advance([PLAIN], 'full', opened([PLAIN], 'full'), cinematicSeconds(PLAIN, 'full') + 0.1);
     expect(phases(result.events)).toEqual(['flight:0.0', 'impact:0.0', 'enter:0.0']);
     expect(result.events.filter((event) => event.type === 'impact')).toHaveLength(1);
   });
 
   it('plays the ceremony between the burst and the first card for Art Rare and better, and for nobody else', () => {
-    const through = (p: ShowPack, mode: PullMode) => phases(advance([p], mode, startState(mode), cinematicSeconds(p, mode) + 0.1).events);
+    const through = (p: ShowPack, mode: PullMode) => phases(advance([p], mode, opened([p], mode), cinematicSeconds(p, mode) + 0.1).events);
     expect(through(RARE, 'full')).toEqual(['flight:0.0', 'impact:0.0', 'ceremony:0.0', 'enter:0.0']);
     expect(through(VIOLET, 'full')).toEqual(['flight:0.0', 'impact:0.0', 'enter:0.0']);
     expect(through(RARE, 'short')).toEqual(['flight:0.0', 'impact:0.0', 'enter:0.0']);
@@ -153,14 +170,20 @@ describe('advancing time', () => {
     expect(advance([RARE], 'full', after, 0.1).events).toEqual([]);
   });
 
-  it('does nothing for an empty show', () => {
+  it('has no time to pass in a show without packs', () => {
     expect(advance([], 'full', startState('full'), 5).events).toEqual([]);
   });
 });
 
 describe('taps', () => {
+  it('open the pack: the storm begins, and it is reported once', () => {
+    const open = tap([VIOLET], 'full', startState('full'));
+    expect(open.state).toMatchObject({ phase: 'intro', pack: 0, card: 0, time: 0 });
+    expect(phases(open.events)).toEqual(['intro:0.0']);
+  });
+
   it('skip the cinematic to the burst, then to the first card', () => {
-    const intro = tap([VIOLET], 'full', startState('full'));
+    const intro = tap([VIOLET], 'full', opened([VIOLET], 'full'));
     expect(intro.state.phase).toBe('impact');
     expect(intro.events.map((event) => event.type)).toEqual(['phase', 'impact']);
     const impact = tap([VIOLET], 'full', intro.state);
@@ -168,7 +191,7 @@ describe('taps', () => {
   });
 
   it('lead a pack with a ceremony from the burst to the ceremony and only then to the first card', () => {
-    const impact = tap([RARE], 'full', startState('full'));
+    const impact = tap([RARE], 'full', opened([RARE], 'full'));
     const ceremony = tap([RARE], 'full', impact.state);
     expect(ceremony.state).toMatchObject({ phase: 'ceremony', card: 0, time: 0 });
     expect(phases(ceremony.events)).toEqual(['ceremony:0.0']);
@@ -202,12 +225,22 @@ describe('a whole show', () => {
     expect(revealOrder(RARE).at(-1)).toBe(4);
   });
 
-  it('plays the cinematic of every pack, in order, when several are opened', () => {
+  it('puts every pack on the table to be torn open, and plays the cinematic of each, in order', () => {
     const { state, events } = playThrough([PLAIN, RARE, PLAIN], 'full');
     expect(state.phase).toBe('summary');
+    // The first pack is on the table from the start; the next ones come after the cards of the one before.
+    const tears = events.flatMap((event) => (event.type === 'phase' && event.phase === 'tear' ? [event.pack] : []));
+    expect(tears).toEqual([1, 2]);
     const intros = events.flatMap((event) => (event.type === 'phase' && event.phase === 'intro' ? [event.pack] : []));
-    expect(intros).toEqual([1, 2]);
+    expect(intros).toEqual([0, 1, 2]);
     expect(events.flatMap((event) => (event.type === 'impact' ? [event.pack] : []))).toEqual([0, 1, 2]);
+  });
+
+  it('opens the short show with a pack to tear too', () => {
+    expect(startState('short').phase).toBe('tear');
+    const { state, events } = playThrough([PLAIN, PLAIN], 'short');
+    expect(state.phase).toBe('summary');
+    expect(events.flatMap((event) => (event.type === 'phase' && event.phase === 'tear' ? [event.pack] : []))).toEqual([1]);
   });
 
   it('goes straight to the cards when the show is off', () => {
@@ -220,7 +253,7 @@ describe('a whole show', () => {
   });
 
   it('can be skipped to the summary from anywhere', () => {
-    for (const phase of ['intro', 'flight', 'impact', 'ceremony', 'enter', 'flip', 'show', 'exit'] as const) {
+    for (const phase of ['tear', 'intro', 'flight', 'impact', 'ceremony', 'enter', 'flip', 'show', 'exit'] as const) {
       const skipped = skipAll({ pack: 1, phase, time: 0.2, card: 2 });
       expect(skipped.state.phase).toBe('summary');
       expect(skipped.events).toHaveLength(1);
@@ -232,7 +265,7 @@ describe('a whole show', () => {
 describe('helpers', () => {
   it('tells the cinematic phases apart', () => {
     const cinematic: DirectorState['phase'][] = ['intro', 'flight', 'impact', 'ceremony'];
-    const cards: DirectorState['phase'][] = ['enter', 'flip', 'show', 'exit', 'summary'];
+    const cards: DirectorState['phase'][] = ['tear', 'enter', 'flip', 'show', 'exit', 'summary'];
     expect(cinematic.every(isCinematic)).toBe(true);
     expect(cards.some(isCinematic)).toBe(false);
   });
@@ -242,6 +275,7 @@ describe('helpers', () => {
     expect(progress('full', [PLAIN], state)).toBeCloseTo(0.5);
     expect(progress('full', [PLAIN], { ...state, phase: 'show' })).toBe(1);
     expect(progress('off', [PLAIN], { ...state, phase: 'intro' })).toBe(1);
+    expect(progress('full', [PLAIN], { ...state, phase: 'tear' })).toBe(1);
     expect(progress('full', [], state)).toBe(1);
   });
 });

@@ -1,0 +1,295 @@
+/*
+ * The closed pack on the table. The pack is drawn three times on top of each other (what is left of it, the strip that is
+ * still whole, the strip that is torn off), each clipped by the controller while the player swipes. Colours of the glow come
+ * from the kind of pack.
+ */
+
+.stage {
+  --aura: rgba(126, 147, 255, 0.5);
+  --spark: #cfd8ff;
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  touch-action: none;
+  animation: arrive 520ms var(--ease) both;
+}
+
+.stage[data-art='select'] {
+  --aura: rgba(82, 216, 200, 0.5);
+  --spark: #c6fff6;
+}
+
+.stage[data-art='premium'] {
+  --aura: rgba(246, 200, 110, 0.5);
+  --spark: #ffe9b0;
+}
+
+.stage[data-art='halloween'] {
+  --aura: rgba(255, 154, 74, 0.5);
+  --spark: #ffd0a6;
+}
+
+@keyframes arrive {
+  from {
+    opacity: 0;
+    transform: translateY(24px) scale(0.96);
+  }
+}
+
+.aura {
+  position: absolute;
+  top: 46%;
+  left: 50%;
+  width: min(130vw, 980px);
+  aspect-ratio: 1;
+  background: radial-gradient(circle, var(--aura) 0%, transparent 62%);
+  opacity: 0.55;
+  transform: translate(-50%, -50%);
+  animation: aura 4.4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes aura {
+  50% {
+    opacity: 0.85;
+    transform: translate(-50%, -50%) scale(1.06);
+  }
+}
+
+.sparks {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.sparks i {
+  position: absolute;
+  bottom: -12px;
+  border-radius: 50%;
+  background: var(--spark);
+  box-shadow: 0 0 9px var(--spark);
+  opacity: 0;
+  animation: rise linear infinite;
+}
+
+@keyframes rise {
+  0% {
+    opacity: 0;
+    transform: translateY(0) scale(0.6);
+  }
+  14% {
+    opacity: 0.85;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-105vh) scale(1.1);
+  }
+}
+
+.table {
+  --pack-w: clamp(170px, min(58vw, 40vh), 330px);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-6);
+  margin-top: -2vh;
+}
+
+.shadow {
+  position: absolute;
+  top: calc(var(--pack-w) * 1.5 + 6px);
+  left: 50%;
+  width: calc(var(--pack-w) * 0.95);
+  height: 26px;
+  background: radial-gradient(ellipse at center, rgba(2, 4, 12, 0.7), transparent 70%);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.box {
+  position: relative;
+  width: var(--pack-w);
+  aspect-ratio: 3 / 4.5;
+  cursor: grab;
+  touch-action: none;
+  filter: drop-shadow(0 22px 28px rgba(3, 5, 14, 0.55));
+  animation: bob 4.2s ease-in-out infinite;
+}
+
+.box[data-dragging='true'] {
+  cursor: grabbing;
+  animation-play-state: paused;
+}
+
+@keyframes bob {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-1.4deg);
+  }
+  50% {
+    transform: translateY(-9px) rotate(1deg);
+  }
+}
+
+.layer {
+  position: absolute;
+  inset: 0;
+  will-change: clip-path, transform;
+}
+
+/* The drawing inside fills its layer, without its own tilt or shadow (the box has them). */
+.layer > div {
+  width: 100%;
+  filter: none;
+  transform: none;
+}
+
+.glow {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 7.5%, rgba(255, 247, 222, 1) 11.5%, rgba(255, 214, 140, 0.9) 13.2%, transparent 15.5%);
+  mix-blend-mode: screen;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.beam {
+  position: absolute;
+  left: 0;
+  bottom: 88.5%;
+  width: 0;
+  height: 85%;
+  background: linear-gradient(to top, rgba(255, 251, 240, 0.98) 0%, rgba(255, 240, 200, 0.62) 24%, rgba(255, 226, 160, 0.24) 58%, transparent 100%);
+  filter: blur(6px);
+  mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent);
+  opacity: 0;
+  transform-origin: 50% 100%;
+  pointer-events: none;
+}
+
+/* The line to follow, with a bright dot that runs along it until the player starts. */
+.guide {
+  position: absolute;
+  top: 11.5%;
+  left: 5%;
+  right: 5%;
+  border-top: 1.5px dashed rgba(255, 255, 255, 0.6);
+  pointer-events: none;
+  transition: opacity var(--fast) var(--ease);
+}
+
+.guide::after {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: 0;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 12px 4px rgba(255, 255, 255, 0.85);
+  animation: run 2s ease-in-out infinite;
+}
+
+@keyframes run {
+  0% {
+    left: 0;
+    opacity: 0;
+  }
+  15%,
+  80% {
+    opacity: 1;
+  }
+  100% {
+    left: calc(100% - 10px);
+    opacity: 0;
+  }
+}
+
+.box[data-dragging='true'] .guide {
+  opacity: 0;
+}
+
+.shine {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: 8px;
+  pointer-events: none;
+}
+
+.shine::before {
+  content: '';
+  position: absolute;
+  inset: -20% auto -20% -90%;
+  width: 40%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  transform: skewX(-18deg);
+  animation: sweep 4.6s ease-in-out 1s infinite;
+}
+
+@keyframes sweep {
+  0%,
+  60% {
+    left: -90%;
+  }
+  100% {
+    left: 140%;
+  }
+}
+
+.hint {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-align: center;
+  text-shadow: 0 1px 12px rgba(4, 6, 16, 0.9);
+  animation: breathe 2.8s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.hint strong {
+  font-size: var(--text-md);
+  font-weight: 650;
+  letter-spacing: 0.06em;
+}
+
+.hint span {
+  color: var(--text-soft);
+  font-size: var(--text-sm);
+}
+
+@keyframes breathe {
+  50% {
+    opacity: 0.6;
+  }
+}
+
+.flash {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 44%, #fff 0, #fff 45%, #fff6df 100%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .box,
+  .aura,
+  .sparks i,
+  .guide::after,
+  .shine::before,
+  .hint,
+  .stage {
+    animation: none;
+  }
+
+  .sparks {
+    display: none;
+  }
+}

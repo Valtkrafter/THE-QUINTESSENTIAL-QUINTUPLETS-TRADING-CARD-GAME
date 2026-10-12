@@ -39,6 +39,43 @@ test('a new game starts with money, and a Booster costs ¥300 and fills the bind
   expect(errors).toEqual([]);
 });
 
+test('a pack is torn open with a swipe before the show begins, and a tap tears the next one', async ({ page }) => {
+  test.setTimeout(90_000);
+  const errors = watchErrors(page);
+  await openGame(page);
+  await goTo(page, 'Packs');
+  await page.getByRole('article', { name: 'TQQ01 Booster' }).getByRole('button', { name: /^Open pack · ¥300$/ }).click();
+
+  // The closed pack lies on the table and waits: nothing happens until the player opens it.
+  const pack = page.getByRole('button', { name: /TQQ01 Booster, closed/ });
+  await expect(pack).toBeVisible();
+  await expect(page.getByText('Swipe across the top to open the pack')).toBeVisible();
+  const box = await pack.boundingBox();
+  if (box === null) {
+    throw new Error('The pack has no place on the screen.');
+  }
+
+  // A swipe that stops early lets the strip fall back: the pack is still closed.
+  const y = box.y + box.height * 0.2;
+  await page.mouse.move(box.x + box.width * 0.1, y);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width * 0.3, y, { steps: 5 });
+  await page.mouse.up();
+  await page.waitForTimeout(500);
+  await expect(pack).toBeVisible();
+
+  // A swipe across the whole top tears it open: the pack leaves and the show goes on.
+  await page.mouse.move(box.x + box.width * 0.1, y);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width * 1.05, y, { steps: 12 });
+  await page.mouse.up();
+  await expect(pack).toBeHidden({ timeout: 10_000 });
+
+  await page.getByRole('button', { name: 'Skip', exact: true }).click();
+  await expect(page.getByRole('region', { name: 'Result' })).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
 test('a card can be looked at in 3D, flipped and put in the showcase', async ({ page }) => {
   const errors = watchErrors(page);
   await openGame(page);

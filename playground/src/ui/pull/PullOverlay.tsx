@@ -17,6 +17,7 @@ import { SkipIcon } from '../components/icons';
 import { cx } from '../format';
 import { text } from '../text';
 import { NamePlate } from './NamePlate';
+import { PackTear } from './PackTear';
 import styles from './PullOverlay.module.css';
 import { PullSummary } from './PullSummary';
 import { tierStyleOf } from './tierStyle';
@@ -59,6 +60,9 @@ export default function PullOverlay({ openings, preview = false, onClose, onAgai
   const snapshot = useSyncExternalStore(runner.subscribe, runner.getSnapshot);
   const rootRef = useRef<HTMLDivElement>(null);
   const pointerStart = useRef<{ readonly x: number; readonly y: number } | null>(null);
+  // The last pack that was torn open and whose white flash has died down, and a counter that asks the pack on the table to open itself.
+  const [torn, setTorn] = useState(-1);
+  const [openRequest, setOpenRequest] = useState(0);
 
   useEffect(() => {
     if (import.meta.env.DEV) {
@@ -80,15 +84,6 @@ export default function PullOverlay({ openings, preview = false, onClose, onAgai
   const current = opening?.pulls[order[snapshot.card] ?? -1];
   const inSummary = snapshot.phase === 'summary';
   const inCinematic = snapshot.phase === 'intro' || snapshot.phase === 'flight' || snapshot.phase === 'impact' || snapshot.phase === 'ceremony';
-
-  // Sound of the very first storm: the show starts in its intro without an event, so the cue is given here, as soon as both
-  // the cards and the sound are ready (a sound that is late would be out of step with the picture and is left out).
-  useEffect(() => {
-    const first = runner.packs[0];
-    if (audio !== null && prepared && first !== undefined && runner.state.phase === 'intro' && runner.state.pack === 0 && runner.state.time < 0.4) {
-      audio.intro(phaseDuration(runner.mode, first, 'intro', 0) - runner.state.time);
-    }
-  }, [audio, prepared, runner]);
 
   // Sound: the show's events become cues.
   useEffect(
@@ -127,6 +122,11 @@ export default function PullOverlay({ openings, preview = false, onClose, onAgai
 
   const tap = useCallback(() => {
     if (runner.state.phase === 'summary') {
+      return;
+    }
+    if (runner.state.phase === 'tear') {
+      // A closed pack is not opened by the show but by the player: ask the pack to tear itself.
+      setOpenRequest((count) => count + 1);
       return;
     }
     if (runner.state.phase === 'ceremony') {
@@ -236,7 +236,7 @@ export default function PullOverlay({ openings, preview = false, onClose, onAgai
           <p key={`${snapshot.pack}-${snapshot.phase}-${snapshot.card}`} className={cx(styles.hint, inCinematic && styles.hintLate)}>
             {inCinematic ? text.pull.hintSkip : snapshot.phase === 'show' ? (lastCard && snapshot.pack + 1 >= openings.length ? text.pull.hintSummary : text.pull.hintNext) : ''}
           </p>
-          {!inCinematic && opening !== undefined && (
+          {!inCinematic && snapshot.phase !== 'tear' && opening !== undefined && (
             <ol className={styles.tray} aria-hidden="true">
               {Array.from({ length: Math.min(SLOTS, opening.pulls.length) }, (_, slot) => {
                 const pullIndex = order[slot];
@@ -251,6 +251,17 @@ export default function PullOverlay({ openings, preview = false, onClose, onAgai
             </ol>
           )}
         </>
+      )}
+
+      {mode !== 'off' && snapshot.pack > torn && !inSummary && opening !== undefined && (
+        <PackTear
+          key={snapshot.pack}
+          pack={opening.pack}
+          openRequest={openRequest}
+          onRip={() => audio?.tear()}
+          onOpen={() => runner.tap()}
+          onGone={() => setTorn(snapshot.pack)}
+        />
       )}
 
       {inSummary && <PullSummary openings={openings} preview={preview} showFailed={showFailed} onClose={onClose} onAgain={onAgain} />}

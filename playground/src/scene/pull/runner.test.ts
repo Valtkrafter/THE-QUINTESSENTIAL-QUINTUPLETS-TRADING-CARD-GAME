@@ -7,13 +7,14 @@ const pack = (...rarities: Rarity[]) => ({ rarities });
 const INTRO = phaseDuration('full', pack('C'), 'intro', 0);
 
 describe('the runner', () => {
-  it('starts in the intro, or at the first card when the show is off', () => {
-    expect(new PullRunner([pack('C', 'U', 'R', 'RR', 'SAR')], 'full').getSnapshot().phase).toBe('intro');
+  it('starts with the pack on the table, or at the first card when the show is off', () => {
+    expect(new PullRunner([pack('C', 'U', 'R', 'RR', 'SAR')], 'full').getSnapshot().phase).toBe('tear');
     expect(new PullRunner([pack('C', 'U', 'R', 'RR', 'SAR')], 'off').getSnapshot().phase).toBe('enter');
   });
 
   it('keeps the snapshot while time passes inside a phase and replaces it when the phase changes', () => {
     const runner = new PullRunner([pack('C', 'C', 'U', 'U', 'R')], 'full');
+    runner.tap();
     let notified = 0;
     runner.subscribe(() => {
       notified += 1;
@@ -32,6 +33,7 @@ describe('the runner', () => {
     const runner = new PullRunner([pack('C', 'C', 'U', 'U', 'R')], 'full');
     const seen: DirectorEvent[] = [];
     const stop = runner.onEvent((event) => seen.push(event));
+    runner.tap();
     runner.step(5);
     runner.step(5);
     expect(seen.filter((event) => event.type === 'impact')).toHaveLength(1);
@@ -50,14 +52,24 @@ describe('the runner', () => {
     });
     runner.onEvent((event) => seen.push(event));
     const quiet = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    runner.tap();
     runner.step(8);
     quiet.mockRestore();
     expect(seen.some((event) => event.type === 'impact')).toBe(true);
     expect(runner.state.phase).not.toBe('intro');
   });
 
+  it('keeps a closed pack closed while time passes, and opens it with a tap', () => {
+    const runner = new PullRunner([pack('C', 'U', 'R', 'RR', 'SAR')], 'full');
+    runner.step(120);
+    expect(runner.getSnapshot().phase).toBe('tear');
+    runner.tap();
+    expect(runner.getSnapshot().phase).toBe('intro');
+  });
+
   it('plays a pack from the first tap to the summary, and a skip ends it at once', () => {
     const runner = new PullRunner([pack('C', 'U', 'R', 'RR', 'SAR')], 'full');
+    runner.tap();
     runner.tap();
     runner.tap();
     // A pack with a Special Art Rare has a ceremony before its first card.

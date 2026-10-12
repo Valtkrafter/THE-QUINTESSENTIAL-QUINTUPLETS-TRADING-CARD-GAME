@@ -25,6 +25,8 @@ export interface CeremonyCue {
 }
 
 export interface PullAudio {
+  /** The foil of a pack is torn: a rip, a crackle and a sparkle. */
+  tear(): void;
   /** The camera falls into the storm: wind and a low drone that swells for `seconds`. */
   intro(seconds: number): void;
   flight(cue: FlightCue): void;
@@ -234,6 +236,24 @@ export async function createPullAudio(): Promise<PullAudio> {
   }
 
   const raw: PullAudio = {
+    tear() {
+      oneShot(0.9, (start) => {
+        // The rip: a hiss that sweeps up, with a second, quieter one a little behind it.
+        const rip = noiseSweep(start, 0.5, 1400, 7800, 0.5, 'white', 0.5);
+        const rough = noiseSweep(start + 0.04, 0.46, 400, 3600, 0.3, 'pink', 0.7);
+        // The crackle of foil: a few quick ticks at random places.
+        for (let i = 0; i < 9; i += 1) {
+          const at = start + 0.02 + ((i * 0.059) % 0.46);
+          sparkle.triggerAttackRelease(['C8', 'E8', 'A7', 'G8'][i % 4] ?? 'C8', 0.02, at, 0.22 + ((i * 7) % 5) * 0.05);
+        }
+        // A small soft pop when it opens, and a shimmer.
+        boom.triggerAttackRelease('A1', 0.25, start + 0.46, 0.35);
+        sparkle.triggerAttackRelease('E7', 0.12, start + 0.5, 0.45);
+        sparkle.triggerAttackRelease('B7', 0.16, start + 0.57, 0.4);
+        return [...rip.nodes, ...rough.nodes];
+      });
+    },
+
     intro(seconds) {
       cutFlight();
       active = { gains: [], timers: [] };
@@ -437,6 +457,7 @@ export async function createPullAudio(): Promise<PullAudio> {
     }
   };
   return {
+    tear: () => attempt(() => raw.tear()),
     intro: (seconds) => attempt(() => raw.intro(seconds)),
     flight: (cue) => attempt(() => raw.flight(cue)),
     impact: (tier) => attempt(() => raw.impact(tier)),

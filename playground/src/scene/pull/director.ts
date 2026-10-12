@@ -15,6 +15,7 @@ export interface ShowPack {
 }
 
 export type Phase =
+  | 'tear' // the pack waits on the table to be torn open (full and short show only)
   | 'intro' // the camera falls into a storm
   | 'flight' // a needle of light dives into the gate (and the five threads weave in for the best packs)
   | 'impact' // white-out, flash, shock waves, burst
@@ -102,6 +103,9 @@ export function ceremonyBeats(stars: number): CeremonyBeats {
 export function phaseDuration(mode: PullMode, pack: ShowPack, phase: Phase, cardIndex: number): number {
   const timing = TIMING[mode];
   switch (phase) {
+    case 'tear':
+      // The pack stays closed until the player opens it.
+      return Number.POSITIVE_INFINITY;
     case 'intro':
       return timing.intro;
     case 'flight':
@@ -131,6 +135,8 @@ function following(packs: readonly ShowPack[], state: DirectorState, mode: PullM
   const pack = packs[state.pack];
   const cards = pack?.rarities.length ?? 0;
   switch (state.phase) {
+    case 'tear':
+      return { phase: 'intro', pack: state.pack, card: 0 };
     case 'intro':
       return { phase: 'flight', pack: state.pack, card: 0 };
     case 'flight':
@@ -150,7 +156,7 @@ function following(packs: readonly ShowPack[], state: DirectorState, mode: PullM
         return { phase: 'enter', pack: state.pack, card: state.card + 1 };
       }
       if (state.pack + 1 < packs.length) {
-        return { phase: mode === 'off' ? 'enter' : 'intro', pack: state.pack + 1, card: 0 };
+        return { phase: mode === 'off' ? 'enter' : 'tear', pack: state.pack + 1, card: 0 };
       }
       return { phase: 'summary', pack: state.pack, card: state.card };
     case 'summary':
@@ -158,9 +164,9 @@ function following(packs: readonly ShowPack[], state: DirectorState, mode: PullM
   }
 }
 
-/** The state the show starts in. With the show turned off it starts at the first card. */
+/** The state the show starts in: the first pack on the table. With the show turned off it starts at the first card. */
 export function startState(mode: PullMode): DirectorState {
-  return { pack: 0, phase: mode === 'off' ? 'enter' : 'intro', time: 0, card: 0 };
+  return { pack: 0, phase: mode === 'off' ? 'enter' : 'tear', time: 0, card: 0 };
 }
 
 export interface Advance {
@@ -209,9 +215,14 @@ export function advance(packs: readonly ShowPack[], mode: PullMode, state: Direc
   return { state: current, events };
 }
 
-/** A tap on the screen: skips the cinematic one beat at a time, finishes a flip, or sends the shown card away. */
+/** A tap on the screen: opens the pack, skips the cinematic one beat at a time, finishes a flip, or sends the shown card away. */
 export function tap(packs: readonly ShowPack[], mode: PullMode, state: DirectorState): Advance {
   switch (state.phase) {
+    case 'tear': {
+      // The pack is open: the storm begins.
+      const intro: DirectorState = { ...state, phase: 'intro', time: 0 };
+      return { state: intro, events: phaseEvents(state, intro) };
+    }
     case 'intro':
     case 'flight': {
       // Straight to the burst, so a skipped flight still ends with the flash.
