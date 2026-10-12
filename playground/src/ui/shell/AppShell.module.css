@@ -187,6 +187,24 @@
   display: none;
 }
 
+/* A battle on the table: no menu, no padding, the table fills the window. */
+
+.immersive {
+  display: block;
+}
+
+.immersive .rail,
+.immersive .topbar,
+.immersive .skip {
+  display: none;
+}
+
+.immersive .main {
+  max-width: none;
+  margin: 0;
+  padding: 0;
+}
+
 /* Narrow screens: the rail becomes a bar at the bottom */
 
 @media (max-width: 800px) {
@@ -278,5 +296,9 @@
 
   .main {
     padding: var(--space-5) var(--space-4) 96px;
+  }
+
+  .immersive .main {
+    padding: 0;
   }
 }

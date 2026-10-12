@@ -15,14 +15,15 @@ Everything in the game is written in English, in plain words. This list is the s
 
 | Word | What it means |
 |---|---|
-| **Pack** | 5 cards for ¥500. Opening one is the big moment. |
+| **Pack** | 5 cards. There are four kinds: the Booster (¥300), the Select (¥1,000), the Premium (¥3,000) and the Halloween Wish (¥500). You tear it open yourself, then the show begins. |
+| **Odds** | What can come out of a pack and how likely it is. Every pack has an Odds page, worked out from the same data as the draw. |
 | **Banner / Wish** | A time-limited pack with its own cards (Halloween Wish). Some of its cards are *featured* (50/50, then sure). |
 | **Rarity** | How rare a design is: Common, Uncommon, Rare, Double Rare, Art Rare, Special Art Rare, Ultra Rare (C, U, R, RR, AR, SAR, UR). |
 | **Finish** | How one printed copy shines: Standard, Rainbow Holo, Sparkle, Cosmos, Gold Foil, Prism Crystal, Radiant. Luck, not design. |
 | **Binder** | All your cards. **Card Dex** shows how many of the 79 designs you have found. **Showcase** shows your six favorites. |
 | **Guarantee** | A card that is sure to come after a number of packs without one. |
-| **Grading** | Send a loose card in (¥200 to ¥1,000) and get a score from 1 to 10 back, in a sealed case. A high score makes the card worth much more. |
-| **Marks** | The four hidden marks every copy has: centering, corners, edges and surface. You can see them as wear in the 3D view. The score is their average. |
+| **Grading** | Send a loose card in (¥300 to ¥1,500, paid whatever the score is) and get a score from 1 to 10 back, in a sealed case. A high score makes the card worth much more, a low one makes it worth less than before. It is a bet: the graders look closer than you can. |
+| **Marks** | The four marks every copy has: centering, corners, edges and surface. You can see them as wear in the 3D view. The graders may find a little more than shows. The score is the average of the marks they give. |
 | **Score** | The grade of a card, from 1 to 10 in steps of a half. The words on the label: Pristine (10), Gem Mint (9.5), Mint (9), Near Mint (8 to 8.5), Excellent (7 to 7.5), Good (5 to 6.5), Played (below 5). |
 | **Slab** | A graded card in its clear case, with a paper label on top that shows the score and the four marks. |
 | **Loose card** | A card that has not been graded. |
@@ -35,6 +36,7 @@ Everything in the game is written in English, in plain words. This list is the s
 | **Supporter** | A card of someone around the sisters. Play one per turn: draw, heal, search, disrupt. |
 | **Heart** | The energy that pays for moves. You get one free Heart each turn and give it to one of your Characters (the player who goes second gets two in their first turn). A Heart always has the kind of the Character that holds it. |
 | **Turn** | Draw a card, then do things in any order: give your free Heart, put Characters on the Bench, evolve, play one Supporter, use abilities, retreat once. **Attacking ends your turn.** The player who goes first cannot attack in their first turn. |
+| **Steps** | The six things of a turn, listed on the left of the battle table: draw a card, give the free Heart, put Characters on the Bench, evolve, play a Supporter, attack. The ones you can do now glow, and one line under the table says what to do next. |
 | **Setup** | Draw 5 cards (a hand with no Basic is drawn again), put one Character in front and up to 3 on the Bench. A coin picks who goes first. |
 | **Active** | Your Character in front: it attacks and takes the hits. |
 | **Bench** | Up to 3 more Characters, waiting. |

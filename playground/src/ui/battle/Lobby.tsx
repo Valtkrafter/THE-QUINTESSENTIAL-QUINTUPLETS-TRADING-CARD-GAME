@@ -11,6 +11,7 @@ import { PageHeader } from '../components/PageHeader';
 import { cx } from '../format';
 import { text } from '../text';
 import { deckChoices, describeProblem, type DeckChoice } from './choices';
+import { Explainer } from './Explainer';
 import { HowToPlay } from './HowToPlay';
 import { portraitOf } from './portraits';
 import styles from './Lobby.module.css';
@@ -92,13 +93,15 @@ export function Lobby() {
   const choices = useMemo(() => deckChoices(save), [save]);
   const [rivalId, setRivalId] = useState<string>(OPPONENTS[0]?.id ?? '');
   const [deckKey, setDeckKey] = useState<string | null>(null);
-  const [helpOpen, setHelpOpen] = useState(false);
+  const [dialog, setDialog] = useState<'help' | 'watch' | null>(null);
 
   const rival = OPPONENTS.find((candidate) => candidate.id === rivalId);
   const ready = choices.filter((choice) => choice.problems.length === 0);
   const chosen = choices.find((choice) => choice.key === deckKey && choice.problems.length === 0) ?? ready[0];
   const own = choices.filter((choice) => !choice.loaner);
   const loaners = choices.filter((choice) => choice.loaner);
+  // Somebody who has never played a battle is shown the animated explanation first.
+  const firstTime = save.battle.wins + save.battle.losses + save.battle.draws === 0;
 
   const start = () => {
     if (rival !== undefined && chosen !== undefined) {
@@ -108,8 +111,28 @@ export function Lobby() {
 
   return (
     <>
-      <PageHeader title={text.battle.title} subtitle={text.battle.subtitle} actions={<Button onClick={() => setHelpOpen(true)}>{text.battle.howTo}</Button>} />
+      <PageHeader
+        title={text.battle.title}
+        subtitle={text.battle.subtitle}
+        actions={
+          <>
+            {!firstTime && <Button onClick={() => setDialog('watch')}>{text.battle.howToPlay.watch}</Button>}
+            <Button onClick={() => setDialog('help')}>{text.battle.howTo}</Button>
+          </>
+        }
+      />
       <div className={styles.layout}>
+        {firstTime && (
+          <aside className={styles.newHere}>
+            <div>
+              <h2>{text.battle.explainer.newHere}</h2>
+              <p>{text.battle.explainer.newHereText}</p>
+            </div>
+            <Button kind="primary" onClick={() => setDialog('watch')}>
+              {text.battle.howToPlay.watch}
+            </Button>
+          </aside>
+        )}
         <section className={styles.section}>
           <h2>{text.battle.chooseRival}</h2>
           <div className={styles.rivals}>
@@ -167,7 +190,8 @@ export function Lobby() {
           </Button>
         </div>
       </div>
-      {helpOpen && <HowToPlay onClose={() => setHelpOpen(false)} />}
+      {dialog === 'help' && <HowToPlay onClose={() => setDialog(null)} onWatch={() => setDialog('watch')} />}
+      {dialog === 'watch' && <Explainer onClose={() => setDialog(null)} />}
     </>
   );
 }

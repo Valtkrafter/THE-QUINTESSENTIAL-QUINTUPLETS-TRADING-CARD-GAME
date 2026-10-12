@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, type ReactNode } from 'react';
 import { Link, useLocation } from 'wouter';
 import { buildDex, dexProgress } from '../../domain/collection';
-import { useGame, useSave } from '../../state/app';
+import { useBattle, useGame, useSave } from '../../state/app';
 import { ProgressBar } from '../components/controls';
 import { BattleIcon, BinderIcon, DecksIcon, DexIcon, GradingIcon, PacksIcon, SettingsIcon, ShopIcon, ShowcaseIcon } from '../components/icons';
 import { cx, formatYen } from '../format';
@@ -58,6 +58,9 @@ export function AppShell({ children }: { readonly children: ReactNode }) {
   const progress = useMemo(() => dexProgress(buildDex(save.collection)), [save.collection]);
   const mainRef = useRef<HTMLElement>(null);
   const navRef = useRef<HTMLElement>(null);
+  // While a battle is on the table the table has the whole window: the menu is hidden (the table has a menu of its own).
+  const battling = useBattle((state) => state.status !== 'idle');
+  const immersive = battling && navItemOf(location)?.href === '/battle';
 
   // The title of the browser tab (and of the window in the desktop app) says where the player is, for screen readers too.
   // On a phone the menu bar scrolls sideways, so the entry of this page is brought into view.
@@ -68,7 +71,7 @@ export function AppShell({ children }: { readonly children: ReactNode }) {
   }, [location]);
 
   return (
-    <div className={styles.shell}>
+    <div className={cx(styles.shell, immersive && styles.immersive)}>
       <button type="button" className={styles.skip} onClick={() => mainRef.current?.focus()}>
         {text.nav.skip}
       </button>

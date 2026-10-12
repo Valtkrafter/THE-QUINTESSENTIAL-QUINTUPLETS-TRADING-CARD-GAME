@@ -26,7 +26,7 @@ test('the battle table fits a phone, and a card can be pressed and held to see i
   await openGame(page);
   await goTo(page, 'Battle');
   await page.getByRole('button', { name: 'Start battle' }).click();
-  await expect(page.getByText('Get ready')).toBeVisible();
+  await expect(page.getByText('Get ready').first()).toBeVisible();
   await expectNoSidewaysScroll(page);
 
   // The hand is a row to scroll sideways inside its own box, not a reason for the page to scroll.

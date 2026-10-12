@@ -121,6 +121,7 @@ export function heartsLeft(battle: BattleState, player: PlayerIndex): number {
 
 export type Mood = 'setup' | 'your-turn' | 'their-turn' | 'over';
 
+/** Whose move it is. While a question is open it is the move of whoever has to answer it, even when the other player's turn goes on. */
 export function moodOf(battle: BattleState): Mood {
   if (battle.phase === 'over') {
     return 'over';
@@ -128,7 +129,8 @@ export function moodOf(battle: BattleState): Mood {
   if (battle.phase === 'setup') {
     return 'setup';
   }
-  return battle.current === 0 ? 'your-turn' : 'their-turn';
+  const mover = battle.pending === null ? battle.current : battle.pending.player;
+  return mover === 0 ? 'your-turn' : 'their-turn';
 }
 
 // --- Questions ---------------------------------------------------------------------------------------------------------

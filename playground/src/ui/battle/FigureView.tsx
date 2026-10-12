@@ -7,15 +7,28 @@ import { CardFace } from '../components/CardFace';
 import { HourglassIcon, ShieldIcon } from '../components/icons';
 import { cx } from '../format';
 import { text } from '../text';
-import styles from './Board.module.css';
-import type { Floater } from './floaters';
+import type { Floater, FloaterTone } from './floaters';
+import type { Point, Size } from './layout';
+import styles from './Table.module.css';
 import { useHold } from './useHold';
 
 export type Highlight = 'none' | 'ready' | 'target' | 'selected';
 
+const TONE: Readonly<Record<FloaterTone, string | undefined>> = {
+  damage: styles.toneDamage,
+  heal: styles.toneHeal,
+  heart: styles.toneHeart,
+  info: styles.toneInfo,
+  ko: styles.toneKo,
+};
+
 export interface FigureViewProps {
   readonly figure: Figure;
-  readonly size: 'active' | 'bench';
+  readonly zone: 'active' | 'bench';
+  /** Where it stands on the stage, how big the picture is and how high the strip with the health under it is. */
+  readonly point: Point;
+  readonly size: Size;
+  readonly strip: number;
   readonly finish: FinishId;
   readonly highlight: Highlight;
   /** The Character cannot attack in the current turn. */
@@ -34,84 +47,101 @@ export interface FigureViewProps {
   readonly onHold?: () => void;
 }
 
-const STAGE_LABEL = { basic: 'Basic', close: 'Close', bride: 'Bride', event: 'Event' } as const;
+const MAX_HEART_DOTS = 6;
 
-/** One Character in play: its card, its health, its Hearts and what happens to it. */
-export function FigureView({ figure, size, finish, highlight, stunned, shielded, floaters, lunge, towards, disabled, onClick, onPoint, onHold }: FigureViewProps) {
+/** One Character in play: its card, the Hearts on it, its health under it and what happens to it. */
+export function FigureView({ figure, zone, point, size, strip, finish, highlight, stunned, shielded, floaters, lunge, towards, disabled, onClick, onPoint, onHold }: FigureViewProps) {
   const hold = useHold(onHold);
   const card = topCard(figure);
   const hp = currentHp(figure);
   const max = maxHp(figure);
   const ratio = max === 0 ? 0 : hp / max;
-  const tint = AFFINITY_INFO[card.affinity].color;
-  const style = { '--tint': tint, '--hp': `${Math.round(ratio * 100)}%` } as CSSProperties;
+  const level = ratio <= 0.25 ? 'low' : ratio <= 0.5 ? 'mid' : 'high';
+  const style = {
+    left: point.x,
+    top: point.y,
+    width: size.w,
+    height: size.h + strip,
+    '--tint': AFFINITY_INFO[card.affinity].color,
+    '--hp': `${Math.round(ratio * 100)}%`,
+  } as CSSProperties;
   return (
-    <button
-      type="button"
-      className={cx(styles.figure, styles[size], styles[`hl-${highlight}`], disabled && styles.inert, lunge && styles[towards === 'up' ? 'lungeUp' : 'lungeDown'])}
-      style={style}
-      aria-disabled={disabled}
-      onClick={() => {
-        if (!hold.wasHeld() && !disabled) {
-          onClick();
-        }
-      }}
-      onPointerDown={hold.onPointerDown}
-      onPointerMove={hold.onPointerMove}
-      onPointerUp={hold.onPointerUp}
-      onPointerCancel={hold.onPointerCancel}
-      onPointerLeave={hold.onPointerLeave}
-      onContextMenu={hold.onContextMenu}
-      onMouseEnter={() => onPoint(card.id)}
-      onMouseLeave={() => onPoint(null)}
-      onFocus={() => onPoint(card.id)}
-      onBlur={() => onPoint(null)}
-      aria-label={`${card.name.en}, ${card.title}. ${hp} of ${max} HP, ${text.battle.board.hearts(figure.hearts)}`}
-    >
-      <span className={styles.face}>
-        <CardFace card={card} finish={finish} interactive={false} />
-      </span>
-      <span className={cx(styles.hpBar, ratio <= 0.25 && styles.low, ratio > 0.25 && ratio <= 0.5 && styles.mid)}>
+    <div className={cx(styles.figure, zone === 'bench' && styles.bench)} style={style}>
+      <button
+        type="button"
+        className={cx(
+          styles.card,
+          highlight === 'target' && styles.hlTarget,
+          highlight === 'selected' && styles.hlSelected,
+          disabled && styles.inert,
+          lunge && (towards === 'up' ? styles.lungeUp : styles.lungeDown),
+        )}
+        aria-disabled={disabled}
+        onClick={() => {
+          if (!hold.wasHeld() && !disabled) {
+            onClick();
+          }
+        }}
+        onPointerDown={hold.onPointerDown}
+        onPointerMove={hold.onPointerMove}
+        onPointerUp={hold.onPointerUp}
+        onPointerCancel={hold.onPointerCancel}
+        onPointerLeave={hold.onPointerLeave}
+        onContextMenu={hold.onContextMenu}
+        onMouseEnter={() => onPoint(card.id)}
+        onMouseLeave={() => onPoint(null)}
+        onFocus={() => onPoint(card.id)}
+        onBlur={() => onPoint(null)}
+        aria-label={`${card.name.en}, ${card.title}. ${hp} of ${max} HP, ${text.battle.board.hearts(figure.hearts)}${zone === 'active' ? `, ${text.battle.board.active}` : `, ${text.battle.board.bench}`}`}
+      >
+        {/* A new card on top of the pile (an evolution) starts the picture again, with a flash. */}
+        <span key={card.id} className={styles.face}>
+          <CardFace card={card} finish={finish} interactive={false} />
+        </span>
+        <span className={styles.hearts} aria-hidden="true">
+          {Array.from({ length: Math.min(figure.hearts, MAX_HEART_DOTS) }, (_, index) => (
+            <i key={index} />
+          ))}
+          {figure.hearts > MAX_HEART_DOTS && <b>×{figure.hearts}</b>}
+        </span>
+        {(stunned || shielded) && (
+          <span className={styles.badges}>
+            {stunned && (
+              <span className={styles.badge} title={text.battle.board.stunned}>
+                <HourglassIcon size={12} />
+              </span>
+            )}
+            {shielded && (
+              <span className={styles.badge} title={text.battle.board.shielded}>
+                <ShieldIcon size={12} />
+              </span>
+            )}
+          </span>
+        )}
+      </button>
+      <span className={styles.hp} data-level={level} style={{ height: 14 }}>
         <i />
         <b>
           {hp}
           <small>/{max}</small>
         </b>
       </span>
-      <span className={styles.chips}>
-        {figure.hearts > 0 && (
-          <span className={styles.hearts} aria-hidden="true">
-            {figure.hearts <= 5 ? Array.from({ length: figure.hearts }, (_, index) => <i key={index} />) : <><i />×{figure.hearts}</>}
-          </span>
-        )}
-        {figure.stack.length > 1 && <span className={styles.stage}>{STAGE_LABEL[card.stage]}</span>}
-        {stunned && (
-          <span className={styles.status} title={text.battle.board.stunned}>
-            <HourglassIcon size={12} />
-          </span>
-        )}
-        {shielded && (
-          <span className={styles.status} title={text.battle.board.shielded}>
-            <ShieldIcon size={12} />
-          </span>
-        )}
-      </span>
       <span className={styles.floaters} aria-hidden="true">
         {floaters.map(({ id, floater }, index) => (
-          <span key={id} className={cx(styles.floater, styles[`tone-${floater.tone}`])} style={{ '--i': index } as CSSProperties}>
+          <span key={id} className={cx(styles.floater, TONE[floater.tone])} style={{ '--i': index } as CSSProperties}>
             {floater.text}
           </span>
         ))}
       </span>
-    </button>
+    </div>
   );
 }
 
-/** An empty place on the table. */
-export function EmptySlot({ size, label, highlight, onClick }: { readonly size: 'active' | 'bench'; readonly label: string; readonly highlight: boolean; readonly onClick?: () => void }) {
+/** An empty place on the table: a dashed outline with its name. */
+export function EmptySlot({ point, size, strip, label, active }: { readonly point: Point; readonly size: Size; readonly strip: number; readonly label: string; readonly active?: boolean }) {
   return (
-    <button type="button" className={cx(styles.slot, styles[size], highlight && styles['hl-target'])} disabled={onClick === undefined} onClick={onClick}>
+    <div className={cx(styles.slot, active === true && styles.slotActive)} style={{ left: point.x, top: point.y, width: size.w, height: size.h + strip }} aria-hidden="true">
       <span>{label}</span>
-    </button>
+    </div>
   );
 }

@@ -2,7 +2,7 @@ import { battleSession, useBattle } from '../../state/app';
 import { Button } from '../components/controls';
 import { Dialog } from '../components/Dialog';
 import { text } from '../text';
-import styles from './Board.module.css';
+import styles from './Table.module.css';
 
 /** What the battle was worth, shown when it is over. */
 export function ResultDialog() {

@@ -65,7 +65,7 @@ export function dragProgress(startX: number, currentX: number, span: number): nu
   return Math.min(1, Math.max(0, (currentX - startX) / span));
 }
 
-/** Where a released tear goes: on to the end when it is past the middle, back to the start when it is not. */
+/** Where a released tear goes: on to the end when it is past about a third, back to the start when it is not. */
 export function releaseTarget(progress: number): 0 | 1 {
   return progress >= 0.38 ? 1 : 0;
 }

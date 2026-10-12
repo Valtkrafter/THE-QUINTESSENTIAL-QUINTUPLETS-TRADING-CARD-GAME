@@ -25,3 +25,16 @@ test('no screen has a serious accessibility problem', async ({ page }) => {
   }
   expect(problems).toEqual([]);
 });
+
+test('the battle table has no serious accessibility problem either', async ({ page }) => {
+  await openGame(page);
+  await goTo(page, 'Battle');
+  await page.getByRole('button', { name: 'Start battle' }).click();
+  await expect(page.getByRole('region', { name: 'Battle table' })).toBeVisible();
+  await expect(page.getByRole('list', { name: 'Your hand' }).getByRole('button').first()).toBeVisible();
+  const result = await new AxeBuilder({ page }).exclude('img').analyze();
+  const problems = result.violations
+    .filter((violation) => violation.impact === 'serious' || violation.impact === 'critical')
+    .map((violation) => `${violation.id} (${violation.impact}) on ${violation.nodes.length} element(s): ${violation.nodes[0]?.target.join(' ') ?? ''} — ${violation.help}`);
+  expect(problems).toEqual([]);
+});

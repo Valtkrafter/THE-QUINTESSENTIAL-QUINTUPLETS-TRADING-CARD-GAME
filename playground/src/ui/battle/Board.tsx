@@ -1,4 +1,9 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+// The table of a running battle: the rival's side above yours, the steps of the turn on the left, your hand and the free Heart on
+// the right, and a line under it all that says what to do next. This file holds what the player has picked up (a card of the hand,
+// the free Heart, a Character) and turns clicks into actions; the drawing is in the parts it uses. The player is always player 0.
+
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { useLocation } from 'wouter';
 import { profileOf } from '../../battle/deckProfile';
 import { legalActions } from '../../battle/legal';
 import { BENCH_SIZE, figureAt, retreatCost, topCard } from '../../battle/rules';
@@ -8,30 +13,43 @@ import { cardById } from '../../cards/catalog';
 import { FINISH_IDS, type FinishId } from '../../cards/finish';
 import type { OwnedCard } from '../../domain/ownership';
 import { battleSession, useBattle, useSave } from '../../state/app';
-import type { FlashState } from '../../state/battleSession';
+import type { FlashState, LogLine } from '../../state/battleSession';
 import { CardFace } from '../components/CardFace';
 import { Button } from '../components/controls';
 import { Dialog } from '../components/Dialog';
-import { cx } from '../format';
+import { trapTab } from '../components/focusTrap';
 import { text } from '../text';
-import styles from './Board.module.css';
+import { CaptionBar } from './CaptionBar';
+import { captionFor, setupGuide, turnGuide } from './coach';
 import { floatersFor, placeKey, type Floater } from './floaters';
-import { CardBack, HandView } from './HandView';
 import { EmptySlot, FigureView, type Highlight } from './FigureView';
+import { HandView } from './HandView';
+import { Explainer } from './Explainer';
 import { HowToPlay } from './HowToPlay';
+import { fitScale, figurePoint, figureSize, layoutFor, type Layout } from './layout';
+import { GiveUpDialog, LogDialog, MenuDialog } from './MenuDialogs';
+import { HeartZone, MovesPanel, StepsPanel, type StepItem } from './panels';
 import { portraitOf } from './portraits';
-import { PlayerBar } from './PlayerBar';
-import { CardPrompt, FigurePrompt, YesNoPrompt } from './Prompts';
+import { CardPrompt, YesNoPrompt } from './Prompts';
 import { ResultDialog } from './ResultDialog';
-import { SidePanel } from './SidePanel';
+import { DeckPile, DiscardPile, FoePanel, InfoPanel, Inspector, MemoryRow, Placed, type WhoProps } from './stageParts';
+import styles from './Table.module.css';
 import { useBattleSounds } from './useBattleSounds';
+import { useElementSize } from './useElementSize';
 import { figureOptions, handOptions, heartsLeft, isPlayable, moodOf, moveViews, promptFor } from './viewModel';
 
-type Selection = { readonly kind: 'hand'; readonly index: number } | { readonly kind: 'figure'; readonly ref: FigureRef } | null;
+/** What the player has picked up: a card of the hand, the free Heart or a Character in play. */
+type Selection = { readonly kind: 'hand'; readonly index: number } | { readonly kind: 'figure'; readonly ref: FigureRef } | { readonly kind: 'heart' } | null;
 
-interface Placed {
+interface Floating {
   readonly id: number;
   readonly floater: Floater;
+}
+
+interface Ghost {
+  readonly id: number;
+  readonly side: PlayerIndex;
+  readonly cardId: string;
 }
 
 function sameRef(a: FigureRef, b: FigureRef): boolean {
@@ -50,9 +68,17 @@ function bestFinishes(collection: readonly OwnedCard[]): ReadonlyMap<string, Fin
   return best;
 }
 
-/** Keeps the floating texts of the last step on the board for a moment, and tells who lunges. */
-function useFloaters(flash: FlashState): { readonly places: ReadonlyMap<string, readonly Placed[]>; readonly lunge: PlayerIndex | null } {
-  const [items, setItems] = useState<readonly (Placed & { readonly key: string })[]>([]);
+/**
+ * Keeps the floating texts of the last step on the table for a moment, tells who lunges, and keeps a Character that was knocked
+ * out on the table while it fades away towards the discard pile.
+ */
+function useFloaters(flash: FlashState): {
+  readonly places: ReadonlyMap<string, readonly Floating[]>;
+  readonly lunge: PlayerIndex | null;
+  readonly ghosts: readonly Ghost[];
+} {
+  const [items, setItems] = useState<readonly (Floating & { readonly key: string })[]>([]);
+  const [ghosts, setGhosts] = useState<readonly Ghost[]>([]);
   const [lunge, setLunge] = useState<PlayerIndex | null>(null);
   const counter = useRef(0);
 
@@ -64,27 +90,38 @@ function useFloaters(flash: FlashState): { readonly places: ReadonlyMap<string, 
       counter.current += 1;
       return { id: counter.current, key: placeKey(floater.player, floater.ref), floater };
     });
+    const fallen = flash.events.flatMap((event): Ghost[] => {
+      if (event.type !== 'knock-out') {
+        return [];
+      }
+      counter.current += 1;
+      return [{ id: counter.current, side: event.player, cardId: event.cardId }];
+    });
     const timers: number[] = [];
     if (added.length > 0) {
       setItems((current) => [...current, ...added]);
       timers.push(window.setTimeout(() => setItems((current) => current.filter((item) => !added.some((done) => done.id === item.id))), 1900));
     }
+    if (fallen.length > 0) {
+      setGhosts((current) => [...current, ...fallen]);
+      timers.push(window.setTimeout(() => setGhosts((current) => current.filter((ghost) => !fallen.some((done) => done.id === ghost.id))), 1000));
+    }
     const attack = flash.events.find((event) => event.type === 'attack');
     if (attack?.type === 'attack') {
       setLunge(attack.player);
-      timers.push(window.setTimeout(() => setLunge(null), 460));
+      timers.push(window.setTimeout(() => setLunge(null), 520));
     }
     return () => timers.forEach((timer) => window.clearTimeout(timer));
   }, [flash]);
 
   const places = useMemo(() => {
-    const map = new Map<string, Placed[]>();
+    const map = new Map<string, Floating[]>();
     for (const item of items) {
       map.set(item.key, [...(map.get(item.key) ?? []), { id: item.id, floater: item.floater }]);
     }
     return map;
   }, [items]);
-  return { places, lunge };
+  return { places, lunge, ghosts };
 }
 
 interface BoardViewProps {
@@ -99,11 +136,12 @@ interface BoardViewProps {
   readonly flash: FlashState;
   readonly waiting: boolean;
   readonly status: 'playing' | 'over';
-  readonly log: Parameters<typeof SidePanel>[0]['log'];
+  readonly log: readonly LogLine[];
 }
 
 function BoardView({ battle, rivalName, rivalCharacter, rivalLevel, deckName, deckCards, rivalCards, loaner, flash, waiting, status, log }: BoardViewProps) {
   const save = useSave();
+  const [, navigate] = useLocation();
   const legal = useMemo(() => legalActions(battle, 0), [battle]);
   const prompt = promptFor(battle, 0);
   const mood = moodOf(battle);
@@ -112,10 +150,22 @@ function BoardView({ battle, rivalName, rivalCharacter, rivalLevel, deckName, de
   const [inspected, setInspected] = useState<{ readonly cardId: string; readonly side: PlayerIndex } | null>(null);
   // The card that was pressed and held with a finger, shown large (a phone cannot hover).
   const [zoomed, setZoomed] = useState<{ readonly cardId: string; readonly side: PlayerIndex } | null>(null);
-  const [helpOpen, setHelpOpen] = useState(false);
-  const [giveUpOpen, setGiveUpOpen] = useState(false);
-  const { places, lunge } = useFloaters(flash);
+  const [dialog, setDialog] = useState<'menu' | 'help' | 'watch' | 'log' | 'giveUp' | null>(null);
+  const { places, lunge, ghosts } = useFloaters(flash);
   useBattleSounds(flash);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const [spaceRef, space] = useElementSize<HTMLDivElement>();
+  const [windowSize, setWindowSize] = useState(() => ({ width: window.innerWidth, height: window.innerHeight }));
+
+  useEffect(() => {
+    const onResize = (): void => setWindowSize({ width: window.innerWidth, height: window.innerHeight });
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
+  const layout: Layout = layoutFor(windowSize.width, windowSize.height);
+  const scale = fitScale(layout, space.width, space.height);
+  const touch = window.matchMedia('(hover: none)').matches;
 
   const mine = battle.players[0];
   const theirs = battle.players[1];
@@ -129,13 +179,34 @@ function BoardView({ battle, rivalName, rivalCharacter, rivalLevel, deckName, de
   const myPortrait = myProfile.lead === null ? undefined : portraitOf(myProfile.lead);
   const rivalProfile = profileOf(rivalCards);
   const rivalTint = rivalProfile.affinity === null ? 'var(--accent)' : AFFINITY_INFO[rivalProfile.affinity].color;
+  const you: WhoProps = { name: text.battle.board.you, portrait: myPortrait, tint: myTint };
+  const rival: WhoProps = { name: rivalShort, portrait: portraitOf(rivalCharacter), tint: rivalTint };
 
   const canAct = status === 'playing' && !waiting;
   const act = (action: BattleAction): void => battleSession.getState().act(action);
 
-  // --- Clicks ---------------------------------------------------------------------------------------------------
+  // --- What can be done ---------------------------------------------------------------------------------------------------------
+
+  const heartTargets = useMemo(() => legal.flatMap((action) => (action.type === 'give-heart' ? [action.target] : [])), [legal]);
+  const handOpts = useMemo(() => mine.hand.map((_, index) => handOptions(legal, index)), [mine.hand, legal]);
+  const playable = handOpts.map(isPlayable);
+  const moves = moveViews(battle, 0, legal);
 
   const select = (next: Selection): void => setPicked({ at: battle, selection: next });
+
+  const pickHeart = (): void => {
+    if (!canAct || prompt !== null) {
+      return;
+    }
+    if (selection?.kind === 'heart') {
+      select(null);
+    } else if (heartTargets.length === 1 && heartTargets[0] !== undefined) {
+      // Only one Character can take it: no need to ask which.
+      act({ type: 'give-heart', target: heartTargets[0] });
+    } else {
+      select({ kind: 'heart' });
+    }
+  };
 
   const clickHand = (index: number): void => {
     if (!canAct || prompt !== null) {
@@ -162,6 +233,13 @@ function BoardView({ battle, rivalName, rivalCharacter, rivalLevel, deckName, de
     if (side !== 0 || !canAct) {
       return;
     }
+    if (selection?.kind === 'heart') {
+      const give = legal.find((action) => action.type === 'give-heart' && sameRef(action.target, ref));
+      if (give !== undefined) {
+        act(give);
+        return;
+      }
+    }
     if (selection?.kind === 'hand') {
       const evolve = handOptions(legal, selection.index).evolve.find((action) => sameRef(action.target, ref));
       if (evolve !== undefined) {
@@ -176,6 +254,9 @@ function BoardView({ battle, rivalName, rivalCharacter, rivalLevel, deckName, de
     if (prompt !== null && prompt.prompt.kind === 'figure' && prompt.prompt.owner === side && prompt.prompt.options.some((option) => sameRef(option, ref))) {
       return 'target';
     }
+    if (side === 0 && selection?.kind === 'heart' && heartTargets.some((target) => sameRef(target, ref))) {
+      return 'target';
+    }
     if (side === 0 && selection?.kind === 'hand' && handOptions(legal, selection.index).evolve.some((action) => sameRef(action.target, ref))) {
       return 'target';
     }
@@ -185,53 +266,7 @@ function BoardView({ battle, rivalName, rivalCharacter, rivalLevel, deckName, de
     return 'none';
   };
 
-  // --- Pieces of the table ------------------------------------------------------------------------------------------
-
-  const point = (side: PlayerIndex) => (cardId: string | null) => setInspected(cardId === null ? null : { cardId, side });
-
-  const figureCell = (side: PlayerIndex, ref: FigureRef, size: 'active' | 'bench'): ReactNode => {
-    const owner = battle.players[side];
-    const figure: Figure | undefined = figureAt(owner, ref);
-    const label = size === 'active' ? text.battle.board.active : text.battle.board.bench;
-    const clickable = highlightOf(side, ref) === 'target';
-    if (figure === undefined) {
-      return <EmptySlot key={`${side}-${placeKey(side, ref)}`} size={size} label={label} highlight={false} />;
-    }
-    const floaters = places.get(placeKey(side, ref)) ?? [];
-    return (
-      <FigureView
-        key={`${side}-${placeKey(side, ref)}-${figure.uid}`}
-        figure={figure}
-        size={size}
-        finish={side === 0 ? finishOfMine(topCard(figure).id) : finishOfTheirs()}
-        highlight={highlightOf(side, ref)}
-        stunned={ref.zone === 'active' && figure.stunTurn !== 0 && figure.stunTurn === battle.turn}
-        shielded={ref.zone === 'active' && owner.shieldTurn !== 0 && owner.shieldTurn === battle.turn}
-        floaters={floaters}
-        lunge={lunge === side && ref.zone === 'active'}
-        towards={side === 0 ? 'up' : 'down'}
-        disabled={!clickable && (side === 1 || !canAct)}
-        onClick={() => clickFigure(side, ref)}
-        onPoint={point(side)}
-        onHold={() => setZoomed({ cardId: topCard(figure).id, side })}
-      />
-    );
-  };
-
-  const benchRow = (side: PlayerIndex): ReactNode => (
-    <div className={styles.benchRow} aria-label={text.battle.board.bench}>
-      {Array.from({ length: BENCH_SIZE }, (_, index) => (
-        <div key={index} className={styles.benchCell}>
-          {figureCell(side, { zone: 'bench', index }, 'bench')}
-        </div>
-      ))}
-    </div>
-  );
-
-  const handOpts = useMemo(() => mine.hand.map((_, index) => handOptions(legal, index)), [mine.hand, legal]);
-  const playable = handOpts.map(isPlayable);
-
-  // --- The middle strip: what is going on and what can be done -----------------------------------------------------------
+  // --- What is told ---------------------------------------------------------------------------------------------------------------
 
   const handSelected = selection?.kind === 'hand' ? handOptions(legal, selection.index) : null;
   const figureSelected = selection?.kind === 'figure' ? figureOptions(legal, selection.ref) : null;
@@ -245,180 +280,224 @@ function BoardView({ battle, rivalName, rivalCharacter, rivalLevel, deckName, de
   const setupDone = legal.find((action) => action.type === 'setup-done');
   const endTurn = legal.find((action) => action.type === 'end-turn');
 
-  const strip = (): ReactNode => {
+  const guide = turnGuide(battle, legal, 0);
+  const setup = setupGuide(battle, legal, 0);
+  const lastLine = log.length === 0 ? null : (log[log.length - 1]?.text ?? null);
+  const stunned = mine.active !== null && mine.active.stunTurn !== 0 && mine.active.stunTurn === battle.turn;
+  const noAttackYet = battle.first === 0 && mine.turnsTaken <= 1;
+  const caption = captionFor({
+    mood,
+    rival: rivalShort,
+    promptTitle: prompt === null ? null : prompt.title,
+    promptKind: prompt === null ? null : prompt.prompt.kind,
+    guide,
+    setup,
+    heartsLeft: heartsLeft(battle, 0),
+    heartPicked: selection?.kind === 'heart',
+    handPick: handSelected === null ? null : handSelected.evolve.length > 0 ? 'evolve' : handSelected.supporter !== null ? 'supporter' : null,
+    figurePicked: selection?.kind === 'figure',
+    noAttackYet,
+    stunned,
+    lastLine: waiting || mood === 'their-turn' ? lastLine : null,
+    rivalReady: theirs.setupDone,
+    benchFree: BENCH_SIZE - mine.bench.length,
+  });
+
+  const stepTexts = text.battle.steps;
+  const steps: StepItem[] =
+    mood === 'setup'
+      ? setup.steps.map((entry) => ({ id: entry.id, title: stepTexts.setupSteps[entry.id].title, hint: stepTexts.setupSteps[entry.id].hint, status: entry.status, current: setup.next === entry.id }))
+      : guide.steps.map((entry) => ({ id: entry.id, title: stepTexts.turn[entry.id].title, hint: stepTexts.turn[entry.id].hint, status: entry.status, current: guide.next === entry.id }));
+  const stepsTitle = mood === 'setup' ? stepTexts.setup : mood === 'their-turn' ? stepTexts.theirTurn(rivalShort) : stepTexts.yourTurn;
+
+  const actions: ReactNode = (() => {
     if (status === 'over') {
       return null;
     }
-    if (prompt !== null && prompt.prompt.kind === 'figure') {
-      return <FigurePrompt view={prompt} onAnswer={(option) => act({ type: 'choose', option })} />;
+    if (prompt !== null) {
+      return prompt.prompt.kind === 'figure' && prompt.optional ? (
+        <Button kind="quiet" onClick={() => act({ type: 'choose', option: -1 })}>
+          {text.battle.board.skip}
+        </Button>
+      ) : null;
     }
     if (mood === 'setup') {
-      return (
-        <div className={styles.prompt}>
-          <strong>{text.battle.board.setupTitle}</strong>
-          <span>{theirs.setupDone ? text.battle.board.waitingSetup(rivalShort) : text.battle.board.setupHelp}</span>
-          {setupDone !== undefined && (
-            <Button kind="primary" onClick={() => act(setupDone)}>
-              {text.battle.board.ready}
-            </Button>
-          )}
-        </div>
+      return setupDone === undefined ? null : (
+        <Button kind="primary" onClick={() => act(setupDone)}>
+          {text.battle.board.ready}
+        </Button>
       );
     }
-    if (mood === 'their-turn' || waiting) {
-      return (
-        <div className={cx(styles.prompt, styles.wait)} role="status">
-          <strong>{text.battle.board.theirTurn(rivalShort)}</strong>
-        </div>
-      );
+    if (mood !== 'your-turn' || waiting) {
+      return null;
     }
     return (
-      <div className={styles.prompt}>
-        <strong>{text.battle.board.yourTurn}</strong>
+      <>
         {supporterCard !== null && (
           <Button kind="primary" onClick={() => act(supporterCard)}>
             {text.battle.board.playSupporter}: {handCardName}
           </Button>
         )}
-        {handSelected !== null && handSelected.evolve.length > 0 && <span>{`${text.battle.board.evolve}: ${text.battle.board.pickTarget}`}</span>}
         {give !== null && <Button onClick={() => act(give)}>{text.battle.board.giveHeart}</Button>}
         {ability !== null && <Button onClick={() => act(ability)}>{text.battle.board.useAbility(abilityName)}</Button>}
         {swap !== null && mine.active !== null && <Button onClick={() => act(swap)}>{text.battle.board.retreat(retreatCost(mine.active))}</Button>}
         {endTurn !== undefined && (
-          <Button kind={selection === null ? 'primary' : 'default'} onClick={() => act(endTurn)}>
+          <Button kind={guide.next === null && selection === null ? 'primary' : 'default'} onClick={() => act(endTurn)}>
             {text.battle.board.endTurn}
           </Button>
         )}
-      </div>
+      </>
     );
-  };
+  })();
 
-  // --- Moves of my Active Character --------------------------------------------------------------------------------------
+  // --- Drawing ------------------------------------------------------------------------------------------------------------------------
 
-  const moves = moveViews(battle, 0, legal);
-  const activeNote =
-    mine.active !== null && mine.active.stunTurn !== 0 && mine.active.stunTurn === battle.turn && mood === 'your-turn'
-      ? text.battle.board.stunned
-      : battle.first === 0 && mine.turnsTaken <= 1 && mood === 'your-turn'
-        ? text.battle.board.cannotAttackFirst
-        : null;
-
-  const movesPanel = (
-    <div className={styles.moves} aria-label={text.battle.board.moves}>
-      {moves.map((move) => (
-        <button
-          key={move.index}
-          type="button"
-          className={styles.move}
-          disabled={!move.usable || !canAct || prompt !== null}
-          onClick={() => act({ type: 'attack', moveIndex: move.index })}
-          onMouseEnter={() => mine.active !== null && point(0)(topCard(mine.active).id)}
-        >
-          <span className={styles.moveCost} aria-hidden="true">
-            {move.cost.map((kind, index) => (
-              <i key={index} style={{ background: AFFINITY_INFO[kind].color }} />
-            ))}
-          </span>
-          <span className={styles.moveName}>{move.name}</span>
-          <span className={styles.moveDamage}>
-            {move.printed}
-            {move.estimate !== null && String(move.estimate) !== move.printed && <small className={cx(move.doubled && styles.weak, move.resisted && styles.resist)}> → {move.estimate}</small>}
-          </span>
-          {move.text !== '' && <small className={styles.moveText}>{move.text}</small>}
-        </button>
-      ))}
-      {moves.length === 0 && mine.active !== null && <span className={styles.hint}>{text.battle.board.noMoves}</span>}
-      {activeNote !== null && <span className={styles.note}>{activeNote}</span>}
-    </div>
-  );
-
-  const rivalPiles = (
-    <div className={styles.piles}>
-      <span className={styles.pile} title={text.battle.board.deck}>
-        <CardBack />
-        <b>{theirs.deck.length}</b>
-      </span>
-      <span className={styles.fan} title={text.battle.board.opponentHand(theirs.hand.length)} aria-label={text.battle.board.opponentHand(theirs.hand.length)}>
-        {theirs.hand.slice(0, 7).map((_, index) => (
-          <CardBack key={index} />
-        ))}
-      </span>
-    </div>
-  );
-
-  const myPiles = (
-    <div className={styles.piles}>
-      <span className={styles.pile} title={text.battle.board.deck}>
-        <CardBack />
-        <b>{mine.deck.length}</b>
-      </span>
-    </div>
-  );
-
+  const point = (side: PlayerIndex) => (cardId: string | null) => setInspected(cardId === null ? null : { cardId, side });
   const inspectorFinish = (cardId: string): FinishId => (inspected?.side === 0 ? finishOfMine(cardId) : 'standard');
   const zoomedCard = zoomed === null ? undefined : cardById(zoomed.cardId);
 
+  const figureView = (side: PlayerIndex, figure: Figure, ref: FigureRef): ReactNode => {
+    const place = figurePoint(layout, side, ref);
+    const size = figureSize(layout, ref);
+    const owner = battle.players[side];
+    const clickable = highlightOf(side, ref) === 'target';
+    return (
+      <FigureView
+        key={`${side}-${figure.uid}`}
+        figure={figure}
+        zone={ref.zone}
+        point={place}
+        size={size}
+        strip={layout.strip}
+        finish={side === 0 ? finishOfMine(topCard(figure).id) : finishOfTheirs()}
+        highlight={highlightOf(side, ref)}
+        stunned={ref.zone === 'active' && figure.stunTurn !== 0 && figure.stunTurn === battle.turn}
+        shielded={ref.zone === 'active' && owner.shieldTurn !== 0 && owner.shieldTurn === battle.turn}
+        floaters={places.get(placeKey(side, ref)) ?? []}
+        lunge={lunge === side && ref.zone === 'active'}
+        towards={side === 0 ? 'up' : 'down'}
+        disabled={!clickable && (side === 1 || !canAct)}
+        onClick={() => clickFigure(side, ref)}
+        onPoint={point(side)}
+        onHold={() => setZoomed({ cardId: topCard(figure).id, side })}
+      />
+    );
+  };
+
+  const sideFigures = (side: PlayerIndex): ReactNode => {
+    const owner = battle.players[side];
+    return (
+      <>
+        {owner.active !== null && figureView(side, owner.active, { zone: 'active' })}
+        {owner.bench.map((figure, index) => figureView(side, figure, { zone: 'bench', index }))}
+      </>
+    );
+  };
+
+  const slots = (side: PlayerIndex): ReactNode => {
+    const owner = battle.players[side];
+    return (
+      <>
+        {owner.active === null && <EmptySlot point={figurePoint(layout, side, { zone: 'active' })} size={layout.active} strip={layout.strip} label={text.battle.board.active} active />}
+        {Array.from({ length: BENCH_SIZE }, (_, index) =>
+          owner.bench[index] === undefined ? <EmptySlot key={index} point={figurePoint(layout, side, { zone: 'bench', index })} size={layout.bench} strip={layout.strip} label={text.battle.board.bench} /> : null,
+        )}
+      </>
+    );
+  };
+
+  const foeCard = theirs.active === null ? null : topCard(theirs.active);
+  const myCard = mine.active === null ? null : topCard(mine.active);
+  const compact = layout.name === 'tall';
+  const movesNote = stunned && mood === 'your-turn' ? text.battle.board.stunned : noAttackYet && mood === 'your-turn' ? text.battle.board.cannotAttackFirst : null;
+
+  // A keyboard stays inside the table while it is open (the menu of the page is hidden behind it).
+  const onKeyDown = (event: React.KeyboardEvent<HTMLDivElement>): void => {
+    if (rootRef.current !== null && dialog === null) {
+      trapTab(event, rootRef.current);
+    }
+  };
+
   return (
-    <div className={styles.board}>
-      <div className={styles.table}>
-        <PlayerBar
-          name={rivalName}
-          subtitle={text.battle.board.level(rivalLevel)}
-          portrait={portraitOf(rivalCharacter)}
-          side={theirs}
-          active={mood === 'their-turn'}
-          handSize={theirs.hand.length}
-          freeHearts={null}
-          tint={rivalTint}
-        />
-        <section className={styles.row}>
-          {benchRow(1)}
-          <div className={styles.activeCell}>{figureCell(1, { zone: 'active' }, 'active')}</div>
-          {rivalPiles}
-        </section>
+    <div ref={rootRef} className={styles.screen} role="region" aria-label={text.battle.table.label} onKeyDown={onKeyDown}>
+      <div ref={spaceRef} className={styles.space} data-layout={layout.name}>
+        <div className={styles.sizer} style={{ width: layout.width * scale, height: layout.height * scale }}>
+          <div className={styles.stage} style={{ width: layout.width, height: layout.height, transform: `scale(${scale})` } as CSSProperties}>
+            {layout.steps.h > 0 && <StepsPanel box={layout.steps} title={stepsTitle} steps={steps} dim={mood === 'their-turn' || status === 'over' || prompt !== null} compact={compact} />}
+            {layout.inspector !== null && <Inspector box={layout.inspector} cardId={inspected?.cardId ?? null} finish={inspected === null ? 'standard' : inspectorFinish(inspected.cardId)} touch={touch} />}
 
-        <div className={styles.middle}>{strip()}</div>
+            {slots(1)}
+            {slots(0)}
+            <DeckPile point={layout.opp.deck} size={layout.pile} count={theirs.deck.length} label={text.battle.board.deck} />
+            <DiscardPile point={layout.opp.discard} size={layout.pile} cards={theirs.discard} label={text.battle.board.discard} finishOf={finishOfTheirs} />
+            <DeckPile point={layout.mine.deck} size={layout.pile} count={mine.deck.length} label={text.battle.board.deck} />
+            <DiscardPile point={layout.mine.discard} size={layout.pile} cards={mine.discard} label={text.battle.board.discard} finishOf={finishOfMine} />
 
-        <section className={cx(styles.row, styles.myRow)}>
-          <div className={styles.activeCell}>{figureCell(0, { zone: 'active' }, 'active')}</div>
-          {movesPanel}
-          {benchRow(0)}
-          {myPiles}
-        </section>
-        <PlayerBar
-          name={text.battle.board.you}
-          subtitle={`${deckName}${loaner ? ` · ${text.battle.loaner}` : ''}`}
-          portrait={myPortrait}
-          side={mine}
-          active={mood === 'your-turn'}
-          handSize={mine.hand.length}
-          freeHearts={mood === 'your-turn' ? heartsLeft(battle, 0) : null}
-          tint={myTint}
-          actions={
-            <>
-              <Button kind="quiet" onClick={() => setHelpOpen(true)}>
-                {text.battle.howTo}
-              </Button>
-              {status === 'playing' && (
-                <Button kind="quiet" onClick={() => setGiveUpOpen(true)}>
-                  {text.battle.giveUp}
-                </Button>
-              )}
-            </>
-          }
-        />
-        <HandView
-          hand={mine.hand}
-          finishOf={finishOfMine}
-          selected={selection?.kind === 'hand' ? selection.index : null}
-          playable={playable}
-          onPick={clickHand}
-          onPoint={point(0)}
-          onHold={(cardId) => setZoomed({ cardId, side: 0 })}
-        />
-        <p className={styles.holdHint}>{text.battle.board.holdHint}</p>
+            {layout.opp.info !== null && <InfoPanel box={layout.opp.info} who={rival} subtitle={text.battle.board.level(rivalLevel)} active={mood === 'their-turn'} deck={theirs.deck.length} hand={theirs.hand.length} fan />}
+            {layout.mine.info !== null && (
+              <InfoPanel box={layout.mine.info} who={you} subtitle={`${deckName}${loaner ? ` · ${text.battle.loaner}` : ''}`} active={mood === 'your-turn'} deck={mine.deck.length} hand={mine.hand.length} fan={false} />
+            )}
+            <FoePanel box={layout.foe} foe={foeCard} mine={myCard} compact={compact} />
+            <MovesPanel
+              box={layout.moves}
+              moves={moves}
+              canAct={canAct && prompt === null && mood === 'your-turn'}
+              hasActive={mine.active !== null}
+              note={movesNote}
+              compact={compact}
+              onMove={(index) => act({ type: 'attack', moveIndex: index })}
+              onPoint={() => mine.active !== null && point(0)(topCard(mine.active).id)}
+            />
+
+            {sideFigures(1)}
+            {sideFigures(0)}
+            {ghosts.map((ghost) => {
+              const card = cardById(ghost.cardId);
+              const at = figurePoint(layout, ghost.side, { zone: 'active' });
+              const to = (ghost.side === 0 ? layout.mine : layout.opp).discard;
+              return card === undefined ? null : (
+                <span
+                  key={ghost.id}
+                  className={styles.ghost}
+                  style={{ left: at.x, top: at.y, width: layout.active.w, '--to-x': `${to.x - at.x}px`, '--to-y': `${to.y - at.y}px` } as CSSProperties}
+                  aria-hidden="true"
+                >
+                  <span className={styles.face}>
+                    <CardFace card={card} finish="standard" interactive={false} live={false} />
+                  </span>
+                </span>
+              );
+            })}
+
+            <MemoryRow box={layout.memories.opp} who={rival} count={theirs.memories} turn={mood === 'their-turn'} />
+            <MemoryRow box={layout.memories.mine} who={you} count={mine.memories} turn={mood === 'your-turn'} />
+            <HeartZone box={layout.hearts} left={mood === 'your-turn' ? heartsLeft(battle, 0) : 0} enabled={canAct && prompt === null && mood === 'your-turn' && heartTargets.length > 0} picked={selection?.kind === 'heart'} row={compact} onPick={pickHeart} />
+            <Placed box={layout.hand} label={text.battle.board.yourHand}>
+              <p className={styles.handTitle}>
+                <strong>{text.battle.table.handTitle(mine.hand.length)}</strong>
+                <span>{text.battle.table.handHint}</span>
+              </p>
+              <HandView
+                layout={layout}
+                hand={mine.hand}
+                finishOf={finishOfMine}
+                selected={selection?.kind === 'hand' ? selection.index : null}
+                playable={canAct && prompt === null ? playable : []}
+                onPick={clickHand}
+                onPoint={point(0)}
+                onHold={(cardId) => setZoomed({ cardId, side: 0 })}
+              />
+            </Placed>
+          </div>
+        </div>
       </div>
-      <SidePanel inspected={inspected?.cardId ?? null} finishOf={inspectorFinish} log={log} />
+      <CaptionBar caption={caption} actions={actions} onMenu={() => setDialog('menu')} />
+
+      <div className={styles.srOnly} role="log" aria-label={text.battle.board.log}>
+        {log.slice(-12).map((line) => (
+          <p key={line.id}>{line.text}</p>
+        ))}
+      </div>
 
       {zoomed !== null && zoomedCard !== undefined && (
         <Dialog title={zoomedCard.name.en} onClose={() => setZoomed(null)}>
@@ -427,27 +506,33 @@ function BoardView({ battle, rivalName, rivalCharacter, rivalLevel, deckName, de
           </div>
         </Dialog>
       )}
-
       {prompt !== null && prompt.prompt.kind === 'card' && <CardPrompt view={prompt} finishOf={finishOfMine} onAnswer={(option) => act({ type: 'choose', option })} />}
       {prompt !== null && prompt.prompt.kind === 'yes-no' && <YesNoPrompt view={prompt} finishOf={finishOfMine} onAnswer={(option) => act({ type: 'choose', option })} />}
       {status === 'over' && <ResultDialog />}
-      {helpOpen && <HowToPlay onClose={() => setHelpOpen(false)} />}
-      {giveUpOpen && (
-        <Dialog title={text.battle.giveUp} onClose={() => setGiveUpOpen(false)}>
-          <p className={styles.confirmText}>{text.battle.giveUpConfirm}</p>
-          <div className={styles.resultActions}>
-            <Button onClick={() => setGiveUpOpen(false)}>{text.battle.keepPlaying}</Button>
-            <Button
-              kind="danger"
-              onClick={() => {
-                setGiveUpOpen(false);
-                battleSession.getState().giveUp();
-              }}
-            >
-              {text.battle.giveUpYes}
-            </Button>
-          </div>
-        </Dialog>
+      {dialog === 'menu' && (
+        <MenuDialog
+          playing={status === 'playing'}
+          onResume={() => setDialog(null)}
+          onHowTo={() => setDialog('help')}
+          onLog={() => setDialog('log')}
+          onGiveUp={() => setDialog('giveUp')}
+          onLeave={() => {
+            setDialog(null);
+            navigate('/packs');
+          }}
+        />
+      )}
+      {dialog === 'help' && <HowToPlay onClose={() => setDialog(null)} onWatch={() => setDialog('watch')} />}
+      {dialog === 'watch' && <Explainer onClose={() => setDialog(null)} />}
+      {dialog === 'log' && <LogDialog log={log} onClose={() => setDialog(null)} />}
+      {dialog === 'giveUp' && (
+        <GiveUpDialog
+          onKeep={() => setDialog(null)}
+          onGiveUp={() => {
+            setDialog(null);
+            battleSession.getState().giveUp();
+          }}
+        />
       )}
     </div>
   );

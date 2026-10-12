@@ -29,6 +29,8 @@ Lower layers never import higher ones (enforced by `src/architecture.test.ts`); 
 | `src/scene` | The 3D card view |
 | `src/ui` | Screens, components, theme tokens (`src/ui/theme/tokens.css`), all texts (`src/ui/text.ts`) |
 
+`public/battle-demo.html` (with `battle-demo.js`) is the animated explanation of a battle turn: a page of its own, plain HTML and script without the build, shown in a frame by `src/ui/battle/Explainer.tsx` and left out of the lint run.
+
 Styling is CSS Modules plus the theme variables. `tools/css-module-types.ts` writes `*.module.d.css.ts` next to every stylesheet (git-ignored) so a misspelled class name is a compile error; `npm run typecheck` and `npm run build` run it, and the dev server keeps it current.
 
 ## The Windows app
@@ -37,7 +39,7 @@ Styling is CSS Modules plus the theme variables. `tools/css-module-types.ts` wri
 
 ## End-to-end tests
 
-`e2e/` holds Playwright tests that play the game in a real browser against the production build (`npm run test:e2e` builds it, starts `vite preview` on port 4173 and runs everything): every screen of the menu, a pack, a card in 3D, a card graded into a slab and sold, a battle that is given up, the screens on a phone (no sideways scrolling, press and hold shows a card large) and an accessibility check with axe-core on every screen (serious and critical problems fail the test). Every test starts with a new browser profile, so a new game; your own saves are never touched.
+`e2e/` holds Playwright tests that play the game in a real browser against the production build (`npm run test:e2e` builds it, starts `vite preview` on port 4173 and runs everything): every screen of the menu, a pack that is torn open, a card in 3D, a card graded into a slab and sold, a battle table that tells the player what to do and a battle that is given up, the screens on a phone (no sideways scrolling, press and hold shows a card large) and an accessibility check with axe-core on every screen (serious and critical problems fail the test). Every test starts with a new browser profile, so a new game; your own saves are never touched.
 
 The tests use the Google Chrome installed on the machine, so nothing is downloaded. `TQQ_BROWSER=msedge` uses Microsoft Edge; `TQQ_BROWSER=chromium` uses Playwright's own browser (run `npx playwright install chromium` once, for example on a build server). A failed test leaves a trace in `test-results/` (`npx playwright show-trace <file>`).
 

@@ -62,6 +62,18 @@ describe('the state of the battle', () => {
     expect(moodOf(mainState({ current: 1, players: [{ active: ICHIKA }, { active: NINO }] }))).toBe('their-turn');
   });
 
+  it('belongs to whoever has to answer a question, also in the turn of the other player', () => {
+    // The rival's Active Character is knocked out by an attack of the player: the rival has to choose who steps up.
+    const state = mainState({
+      current: 0,
+      players: [{ hand: [], active: { stack: ['TQQ01-001'], hearts: 3 } }, { active: { stack: ['TQQ01-001'], damage: 69 }, bench: [{ stack: ['TQQ01-013'] }, { stack: ['TQQ01-001'] }] }],
+    });
+    const attacked = play(state, { type: 'attack', moveIndex: 0 }).state;
+    expect(attacked.pending?.player).toBe(1);
+    expect(moodOf(attacked)).toBe('their-turn');
+    expect(moodOf(state)).toBe('your-turn');
+  });
+
   it('shows a question only to the player who has to answer it', () => {
     const state = mainState({
       players: [{ hand: ['TQQ01-067'], active: { stack: ['TQQ01-001'], damage: 10 }, bench: [{ stack: ['TQQ01-013'], damage: 10 }] }, { active: NINO }],

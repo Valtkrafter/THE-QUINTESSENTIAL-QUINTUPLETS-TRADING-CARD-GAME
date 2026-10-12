@@ -49,3 +49,11 @@ Tuned with the computer opponents playing each other (`battle/balance.test.ts`, 
 | `testing.ts` | Helpers for tests: hand-made states, random battles, invariants |
 
 A battle is repeatable: the same decks, the same seed and the same actions always give the same result. `step` never changes the state it is given.
+
+## How a player learns it
+
+The rules above are taught three ways, and all three have to say what the engine does:
+
+- **The table itself** (`ui/battle/coach.ts`): the six steps of a turn on the left of the table, each marked done, ready or not now, and one sentence under the table. They are worked out from the state and `legalActions`, so they can only suggest what the rules allow. See `docs/ui.md`.
+- **The "How to play" window** (`text.battle.howToPlay` in `ui/text.ts`): the rules in plain words.
+- **The animated explanation** (`playground/public/battle-demo.html`): one turn, damage and weakness, Prime cards, a Halloween card and a victory, played with the real numbers of real cards (Nino, Ichika, Itsuki, Fūtarō; 30-card decks, at most 2 copies, 6 Memories, weakness ×2, resistance −30, a Prime gives 2 Memories, for example a Close with 110 HP, a Bride with 150 HP, a Prime with 190 HP and a Halloween card with 130 HP). When one of those rules or cards changes, the page needs the same change.

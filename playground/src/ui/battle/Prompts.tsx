@@ -3,7 +3,7 @@ import type { FinishId } from '../../cards/finish';
 import { Button } from '../components/controls';
 import { CardFace } from '../components/CardFace';
 import { text } from '../text';
-import styles from './Board.module.css';
+import styles from './Table.module.css';
 import type { PromptView } from './viewModel';
 
 export interface PromptProps {
@@ -11,21 +11,6 @@ export interface PromptProps {
   readonly finishOf: (cardId: string) => FinishId;
   /** Answer with the number of an option; -1 skips an optional question. */
   readonly onAnswer: (option: number) => void;
-}
-
-/** A line above the table that says what the player has to choose; the choice itself is made by clicking on the table. */
-export function FigurePrompt({ view, onAnswer }: Pick<PromptProps, 'view' | 'onAnswer'>) {
-  return (
-    <div className={styles.prompt} role="status">
-      <strong>{view.title}</strong>
-      <span>{text.battle.board.pickTarget}</span>
-      {view.optional && (
-        <Button kind="quiet" onClick={() => onAnswer(-1)}>
-          {text.battle.board.skip}
-        </Button>
-      )}
-    </div>
-  );
 }
 
 /** Choosing a card from a short list (a search or the top of the deck): the cards are shown side by side. */

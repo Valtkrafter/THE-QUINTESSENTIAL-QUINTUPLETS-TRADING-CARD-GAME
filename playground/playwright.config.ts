@@ -10,6 +10,9 @@ const channel = choice === 'chromium' ? undefined : choice;
 export default defineConfig({
   testDir: 'e2e',
   fullyParallel: true,
+  // The 3D screens and the pack show are heavy: only a few browsers at a time, or they starve each other and time out.
+  workers: 3,
+  timeout: 60_000,
   forbidOnly: true,
   retries: 0,
   // The 3D screens load three.js on demand, which takes a moment when several browsers share the machine.

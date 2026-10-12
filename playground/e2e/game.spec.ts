@@ -134,12 +134,66 @@ test('a battle can be started with a loaner deck and given up', async ({ page })
   await goTo(page, 'Battle');
   await page.getByRole('button', { name: 'Start battle' }).click();
 
-  await expect(page.getByText('Get ready')).toBeVisible();
+  await expect(page.getByText('Get ready').first()).toBeVisible();
+  await page.getByRole('button', { name: 'Menu' }).click();
   await page.getByRole('button', { name: 'Give up' }).click();
   await page.getByRole('button', { name: 'Yes, give up' }).click();
 
   await expect(page.getByRole('dialog').getByText('Defeat')).toBeVisible();
   await expect(page.getByText('Giving up pays nothing.')).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test('a first-time player is offered the animated explanation, and it plays', async ({ page }) => {
+  const errors = watchErrors(page);
+  await openGame(page);
+  await goTo(page, 'Battle');
+  await expect(page.getByText('New to battles?')).toBeVisible();
+  await page.getByRole('button', { name: 'Watch how it works' }).click();
+  const dialog = page.getByRole('dialog', { name: 'How a turn works' });
+  await expect(dialog).toBeVisible();
+
+  // The animation is a page of its own in a frame: its caption changes when a scene is picked.
+  const frame = page.frameLocator('iframe[title^="An animation"]');
+  await expect(frame.locator('#capt')).toContainText('Setup', { timeout: 15_000 });
+  await frame.getByRole('button', { name: '2 · Your turn' }).click();
+  await expect(frame.locator('#capt')).toContainText('This is how a turn goes', { timeout: 10_000 });
+
+  await dialog.getByRole('button', { name: 'Cancel' }).click();
+  await expect(dialog).toBeHidden();
+  expect(errors).toEqual([]);
+});
+
+test('a battle table tells the player what to do: set up, then the free Heart, then the end of the turn', async ({ page }) => {
+  test.setTimeout(120_000);
+  const errors = watchErrors(page);
+  await openGame(page);
+  await goTo(page, 'Battle');
+  await page.getByRole('button', { name: 'Start battle' }).click();
+
+  // The table has its own steps and says what to do. A glowing card of the hand can be played.
+  await expect(page.getByText('Click a Basic Character in your hand to put it in front')).toBeVisible();
+  for (let round = 0; round < 5; round += 1) {
+    const glowing = page.getByRole('list', { name: 'Your hand' }).locator('button[data-playable="true"]');
+    if ((await glowing.count()) === 0) {
+      break;
+    }
+    await glowing.first().click();
+  }
+  await page.getByRole('button', { name: 'Ready', exact: true }).click();
+
+  // Whoever goes first: when it is the player's turn the steps point to the free Heart.
+  await expect(page.getByText('Give your free Heart: click the Heart on the right, then a Character.')).toBeVisible({ timeout: 60_000 });
+  await page.getByRole('button', { name: /^Free Heart/ }).click();
+  // Only the player's own Characters can be picked; the rival's are shown but cannot be clicked.
+  const target = page.getByRole('button', { name: /HP, \d+ Hearts?, Active/, disabled: false });
+  if ((await page.getByText('Click a glowing Character to give it the Heart.').count()) > 0) {
+    await target.first().click();
+  }
+  await expect(page.getByText(/Heart/).first()).toBeVisible();
+
+  await page.getByRole('button', { name: 'End turn' }).click();
+  await expect(page.getByText(/ is playing$/)).toBeVisible();
   expect(errors).toEqual([]);
 });
 
