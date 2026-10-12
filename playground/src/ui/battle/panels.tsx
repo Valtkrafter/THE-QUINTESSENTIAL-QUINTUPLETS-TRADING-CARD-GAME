@@ -1,5 +1,6 @@
 // The panels of the battle table that the player works with: the steps of the turn, the free Heart and the moves of the Active Character.
 
+import type { CSSProperties } from 'react';
 import { AFFINITY_INFO } from '../../cards/characters';
 import { CheckIcon, HeartIcon } from '../components/icons';
 import { cx } from '../format';
@@ -72,6 +73,10 @@ export interface HeartZoneProps {
   readonly box: Box;
   /** Free Hearts left this turn. */
   readonly left: number;
+  /** All the free Hearts of this turn: none for the player who goes first, in the first turn. */
+  readonly total: number;
+  /** It is the player's turn. */
+  readonly yourTurn: boolean;
   /** Nothing prevents giving one now: it is the player's turn, there is a Character to give it to. */
   readonly enabled: boolean;
   readonly picked: boolean;
@@ -79,15 +84,21 @@ export interface HeartZoneProps {
   readonly onPick: () => void;
 }
 
-export function HeartZone({ box, left, enabled, picked, row, onPick }: HeartZoneProps) {
+export function HeartZone({ box, left, total, yourTurn, enabled, picked, row, onPick }: HeartZoneProps) {
   const words = text.battle.table;
   const usable = enabled && left > 0;
-  const status = picked ? words.freeHeartPicked : left > 0 ? words.freeHeartLeft(left) : enabled ? words.freeHeartUsed : words.freeHeartWait;
+  const rest = !yourTurn ? words.freeHeartWait : total === 0 ? words.freeHeartNone : words.freeHeartUsed;
+  const status = picked ? words.freeHeartPicked : left > 0 ? words.freeHeartLeft(left) : rest;
   return (
     <Placed box={box} className={cx(styles.panel, styles.heartZone, row && styles.heartRow)} label={words.freeHeart}>
       {!row && <h2>{words.freeHeart}</h2>}
       <button type="button" className={styles.token} aria-pressed={picked} disabled={!usable} onClick={onPick} aria-label={`${words.freeHeart}: ${status}`} data-tutorial="free-heart">
         <HeartIcon size={30} />
+        {left > 0 && (
+          <b className={styles.tokenCount} aria-hidden="true">
+            {left}
+          </b>
+        )}
       </button>
       <div className={styles.heartText}>
         {row && <strong>{words.freeHeart}</strong>}
@@ -124,10 +135,17 @@ export function MovesPanel({ box, moves, canAct, hasActive, note, compact, onMov
         {moves.map((move) => (
           <button key={move.index} type="button" className={styles.move} disabled={!move.usable || !canAct} onClick={() => onMove(move.index)} onMouseEnter={onPoint}>
             <span className={styles.moveCost} aria-hidden="true">
-              {move.cost.map((kind, index) => (
-                <i key={index} style={{ background: AFFINITY_INFO[kind].color }} />
-              ))}
+              {move.dots.map((dot, index) => {
+                // A grey Heart that is paid shows the Heart that pays it: the kind of the Character.
+                const color = AFFINITY_INFO[dot.kind === 'study' && dot.state === 'paid' ? move.paidWith : dot.kind].color;
+                return (
+                  <i key={index} data-state={dot.state} data-any={dot.kind === 'study' ? '' : undefined} style={{ '--dot': color } as CSSProperties} title={dot.kind === 'study' ? words.anyHeartHint : undefined}>
+                    {dot.kind === 'study' ? words.anyHeart : null}
+                  </i>
+                );
+              })}
             </span>
+            <span className={styles.srOnly}>{words.costLine(move.heartsNeeded)}</span>
             <span className={styles.moveName}>{move.name}</span>
             <span className={styles.moveDamage}>
               {move.printed}

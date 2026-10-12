@@ -12,7 +12,7 @@ A Pokémon-style structure themed around the Quintuplets. Set code **TQQ01**, **
 
 ## Hearts (types)
 
-Each sister owns a Heart type; Study is neutral (any Heart can pay a Study cost). Every turn you get **1 free Heart** of a type in your deck, there are no Heart cards.
+Each sister owns a Heart type; Study is neutral (any Heart can pay a Study cost). Every turn you get **2 free Hearts** (of the type of the Character you give them to), there are no Heart cards. A move uses up its Hearts.
 
 | Heart | Sister | Colour | Weak to | Resists |
 |---|---|---|---|---|

@@ -182,9 +182,20 @@ test('a battle table tells the player what to do: set up, then the free Heart, t
   }
   await page.getByRole('button', { name: 'Ready', exact: true }).click();
 
-  // Whoever goes first: when it is the player's turn the steps point to the free Heart.
-  await expect(page.getByText('Give your free Heart: click the Heart on the right, then a Character.')).toBeVisible({ timeout: 60_000 });
-  await page.getByRole('button', { name: /^Free Heart/ }).click();
+  // The player may go first (no free Hearts and no attack in the very first turn) or second. As soon as free Hearts can be given,
+  // the steps point to them.
+  const end = page.getByRole('button', { name: 'End turn' });
+  const heart = page.getByRole('button', { name: /^Free Heart/ });
+  for (let round = 0; round < 2; round += 1) {
+    await expect(end).toBeVisible({ timeout: 60_000 });
+    if (await heart.isEnabled()) {
+      break;
+    }
+    await end.click();
+    await expect(end).toBeHidden();
+  }
+  await expect(page.getByText('Give your free Hearts: click a Heart on the right, then a Character.')).toBeVisible({ timeout: 60_000 });
+  await heart.click();
   // Only the player's own Characters can be picked; the rival's are shown but cannot be clicked.
   const target = page.getByRole('button', { name: /HP, \d+ Hearts?, Active/, disabled: false });
   if ((await page.getByText('Click a glowing Character to give it the Heart.').count()) > 0) {

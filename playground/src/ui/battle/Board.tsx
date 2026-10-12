@@ -6,7 +6,7 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNod
 import { useLocation } from 'wouter';
 import { profileOf } from '../../battle/deckProfile';
 import { legalActions } from '../../battle/legal';
-import { BENCH_SIZE, figureAt, retreatCost, topCard } from '../../battle/rules';
+import { BENCH_SIZE, figureAt, freeHearts, retreatCost, topCard } from '../../battle/rules';
 import type { BattleAction, BattleState, Figure, FigureRef, PlayerIndex } from '../../battle/types';
 import { AFFINITY_INFO } from '../../cards/characters';
 import { cardById } from '../../cards/catalog';
@@ -471,7 +471,7 @@ function BoardView({ battle, rivalName, rivalCharacter, rivalLevel, deckName, de
 
             <MemoryRow box={layout.memories.opp} who={rival} count={theirs.memories} turn={mood === 'their-turn'} />
             <MemoryRow box={layout.memories.mine} who={you} count={mine.memories} turn={mood === 'your-turn'} />
-            <HeartZone box={layout.hearts} left={mood === 'your-turn' ? heartsLeft(battle, 0) : 0} enabled={canAct && prompt === null && mood === 'your-turn' && heartTargets.length > 0} picked={selection?.kind === 'heart'} row={compact} onPick={pickHeart} />
+            <HeartZone box={layout.hearts} left={mood === 'your-turn' ? heartsLeft(battle, 0) : 0} total={freeHearts(battle, 0)} yourTurn={mood === 'your-turn'} enabled={canAct && prompt === null && mood === 'your-turn' && heartTargets.length > 0} picked={selection?.kind === 'heart'} row={compact} onPick={pickHeart} />
             <Placed box={layout.hand} label={text.battle.board.yourHand} anchor="hand">
               <p className={styles.handTitle}>
                 <strong>{text.battle.table.handTitle(mine.hand.length)}</strong>

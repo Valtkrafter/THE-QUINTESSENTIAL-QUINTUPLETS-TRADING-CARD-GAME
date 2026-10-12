@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { legalActions } from '../../battle/legal';
+import { FREE_HEARTS_PER_TURN } from '../../battle/rules';
 import { mainState, play } from '../../battle/testing';
 import { captionFor, setupGuide, turnGuide, type CaptionInput, type TurnGuide } from './coach';
 import { heartsLeft } from './viewModel';
@@ -31,6 +32,10 @@ describe('the steps of a turn', () => {
     let state = mainState({ players: [{ hand: HAND, active: { stack: ['TQQ01-001'], hearts: 3 } }, { active: NINO }] });
     expect(guideOf(state).next).toBe('heart');
     state = play(state, { type: 'give-heart', target: { zone: 'active' } }).state;
+    // Two free Hearts a turn: one is given, one is left.
+    expect(statuses(guideOf(state))['heart']).toBe('ready');
+    expect(heartsLeft(state, 0)).toBe(1);
+    state = play(state, { type: 'give-heart', target: { zone: 'active' } }).state;
     expect(statuses(guideOf(state))['heart']).toBe('done');
     expect(heartsLeft(state, 0)).toBe(0);
     expect(guideOf(state).next).toBe('bench');
@@ -44,7 +49,7 @@ describe('the steps of a turn', () => {
   });
 
   it('has nothing to point to when only an end of the turn is left', () => {
-    const guide = guideOf(mainState({ players: [{ hand: [], active: { stack: ['TQQ01-001'], hearts: 0 }, heartsGiven: 1 }, { active: NINO }] }));
+    const guide = guideOf(mainState({ players: [{ hand: [], active: { stack: ['TQQ01-001'], hearts: 0 }, heartsGiven: FREE_HEARTS_PER_TURN }, { active: NINO }] }));
     expect(guide.next).toBeNull();
     expect(statuses(guide)['attack']).toBe('blocked');
   });

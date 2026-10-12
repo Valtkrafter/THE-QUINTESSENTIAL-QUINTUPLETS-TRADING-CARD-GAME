@@ -46,7 +46,7 @@ Every owned copy has hidden condition values: centering, corners, edges, surface
 Yen comes from matches, daily rewards and selling. It leaves through packs, the kiosk and grading fees. A simulator tool checks that a normal player neither floods nor starves. Price = base(rarity) × finish multiplier × grade multiplier.
 
 ### Battle-System (draft rules, to be playtested)
-Active Character plus a Bench. Each turn you get **one free Heart** (decided: no Heart cards in the deck), you may play one Supporter per turn. Moves cost Hearts, weakness doubles damage, resistance removes 30. Win by collecting 6 Memories (a Prime knocked out gives 2). AI opponents with scripted decks and three difficulty levels. The prototype's "Exam Showdown" is just the old name of this mode: it is called **Battle-System** from now on (decided).
+Active Character plus a Bench. Each turn you get **two free Hearts** (decided: no Heart cards in the deck), you may play one Supporter per turn. Moves cost Hearts and use them up (decided: they leave the Character when it attacks), weakness doubles damage, resistance removes 30. Win by collecting 6 Memories (a Prime knocked out gives 2). AI opponents with scripted decks and three difficulty levels. The prototype's "Exam Showdown" is just the old name of this mode: it is called **Battle-System** from now on (decided).
 
 #### Limited Halloween cards (decided: own function, a bit more power)
 Every sister has two Halloween cards (a "Treat" and a "Trick"). They are limited, like a limited pull banner: they can only be pulled during the Halloween event (see Packs), not in normal packs.

@@ -119,6 +119,9 @@ export const DOERS: Readonly<Record<string, Doer>> = {
   'battle.choose': (page) => spot(page, 'pick').click(),
 };
 
+/** Steps that come back right after they were done, once for each free Heart of the turn: they are done again when they stay. */
+const AGAIN: ReadonlySet<string> = new Set(['battle.heart', 'battle.heart-give']);
+
 /** The id of the step that is shown, or null. */
 export async function shownStep(page: Page): Promise<string | null> {
   return page.evaluate(() => document.querySelector('[data-tutorial-layer]')?.getAttribute('data-step') ?? null);
@@ -180,6 +183,12 @@ export async function playTutorial(page: Page, options: PlayOptions = {}): Promi
       await options.onStep?.(id, page);
       await act(page, id);
       // The time a step may take to go away starts when the player has done what it asks.
+      since = Date.now();
+      continue;
+    }
+    if (AGAIN.has(id) && Date.now() - retried > 1_500) {
+      retried = Date.now();
+      await act(page, id).catch(() => undefined);
       since = Date.now();
       continue;
     }

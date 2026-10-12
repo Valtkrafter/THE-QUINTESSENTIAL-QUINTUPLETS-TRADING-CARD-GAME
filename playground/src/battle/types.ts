@@ -127,6 +127,8 @@ export type BattleEvent =
       readonly player: PlayerIndex;
       readonly cardId: string;
       readonly move: string;
+      /** The Hearts the move used up: they are taken off the Character that attacked. */
+      readonly spent: number;
       /** The damage that was really dealt after weakness, resistance and shields. */
       readonly damage: number;
       readonly doubled: boolean;

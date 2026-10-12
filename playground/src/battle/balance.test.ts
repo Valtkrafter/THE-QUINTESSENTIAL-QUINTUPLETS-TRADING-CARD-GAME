@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { AI_LEVELS, type AiLevel } from './ai';
+import { freeHearts } from './rules';
 import { OPPONENTS, STARTER_DECKS } from './roster';
 import { playMany, playMatch } from './simulate';
 import { lineDeck, simpleDeck } from './testing';
+import type { BattleState } from './types';
 
 const SISTERS = ['ichika', 'nino', 'miku', 'yotsuba', 'itsuki'] as const;
 
@@ -92,6 +94,57 @@ describe.skipIf(process.env['SIM'] === undefined)('balance report', () => {
     const at = (fraction: number): number => lengths[Math.min(lengths.length - 1, Math.floor(lengths.length * fraction))] ?? 0;
     const early = lengths.filter((turns) => turns <= 6).length;
     console.log(`\nturns of both players: min ${at(0)}, 10% ${at(0.1)}, median ${at(0.5)}, 90% ${at(0.9)}, max ${lengths.at(-1)}; over by turn 6: ${percent(early, lengths.length)}; ${JSON.stringify(reasons)}`);
+  }, 600_000);
+
+  it('prints how the Hearts are used', () => {
+    // Per player and turn: how many free Hearts were left unused, how often the Active Character attacked, what a move cost and
+    // did, and how many Hearts sat on the Characters when the battle ended.
+    let turns = 0;
+    let attacks = 0;
+    let spent = 0;
+    let damage = 0;
+    let given = 0;
+    let unused = 0;
+    let retreats = 0;
+    let leftOver = 0;
+    let battles = 0;
+    for (const row of SISTERS) {
+      for (const column of SISTERS) {
+        for (let game = 0; game < Math.ceil(games / 10); game += 1) {
+          let previous: BattleState | null = null;
+          const result = playMatch({ decks: [lineDeck(row), lineDeck(column)], levels: ['normal', 'normal'], seed: `hearts-${row}-${column}-${game}` }, (events, state) => {
+            for (const event of events) {
+              if (event.type === 'turn') {
+                turns += 1;
+                if (previous !== null && previous.phase === 'main') {
+                  const before = previous.players[previous.current];
+                  unused += Math.max(0, freeHearts(previous, previous.current) - before.heartsGiven);
+                }
+              } else if (event.type === 'attack') {
+                attacks += 1;
+                spent += event.spent;
+                damage += event.damage;
+              } else if (event.type === 'heart') {
+                given += event.count;
+              } else if (event.type === 'retreat') {
+                retreats += 1;
+              }
+            }
+            previous = state;
+          });
+          battles += 1;
+          for (const player of result.state.players) {
+            leftOver += [player.active, ...player.bench].reduce((sum, figure) => sum + (figure?.hearts ?? 0), 0);
+          }
+        }
+      }
+    }
+    const per = (value: number, by: number): string => (value / Math.max(by, 1)).toFixed(2);
+    console.log(
+      `
+Hearts (normal vs normal, ${battles} battles, ${turns} turns): attack in ${percent(attacks, turns)} of the turns, a move costs ${per(spent, attacks)} Hearts and does ${per(damage, attacks)} damage, ` +
+        `${per(damage, turns)} damage per turn, ${per(given, turns)} Hearts given and ${per(unused, turns)} free Hearts unused per turn, ${per(retreats, turns)} retreats per turn, ${per(leftOver, battles)} Hearts left on the table at the end`,
+    );
   }, 600_000);
 
   it('prints how the starter decks (played normally) do against the rivals', () => {

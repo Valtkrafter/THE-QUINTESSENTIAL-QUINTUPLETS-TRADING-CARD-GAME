@@ -1,7 +1,7 @@
 // What the battle screen needs to know about a battle, worked out from the engine's state and the list of allowed actions.
 // Pure functions, so the board only has to draw them and every rule here has a test.
 
-import { baseDamage, damageAgainst, freeHearts, topCard } from '../../battle/rules';
+import { baseDamage, damageAgainst, freeHearts, moveHeartCost, studyDiscount, topCard } from '../../battle/rules';
 import type { BattleAction, BattleState, ChoicePrompt, FigureRef, PlayerIndex } from '../../battle/types';
 import type { Affinity } from '../../cards/model';
 import { text } from '../text';
@@ -71,10 +71,52 @@ export function figureOptions(legal: readonly BattleAction[], ref: FigureRef): F
 
 // --- Moves of the Active Character --------------------------------------------------------------------------------
 
+/** One Heart of a cost: paid by a Heart the Character holds, still open, or free (a Bench ability pays for it). */
+export type DotState = 'paid' | 'open' | 'free';
+
+export interface CostDot {
+  /** What is printed: the kind of the Character, or `study` for the grey Heart that any Heart pays. */
+  readonly kind: Affinity;
+  readonly state: DotState;
+}
+
+/**
+ * The Hearts of a cost, each marked: paid, open or free. A Heart always has the kind of its Character, so only the number counts:
+ * the Hearts the Character holds pay the dots one after the other, a grey one as well as the others. The grey Hearts that a Bench
+ * ability pays for (`discount`) are free; they are the last grey ones of the cost, as `moveHeartCost` counts them.
+ */
+export function costDots(cost: readonly Affinity[], hearts: number, discount: number): CostDot[] {
+  let freed = Math.min(discount, cost.filter((kind) => kind === 'study').length);
+  const free = cost.map(() => false);
+  for (let index = cost.length - 1; index >= 0 && freed > 0; index -= 1) {
+    if (cost[index] === 'study') {
+      free[index] = true;
+      freed -= 1;
+    }
+  }
+  let held = hearts;
+  return cost.map((kind, index): CostDot => {
+    if (free[index] === true) {
+      return { kind, state: 'free' };
+    }
+    if (held > 0) {
+      held -= 1;
+      return { kind, state: 'paid' };
+    }
+    return { kind, state: 'open' };
+  });
+}
+
 export interface MoveView {
   readonly index: number;
   readonly name: string;
   readonly cost: readonly Affinity[];
+  /** The Hearts of the cost, marked with what the Character holds. */
+  readonly dots: readonly CostDot[];
+  /** The kind of the Hearts the Character holds: it is what pays the grey Hearts. */
+  readonly paidWith: Affinity;
+  /** How many Hearts the move needs (grey ones that a Bench ability pays for left out). */
+  readonly heartsNeeded: number;
   /** The damage as printed: "20", "70+", "30×", or "" for a move without damage. */
   readonly printed: string;
   readonly text: string;
@@ -94,6 +136,7 @@ export function moveViews(battle: BattleState, player: PlayerIndex, legal: reado
     return [];
   }
   const card = topCard(active);
+  const discount = studyDiscount(owner);
   return card.moves.map((move, index): MoveView => {
     const usable = legal.some((action) => action.type === 'attack' && action.moveIndex === index);
     const base = baseDamage(move, active, owner);
@@ -102,6 +145,9 @@ export function moveViews(battle: BattleState, player: PlayerIndex, legal: reado
       index,
       name: move.name,
       cost: move.cost,
+      dots: costDots(move.cost, active.hearts, discount),
+      paidWith: card.affinity,
+      heartsNeeded: moveHeartCost(move, discount),
       printed: move.damage === null ? '' : `${move.damage}${move.damageSuffix ?? ''}`,
       text: move.text ?? '',
       usable,

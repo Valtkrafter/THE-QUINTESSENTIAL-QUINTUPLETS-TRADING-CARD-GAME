@@ -885,11 +885,48 @@
   gap: 2px;
 }
 
+/*
+ * The Hearts of a cost, as the Character can pay them now: a filled dot is paid by a Heart it holds, a ring is still open, a dashed
+ * ring is paid for by a Bench ability. The grey Heart is a small "any" tag: any Heart pays for it, and a paid one takes the colour
+ * of the Heart that pays.
+ */
 .moveCost i {
+  --dot: var(--mute);
+  display: inline-grid;
+  place-items: center;
   width: 11px;
   height: 11px;
   border-radius: 50%;
+  background: var(--dot);
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.35);
+  color: #1b2036;
+  font-size: 8px;
+  font-style: normal;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.moveCost i[data-state='open'] {
+  background: transparent;
+  box-shadow: inset 0 0 0 2px var(--dot);
+  color: var(--mute);
+}
+
+.moveCost i[data-state='free'] {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--mute);
+  color: var(--mute);
+  opacity: 0.8;
+}
+
+.moveCost i[data-any] {
+  width: auto;
+  min-width: 25px;
+  height: 14px;
+  padding: 0 5px;
+  border-radius: 7px;
 }
 
 .moveName {
@@ -1039,6 +1076,37 @@
   width: 30px;
   height: 30px;
   fill: currentColor;
+}
+
+/* How many free Hearts are left, on the corner of the token. */
+.tokenCount {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 11px;
+  background: #1a1d33;
+  box-shadow: 0 0 0 2px #ffe9a8;
+  color: #ffe9a8;
+  font-size: 13px;
+  line-height: 22px;
+  text-align: center;
+}
+
+.token:disabled .tokenCount {
+  box-shadow: 0 0 0 2px #8d96b3;
+  color: #8d96b3;
+}
+
+.heartRow .tokenCount {
+  top: -6px;
+  right: -6px;
+  min-width: 18px;
+  height: 18px;
+  font-size: 11px;
+  line-height: 18px;
 }
 
 .token:not(:disabled) {

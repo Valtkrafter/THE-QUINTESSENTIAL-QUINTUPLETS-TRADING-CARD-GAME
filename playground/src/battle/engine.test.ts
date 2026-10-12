@@ -4,7 +4,7 @@ import { isBasicPlayable } from '../domain/decks';
 import { createBattle, step } from './engine';
 import { legalActions, usableMoves } from './legal';
 import { observe, HIDDEN_CARD } from './observe';
-import { TURN_LIMIT } from './rules';
+import { TURN_LIMIT, freeHearts, freeHeartsNext } from './rules';
 import { coinSeed, invariantProblems, mainState, play, simpleDeck, startedBattle } from './testing';
 import type { BattleAction, BattleEvent, BattleState, PlayerIndex } from './types';
 
@@ -128,34 +128,44 @@ describe('the first turns', () => {
     expect(usableMoves(later, 0)).toEqual([0]);
   });
 
-  it('gives each player one free Heart per turn, to any of their Characters', () => {
+  it('gives each player two free Hearts per turn, to any of their Characters', () => {
     const state = mainState({ players: [{ active: { stack: ['TQQ01-001'] }, bench: [{ stack: ['TQQ01-013'] }] }, { active: { stack: ['TQQ01-001'] } }] });
     const targets = legalActions(state, 0).filter((action) => action.type === 'give-heart');
     expect(targets).toHaveLength(2);
     const given = play(state, { type: 'give-heart', target: { zone: 'bench', index: 0 } });
     expect(given.state.players[0].bench[0]?.hearts).toBe(1);
-    expect(legalActions(given.state, 0).some((action) => action.type === 'give-heart')).toBe(false);
-    const refused = step(given.state, { type: 'give-heart', target: { zone: 'active' } });
+    expect(legalActions(given.state, 0).some((action) => action.type === 'give-heart')).toBe(true);
+    const both = play(given.state, { type: 'give-heart', target: { zone: 'bench', index: 0 } });
+    expect(both.state.players[0].bench[0]?.hearts).toBe(2);
+    expect(legalActions(both.state, 0).some((action) => action.type === 'give-heart')).toBe(false);
+    const refused = step(both.state, { type: 'give-heart', target: { zone: 'active' } });
     expect(refused.ok).toBe(false);
   });
 
-  it('gives the player who goes second a second free Heart in their first turn', () => {
+  it('gives no free Hearts in the very first turn to the player who goes first, and three to the one who goes second', () => {
     const board = { active: { stack: ['TQQ01-001'] }, bench: [{ stack: ['TQQ01-013'] }] } as const;
-    const second = mainState({ turn: 2, current: 1, first: 0, players: [{ turnsTaken: 1, ...board }, { turnsTaken: 1, ...board }] });
-    const afterOne = play(second, { type: 'give-heart', target: { zone: 'active' } }).state;
-    expect(legalActions(afterOne, 1).some((action) => action.type === 'give-heart')).toBe(true);
-    const afterTwo = play(afterOne, { type: 'give-heart', target: { zone: 'bench', index: 0 } }).state;
-    expect(legalActions(afterTwo, 1).some((action) => action.type === 'give-heart')).toBe(false);
-    expect(afterTwo.players[1].active?.hearts).toBe(1);
-    expect(afterTwo.players[1].bench[0]?.hearts).toBe(1);
-
     const first = mainState({ turn: 1, current: 0, first: 0, players: [{ turnsTaken: 1, ...board }, { turnsTaken: 0, ...board }] });
-    const used = play(first, { type: 'give-heart', target: { zone: 'active' } }).state;
-    expect(legalActions(used, 0).some((action) => action.type === 'give-heart')).toBe(false);
+    expect(freeHearts(first, 0)).toBe(0);
+    expect(legalActions(first, 0).some((action) => action.type === 'give-heart')).toBe(false);
 
-    const later = mainState({ turn: 4, current: 1, first: 0, players: [{ turnsTaken: 2, ...board }, { turnsTaken: 2, ...board }] });
-    const once = play(later, { type: 'give-heart', target: { zone: 'active' } }).state;
-    expect(legalActions(once, 1).some((action) => action.type === 'give-heart')).toBe(false);
+    const second = mainState({ turn: 2, current: 1, first: 0, players: [{ turnsTaken: 1, ...board }, { turnsTaken: 1, ...board }] });
+    expect(freeHearts(second, 1)).toBe(3);
+    let state = second;
+    for (const target of [{ zone: 'active' }, { zone: 'bench', index: 0 }, { zone: 'active' }] as const) {
+      expect(legalActions(state, 1).some((action) => action.type === 'give-heart')).toBe(true);
+      state = play(state, { type: 'give-heart', target }).state;
+    }
+    expect(legalActions(state, 1).some((action) => action.type === 'give-heart')).toBe(false);
+    expect(state.players[1].active?.hearts).toBe(2);
+    expect(state.players[1].bench[0]?.hearts).toBe(1);
+
+    // From the second turn on, both get two.
+    const later = mainState({ turn: 3, current: 0, first: 0, players: [{ turnsTaken: 2, ...board }, { turnsTaken: 1, ...board }] });
+    expect(freeHearts(later, 0)).toBe(2);
+    const reply = mainState({ turn: 4, current: 1, first: 0, players: [{ turnsTaken: 2, ...board }, { turnsTaken: 2, ...board }] });
+    expect(freeHearts(reply, 1)).toBe(2);
+    expect(freeHeartsNext(second, 0)).toBe(2);
+    expect(freeHeartsNext(first, 1)).toBe(3);
   });
 
   it('draws a card at the start of every turn and counts the turns', () => {
@@ -274,9 +284,65 @@ describe('attacking', () => {
     expect(usableMoves(later, 0)).toEqual([0]);
   });
 
-  it('keeps Hearts on the Character after a move', () => {
-    const ready = mainState({ players: [{ active: { stack: ['TQQ01-013'], hearts: 2 } }, { active: { stack: ['TQQ01-001'] } }] });
-    expect(play(ready, ATTACK).state.players[0].active?.hearts).toBe(2);
+});
+
+describe('the Hearts of a move', () => {
+  it('are taken off the Character that made it, and only as many as the move costs', () => {
+    const ready = mainState({ players: [{ active: { stack: ['TQQ01-013'], hearts: 3 } }, { active: { stack: ['TQQ01-001'] } }] });
+    const { state, events } = play(ready, ATTACK);
+    expect(state.players[0].active?.hearts).toBe(2);
+    expect(eventsOf(events, 'attack')[0]).toMatchObject({ spent: 1 });
+    // "Rehearsal" costs a Heart and a grey one.
+    const two = mainState({ players: [{ active: { stack: ['TQQ01-003'], hearts: 3 } }, { active: { stack: ['TQQ01-049'] } }] });
+    const hit = play(two, { type: 'attack', moveIndex: 1 });
+    expect(hit.state.players[0].active?.hearts).toBe(1);
+    expect(eventsOf(hit.events, 'attack')[0]).toMatchObject({ spent: 2 });
+  });
+
+  it('leave nothing for a second move: the Character has to be given Hearts again', () => {
+    const state = mainState({ players: [{ active: { stack: ['TQQ01-001', 'TQQ01-004'], hearts: 3 } }, { active: { stack: ['TQQ01-025', 'TQQ01-028'] } }] });
+    expect(usableMoves(state, 0)).toEqual([0]);
+    const after = play(state, ATTACK).state;
+    expect(after.players[0].active?.hearts).toBe(0);
+    // The turn is over, but even with a new turn of its own the Character has nothing until Hearts are given to it.
+    const back = play(after, { type: 'end-turn' }).state;
+    expect(back.current).toBe(0);
+    expect(usableMoves(back, 0)).toEqual([]);
+    const refilled = play(back, { type: 'give-heart', target: { zone: 'active' } }, { type: 'give-heart', target: { zone: 'active' } }).state;
+    expect(usableMoves(refilled, 0)).toEqual([]);
+    expect(refilled.players[0].active?.hearts).toBe(2);
+  });
+
+  it('are used up even when a shield or a resistance leaves no damage', () => {
+    const shielded = mainState({ turn: 7, players: [{ active: { stack: ['TQQ01-013'], hearts: 1 } }, { active: { stack: ['TQQ01-001'] }, shieldTurn: 7 }] });
+    expect(play(shielded, ATTACK).state.players[0].active?.hearts).toBe(0);
+    const resisted = mainState({ players: [{ active: { stack: ['TQQ01-001'], hearts: 1 } }, { active: { stack: ['TQQ01-013'] } }] });
+    const { state, events } = play(resisted, ATTACK);
+    expect(eventsOf(events, 'attack')[0]).toMatchObject({ damage: 0, spent: 1 });
+    expect(state.players[0].active?.hearts).toBe(0);
+  });
+
+  it('count for the extra damage of a "+" move as the Character held them when it attacked', () => {
+    // "Encore": 70 and 30 more for every Heart. Four Hearts are on the Character, three are used up, and all four count.
+    const state = mainState({
+      players: [{ active: { stack: ['TQQ01-001', 'TQQ01-004', 'TQQ01-007'], hearts: 4 } }, { active: { stack: ['TQQ01-001'] }, bench: [{ stack: ['TQQ01-013'] }] }],
+    });
+    const { state: after, events } = play(state, ATTACK);
+    expect(eventsOf(events, 'attack')[0]).toMatchObject({ damage: 70 + 30 * 4, spent: 3 });
+    expect(after.players[0].active?.hearts).toBe(1);
+  });
+
+  it('are paid with one grey Heart less when a Bench ability says so, and that Heart stays', () => {
+    // "Dramatic Entrance" costs three; Yotsuba on the Bench ("Ribbon of Support") pays one grey Heart of it.
+    const state = mainState({
+      players: [
+        { active: { stack: ['TQQ01-001', 'TQQ01-004'], hearts: 3 }, bench: [{ stack: ['TQQ01-037', 'TQQ01-040', 'TQQ01-041'] }] },
+        { active: { stack: ['TQQ01-025', 'TQQ01-028'] } },
+      ],
+    });
+    const { state: after, events } = play(state, ATTACK);
+    expect(eventsOf(events, 'attack')[0]).toMatchObject({ spent: 2 });
+    expect(after.players[0].active?.hearts).toBe(1);
   });
 });
 

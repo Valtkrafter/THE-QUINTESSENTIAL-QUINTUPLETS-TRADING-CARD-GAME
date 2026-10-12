@@ -10,15 +10,15 @@ How a battle is played, how it is built and how it was tuned. The words are the 
 
 **A turn.** Draw a card (a player who cannot draw loses). Then, in any order:
 
-- Give **1 free Heart** to any of your Characters. The player who goes second gets **2** in their first turn.
+- Give your **2 free Hearts** to any of your Characters (one at a time, to the same one or to different ones). A free Heart that is not given is lost. In the very first turn of the battle the player who goes first gets **none** (they cannot attack anyway) and the player who goes second gets **3**.
 - Put Basic and Event Characters on the Bench (3 places).
 - **Evolve:** put a Close card on a Basic of the same sister, a Bride card on a Close one. Hearts and damage stay. Not in your first turn, not on a Character that came into play this turn, once per Character per turn. Event cards cannot evolve.
 - Play **one Supporter**.
 - Use a **"once per turn" ability** of any of your Characters.
 - **Retreat** once: pay the retreat cost in Hearts (taken off the Active Character) and swap it with a Benched one.
-- **Attack** with the Active Character: it needs the Hearts of the move (a Bench ability can take grey Hearts off). Attacking ends the turn. The player who goes first cannot attack in their first turn.
+- **Attack** with the Active Character: it needs the Hearts of the move (a Bench ability can take grey Hearts off), and **the move uses them up**: they are taken off the Character when it attacks. Attacking ends the turn. The player who goes first cannot attack in their first turn.
 
-**Damage.** Printed damage, plus "+" or "×" bonuses from the board. Then the defender: weakness doubles, resistance takes off 30, an ability may take off more, a shield stops everything. A move that does no damage still ends the turn.
+**Damage.** Printed damage, plus "+" or "×" bonuses from the board (a move that does "+30 for every Heart" counts the Hearts the Character holds as it attacks, before the move uses its own up). Then the defender: weakness doubles, resistance takes off 30, an ability may take off more, a shield stops everything. A move that does no damage still ends the turn and still uses up its Hearts.
 
 **Knock-outs.** At 0 HP a Character is knocked out and its whole pile goes to the discard pile. The opponent gets 1 Memory (2 for a Prime). The player whose Character fell steps up a Benched one (their choice). **First to 6 Memories wins.** A player with no Character left in play loses, a player who cannot draw loses, after 80 turns the player with more Memories wins, and anybody may give up.
 
@@ -28,9 +28,10 @@ How a battle is played, how it is built and how it was tuned. The words are the 
 
 Tuned with the computer opponents playing each other (`battle/balance.test.ts`, run `SIM=1 npx vitest run src/battle/balance --reporter=verbose`):
 
-- **Battle length:** median 17 turns of both players together (8 or 9 each), 90% under 25. At about a minute a turn that is the 10 minutes the design asks for.
-- **First player:** without help the player who goes first won 60% of 1,000 battles. A second free Heart in the first turn of the player who goes second brings it to 49%. An extra card for the second player did nothing (59%).
-- **Levels:** easy loses about 65% against normal and 78% against hard; normal loses about 70% against hard (measured with `SIM=1`, mirror decks). Normal plays a random action in about one decision in eight and picks a random move in one attack in five; hard never does and also looks ahead at what the enemy could do next turn. The harder rivals also get better decks.
+- **Hearts:** a move uses up its Hearts, so the free Hearts of a turn have to pay for the attacks. With **1** free Heart a turn a Character with a three-Heart move could attack only every third turn and 9 battles in 10 ended because somebody could not draw; with **3** battles were over after 11 turns of both players together. **2** a turn gives the pace the battles had when the Hearts stayed on the Characters: an attack in 56% of the turns, 75 damage a turn, a move costs 2.4 Hearts on average. A three-Heart move can be made in two turns of three, so a small move that keeps enough Hearts for the big one next turn is a real choice (the computer opponents look at this turn and the next).
+- **Battle length:** median 21 turns of both players together (10 or 11 each), 90% under 28, and 16% over by turn 6 (the numbers with the Hearts staying: 20, 26 and 12%; the design asks for about 10 minutes). Of 2,500 battles 40% ended because somebody could not draw, 31% on Memories and 30% because one side ran out of Characters.
+- **First player:** with the same Hearts for both players the player who goes first won 53 to 57%. Giving the second player more Hearts in the first turn does little now (4 instead of 2 left the first player at 55%), because the Hearts are used up; what counts is what the first player gets: **no free Hearts in their first turn** (they cannot attack then anyway) and **3** for the player who goes second brings it to **49%** (500 battles for each of six pairs of levels). An extra card for the second player did nothing.
+- **Levels:** easy loses about 64% against normal and 78% against hard; normal loses about 69% against hard (measured with `SIM=1`, mirror decks). Normal plays a random action in about one decision in eight and picks a random move in one attack in five; hard never does and also looks ahead at what the enemy could do next turn. The harder rivals also get better decks.
 - **Weakness and resistance** are strong: a single-sister deck against the sister it is weak to wins 5 to 20% of the time. Mixed decks and the choice of deck are the answer; if it feels too harsh, the numbers are `WEAKNESS_FACTOR` and `RESISTANCE_REDUCTION` in `battle/rules.ts`.
 
 ## How it is built (`playground/src/battle`)

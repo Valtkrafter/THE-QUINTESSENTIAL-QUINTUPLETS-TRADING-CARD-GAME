@@ -171,12 +171,12 @@ export const tutorialWords = {
       title: 'Your turn',
       text: 'A turn has six steps, listed on the left. Do the glowing ones in any order. An attack ends your turn, so it comes last.',
     },
-    heart: { title: 'Take your free Heart', text: 'You get one free Heart every turn. Click the Heart on the right.' },
-    heartGive: { title: 'Give the Heart', text: 'Click your Active Character to give it the Heart. Moves need Hearts.' },
-    attack: { title: 'Attack!', text: 'Pick a move. The number after the arrow is the damage it really does. Weakness doubles it, resistance makes it lower.' },
+    heart: { title: 'Take your free Hearts', text: 'You get 2 free Hearts every turn. Click the Heart on the right.' },
+    heartGive: { title: 'Give the Heart', text: 'Click your Active Character to give it the Heart. Then give the second one the same way. Moves need Hearts, and a grey “any” Heart in a move is paid by any Heart.' },
+    attack: { title: 'Attack!', text: 'Pick a move. The number after the arrow is the damage it really does. Weakness doubles it, resistance makes it lower. The move uses up its Hearts.' },
     endTurn: {
       title: 'End your turn',
-      text: 'You cannot attack now: the player who goes first may not attack in the first turn, or your Character needs more Hearts. Press End turn.',
+      text: 'You cannot attack now: the player who goes first may not attack in the first turn, or your Character needs more Hearts (a move uses them up). Press End turn.',
     },
     choose: { title: 'Pick a Character', text: 'Your Active Character was knocked out. Click a glowing Character to bring it to the front.' },
     done: {

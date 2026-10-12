@@ -68,7 +68,7 @@ export function describeEvent(event: BattleEvent, names: Names = YOU_AND_THEM): 
       const notes = [event.doubled ? 'Weakness!' : '', event.resisted ? 'Resisted.' : '', event.reduced ? 'Reduced by an ability.' : '', event.blocked ? 'Blocked!' : '']
         .filter((note) => note !== '')
         .join(' ');
-      return `${shortName(event.cardId)} used ${event.move}: ${event.damage} damage. ${notes}`.trim();
+      return `${shortName(event.cardId)} used ${event.move} (${plural(event.spent, 'Heart')} used up): ${event.damage} damage. ${notes}`.trim();
     }
     case 'heal':
       return `${names.subject(event.player)} healed ${event.amount} HP on ${place(event.target)}.`;

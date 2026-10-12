@@ -5,7 +5,7 @@ import { cuesFor } from './sounds';
 const ACTIVE = { zone: 'active' } as const;
 
 function attack(player: 0 | 1, damage: number, extra: Partial<Extract<BattleEvent, { type: 'attack' }>> = {}): BattleEvent {
-  return { type: 'attack', player, cardId: 'TQQ01-001', move: 'Test', damage, doubled: false, resisted: false, reduced: false, blocked: false, ...extra };
+  return { type: 'attack', player, cardId: 'TQQ01-001', move: 'Test', spent: 1, damage, doubled: false, resisted: false, reduced: false, blocked: false, ...extra };
 }
 
 describe('the sounds of a step', () => {

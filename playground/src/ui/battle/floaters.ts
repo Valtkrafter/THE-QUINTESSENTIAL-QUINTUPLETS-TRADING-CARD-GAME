@@ -37,6 +37,10 @@ export function floatersFor(events: readonly BattleEvent[]): Floater[] {
         if (event.resisted && !event.blocked) {
           floaters.push({ player: target, ref: ACTIVE, text: text.battle.board.resisted, tone: 'info' });
         }
+        // The Hearts of the move are gone from the Character that made it.
+        if (event.spent > 0) {
+          floaters.push({ player: event.player, ref: ACTIVE, text: `−${event.spent} ♥`, tone: 'heart' });
+        }
         break;
       }
       case 'heal':

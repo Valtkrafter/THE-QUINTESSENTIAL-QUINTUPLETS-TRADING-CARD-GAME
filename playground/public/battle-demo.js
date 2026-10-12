@@ -31,6 +31,8 @@ function place(c,x,y,ms,s){if(s!==undefined)c._s=s;c.style.transition=ms?`left $
 async function spawn(o,pos,s){const c=card(o);place(c,pos[0],pos[1],0,s===undefined?1:s);await frame();return c}
 async function flip(c){const n=c.firstChild;await n.animate([{transform:'scaleX(1)'},{transform:'scaleX(0)'}],{duration:T(170),fill:'forwards'}).finished;c.classList.toggle('back');await n.animate([{transform:'scaleX(0)'},{transform:'scaleX(1)'}],{duration:T(170),fill:'forwards'}).finished;n.getAnimations().forEach(a=>a.cancel())}
 function heart(c,type){const h=div('h',c.querySelector('.hearts'));h.style.background=HC[type];h.animate([{transform:'scale(0)'},{transform:'scale(1.6)'},{transform:'scale(1)'}],{duration:T(500)})}
+function spend(c,n){const hs=[...c.querySelectorAll('.hearts .h')].slice(0,n);hs.forEach(h=>h.animate([{transform:'scale(1)',opacity:1},{transform:'scale(1.7)',opacity:1},{transform:'scale(0)',opacity:0}],{duration:T(800),fill:'forwards'}));setTimeout(()=>hs.forEach(h=>h.remove()),T(850))}
+async function give(c,type,n){for(let i=0;i<n;i++){const tok=div('h',dyn);tok.style.cssText+=`;position:absolute;left:${SLOT.zone[0]+20+i*40}px;top:${SLOT.zone[1]+30}px;width:34px;height:34px;background:${HC[type]};transition:all ${T(900)}ms ease`;await sleep(500);tok.style.left=(SLOT.meAct[0]+20)+'px';tok.style.top=(SLOT.meAct[1]+120)+'px';await sleep(950);tok.remove();heart(c,type)}}
 function setHp(c,hp,ms){const from=c._hp;c._hp=Math.max(0,hp);const bar=c.querySelector('.bar i'),num=c.querySelector('.hp b');if(!bar)return;const pct=Math.max(0,c._hp/c._max*100);bar.style.transition=`width ${T(ms||900)}ms ease,background .5s`;bar.style.width=pct+'%';bar.style.background=pct<30?'#e5625f':pct<60?'#e8b94a':'#58c98a';const t0=performance.now(),d=T(ms||900);(function step(){const k=Math.min(1,(performance.now()-t0)/d);num.textContent=Math.round(from+(c._hp-from)*k);if(k<1)requestAnimationFrame(step)})()}
 function pop(txt,x,y,color,size){const p=div('pop',dyn,txt);p.style.left=x+'px';p.style.top=y+'px';p.style.color=color||'#fff';p.style.fontSize=(size||30)+'px';setTimeout(()=>p.remove(),T(1500)+200)}
 function cx(c,dx,dy){return[parseFloat(c.style.left)+(dx??60*c._s),parseFloat(c.style.top)+(dy??0)]}
@@ -80,10 +82,9 @@ SC.push({t:'2 · Your turn',fn:async()=>{
  say('<b>This is how a turn goes.</b> You have Nino (Basic) in play with 2 Butterfly Hearts.');await sleep(2600);
  hl(0);say('<b>1. Draw a card:</b> at the start of your turn you draw 1 card.');
  const nc=await spawn({...DEF.nino_basic,back:true},SLOT.meDeck,S_BEN);place(nc,...SLOT.hand(3),700,S_HAND);await sleep(750);await flip(nc);r.hand.push(nc);await sleep(1500);
- hl(1);say('<b>2. Give a Heart:</b> every turn you get <b>1 free Heart</b>. There are no Heart cards in the deck. Click the Heart, then a Character.');
- const tok=div('h',dyn);tok.style.cssText+=`;left:${SLOT.zone[0]+20}px;top:${SLOT.zone[1]+30}px;width:34px;height:34px;background:${HC.butterfly};position:absolute;transition:all ${T(900)}ms ease`;
- const zl=div('lbl',dyn,'+1 free every turn');zl.style.cssText+=';left:1090px;top:570px;color:#d9c8ff';await sleep(1500);
- tok.style.left=(SLOT.meAct[0]+20)+'px';tok.style.top=(SLOT.meAct[1]+120)+'px';await sleep(950);tok.remove();heart(r.meAct,'butterfly');zl.remove();await sleep(1500);
+ hl(1);say('<b>2. Give Hearts:</b> every turn you get <b>2 free Hearts</b>. There are no Heart cards in the deck. Click a Heart, then a Character.');
+ const zl=div('lbl',dyn,'+2 free every turn');zl.style.cssText+=';left:1090px;top:570px;color:#d9c8ff';await sleep(1500);
+ await give(r.meAct,'butterfly',2);zl.remove();await sleep(1500);
  hl(2);say('<b>3. Bench:</b> click a Basic Character in your hand to put it on your Bench. There is room for 3.');
  place(nc,...SLOT.meBench[1],800,S_BEN);await sleep(2600);
  hl(3);say('<b>4. Evolve:</b> Nino goes from <b>Basic</b> to <b>Close</b>. Her Hearts stay and her HP goes up. A Character cannot evolve in the turn it arrives.');
@@ -93,16 +94,17 @@ SC.push({t:'2 · Your turn',fn:async()=>{
  const fu=r.hand[1];place(fu,380,300,800,1.0);await sleep(1000);pop('Draw 3 cards!',390,270,'#9fd0ff',24);
  for(let i=0;i<3;i++){const c=await spawn({...DEF.nino_basic,back:true},SLOT.meDeck,S_BEN);place(c,...SLOT.hand(4+i),650,S_HAND);r.hand.push(c);await sleep(420)}
  await sleep(900);place(fu,...SLOT.meDis,700,S_BEN);await sleep(900);
- hl(5);say('<b>6. Attack:</b> Nino is ready. The attack costs 3 Hearts, and she has 3. Pick a move. An attack ends your turn.');
+ hl(5);say('<b>6. Attack:</b> Nino is ready. The attack costs 3 Hearts, and she has 4. Pick a move. An attack ends your turn.');
  r.meAct.firstChild.animate([{boxShadow:'0 0 0 0 #f2c75c'},{boxShadow:'0 0 28px 8px #f2c75c'},{boxShadow:'0 0 0 0 #f2c75c'}],{duration:T(1200),iterations:2});await sleep(3600)}});
 SC.push({t:'3 · Damage',fn:async()=>{
- const r=await setup({me:{act:{k:'nino_close',h:['butterfly','butterfly','butterfly']},bench:['nino_basic','nino_basic']},opp:{act:{k:'ichika_close',h:['heart']},bench:['ichika_prime','back']},hand:['nino_bride','nino_basic','futa'],mem:[0,0]});
+ const r=await setup({me:{act:{k:'nino_close',h:['butterfly','butterfly','butterfly','butterfly']},bench:['nino_basic','nino_basic']},opp:{act:{k:'ichika_close',h:['heart']},bench:['ichika_prime','back']},hand:['nino_bride','nino_basic','futa'],mem:[0,0]});
  hl(5);say('<b>Attack:</b> Nino uses <b>“Pastry Barrage”</b>.');await sleep(1800);
  panel(true);await line('Pastry Barrage = <b>100</b> damage',1300);
  say('Ichika is <b>weak to Butterfly</b>: the damage is doubled.');
  await line('Ichika is weak → <span class="r">× 2</span>',1400);await line('= <span class="big">200 damage</span>',1300);
  await lunge(r.meAct,-1);pop('200',SLOT.oppAct[0]+30,SLOT.oppAct[1]+30,'#ff7f8e',48);setHp(r.oppAct,0,1100);await sleep(1400);
  await line('Ichika has only 110 HP → <b>knocked out!</b>',900);
+ say('<b>The attack uses up its Hearts:</b> 3 of Nino’s 4 Hearts are gone. She keeps the last one.');spend(r.meAct,3);pop('−3 Hearts',SLOT.meAct[0]-5,SLOT.meAct[1]+110,'#ffe9a8',26);await sleep(3200);
  say('<b>Knocked out!</b> You get <b>1 Memory</b>. The rival has to bring a new Active Character from their Bench.');
  await ko(r.oppAct,SLOT.oppDis);setMem(0,1,true);pop('+1 Memory',1050,40,'#ffe9a8',24);
  const np=r.oppBench[0];place(np,...SLOT.oppAct,900,S_ACT);await sleep(1800);
@@ -110,14 +112,14 @@ SC.push({t:'3 · Damage',fn:async()=>{
  await line('Example: Itsuki attacks Ichika (Ichika resists Star)',1500);await line('100 − 30 = <span class="g">70 damage</span>',1000);
  await line('That is why the <b>mix of your deck</b> matters.',900);await sleep(2800)}});
 SC.push({t:'4 · Primes',fn:async()=>{
- const r=await setup({me:{act:{k:'nino_close',h:['butterfly','butterfly','butterfly']},bench:['nino_basic']},opp:{act:{k:'ichika_prime',h:['heart','heart']},bench:['back']},hand:['nino_bride'],mem:[1,0]});
+ const r=await setup({me:{act:{k:'nino_close',h:['butterfly']},bench:['nino_basic']},opp:{act:{k:'ichika_prime',h:['heart','heart']},bench:['back']},hand:['nino_bride'],mem:[1,0]});
  say('<b>Next turn.</b> The rival now has a <b>Prime card</b>: lots of HP (190), but risky for them.');await sleep(3200);
- hl(1);say('You get 1 free Heart again …');const tok=div('h',dyn);tok.style.cssText+=`;position:absolute;left:${SLOT.zone[0]+20}px;top:${SLOT.zone[1]+30}px;width:34px;height:34px;background:${HC.butterfly};transition:all ${T(900)}ms ease`;
- await sleep(900);tok.style.left=(SLOT.meAct[0]+20)+'px';tok.style.top=(SLOT.meAct[1]+120)+'px';await sleep(950);tok.remove();heart(r.meAct,'butterfly');await sleep(1000);
+ hl(1);say('You get <b>2 free Hearts</b> again. Nino kept 1, so she has 3 now …');
+ await give(r.meAct,'butterfly',2);await sleep(800);
  hl(3);say('… and evolve Nino to <b>Bride</b> (the strongest stage: 150 HP).');
  place(r.hand[0],...SLOT.meAct,900,S_ACT);await sleep(1000);flash(r.meAct);r.meAct.querySelector('.art').style.backgroundImage=`url(${IMG.nino_bride})`;r.meAct.querySelector('.tag').textContent='BRIDE';r.meAct._max=150;setHp(r.meAct,150,1000);r.hand[0].remove();await sleep(2300);
  hl(5);say('Attack: <b>“No More Holding Back”</b>.');panel(true);await line('Attack = <b>180</b> damage',1100);await line('Weakness → <span class="r">× 2</span> = <span class="big">360</span>',1500);
- await lunge(r.meAct,-1);pop('360',SLOT.oppAct[0]+30,SLOT.oppAct[1]+30,'#ff7f8e',52);setHp(r.oppAct,0,1100);await sleep(1500);await line('190 HP → knocked out (the rest is lost)',900);
+ await lunge(r.meAct,-1);pop('360',SLOT.oppAct[0]+30,SLOT.oppAct[1]+30,'#ff7f8e',52);setHp(r.oppAct,0,1100);spend(r.meAct,3);await sleep(1500);await line('190 HP → knocked out (the rest is lost)',900);
  say('When a <b>Prime card</b> is knocked out, the attacker gets <b>2 Memories</b>. That is why Primes are strong, but a risk for their owner.');
  await ko(r.oppAct,SLOT.oppDis);setMem(0,3,true);pop('+2 Memories!',1030,40,'#ffe9a8',24);
  await sleep(3600)}});
@@ -135,12 +137,12 @@ SC.push({t:'5 · Halloween',fn:async()=>{
  pop('+30',SLOT.meAct[0]+30,SLOT.meAct[1]+20,'#6fd6a0',44);setHp(r.meAct,90,1000);await sleep(500);
  pop('+30',SLOT.meBench[0][0]+10,SLOT.meBench[0][1]+10,'#6fd6a0',36);setHp(r.meBench[0],70,1000);await sleep(2800)}});
 SC.push({t:'6 · Victory',fn:async()=>{
- const r=await setup({me:{act:{k:'nino_bride',h:['butterfly','butterfly','butterfly','butterfly']},bench:['nino_basic']},opp:{act:{k:'ichika_basic',h:['heart']},bench:['back']},hand:['nino_basic'],mem:[3,0]});
- say('And so it goes on: turn after turn you knock out Characters and collect <b>Memories</b> …');await sleep(2600);
+ const r=await setup({me:{act:{k:'nino_bride',h:['butterfly','butterfly','butterfly']},bench:['nino_basic']},opp:{act:{k:'ichika_basic',h:['heart']},bench:['back']},hand:['nino_basic'],mem:[3,0]});
+ say('And so it goes on: turn after turn you get new Hearts, knock out Characters and collect <b>Memories</b> …');await sleep(2600);
  let mem=3;
- for(let i=0;i<3;i++){await lunge(r.meAct,-1);const t=SLOT.oppAct;pop('Knocked out!',t[0]+10,t[1]+50,'#ff7f8e',30);
+ for(let i=0;i<3;i++){await lunge(r.meAct,-1);spend(r.meAct,3);const t=SLOT.oppAct;pop('Knocked out!',t[0]+10,t[1]+50,'#ff7f8e',30);
   const tmp=r.oppAct;await ko(tmp,SLOT.oppDis);mem++;setMem(0,mem,true);pop('+1',1040+mem*27-130,60,'#ffe9a8',22);
-  if(mem<6){const n=await spawn(DEF.ichika_basic,SLOT.oppAct,1);r.oppAct=n;await sleep(900)}}
+  if(mem<6){const n=await spawn(DEF.ichika_basic,SLOT.oppAct,1);r.oppAct=n;for(let k=0;k<3;k++)heart(r.meAct,'butterfly');await sleep(900)}}
  await sleep(500);$('banner').querySelector('p').textContent='Whoever gets 6 Memories first wins.';$('banner').classList.add('on');
  say('<b>6 Memories = victory!</b> You also lose if you have no Characters left or cannot draw a card.');await sleep(5200)}});
 function buildBar(){const b=$('bar');b.innerHTML='';

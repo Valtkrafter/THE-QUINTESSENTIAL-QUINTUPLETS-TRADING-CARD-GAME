@@ -9,18 +9,19 @@ import {
   effectsWorth,
   bestMove,
   bestPrintedDamage,
-  estimateMove,
+  freeLeft,
   frontValue,
   figureWorth,
   heartWorth,
   inDanger,
   matchupBonus,
+  planAttack,
   reachAgainst,
   sidesOf,
   type Sides,
 } from './aiEval';
 import { legalActions } from './legal';
-import { characterOf, currentHp, figureAt, memoriesFor, retreatCost, studyDiscount, topCard } from './rules';
+import { characterOf, currentHp, figureAt, freeHeartsNext, memoriesFor, retreatCost, studyDiscount, topCard } from './rules';
 import type { BattleAction, BattleState, Figure, FigureRef, PendingChoice, PlayerIndex } from './types';
 
 export const AI_LEVELS = ['easy', 'normal', 'hard'] as const;
@@ -46,6 +47,9 @@ const STYLES: Readonly<Record<AiLevel, Style>> = {
 /** Preparing actions below this many points are not worth doing. */
 const WORTH_DOING = 2;
 
+/** Points for one Heart that is paid and gone, for a retreat: those Hearts would have paid for an attack. */
+const HEART_COST = 12;
+
 export interface Ai {
   readonly level: AiLevel;
   /** The next action of `me`. Give it the battle as `observe` shows it; it must be this player's turn to act. */
@@ -54,12 +58,13 @@ export interface Ai {
 
 // --- Main phase ---------------------------------------------------------------------------------------------------------
 
+/** Whether the Active Character could pay for a move in this turn, once the free Hearts that are left are given to it. */
 function activeCanAttack(sides: Sides): boolean {
   const active = sides.mine.active;
   if (active === null) {
     return false;
   }
-  return bestMove(sides, active, active.hearts, studyDiscount(sides.mine), sides.theirs.shieldTurn === sides.state.turn) !== null;
+  return bestMove(sides, active, active.hearts + freeLeft(sides), studyDiscount(sides.mine), sides.theirs.shieldTurn === sides.state.turn) !== null;
 }
 
 function worthOfPlayingBasic(sides: Sides, cardId: string): number {
@@ -103,7 +108,7 @@ function worthOfAbility(sides: Sides, figure: Figure, ref: FigureRef, style: Sty
         const active = sides.mine.active;
         const mine = sides.mine;
         const discount = studyDiscount(mine);
-        const bench = mine.bench.map((candidate) => bestMove(sides, candidate, candidate.hearts, discount, false)?.value ?? 0);
+        const bench = mine.bench.map((candidate) => bestMove(sides, candidate, candidate.hearts + freeLeft(sides), discount, false)?.value ?? 0);
         const best = Math.max(0, ...bench);
         if (active !== null && !activeCanAttack(sides) && best > 0) {
           points += 36 + best * 0.3;
@@ -132,9 +137,9 @@ function worthOfRetreat(sides: Sides, benchIndex: number, style: Style): number 
   if (!style.repositions || active === null || candidate === undefined) {
     return -1;
   }
-  const lost = retreatCost(active) * 8;
+  const lost = retreatCost(active) * HEART_COST;
   const discount = studyDiscount(sides.mine);
-  const attack = bestMove(sides, candidate, candidate.hearts, discount, sides.theirs.shieldTurn === sides.state.turn);
+  const attack = bestMove(sides, candidate, candidate.hearts + freeLeft(sides), discount, sides.theirs.shieldTurn === sides.state.turn);
   if (!activeCanAttack(sides) && attack !== null) {
     return 34 + attack.value * 0.3 - lost + matchupBonus(sides, candidate);
   }
@@ -179,18 +184,9 @@ function pickAttack(sides: Sides, options: readonly BattleAction[], style: Style
   if (attacks.length > 1 && rng.next() < style.sloppyAttack) {
     return rng.pick(attacks);
   }
-  const shielded = sides.theirs.shieldTurn === sides.state.turn;
-  let best: { readonly action: BattleAction; readonly value: number } | undefined;
-  for (const action of attacks) {
-    if (action.type !== 'attack') {
-      continue;
-    }
-    const value = estimateMove(sides, active, action.moveIndex, shielded).value;
-    if (best === undefined || value > best.value) {
-      best = { action, value };
-    }
-  }
-  return best?.action;
+  // Which move, or none: a move uses up its Hearts, so the plan looks at this turn and the next.
+  const plan = planAttack(sides, active, active.hearts, studyDiscount(sides.mine), sides.theirs.shieldTurn === sides.state.turn, true);
+  return attacks.find((action) => action.type === 'attack' && action.moveIndex === plan.moveIndex);
 }
 
 function chooseMain(sides: Sides, options: readonly BattleAction[], style: Style, rng: Rng): BattleAction {
@@ -265,7 +261,9 @@ function figurePoints(sides: Sides, pending: PendingChoice, ref: FigureRef): num
       return heartWorth(sides, figure, isActive);
     case 'swap-in':
     case 'promote': {
-      const attack = bestMove(sides, figure, figure.hearts, studyDiscount(mine), false);
+      // It gets the free Hearts of this turn (swapped in now) or of the next one (stepping up after a knock-out).
+      const hearts = figure.hearts + (prompt.reason === 'promote' ? freeHeartsNext(sides.state, sides.me) : freeLeft(sides));
+      const attack = bestMove(sides, figure, hearts, studyDiscount(mine), false);
       return figureWorth(figure) + (attack === null ? 0 : 30 + attack.value * 0.3) + matchupBonus(sides, figure);
     }
     case 'send-to-front': {

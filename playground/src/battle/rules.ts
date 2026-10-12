@@ -21,19 +21,33 @@ export const TURN_LIMIT = 80;
 export const MAX_MULLIGANS = 20;
 /** The coin is fair. */
 export const HEADS_CHANCE = 0.5;
-/** Hearts a player may give for free in a turn. */
-export const FREE_HEARTS_PER_TURN = 1;
-/** The player who goes second gets one more in their first turn: going first is an advantage that this evens out. */
-export const SECOND_PLAYER_BONUS_HEARTS = 1;
+/** Hearts a player may give for free in a turn. The Hearts of a move are used up when it is made, so they are given again every turn. */
+export const FREE_HEARTS_PER_TURN = 2;
+/** The player who goes first cannot attack in their first turn, so they get no free Hearts in it ... */
+export const FIRST_PLAYER_START_HEARTS = 0;
+/** ... and the player who goes second gets one more than usual in their first turn. Together this evens out the advantage of going first. */
+export const SECOND_PLAYER_START_HEARTS = 3;
 
 export function other(player: PlayerIndex): PlayerIndex {
   return player === 0 ? 1 : 0;
 }
 
+/** How many free Hearts `player` gets in their `turnNumber`-th turn (1 for the first). */
+function freeHeartsInTurn(first: PlayerIndex, player: PlayerIndex, turnNumber: number): number {
+  if (turnNumber > 1) {
+    return FREE_HEARTS_PER_TURN;
+  }
+  return player === first ? FIRST_PLAYER_START_HEARTS : SECOND_PLAYER_START_HEARTS;
+}
+
 /** How many free Hearts `player` may give during the turn that is being played. */
 export function freeHearts(state: Pick<BattleState, 'first' | 'players'>, player: PlayerIndex): number {
-  const secondPlayerFirstTurn = player !== state.first && state.players[player].turnsTaken <= 1;
-  return FREE_HEARTS_PER_TURN + (secondPlayerFirstTurn ? SECOND_PLAYER_BONUS_HEARTS : 0);
+  return freeHeartsInTurn(state.first, player, state.players[player].turnsTaken);
+}
+
+/** How many free Hearts `player` will get in their next turn. */
+export function freeHeartsNext(state: Pick<BattleState, 'first' | 'players'>, player: PlayerIndex): number {
+  return freeHeartsInTurn(state.first, player, state.players[player].turnsTaken + 1);
 }
 
 export function characterOf(cardId: string): CharacterCard | undefined {
@@ -106,7 +120,7 @@ export function studyDiscount(player: PlayerState): number {
   return discount;
 }
 
-/** How many Hearts a move needs. A Heart always has the kind of its Character, so only the number counts. */
+/** How many Hearts a move needs, and uses up: they are taken off the Character that attacks. A Heart always has the kind of its Character, so only the number counts. */
 export function moveHeartCost(move: Move, discount: number): number {
   const grey = move.cost.filter((heart) => heart === 'study').length;
   return move.cost.length - Math.min(discount, grey);

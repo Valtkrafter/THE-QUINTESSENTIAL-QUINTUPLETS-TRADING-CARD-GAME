@@ -20,8 +20,10 @@ import {
   isKnockedOut,
   maxHp,
   memoriesFor,
+  moveHeartCost,
   other,
   retreatCost,
+  studyDiscount,
   survivalHp,
   topCard,
 } from './rules';
@@ -360,9 +362,12 @@ function attack(run: Run, moveIndex: number): void {
   if (attacker === null || defender === null || card === undefined || move === undefined) {
     return;
   }
+  // The damage counts the Hearts the Character holds as it attacks; the Hearts of the move are used up right after.
   const result = damageAgainst(baseDamage(move, attacker, attackerSide), card, defender, defenderSide.shieldTurn === state.turn);
+  const spent = moveHeartCost(move, studyDiscount(attackerSide));
+  attacker.hearts -= spent;
   defender.damage += result.damage;
-  emit(run, { type: 'attack', player: me, cardId: card.id, move: move.name, ...result });
+  emit(run, { type: 'attack', player: me, cardId: card.id, move: move.name, spent, ...result });
   state.attacking = me;
   runEffects(run, move.effects, { player: me, origin: 'move', figureUid: attacker.uid });
 }
