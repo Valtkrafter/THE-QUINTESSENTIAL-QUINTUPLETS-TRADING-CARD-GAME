@@ -103,13 +103,13 @@ export function PackCard({ pack, save, today, onOpen }: PackCardProps) {
         <BannerInfo pack={pack} save={save} today={today} />
         <Facts pack={pack} />
         <p className={styles.shiny}>{text.packs.facts.shiny(pack.finishLean)}</p>
-        <div className={styles.meters}>
+        <div className={styles.meters} data-tutorial={`pity-${pack.id}`}>
           {status.banner !== undefined && <PityMeter label={text.packs.pity.banner} count={status.banner.count} guaranteeAt={status.banner.hardAt} softFrom={status.banner.softFrom} />}
           <PityMeter label={text.packs.pity.sar} count={status.sar.count} guaranteeAt={status.sar.guaranteeAt} />
           <PityMeter label={text.packs.pity.ur} count={status.ur.count} guaranteeAt={status.ur.guaranteeAt} />
         </div>
         <div className={styles.actions}>
-          <Button kind="primary" onClick={() => onOpen(1)} disabled={!one}>
+          <Button kind="primary" onClick={() => onOpen(1)} disabled={!one} data-tutorial={`open-${pack.id}`}>
             {text.packs.open(1)} · {formatYen(pack.price)}
           </Button>
           <Button onClick={() => onOpen(MANY)} disabled={!many}>
@@ -117,7 +117,7 @@ export function PackCard({ pack, save, today, onOpen }: PackCardProps) {
           </Button>
         </div>
         {!one && <p className={styles.missingYen}>{text.packs.missing(missing)}</p>}
-        <Link href={`/packs/odds/${pack.id}`} className={styles.odds}>
+        <Link href={`/packs/odds/${pack.id}`} className={styles.odds} data-tutorial={`odds-${pack.id}`}>
           {text.packs.odds}
         </Link>
       </div>

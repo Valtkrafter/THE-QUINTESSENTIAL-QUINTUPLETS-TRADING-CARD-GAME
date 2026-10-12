@@ -27,6 +27,7 @@ Everything in the game is written in English, in plain words. This list is the s
 | **Score** | The grade of a card, from 1 to 10 in steps of a half. The words on the label: Pristine (10), Gem Mint (9.5), Mint (9), Near Mint (8 to 8.5), Excellent (7 to 7.5), Good (5 to 6.5), Played (below 5). |
 | **Slab** | A graded card in its clear case, with a paper label on top that shows the score and the four marks. |
 | **Loose card** | A card that has not been graded. |
+| **Tutorial** | The short guide a tab shows the first time you open it. You do every step yourself, and it cannot be skipped. |
 
 ## Fighting
 

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { CATALOG } from '../cards/catalog';
 import { CHARACTER_BONUS_YEN, DEX_PACK_EVERY, claimDexRewards, pendingDexRewards } from './dexRewards';
 import { saveDeck } from './deckList';
-import { OFFERS_PER_RARITY, OFFER_STOCK, ShopError, buyOffer, dailyOffers, stockLeft } from './kiosk';
+import { OFFERS_PER_RARITY, OFFER_STOCK, ShopError, buyOffer, cheapestOffer, dailyOffers, stockLeft } from './kiosk';
 import { FINISH_MULTIPLIER, KIOSK_YEN, SELL_YEN, kioskPrice, sellPrice } from './prices';
 import { STARTING_YEN, addOwnedCard, newSaveGame, withShowcase, type SaveGame } from './save';
 import { sellCopies, sellableCopies } from './selling';
@@ -114,6 +114,22 @@ describe('the Kiosk', () => {
     expect(() => buyOffer(second.save, offer.card.id, DAY, NOW + 3)).toThrow(ShopError);
     // The next day the shelf is stocked again.
     expect(stockLeft(second.save, '2026-10-13', offer.card.id)).toBe(OFFER_STOCK);
+  });
+
+  it('knows the cheapest card that can still be bought', () => {
+    let save = { ...newSaveGame('cheap', NOW), player: { yen: 50_000 } };
+    const prices = dailyOffers(DAY).map((offer) => offer.price);
+    const first = cheapestOffer(save, DAY);
+    expect(first?.price).toBe(Math.min(...prices));
+    // When the cheapest one is bought out, the next one is the cheapest.
+    for (let bought = 0; bought < OFFER_STOCK; bought += 1) {
+      save = buyOffer(save, first?.card.id ?? '', DAY, NOW + bought).save;
+    }
+    const second = cheapestOffer(save, DAY);
+    expect(second?.card.id).not.toBe(first?.card.id);
+    expect(second && stockLeft(save, DAY, second.card.id)).toBeGreaterThan(0);
+    // Another day, a full shelf again.
+    expect(cheapestOffer(save, '2026-10-13')).toBeDefined();
   });
 
   it('refuses a card that is not on the shelf and a purse that is too empty', () => {

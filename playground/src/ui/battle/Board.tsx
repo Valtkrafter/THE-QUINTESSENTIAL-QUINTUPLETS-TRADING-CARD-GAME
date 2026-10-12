@@ -18,6 +18,7 @@ import { CardFace } from '../components/CardFace';
 import { Button } from '../components/controls';
 import { Dialog } from '../components/Dialog';
 import { trapTab } from '../components/focusTrap';
+import { useElementSize } from '../hooks/useElementSize';
 import { text } from '../text';
 import { CaptionBar } from './CaptionBar';
 import { captionFor, setupGuide, turnGuide } from './coach';
@@ -35,7 +36,6 @@ import { ResultDialog } from './ResultDialog';
 import { DeckPile, DiscardPile, FoePanel, InfoPanel, Inspector, MemoryRow, Placed, type WhoProps } from './stageParts';
 import styles from './Table.module.css';
 import { useBattleSounds } from './useBattleSounds';
-import { useElementSize } from './useElementSize';
 import { figureOptions, handOptions, heartsLeft, isPlayable, moodOf, moveViews, promptFor } from './viewModel';
 
 /** What the player has picked up: a card of the hand, the free Heart or a Character in play. */
@@ -323,7 +323,7 @@ function BoardView({ battle, rivalName, rivalCharacter, rivalLevel, deckName, de
     }
     if (mood === 'setup') {
       return setupDone === undefined ? null : (
-        <Button kind="primary" onClick={() => act(setupDone)}>
+        <Button kind="primary" onClick={() => act(setupDone)} data-tutorial="battle-ready">
           {text.battle.board.ready}
         </Button>
       );
@@ -342,7 +342,7 @@ function BoardView({ battle, rivalName, rivalCharacter, rivalLevel, deckName, de
         {ability !== null && <Button onClick={() => act(ability)}>{text.battle.board.useAbility(abilityName)}</Button>}
         {swap !== null && mine.active !== null && <Button onClick={() => act(swap)}>{text.battle.board.retreat(retreatCost(mine.active))}</Button>}
         {endTurn !== undefined && (
-          <Button kind={guide.next === null && selection === null ? 'primary' : 'default'} onClick={() => act(endTurn)}>
+          <Button kind={guide.next === null && selection === null ? 'primary' : 'default'} onClick={() => act(endTurn)} data-tutorial="battle-end">
             {text.battle.board.endTurn}
           </Button>
         )}
@@ -420,7 +420,7 @@ function BoardView({ battle, rivalName, rivalCharacter, rivalLevel, deckName, de
 
   return (
     <div ref={rootRef} className={styles.screen} role="region" aria-label={text.battle.table.label} onKeyDown={onKeyDown}>
-      <div ref={spaceRef} className={styles.space} data-layout={layout.name}>
+      <div ref={spaceRef} className={styles.space} data-layout={layout.name} data-tutorial="battle-table">
         <div className={styles.sizer} style={{ width: layout.width * scale, height: layout.height * scale }}>
           <div className={styles.stage} style={{ width: layout.width, height: layout.height, transform: `scale(${scale})` } as CSSProperties}>
             {layout.steps.h > 0 && <StepsPanel box={layout.steps} title={stepsTitle} steps={steps} dim={mood === 'their-turn' || status === 'over' || prompt !== null} compact={compact} />}
@@ -472,7 +472,7 @@ function BoardView({ battle, rivalName, rivalCharacter, rivalLevel, deckName, de
             <MemoryRow box={layout.memories.opp} who={rival} count={theirs.memories} turn={mood === 'their-turn'} />
             <MemoryRow box={layout.memories.mine} who={you} count={mine.memories} turn={mood === 'your-turn'} />
             <HeartZone box={layout.hearts} left={mood === 'your-turn' ? heartsLeft(battle, 0) : 0} enabled={canAct && prompt === null && mood === 'your-turn' && heartTargets.length > 0} picked={selection?.kind === 'heart'} row={compact} onPick={pickHeart} />
-            <Placed box={layout.hand} label={text.battle.board.yourHand}>
+            <Placed box={layout.hand} label={text.battle.board.yourHand} anchor="hand">
               <p className={styles.handTitle}>
                 <strong>{text.battle.table.handTitle(mine.hand.length)}</strong>
                 <span>{text.battle.table.handHint}</span>

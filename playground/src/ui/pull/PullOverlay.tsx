@@ -186,6 +186,7 @@ export default function PullOverlay({ openings, preview = false, onClose, onAgai
       className={styles.root}
       role="dialog"
       aria-modal="true"
+      data-tutorial="pull"
       aria-label={opening?.pack.name ?? ''}
       tabIndex={-1}
       onPointerDown={handlePointerDown}

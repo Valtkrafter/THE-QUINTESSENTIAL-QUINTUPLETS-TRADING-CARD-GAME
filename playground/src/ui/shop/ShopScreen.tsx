@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { cardById } from '../../cards/catalog';
 import { FINISH_TIER } from '../../cards/finish';
-import { dailyOffers, ShopError, buyOffer, stockLeft, type Offer } from '../../domain/kiosk';
+import { cheapestOffer, dailyOffers, ShopError, buyOffer, stockLeft, type Offer } from '../../domain/kiosk';
 import { sellCopies, sellableCopies } from '../../domain/selling';
 import { findFinish } from '../../holo/finishes';
 import { gameStore, useSave } from '../../state/app';
@@ -16,7 +16,20 @@ import styles from './Shop.module.css';
 
 type Tab = 'buy' | 'sell';
 
-function OfferTile({ offer, left, canAfford, onBuy }: { readonly offer: Offer; readonly left: number; readonly canAfford: boolean; readonly onBuy: () => void }) {
+function OfferTile({
+  offer,
+  left,
+  canAfford,
+  onBuy,
+  anchor,
+}: {
+  readonly offer: Offer;
+  readonly left: number;
+  readonly canAfford: boolean;
+  readonly onBuy: () => void;
+  /** The cheapest card on the shelf: the introduction points at its button. */
+  readonly anchor: boolean;
+}) {
   const { card, price } = offer;
   return (
     <li className={cx(styles.offer, left === 0 && styles.soldOut)}>
@@ -34,7 +47,7 @@ function OfferTile({ offer, left, canAfford, onBuy }: { readonly offer: Offer; r
           <span className={styles.stock}>{text.shop.kiosk.stock(left)}</span>
         </span>
       </div>
-      <Button kind={left > 0 && canAfford ? 'primary' : 'default'} disabled={left === 0 || !canAfford} onClick={onBuy}>
+      <Button kind={left > 0 && canAfford ? 'primary' : 'default'} disabled={left === 0 || !canAfford} onClick={onBuy} data-tutorial={anchor ? 'kiosk-buy' : undefined}>
         {left === 0 ? text.shop.kiosk.stock(0) : canAfford ? text.shop.kiosk.buy : text.shop.kiosk.short(price)}
       </Button>
     </li>
@@ -45,6 +58,7 @@ function Kiosk() {
   const save = useSave();
   const today = useToday();
   const offers = useMemo(() => dailyOffers(today), [today]);
+  const cheapest = cheapestOffer(save, today);
   const [message, setMessage] = useState<string | null>(null);
 
   const buy = (offer: Offer): void => {
@@ -67,9 +81,16 @@ function Kiosk() {
           {message}
         </p>
       )}
-      <ul className={styles.grid} aria-label={text.shop.kiosk.title}>
+      <ul className={styles.grid} aria-label={text.shop.kiosk.title} data-tutorial="kiosk">
         {offers.map((offer) => (
-          <OfferTile key={offer.card.id} offer={offer} left={stockLeft(save, today, offer.card.id)} canAfford={save.player.yen >= offer.price} onBuy={() => buy(offer)} />
+          <OfferTile
+            key={offer.card.id}
+            offer={offer}
+            left={stockLeft(save, today, offer.card.id)}
+            canAfford={save.player.yen >= offer.price}
+            onBuy={() => buy(offer)}
+            anchor={offer.card.id === cheapest?.card.id}
+          />
         ))}
       </ul>
     </>
@@ -116,7 +137,7 @@ function Sell() {
   if (spare.length === 0) {
     return (
       <>
-        <p className={styles.note}>{text.shop.sell.note}</p>
+        <p className={styles.note} data-tutorial="sell-note">{text.shop.sell.note}</p>
         {message !== null && <p className={styles.message}>{message}</p>}
         <p className={styles.empty}>{text.shop.sell.none}</p>
       </>
@@ -125,7 +146,7 @@ function Sell() {
 
   return (
     <>
-      <p className={styles.note}>{text.shop.sell.note}</p>
+      <p className={styles.note} data-tutorial="sell-note">{text.shop.sell.note}</p>
       {message !== null && (
         <p className={styles.message} role="status">
           {message}
@@ -204,7 +225,7 @@ export default function ShopScreen() {
           label={text.shop.title}
           options={[
             { value: 'buy', label: text.shop.tabs.buy },
-            { value: 'sell', label: text.shop.tabs.sell },
+            { value: 'sell', label: text.shop.tabs.sell, anchor: 'shop-tab-sell' },
           ]}
         />
       </div>

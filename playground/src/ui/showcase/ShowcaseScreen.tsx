@@ -34,8 +34,8 @@ function Picker({ onClose }: { readonly onClose: () => void }) {
         <p>{save.collection.length === 0 ? text.showcase.pickerEmpty : text.showcase.pickerAllShown}</p>
       ) : (
         <ul className={styles.picker}>
-          {choices.map((copy) => (
-            <CardTile key={copy.uid} copy={copy} onSelect={() => pick(copy)} />
+          {choices.map((copy, index) => (
+            <CardTile key={copy.uid} copy={copy} onSelect={() => pick(copy)} anchor={index === 0 ? 'showcase-pick' : undefined} />
           ))}
         </ul>
       )}
@@ -57,7 +57,7 @@ export default function ShowcaseScreen() {
     <>
       <PageHeader title={text.showcase.title} subtitle={text.showcase.summary(shown.length, SHOWCASE_SLOTS)} />
       {save.collection.length === 0 && <p className={styles.note}>{text.showcase.nothingYet}</p>}
-      <section className={styles.case} aria-label={text.showcase.title}>
+      <section className={styles.case} aria-label={text.showcase.title} data-tutorial="showcase-case">
         <ul className={styles.shelf}>
           {shown.map(({ copy, card }) => (
             <li key={copy.uid} className={styles.slot}>
@@ -84,7 +84,7 @@ export default function ShowcaseScreen() {
             </li>
           ))}
           {Array.from({ length: free }, (_, index) => (
-            <li key={`free-${index}`} className={styles.slot}>
+            <li key={`free-${index}`} className={styles.slot} data-tutorial={index === 0 ? 'showcase-add' : undefined}>
               <div className={styles.cardBox}>
                 <button
                   type="button"

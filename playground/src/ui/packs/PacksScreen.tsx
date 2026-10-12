@@ -118,7 +118,7 @@ export default function PacksScreen() {
         title={text.packs.title}
         subtitle={text.packs.subtitle}
         actions={
-          <div className={styles.wallet}>
+          <div className={styles.wallet} data-tutorial="packs-wallet">
             <span>{text.packs.yen}</span>
             <strong>{formatYen(save.player.yen)}</strong>
           </div>
@@ -131,7 +131,7 @@ export default function PacksScreen() {
           <p>{waiting > 0 ? text.packs.daily.waiting(waitingDays) : text.packs.daily.done}</p>
           <p className={styles.note}>{text.packs.daily.note}</p>
         </div>
-        <Button kind="primary" onClick={claim} disabled={waiting === 0}>
+        <Button kind="primary" onClick={claim} disabled={waiting === 0} data-tutorial="daily-claim">
           {waiting > 0 ? text.packs.daily.claim(waiting) : text.packs.daily.title}
         </Button>
       </section>
@@ -155,7 +155,7 @@ export default function PacksScreen() {
       <Link href="/packs/odds" className={styles.compareLink}>
         {text.packs.compare}
       </Link>
-      <div className={styles.packs}>
+      <div className={styles.packs} data-tutorial="pack-list">
         {[...available].sort((a, b) => Number(b.banner !== undefined) - Number(a.banner !== undefined)).map((pack) => (
           <PackCard key={pack.id} pack={pack} save={save} today={today} onOpen={(count) => open(pack.id, count)} />
         ))}
@@ -164,7 +164,7 @@ export default function PacksScreen() {
       <History />
 
       {session !== null && (
-        <Suspense fallback={<div className={styles.loading}>{text.pull.preparing}</div>}>
+        <Suspense fallback={<div className={styles.loading} data-tutorial="pull-loading">{text.pull.preparing}</div>}>
           <PullOverlay
             key={session.id}
             openings={session.openings}

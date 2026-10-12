@@ -13,6 +13,7 @@ import { PageHeader } from '../components/PageHeader';
 import { downloadText, saveFileName } from '../download';
 import { cx } from '../format';
 import { text } from '../text';
+import { restartTutorials } from '../tutorial/store';
 import { APP_VERSION } from '../version';
 import styles from './SettingsScreen.module.css';
 import { ShowPreview } from './ShowPreview';
@@ -80,13 +81,13 @@ export default function SettingsScreen() {
           <div className={styles.block}>
             <h3>{text.settings.frame}</h3>
             <p className={styles.hint}>{text.settings.frameHint}</p>
-            <div className={styles.frames}>
+            <div className={styles.frames} data-tutorial="settings-frame">
               {FRAME_STYLE_IDS.map((style) => (
                 <FrameChoice key={style} style={style} chosen={preferences.frameStyle === style} onChoose={() => preferencesStore.getState().update({ frameStyle: style })} />
               ))}
             </div>
           </div>
-          <div className={styles.block}>
+          <div className={styles.block} data-tutorial="settings-graphics">
             <h3>{text.settings.graphics}</h3>
             <p className={styles.hint}>{text.settings.graphicsHint}</p>
             <Segmented
@@ -105,7 +106,7 @@ export default function SettingsScreen() {
 
         <section className={styles.section}>
           <h2>{text.settings.pullAnimation}</h2>
-          <div className={styles.block}>
+          <div className={styles.block} data-tutorial="settings-animation">
             <p className={styles.hint}>{text.settings.pullAnimationHint}</p>
             <Segmented
               value={preferences.pullAnimation}
@@ -116,7 +117,7 @@ export default function SettingsScreen() {
           </div>
           <div className={styles.block}>
             <h3>{text.settings.sound}</h3>
-            <label className={styles.slider}>
+            <label className={styles.slider} data-tutorial="settings-volume">
               <span>{text.settings.volume}</span>
               <input
                 type="range"
@@ -135,7 +136,7 @@ export default function SettingsScreen() {
           </div>
         </section>
 
-        <section className={styles.section}>
+        <section className={styles.section} data-tutorial="settings-save">
           <h2>{text.settings.saveGame}</h2>
           <p className={styles.hint}>{text.settings.saveHint}</p>
           <div className={styles.row}>
@@ -168,6 +169,10 @@ export default function SettingsScreen() {
               >
                 {text.settings.grantYen}
               </Button>
+            </div>
+            <div className={styles.row}>
+              <Button onClick={restartTutorials}>{text.tutorial.ui.restart}</Button>
+              <span className={styles.hint}>{text.tutorial.ui.restartHint}</span>
             </div>
             <ShowPreview />
             <SimulatorPanel />

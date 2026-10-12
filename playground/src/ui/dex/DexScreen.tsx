@@ -65,10 +65,10 @@ export default function DexScreen() {
   return (
     <>
       <PageHeader title={text.dex.title} subtitle={`${SET_CODE} · ${text.dex.summary(overall.found, overall.total)}`} />
-      <div className={styles.overall}>
+      <div className={styles.overall} data-tutorial="dex-progress">
         <ProgressBar value={overall.found} max={overall.total} label={text.dex.title} />
       </div>
-      <section className={styles.rewards} aria-label={text.dex.rewards.title}>
+      <section className={styles.rewards} aria-label={text.dex.rewards.title} data-tutorial="dex-rewards">
         <div>
           <h2>{text.dex.rewards.title}</h2>
           <p>
@@ -82,12 +82,12 @@ export default function DexScreen() {
           {message !== null && <p className={styles.got}>{message}</p>}
         </div>
         {waiting && (
-          <Button kind="primary" onClick={claim}>
+          <Button kind="primary" onClick={claim} data-tutorial="dex-claim">
             {text.dex.rewards.claim}
           </Button>
         )}
       </section>
-      {CHARACTER_IDS.map((id: CharacterId) => {
+      {CHARACTER_IDS.map((id: CharacterId, position) => {
         const info = CHARACTERS[id];
         const progress = perCharacter.get(id);
         const own = entries.filter((entry) => entry.card.character === id);
@@ -96,7 +96,7 @@ export default function DexScreen() {
         }
         const color = affinityColor(info.affinity);
         return (
-          <section key={id} className={styles.section} aria-label={info.name.en}>
+          <section key={id} className={styles.section} aria-label={info.name.en} data-tutorial={position === 0 ? 'dex-sister' : undefined}>
             <header className={styles.sectionHeader}>
               <span className={styles.dot} style={{ background: color }} />
               <h2>{info.name.en}</h2>

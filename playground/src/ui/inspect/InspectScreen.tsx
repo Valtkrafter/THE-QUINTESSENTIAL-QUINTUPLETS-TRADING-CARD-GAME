@@ -122,11 +122,11 @@ export default function InspectScreen({ uid }: { readonly uid: string }) {
   return (
     <div className={styles.page}>
       <div className={styles.stage}>
-        <button type="button" className={styles.back} onClick={() => goBack(navigate)}>
+        <button type="button" className={styles.back} onClick={() => goBack(navigate)} data-tutorial="card-back">
           <ArrowLeftIcon size={18} />
           {text.inspect.back}
         </button>
-        <div className={styles.viewer}>
+        <div className={styles.viewer} data-tutorial="card-viewer">
           <ErrorBoundary
             key={`${copy.uid}:${preferences.graphics}`}
             fallback={() => (
@@ -159,7 +159,7 @@ export default function InspectScreen({ uid }: { readonly uid: string }) {
         </div>
       </div>
 
-      <aside className={styles.info}>
+      <aside className={styles.info} data-tutorial="card-info">
         <p className={styles.eyebrow}>
           {SET_CODE} · {formatCardNumber(card.number, SET_SIZE)}
         </p>
@@ -245,7 +245,7 @@ export default function InspectScreen({ uid }: { readonly uid: string }) {
         </dl>
 
         <div className={styles.actions}>
-          <Button onClick={() => setFlipRequest((count) => count + 1)}>
+          <Button onClick={() => setFlipRequest((count) => count + 1)} data-tutorial="card-flip">
             <FlipIcon size={16} />
             {text.inspect.flip}
           </Button>

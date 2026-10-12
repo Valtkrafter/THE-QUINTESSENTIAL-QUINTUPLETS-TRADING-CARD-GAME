@@ -77,6 +77,7 @@ export function FigureView({ figure, zone, point, size, strip, finish, highlight
           lunge && (towards === 'up' ? styles.lungeUp : styles.lungeDown),
         )}
         aria-disabled={disabled}
+        data-tutorial={highlight === 'target' ? 'pick' : undefined}
         onClick={() => {
           if (!hold.wasHeld() && !disabled) {
             onClick();

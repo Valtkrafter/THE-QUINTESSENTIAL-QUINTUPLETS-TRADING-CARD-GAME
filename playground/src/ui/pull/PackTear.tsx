@@ -96,6 +96,7 @@ export function PackTear({ pack, openRequest, onRip, onOpen, onGone }: PackTearP
         <div
           ref={boxRef}
           className={styles.box}
+          data-tutorial="pack-tear"
           role="button"
           tabIndex={-1}
           aria-label={text.pull.tear.label(pack.name)}

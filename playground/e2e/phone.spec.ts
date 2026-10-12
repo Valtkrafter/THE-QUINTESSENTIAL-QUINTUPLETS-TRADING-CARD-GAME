@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
-import { goTo, openGame, openOnePack, turnOffPackAnimation, watchErrors } from './helpers';
+import { goTo, openGame, openGameWithTutorial, openOnePack, turnOffPackAnimation, watchErrors } from './helpers';
+import { playTutorial } from './tutorialDriver';
 
 /** Nothing may stick out of the screen sideways: a page that scrolls sideways on a phone is a broken page. */
 async function expectNoSidewaysScroll(page: Page): Promise<void> {
@@ -43,5 +44,33 @@ test('the battle table fits a phone, and a card can be pressed and held to see i
   await expect(page.getByRole('dialog')).toBeVisible({ timeout: 3000 });
   await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog')).toBeHidden();
+  expect(errors).toEqual([]);
+});
+
+test('the introduction fits a phone: the bubble stays in the window, and a tab can be shown around', async ({ page }) => {
+  test.setTimeout(150_000);
+  const errors = watchErrors(page);
+  await openGameWithTutorial(page, '/');
+  const bubble = page.getByRole('region', { name: 'Tutorial' });
+  await expect(bubble).toBeVisible();
+  const size = page.viewportSize();
+  if (size === null) {
+    throw new Error('The phone has no window size.');
+  }
+  // Every step of Packs: the bubble is inside the window and the page does not scroll sideways.
+  await playTutorial(page, {
+    onStep: async (_id, shown) => {
+      await shown.waitForTimeout(450);
+      const box = await bubble.boundingBox();
+      expect(box, 'the bubble has a place on the screen').not.toBeNull();
+      if (box !== null) {
+        expect(box.x).toBeGreaterThanOrEqual(0);
+        expect(box.y).toBeGreaterThanOrEqual(0);
+        expect(box.x + box.width).toBeLessThanOrEqual(size.width + 1);
+        expect(box.y + box.height).toBeLessThanOrEqual(size.height + 1);
+      }
+      await expectNoSidewaysScroll(shown);
+    },
+  });
   expect(errors).toEqual([]);
 });

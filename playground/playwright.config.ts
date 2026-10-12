@@ -29,7 +29,9 @@ export default defineConfig({
     timeout: 240_000,
   },
   projects: [
-    { name: 'desktop', testIgnore: /phone\.spec\.ts/, use: { ...devices['Desktop Chrome'], channel, viewport: { width: 1280, height: 800 } } },
+    { name: 'desktop', testIgnore: /(phone|tutorial)\.spec\.ts/, use: { ...devices['Desktop Chrome'], channel, viewport: { width: 1280, height: 800 } } },
     { name: 'phone', testMatch: /phone\.spec\.ts/, use: { ...devices['Pixel 7'], channel } },
+    // The introductions play whole tabs with 3D shows in them. They run after everything else, so they do not starve the other tests.
+    { name: 'tutorial', testMatch: /tutorial\.spec\.ts/, dependencies: ['desktop', 'phone'], use: { ...devices['Desktop Chrome'], channel, viewport: { width: 1280, height: 800 } } },
   ],
 });

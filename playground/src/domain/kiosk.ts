@@ -42,6 +42,13 @@ export function stockLeft(save: SaveGame, day: DayKey, cardId: string): number {
   return Math.max(0, OFFER_STOCK - boughtToday(save, day, cardId));
 }
 
+/** The cheapest offer that can still be bought today (the first one among equals), or undefined when the shelf is empty. */
+export function cheapestOffer(save: SaveGame, day: DayKey): Offer | undefined {
+  return dailyOffers(day)
+    .filter((offer) => stockLeft(save, day, offer.card.id) > 0)
+    .sort((a, b) => a.price - b.price)[0];
+}
+
 export type ShopErrorCode = 'not-offered' | 'sold-out' | 'not-enough-yen';
 
 export class ShopError extends Error {

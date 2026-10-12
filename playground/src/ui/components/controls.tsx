@@ -26,12 +26,14 @@ export interface LinkButtonProps {
   readonly href: string;
   readonly kind?: ButtonKind;
   readonly children: ReactNode;
+  /** Where the introduction can point at it (`data-tutorial`). */
+  readonly anchor?: string | undefined;
 }
 
 /** A link that looks like a button, for moving to another screen. */
-export function LinkButton({ href, kind = 'default', children }: LinkButtonProps) {
+export function LinkButton({ href, kind = 'default', children, anchor }: LinkButtonProps) {
   return (
-    <Link href={href} className={cx(styles.button, kindClass(kind))}>
+    <Link href={href} className={cx(styles.button, kindClass(kind))} data-tutorial={anchor}>
       {children}
     </Link>
   );
@@ -42,13 +44,15 @@ export interface ChipProps {
   readonly onToggle: () => void;
   readonly color?: string;
   readonly children: ReactNode;
+  /** Where the introduction can point at it (`data-tutorial`). */
+  readonly anchor?: string | undefined;
 }
 
 /** A toggle in the shape of a small pill. `color` tints it and adds a dot. */
-export function Chip({ pressed, onToggle, color, children }: ChipProps) {
+export function Chip({ pressed, onToggle, color, children, anchor }: ChipProps) {
   const style: CSSProperties | undefined = color === undefined ? undefined : ({ '--chip-color': color } as CSSProperties);
   return (
-    <button type="button" className={styles.chip} aria-pressed={pressed} onClick={onToggle} style={style}>
+    <button type="button" className={styles.chip} aria-pressed={pressed} onClick={onToggle} style={style} data-tutorial={anchor}>
       {color !== undefined && <span className={styles.chipDot} />}
       {children}
     </button>
@@ -61,11 +65,13 @@ export interface SearchFieldProps {
   readonly placeholder: string;
   readonly label: string;
   readonly icon: ReactNode;
+  /** Where the introduction can point at it (`data-tutorial`). */
+  readonly anchor?: string | undefined;
 }
 
-export function SearchField({ value, onChange, placeholder, label, icon }: SearchFieldProps) {
+export function SearchField({ value, onChange, placeholder, label, icon, anchor }: SearchFieldProps) {
   return (
-    <label className={styles.field}>
+    <label className={styles.field} data-tutorial={anchor}>
       {icon}
       <input
         type="search"
@@ -83,9 +89,11 @@ export interface SelectFieldProps<T extends string> {
   readonly options: readonly { readonly value: T; readonly label: string }[];
   readonly onChange: (value: T) => void;
   readonly label: string;
+  /** Where the introduction can point at it (`data-tutorial`). */
+  readonly anchor?: string | undefined;
 }
 
-export function SelectField<T extends string>({ value, options, onChange, label }: SelectFieldProps<T>) {
+export function SelectField<T extends string>({ value, options, onChange, label, anchor }: SelectFieldProps<T>) {
   const handle = (event: ChangeEvent<HTMLSelectElement>) => {
     const chosen = options.find((option) => option.value === event.target.value);
     if (chosen !== undefined) {
@@ -93,7 +101,7 @@ export function SelectField<T extends string>({ value, options, onChange, label 
     }
   };
   return (
-    <label className={styles.field}>
+    <label className={styles.field} data-tutorial={anchor}>
       <span>{label}</span>
       <select value={value} onChange={handle}>
         {options.map((option) => (
@@ -148,7 +156,8 @@ export function Pill({ children }: { readonly children: ReactNode }) {
 
 export interface SegmentedProps<T extends string> {
   readonly value: T;
-  readonly options: readonly { readonly value: T; readonly label: string }[];
+  /** `anchor` is where the introduction can point at an option (`data-tutorial`). */
+  readonly options: readonly { readonly value: T; readonly label: string; readonly anchor?: string | undefined }[];
   readonly onChange: (value: T) => void;
   readonly label: string;
 }
@@ -158,7 +167,7 @@ export function Segmented<T extends string>({ value, options, onChange, label }:
   return (
     <div className={styles.segmented} role="group" aria-label={label}>
       {options.map((option) => (
-        <button key={option.value} type="button" aria-pressed={option.value === value} onClick={() => onChange(option.value)}>
+        <button key={option.value} type="button" aria-pressed={option.value === value} onClick={() => onChange(option.value)} data-tutorial={option.anchor}>
           {option.label}
         </button>
       ))}

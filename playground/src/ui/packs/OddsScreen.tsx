@@ -135,7 +135,7 @@ function Contents({ pack }: { readonly pack: PackDefinition }) {
   const rows = RARITIES.filter((rarity) => odds[rarity.id].chance > 0);
   const best = Math.max(...rows.map((rarity) => odds[rarity.id].chance));
   return (
-    <section className={styles.card} aria-labelledby="odds-contents">
+    <section className={styles.card} aria-labelledby="odds-contents" data-tutorial="odds-chances">
       <h2 id="odds-contents">{copy.title}</h2>
       <p className={styles.lead}>{copy.lead(pack.name)}</p>
       <div className={styles.scroll}>
@@ -425,7 +425,7 @@ export default function OddsScreen({ packId }: { readonly packId?: string | unde
   const selected = packById(packId ?? '') ?? shown[0] ?? PACKS[0];
   return (
     <>
-      <Link href="/packs" className={styles.back}>
+      <Link href="/packs" className={styles.back} data-tutorial="odds-back">
         <ArrowLeftIcon size={16} />
         {text.odds.back}
       </Link>

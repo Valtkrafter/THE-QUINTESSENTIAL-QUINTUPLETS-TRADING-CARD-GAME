@@ -15,9 +15,19 @@ describe('preferences', () => {
     expect(parsePreferences(old)).toEqual({ ...DEFAULT_PREFERENCES, frameStyle: 'fade', graphics: 'normal', idleMotion: false });
   });
 
+  it('starts without any introduction done, and keeps what was done', () => {
+    expect(DEFAULT_PREFERENCES.tutorialDone).toEqual([]);
+    expect(DEFAULT_PREFERENCES.tutorialSteps).toEqual([]);
+    const text = JSON.stringify({ ...DEFAULT_PREFERENCES, tutorialDone: ['packs', 'binder'], tutorialSteps: ['shop.intro'] });
+    expect(parsePreferences(text).tutorialDone).toEqual(['packs', 'binder']);
+    expect(parsePreferences(text).tutorialSteps).toEqual(['shop.intro']);
+    // An unknown tab cannot be "done".
+    expect(parsePreferences(JSON.stringify({ ...DEFAULT_PREFERENCES, tutorialDone: ['castle'] }))).toEqual(DEFAULT_PREFERENCES);
+  });
+
   it('reads a valid value', () => {
     const text = JSON.stringify({ version: 1, frameStyle: 'fade', graphics: 'low', idleMotion: false, pullAnimation: 'short', volume: 0.3, muted: true });
-    expect(parsePreferences(text)).toEqual({ version: 1, frameStyle: 'fade', graphics: 'low', idleMotion: false, pullAnimation: 'short', volume: 0.3, muted: true });
+    expect(parsePreferences(text)).toEqual({ ...DEFAULT_PREFERENCES, version: 1, frameStyle: 'fade', graphics: 'low', idleMotion: false, pullAnimation: 'short', volume: 0.3, muted: true });
   });
 
   it('loads, changes and stores', async () => {

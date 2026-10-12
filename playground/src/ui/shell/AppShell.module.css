@@ -81,6 +81,27 @@
   white-space: nowrap;
 }
 
+/* The menu entry of another tab while an introduction runs: it cannot be used until the introduction is done. */
+.shut {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.shut:hover {
+  background: none;
+  color: var(--text-soft);
+}
+
+/* A small dot: the tutorial of this tab is still to come. */
+.dot {
+  width: 8px;
+  height: 8px;
+  margin-left: auto;
+  border-radius: 50%;
+  background: var(--horizon);
+  box-shadow: 0 0 0 3px var(--horizon-wash);
+}
+
 .active {
   background: var(--accent-wash);
   color: var(--text);
@@ -292,6 +313,13 @@
 
   .active::before {
     display: none;
+  }
+
+  .dot {
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    margin: 0;
   }
 
   .main {

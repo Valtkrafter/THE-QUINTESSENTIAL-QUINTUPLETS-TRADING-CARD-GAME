@@ -6,7 +6,7 @@ import { useMemo, useState } from 'react';
 import { cardById } from '../../cards/catalog';
 import { RARITIES } from '../../cards/model';
 import { filterCollection, NO_FILTER, sortCollection, type SortKey } from '../../domain/collection';
-import { eyeCheck, gradeOutlook, gradingFee, rawCopies, slabsOf, type Outlook } from '../../domain/grading';
+import { cheapestToGrade, eyeCheck, gradeOutlook, gradingFee, rawCopies, slabsOf, type Outlook } from '../../domain/grading';
 import type { OwnedCard } from '../../domain/ownership';
 import { useSave } from '../../state/app';
 import { CardTile } from '../components/CardTile';
@@ -57,7 +57,7 @@ function orderedBy(copies: readonly OwnedCard[], sort: SendSort, outlooks: Reado
 function Steps() {
   const copy = text.grading.steps;
   return (
-    <section className={styles.steps} aria-label={copy.title}>
+    <section className={styles.steps} aria-label={copy.title} data-tutorial="grading-steps">
       <ol>
         {copy.list.map((step, index) => (
           <li key={step.title}>
@@ -89,7 +89,7 @@ function Panel({ copy, onSend }: { readonly copy: OwnedCard | undefined; readonl
       <LinkButton href={`/card/${copy.uid}`} kind="quiet">
         {text.grading.send.look}
       </LinkButton>
-      <Button kind="primary" disabled={missing > 0} onClick={() => onSend(copy.uid)}>
+      <Button kind="primary" disabled={missing > 0} onClick={() => onSend(copy.uid)} data-tutorial="grading-send">
         {missing > 0 ? text.grading.send.short(missing) : text.grading.send.button(fee)}
       </Button>
     </GradeDesk>
@@ -107,6 +107,8 @@ function Send() {
   const [flow, setFlow] = useState<{ readonly uid: string; readonly confirmOnly: boolean } | null>(null);
 
   const loose = useMemo(() => rawCopies(save.collection), [save.collection]);
+  // The card of the lesson in the introduction: the one that is cheapest to send in.
+  const lesson = useMemo(() => cheapestToGrade(loose)?.uid, [loose]);
   // What the graders may say about every loose card: worked out once, it is what the order and the tags are made from.
   const outlooks = useMemo(
     () =>
@@ -165,6 +167,7 @@ function Send() {
                         key={copy.uid}
                         copy={copy}
                         selected={!narrow && copy.uid === pickedUid}
+                        anchor={copy.uid === lesson ? 'grading-card' : undefined}
                         onSelect={() => (narrow ? setFlow({ uid: copy.uid, confirmOnly: false }) : setPickedUid(copy.uid))}
                         extra={
                           <span className={styles.tileEye} style={eyeStyle(eye)}>
@@ -215,7 +218,7 @@ export default function GradingScreen() {
           label={text.grading.title}
           options={[
             { value: 'send', label: text.grading.tabs.send },
-            { value: 'slabs', label: slabCount === 0 ? text.grading.tabs.slabs : `${text.grading.tabs.slabs} (${slabCount})` },
+            { value: 'slabs', label: slabCount === 0 ? text.grading.tabs.slabs : `${text.grading.tabs.slabs} (${slabCount})`, anchor: 'grading-tab-slabs' },
           ]}
         />
       </div>

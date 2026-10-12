@@ -30,13 +30,20 @@ function TypeLine({ affinity, weakTo }: { readonly affinity: Affinity | null; re
   );
 }
 
-function RivalTile({ rival, selected, onPick }: { readonly rival: Opponent; readonly selected: boolean; readonly onPick: () => void }) {
+function RivalTile({ rival, selected, onPick, anchor }: { readonly rival: Opponent; readonly selected: boolean; readonly onPick: () => void; readonly anchor: boolean }) {
   const save = useSave();
   const profile = profileOf(rival.deck.cards);
   const record = save.battle.rivals[rival.id] ?? { wins: 0, losses: 0 };
   const tint = profile.affinity === null ? undefined : AFFINITY_INFO[profile.affinity].color;
   return (
-    <button type="button" className={styles.rival} aria-pressed={selected} onClick={onPick} style={tint === undefined ? undefined : ({ '--tint': tint } as CSSProperties)}>
+    <button
+      type="button"
+      className={styles.rival}
+      aria-pressed={selected}
+      onClick={onPick}
+      style={tint === undefined ? undefined : ({ '--tint': tint } as CSSProperties)}
+      data-tutorial={anchor ? 'battle-rival' : undefined}
+    >
       <img className={styles.portrait} src={portraitOf(rival.character)} alt="" draggable={false} />
       <span className={styles.rivalBody}>
         <span className={styles.nameRow}>
@@ -56,7 +63,7 @@ function RivalTile({ rival, selected, onPick }: { readonly rival: Opponent; read
   );
 }
 
-function DeckTile({ choice, selected, onPick }: { readonly choice: DeckChoice; readonly selected: boolean; readonly onPick: () => void }) {
+function DeckTile({ choice, selected, onPick, anchor }: { readonly choice: DeckChoice; readonly selected: boolean; readonly onPick: () => void; readonly anchor: boolean }) {
   const profile = profileOf(choice.cards);
   const lead = profile.lead === null ? undefined : portraitOf(profile.lead);
   const tint = profile.affinity === null ? undefined : AFFINITY_INFO[profile.affinity].color;
@@ -69,6 +76,7 @@ function DeckTile({ choice, selected, onPick }: { readonly choice: DeckChoice; r
       disabled={problem !== undefined}
       onClick={onPick}
       style={tint === undefined ? undefined : ({ '--tint': tint } as CSSProperties)}
+      data-tutorial={anchor ? 'battle-deck' : undefined}
     >
       <img className={styles.deckArt} src={lead} alt="" draggable={false} />
       <span className={styles.deckBody}>
@@ -116,7 +124,11 @@ export function Lobby() {
         subtitle={text.battle.subtitle}
         actions={
           <>
-            {!firstTime && <Button onClick={() => setDialog('watch')}>{text.battle.howToPlay.watch}</Button>}
+            {!firstTime && (
+              <Button onClick={() => setDialog('watch')} data-tutorial="battle-watch">
+                {text.battle.howToPlay.watch}
+              </Button>
+            )}
             <Button onClick={() => setDialog('help')}>{text.battle.howTo}</Button>
           </>
         }
@@ -128,7 +140,7 @@ export function Lobby() {
               <h2>{text.battle.explainer.newHere}</h2>
               <p>{text.battle.explainer.newHereText}</p>
             </div>
-            <Button kind="primary" onClick={() => setDialog('watch')}>
+            <Button kind="primary" onClick={() => setDialog('watch')} data-tutorial="battle-watch">
               {text.battle.howToPlay.watch}
             </Button>
           </aside>
@@ -136,8 +148,8 @@ export function Lobby() {
         <section className={styles.section}>
           <h2>{text.battle.chooseRival}</h2>
           <div className={styles.rivals}>
-            {OPPONENTS.map((candidate) => (
-              <RivalTile key={candidate.id} rival={candidate} selected={candidate.id === rivalId} onPick={() => setRivalId(candidate.id)} />
+            {OPPONENTS.map((candidate, index) => (
+              <RivalTile key={candidate.id} rival={candidate} selected={candidate.id === rivalId} onPick={() => setRivalId(candidate.id)} anchor={index === 0} />
             ))}
           </div>
         </section>
@@ -154,7 +166,7 @@ export function Lobby() {
               ) : (
                 <div className={styles.decks}>
                   {own.map((choice) => (
-                    <DeckTile key={choice.key} choice={choice} selected={choice.key === chosen?.key} onPick={() => setDeckKey(choice.key)} />
+                    <DeckTile key={choice.key} choice={choice} selected={choice.key === chosen?.key} onPick={() => setDeckKey(choice.key)} anchor={choice.key === chosen?.key} />
                   ))}
                 </div>
               )}
@@ -163,7 +175,7 @@ export function Lobby() {
               <h3 className={styles.groupTitle}>{text.decks.loaners}</h3>
               <div className={styles.decks}>
                 {loaners.map((choice) => (
-                  <DeckTile key={choice.key} choice={choice} selected={choice.key === chosen?.key} onPick={() => setDeckKey(choice.key)} />
+                  <DeckTile key={choice.key} choice={choice} selected={choice.key === chosen?.key} onPick={() => setDeckKey(choice.key)} anchor={choice.key === chosen?.key} />
                 ))}
               </div>
             </div>
@@ -185,7 +197,7 @@ export function Lobby() {
               <span>{text.battle.pick}</span>
             )}
           </div>
-          <Button kind="primary" disabled={rival === undefined || chosen === undefined} onClick={start}>
+          <Button kind="primary" disabled={rival === undefined || chosen === undefined} onClick={start} data-tutorial="battle-start">
             {text.battle.start}
           </Button>
         </div>

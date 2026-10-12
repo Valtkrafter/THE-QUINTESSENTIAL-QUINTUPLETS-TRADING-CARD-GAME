@@ -19,7 +19,7 @@ export interface FilterPanelProps {
 
 export function FilterPanel({ filter, onChange }: FilterPanelProps) {
   return (
-    <section className={styles.panel} aria-label={text.binder.filter(0)}>
+    <section className={styles.panel} aria-label={text.binder.filter(0)} data-tutorial="binder-panel">
       <div className={styles.group}>
         <h3>{text.binder.filterCharacter}</h3>
         <div className={styles.chips}>
@@ -37,7 +37,7 @@ export function FilterPanel({ filter, onChange }: FilterPanelProps) {
       </div>
       <div className={styles.group}>
         <h3>{text.binder.filterRarity}</h3>
-        <div className={styles.chips}>
+        <div className={styles.chips} data-tutorial="filter-rarity">
           {RARITIES.map((rarity) => (
             <Chip
               key={rarity.id}
@@ -71,7 +71,7 @@ export function FilterPanel({ filter, onChange }: FilterPanelProps) {
       </div>
       {activeFilterCount(filter) > 0 && (
         <div className={styles.reset}>
-          <Button kind="quiet" onClick={() => onChange(NO_FILTER)}>
+          <Button kind="quiet" onClick={() => onChange(NO_FILTER)} data-tutorial="filter-reset">
             {text.binder.filterReset}
           </Button>
         </div>

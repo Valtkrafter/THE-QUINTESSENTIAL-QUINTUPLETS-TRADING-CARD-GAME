@@ -1,11 +1,14 @@
-import { useEffect, useMemo, useRef, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link, useLocation } from 'wouter';
 import { buildDex, dexProgress } from '../../domain/collection';
-import { useBattle, useGame, useSave } from '../../state/app';
+import { useBattle, useGame, usePreferences, useSave } from '../../state/app';
 import { ProgressBar } from '../components/controls';
 import { BattleIcon, BinderIcon, DecksIcon, DexIcon, GradingIcon, PacksIcon, SettingsIcon, ShopIcon, ShowcaseIcon } from '../components/icons';
 import { cx, formatYen } from '../format';
 import { text } from '../text';
+import { TutorialHost } from '../tutorial/TutorialHost';
+import { tutorialEnabled, useActiveTutorial } from '../tutorial/store';
+import { isLocked, tabOf } from '../tutorial/tabs';
 import styles from './AppShell.module.css';
 
 interface NavItem {
@@ -61,6 +64,10 @@ export function AppShell({ children }: { readonly children: ReactNode }) {
   // While a battle is on the table the table has the whole window: the menu is hidden (the table has a menu of its own).
   const battling = useBattle((state) => state.status !== 'idle');
   const immersive = battling && navItemOf(location)?.href === '/battle';
+  // While the introduction of a tab runs, the other entries of the menu are shut. Entries whose introduction is still to come get a dot.
+  const running = useActiveTutorial();
+  const { tutorialDone } = usePreferences();
+  const [introductions] = useState(tutorialEnabled);
 
   // The title of the browser tab (and of the window in the desktop app) says where the player is, for screen readers too.
   // On a phone the menu bar scrolls sideways, so the entry of this page is brought into view.
@@ -80,10 +87,27 @@ export function AppShell({ children }: { readonly children: ReactNode }) {
         <nav ref={navRef} aria-label={text.nav.label} className={styles.nav}>
           {NAV.map((item) => {
             const active = navItemOf(location) === item;
+            const tab = tabOf(item.href);
+            const shut = tab !== null && isLocked(running, tab);
+            const waiting = introductions && tab !== null && !shut && !tutorialDone.includes(tab);
             return (
-              <Link key={item.href} href={item.href} className={cx(styles.link, active && styles.active)} aria-current={active ? 'page' : undefined}>
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cx(styles.link, active && styles.active, shut && styles.shut)}
+                aria-current={active ? 'page' : undefined}
+                aria-disabled={shut ? true : undefined}
+                tabIndex={shut ? -1 : undefined}
+                title={shut ? text.tutorial.ui.locked : waiting ? text.tutorial.ui.newHere : undefined}
+                onClick={(event) => {
+                  if (shut) {
+                    event.preventDefault();
+                  }
+                }}
+              >
                 {item.icon}
                 <span>{item.label}</span>
+                {waiting && <i className={styles.dot} aria-hidden="true" />}
               </Link>
             );
           })}
@@ -117,6 +141,7 @@ export function AppShell({ children }: { readonly children: ReactNode }) {
         )}
         {children}
       </main>
+      <TutorialHost />
     </div>
   );
 }

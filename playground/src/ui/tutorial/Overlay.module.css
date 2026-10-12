@@ -1,0 +1,151 @@
+/*
+ * The layer of the introduction: the page is darkened except for one lit-up spot, and a speech bubble says what to do there.
+ * It covers the window, lets nothing through but the spot, and sits above everything (the pack show, a reveal, a dialog).
+ */
+
+.layer {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  pointer-events: none;
+}
+
+/* The dark parts. They catch every press, so only the lit-up spot can be used. */
+.shield,
+.panel {
+  position: absolute;
+  background: rgba(7, 9, 16, 0.76);
+  pointer-events: auto;
+  transition:
+    left 200ms var(--ease),
+    top 200ms var(--ease),
+    width 200ms var(--ease),
+    height 200ms var(--ease);
+}
+
+.shield {
+  inset: 0;
+}
+
+/* Over the spot of a step that only explains: it is lit up, but it cannot be used. */
+.plug {
+  position: absolute;
+  pointer-events: auto;
+  transition:
+    left 200ms var(--ease),
+    top 200ms var(--ease),
+    width 200ms var(--ease),
+    height 200ms var(--ease);
+}
+
+.ring {
+  position: absolute;
+  border: 2px solid var(--accent-strong);
+  box-shadow:
+    0 0 0 4px rgba(196, 207, 250, 0.18),
+    0 0 28px 4px rgba(169, 184, 242, 0.4);
+  pointer-events: none;
+  animation: glow 1.9s ease-in-out infinite;
+  transition:
+    left 200ms var(--ease),
+    top 200ms var(--ease),
+    width 200ms var(--ease),
+    height 200ms var(--ease);
+}
+
+@keyframes glow {
+  50% {
+    box-shadow:
+      0 0 0 7px rgba(196, 207, 250, 0.12),
+      0 0 38px 8px rgba(169, 184, 242, 0.55);
+  }
+}
+
+.bubble {
+  position: absolute;
+  box-sizing: border-box;
+  padding: var(--space-4) var(--space-5);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-lg);
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-lift);
+  color: var(--text);
+  pointer-events: auto;
+  animation: rise var(--medium) var(--ease);
+}
+
+/* The bubble of a step that shuts nothing and asks for nothing to be pressed: presses go through to the page. */
+.passive {
+  pointer-events: none;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  color: var(--text-faint);
+  font-size: var(--text-xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.title {
+  margin: var(--space-1) 0 var(--space-2);
+  font-size: var(--text-lg);
+  font-weight: 650;
+  line-height: 1.25;
+}
+
+.text {
+  margin: 0;
+  color: var(--text-soft);
+  font-size: var(--text-md);
+  line-height: 1.5;
+}
+
+.note {
+  margin: var(--space-3) 0 0;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--horizon-wash);
+  color: var(--horizon);
+  font-size: var(--text-sm);
+  line-height: 1.4;
+}
+
+.foot {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  min-height: 36px;
+  margin-top: var(--space-4);
+}
+
+.hint {
+  margin-right: auto;
+  color: var(--text-faint);
+  font-size: var(--text-sm);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shield,
+  .panel,
+  .plug,
+  .ring {
+    transition: none;
+  }
+
+  .ring,
+  .bubble {
+    animation: none;
+  }
+}

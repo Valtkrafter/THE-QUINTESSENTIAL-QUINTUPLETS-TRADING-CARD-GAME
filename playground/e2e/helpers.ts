@@ -12,8 +12,21 @@ export function watchErrors(page: Page): string[] {
   return errors;
 }
 
-/** Opens the game on a page of the hash router and waits until it has loaded (a new browser has a fresh game). */
+/**
+ * Opens the game on a page of the hash router and waits until it has loaded (a new browser has a fresh game). The introduction is
+ * switched off, because it would stand in the way of every test that is about something else; it has tests of its own
+ * (`openGameWithTutorial`).
+ */
 export async function openGame(page: Page, path = '/'): Promise<void> {
+  await page.context().addInitScript(() => {
+    window.localStorage.setItem('tqq-tutorial', 'off');
+  });
+  await page.goto(`/#${path}`);
+  await expect(page.getByRole('navigation', { name: 'Main menu' })).toBeVisible();
+}
+
+/** Opens the game as a new player sees it: with the introduction. */
+export async function openGameWithTutorial(page: Page, path = '/'): Promise<void> {
   await page.goto(`/#${path}`);
   await expect(page.getByRole('navigation', { name: 'Main menu' })).toBeVisible();
 }

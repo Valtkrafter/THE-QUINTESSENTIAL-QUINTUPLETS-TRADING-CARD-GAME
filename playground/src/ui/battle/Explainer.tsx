@@ -24,7 +24,7 @@ export function Explainer({ onClose }: { readonly onClose: () => void }) {
   const [failed, setFailed] = useState(false);
   return (
     <Dialog title={words.title} onClose={onClose} wide>
-      <div className={styles.explainer}>
+      <div className={styles.explainer} data-tutorial="explainer">
         <iframe className={styles.explainerFrame} src={PAGE} title={words.frameTitle} onLoad={(event) => setFailed(!showsAnimation(event))} />
         {failed ? (
           <p className={styles.explainerNote} role="alert">

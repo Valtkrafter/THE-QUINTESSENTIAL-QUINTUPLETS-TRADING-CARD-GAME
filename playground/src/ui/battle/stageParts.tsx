@@ -14,9 +14,28 @@ import type { Box, Point, Size } from './layout';
 import styles from './Table.module.css';
 
 /** A box on the stage. */
-export function Placed({ box, className, label, children }: { readonly box: Box; readonly className?: string; readonly label?: string; readonly children: ReactNode }) {
+export function Placed({
+  box,
+  className,
+  label,
+  anchor,
+  children,
+}: {
+  readonly box: Box;
+  readonly className?: string;
+  readonly label?: string;
+  /** Where the introduction can point at it (`data-tutorial`). */
+  readonly anchor?: string;
+  readonly children: ReactNode;
+}) {
   return (
-    <div className={cx(styles.placed, className)} style={{ left: box.x, top: box.y, width: box.w, height: box.h }} role={label === undefined ? undefined : 'group'} aria-label={label}>
+    <div
+      className={cx(styles.placed, className)}
+      style={{ left: box.x, top: box.y, width: box.w, height: box.h }}
+      role={label === undefined ? undefined : 'group'}
+      aria-label={label}
+      data-tutorial={anchor}
+    >
       {children}
     </div>
   );

@@ -35,7 +35,7 @@ export interface StepsPanelProps {
 export function StepsPanel({ box, title, steps, dim, compact }: StepsPanelProps) {
   if (compact) {
     return (
-      <div className={styles.stepRowWrap} style={{ left: box.x, top: box.y, width: box.w, height: box.h }} role="group" aria-label={title}>
+      <div className={styles.stepRowWrap} style={{ left: box.x, top: box.y, width: box.w, height: box.h }} role="group" aria-label={title} data-tutorial="battle-steps">
         <ol className={styles.stepRow}>
           {steps.map((step, index) => (
             <li key={step.id} data-status={step.status} data-current={step.current} aria-current={step.current ? 'step' : undefined} aria-label={`${step.title}: ${text.battle.steps.status[step.status]}`}>
@@ -47,7 +47,7 @@ export function StepsPanel({ box, title, steps, dim, compact }: StepsPanelProps)
     );
   }
   return (
-    <Placed box={box} className={cx(styles.panel, styles.steps)} label={title}>
+    <Placed box={box} className={cx(styles.panel, styles.steps)} label={title} anchor="battle-steps">
       <div className={styles.stepsHead}>
         <h2>{title}</h2>
       </div>
@@ -86,7 +86,7 @@ export function HeartZone({ box, left, enabled, picked, row, onPick }: HeartZone
   return (
     <Placed box={box} className={cx(styles.panel, styles.heartZone, row && styles.heartRow)} label={words.freeHeart}>
       {!row && <h2>{words.freeHeart}</h2>}
-      <button type="button" className={styles.token} aria-pressed={picked} disabled={!usable} onClick={onPick} aria-label={`${words.freeHeart}: ${status}`}>
+      <button type="button" className={styles.token} aria-pressed={picked} disabled={!usable} onClick={onPick} aria-label={`${words.freeHeart}: ${status}`} data-tutorial="free-heart">
         <HeartIcon size={30} />
       </button>
       <div className={styles.heartText}>
@@ -115,7 +115,7 @@ export interface MovesPanelProps {
 export function MovesPanel({ box, moves, canAct, hasActive, note, compact, onMove, onPoint }: MovesPanelProps) {
   const words = text.battle.table;
   return (
-    <Placed box={box} className={cx(styles.panel, compact && styles.compactPanel)} label={words.movesTitle}>
+    <Placed box={box} className={cx(styles.panel, compact && styles.compactPanel)} label={words.movesTitle} anchor="battle-moves">
       <div className={styles.moves}>
         <h2>
           {words.movesTitle}

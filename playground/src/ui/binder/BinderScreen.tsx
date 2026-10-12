@@ -57,20 +57,21 @@ export default function BinderScreen() {
           placeholder={text.binder.search}
           label={text.binder.searchLabel}
           icon={<SearchIcon size={16} />}
+          anchor="binder-search"
         />
-        <Button onClick={() => setPanelOpen(!panelOpen)} aria-expanded={panelOpen}>
+        <Button onClick={() => setPanelOpen(!panelOpen)} aria-expanded={panelOpen} data-tutorial="binder-filter">
           <FilterIcon size={16} />
           {text.binder.filter(active)}
         </Button>
-        <SelectField value={sort} options={SORT_OPTIONS} onChange={setSort} label={text.binder.sort} />
+        <SelectField value={sort} options={SORT_OPTIONS} onChange={setSort} label={text.binder.sort} anchor="binder-sort" />
       </div>
       {panelOpen && <FilterPanel filter={filter} onChange={setFilter} />}
       {shown.length === 0 ? (
         <p className={styles.none}>{text.binder.noMatch}</p>
       ) : (
-        <ul className={styles.grid}>
-          {shown.map((copy) => (
-            <CardTile key={copy.uid} copy={copy} href={`/card/${copy.uid}`} />
+        <ul className={styles.grid} data-tutorial="binder-grid">
+          {shown.map((copy, index) => (
+            <CardTile key={copy.uid} copy={copy} href={`/card/${copy.uid}`} anchor={index === 0 ? 'binder-first-card' : undefined} />
           ))}
         </ul>
       )}

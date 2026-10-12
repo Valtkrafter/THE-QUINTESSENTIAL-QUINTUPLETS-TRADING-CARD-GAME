@@ -85,7 +85,7 @@ function Editor({ initial, adds }: { readonly initial: Deck; readonly adds: bool
   return (
     <>
       <div className={styles.top}>
-        <Link href="/decks" className={styles.state}>
+        <Link href="/decks" className={styles.state} data-tutorial="deck-back">
           <ArrowLeftIcon size={14} /> {text.decks.editor.back}
         </Link>
       </div>
@@ -100,8 +100,9 @@ function Editor({ initial, adds }: { readonly initial: Deck; readonly adds: bool
           }}
           placeholder={text.decks.namePlaceholder}
           aria-label={text.decks.editor.nameLabel}
+          data-tutorial="deck-name"
         />
-        <Button kind="primary" disabled={name.trim() === '' || (!dirty && !adds)} onClick={submit}>
+        <Button kind="primary" disabled={name.trim() === '' || (!dirty && !adds)} onClick={submit} data-tutorial="deck-save">
           {text.decks.editor.save}
         </Button>
         <span className={cx(styles.state, message === text.decks.editor.saved && !dirty && styles.saved)} role="status">
@@ -109,7 +110,7 @@ function Editor({ initial, adds }: { readonly initial: Deck; readonly adds: bool
         </span>
       </div>
 
-      <div className={styles.editor}>
+      <div className={styles.editor} data-tutorial="deck-editor">
         <section>
           <h2 className={styles.hint}>{text.decks.editor.collection}</h2>
           <div className={styles.toolbar}>

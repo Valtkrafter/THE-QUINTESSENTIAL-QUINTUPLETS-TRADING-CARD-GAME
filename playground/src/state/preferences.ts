@@ -12,6 +12,10 @@ export type GraphicsLevel = (typeof GRAPHICS_LEVELS)[number];
 export const PULL_ANIMATIONS = ['full', 'short', 'off'] as const;
 export type PullAnimation = (typeof PULL_ANIMATIONS)[number];
 
+/** The tabs of the main menu that have an introduction of their own (see `ui/tutorial`). */
+export const TUTORIAL_TABS = ['packs', 'shop', 'binder', 'grading', 'battle', 'decks', 'dex', 'showcase', 'settings'] as const;
+export type TutorialTab = (typeof TUTORIAL_TABS)[number];
+
 export const preferencesSchema = z.strictObject({
   version: z.literal(1),
   /** Frame design of every card face. */
@@ -25,6 +29,10 @@ export const preferencesSchema = z.strictObject({
   /** Sound volume from 0 to 1. */
   volume: z.number().min(0).max(1).default(0.8),
   muted: z.boolean().default(false),
+  /** The tabs whose introduction the player has finished. */
+  tutorialDone: z.array(z.enum(TUTORIAL_TABS)).default([]),
+  /** The steps of the introduction that is running which are done already, so a reload does not start them again. */
+  tutorialSteps: z.array(z.string()).default([]),
 });
 export type Preferences = z.infer<typeof preferencesSchema>;
 
@@ -36,6 +44,8 @@ export const DEFAULT_PREFERENCES: Preferences = {
   pullAnimation: 'full',
   volume: 0.8,
   muted: false,
+  tutorialDone: [],
+  tutorialSteps: [],
 };
 
 /** Largest pixel ratio the 3D card is drawn at, per graphics level. */

@@ -83,7 +83,7 @@ export function GradeDesk({ copy, children, compact = false }: GradeDeskProps) {
         <p>{copyText.desk.marksNote}</p>
       </section>
 
-      <section className={styles.outlook} aria-label={copyText.desk.outlookTitle}>
+      <section className={styles.outlook} aria-label={copyText.desk.outlookTitle} data-tutorial="grading-outlook">
         <h3>{copyText.desk.outlookTitle}</h3>
         <div className={styles.head} aria-hidden="true">
           <span>{copyText.desk.columns.score}</span>

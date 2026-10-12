@@ -69,7 +69,7 @@ export function GradeFlow({ uid, onClose, lookHref, confirmOnly = false }: Grade
         </span>
       )}
       <Button onClick={onClose}>{text.grading.send.cancel}</Button>
-      <Button kind="primary" disabled={missing > 0} onClick={send}>
+      <Button kind="primary" disabled={missing > 0} onClick={send} data-tutorial="grade-confirm-yes">
         {missing > 0 ? text.grading.send.short(missing) : text.grading.send.confirmYes}
       </Button>
     </>
@@ -83,7 +83,7 @@ export function GradeFlow({ uid, onClose, lookHref, confirmOnly = false }: Grade
   if (!confirmOnly) {
     return (
       <Dialog title={text.grading.send.confirmTitle} onClose={onClose}>
-        <div className={styles.full}>
+        <div className={styles.full} data-tutorial="grade-confirm">
           <GradeDesk copy={copy} compact>
             {buttons}
           </GradeDesk>
@@ -97,7 +97,7 @@ export function GradeFlow({ uid, onClose, lookHref, confirmOnly = false }: Grade
   const eye = eyeCheck(copy.condition);
   return (
     <Dialog title={text.grading.send.confirmTitle} onClose={onClose}>
-      <div className={styles.confirm}>
+      <div className={styles.confirm} data-tutorial="grade-confirm">
         <div className={styles.summary}>
           <span className={styles.face}>
             <CardFace card={card} finish={copy.finish} interactive={false} live={false} />

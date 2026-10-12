@@ -321,6 +321,19 @@ export function rawCopies(collection: readonly OwnedCard[]): OwnedCard[] {
   return collection.filter((copy) => copy.grade === null);
 }
 
+/**
+ * The loose copy that costs the least to send in, and among those the one that looks cleanest: the card the introduction picks for
+ * the lesson, so nobody has to pay a high fee to learn how it works.
+ */
+export function cheapestToGrade(copies: readonly OwnedCard[]): OwnedCard | undefined {
+  const average = (condition: Condition): number => (condition.centering + condition.corners + condition.edges + condition.surface) / 4;
+  const priced = copies.flatMap((copy) => {
+    const card = cardById(copy.cardId);
+    return card === undefined ? [] : [{ copy, fee: gradingFee(card.rarity), look: average(copy.condition) }];
+  });
+  return priced.sort((a, b) => a.fee - b.fee || b.look - a.look)[0]?.copy;
+}
+
 export interface PopulationRow {
   readonly overall: number;
   readonly count: number;

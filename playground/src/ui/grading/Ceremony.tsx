@@ -275,6 +275,7 @@ export function Ceremony({ graded, onClose }: CeremonyProps) {
       className={styles.root}
       role="dialog"
       aria-modal="true"
+      data-tutorial="ceremony"
       aria-label={text.grading.ceremony.label}
       tabIndex={-1}
       style={bandStyle(band.id)}
@@ -326,7 +327,7 @@ export function Ceremony({ graded, onClose }: CeremonyProps) {
           )}
         </div>
 
-        <div className={styles.board}>
+        <div className={styles.board} data-tutorial="ceremony-board">
           <p className={styles.kicker}>{done ? card.name.en : message}</p>
           <ul className={styles.dials}>
             {MARKS.map((part, mark) => (
@@ -341,7 +342,7 @@ export function Ceremony({ graded, onClose }: CeremonyProps) {
           )}
 
           {done && (
-            <div className={styles.result}>
+            <div className={styles.result} data-tutorial="ceremony-result">
               <div className={styles.score}>
                 <strong>{formatGrade(grade.overall)}</strong>
                 <span>{band.label}</span>
@@ -370,7 +371,9 @@ export function Ceremony({ graded, onClose }: CeremonyProps) {
           <div className={styles.actions}>
             {done ? (
               <>
-                <Button onClick={onClose}>{text.grading.ceremony.done}</Button>
+                <Button onClick={onClose} data-tutorial="ceremony-done">
+                  {text.grading.ceremony.done}
+                </Button>
                 <Button kind="primary" onClick={seeSlab}>
                   {text.grading.ceremony.seeSlab}
                 </Button>

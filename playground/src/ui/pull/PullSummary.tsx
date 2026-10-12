@@ -38,14 +38,14 @@ export function PullSummary({ openings, preview, showFailed, onClose, onAgain }:
   const affordable = first !== undefined && save.player.yen >= price && isAvailable(first.pack, today);
 
   return (
-    <section className={cx(styles.summary, count > 1 && styles.many)} aria-label={text.pull.summary}>
+    <section className={cx(styles.summary, count > 1 && styles.many)} aria-label={text.pull.summary} data-tutorial="pull-summary">
       <header className={styles.header}>
         <h2>{text.pull.summary}</h2>
         <p>{text.pull.summaryStats(pulls.length, fresh)}</p>
         {!preview && <p className={styles.dex}>{text.pull.dex(progress.found, progress.total)}</p>}
         {showFailed && <p className={styles.note}>{text.pull.webglProblem}</p>}
       </header>
-      <ul className={styles.grid}>
+      <ul className={styles.grid} data-tutorial="pull-cards">
         {pulls.map((pull) => {
           const rarity = RARITIES.find((entry) => entry.id === pull.card.rarity);
           const reason = text.pull.reason[pull.reason];
@@ -78,7 +78,7 @@ export function PullSummary({ openings, preview, showFailed, onClose, onAgain }:
         <Link href="/" className={styles.link} onClick={onClose}>
           {text.pull.toBinder}
         </Link>
-        <Button kind="quiet" onClick={onClose}>
+        <Button kind="quiet" onClick={onClose} data-tutorial="pull-close">
           {text.pull.close}
         </Button>
       </footer>

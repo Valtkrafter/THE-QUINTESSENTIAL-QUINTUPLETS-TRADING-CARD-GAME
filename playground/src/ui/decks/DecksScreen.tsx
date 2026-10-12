@@ -63,7 +63,7 @@ export default function DecksScreen() {
         actions={full ? <span className={styles.hint}>{text.decks.full}</span> : <LinkButton href="/decks/new" kind="primary">{text.decks.newDeck}</LinkButton>}
       />
 
-      <section className={styles.section}>
+      <section className={styles.section} data-tutorial="deck-list">
         <h2>{text.decks.mine}</h2>
         {own.length === 0 ? (
           <p className={styles.empty}>{text.decks.noneYet}</p>
@@ -84,13 +84,15 @@ export default function DecksScreen() {
         )}
       </section>
 
-      <section className={styles.section}>
+      <section className={styles.section} data-tutorial="deck-loaners">
         <h2>{text.decks.loaners}</h2>
         <p className={styles.hint}>{text.decks.loanersHint}</p>
         <ul className={styles.grid}>
-          {loaners.map((choice) => (
+          {loaners.map((choice, index) => (
             <DeckTile key={choice.key} choice={choice}>
-              <LinkButton href={`/decks/template/${choice.key.slice('starter:'.length)}`}>{text.decks.template}</LinkButton>
+              <LinkButton href={`/decks/template/${choice.key.slice('starter:'.length)}`} anchor={index === 0 ? 'deck-template' : undefined}>
+                {text.decks.template}
+              </LinkButton>
             </DeckTile>
           ))}
         </ul>

@@ -72,3 +72,8 @@
   overflow-y: auto;
   padding: var(--space-5);
 }
+
+/* The place for the tutorial layer inside an open dialog: it takes no room. */
+.host {
+  display: contents;
+}

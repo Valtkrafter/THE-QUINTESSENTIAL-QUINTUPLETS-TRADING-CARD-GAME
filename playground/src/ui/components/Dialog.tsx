@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, type ReactNode } from 'react';
+import { registerOverlayHost } from '../tutorial/hosts';
 import { text } from '../text';
 import { CloseIcon } from './icons';
 import styles from './Dialog.module.css';
@@ -16,6 +17,7 @@ export interface DialogProps {
  */
 export function Dialog({ title, onClose, children, wide = false }: DialogProps) {
   const ref = useRef<HTMLDialogElement>(null);
+  const hostRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
 
   useEffect(() => {
@@ -23,6 +25,12 @@ export function Dialog({ title, onClose, children, wide = false }: DialogProps) 
     if (dialog !== null && !dialog.open) {
       dialog.showModal();
     }
+  }, []);
+
+  // While this dialog is open the rest of the page is switched off, so the tutorial layer has to be drawn inside of it.
+  useEffect(() => {
+    const host = hostRef.current;
+    return host === null ? undefined : registerOverlayHost(host);
   }, []);
 
   return (
@@ -40,12 +48,13 @@ export function Dialog({ title, onClose, children, wide = false }: DialogProps) 
       <div className={styles.panel}>
         <header className={styles.header}>
           <h2 id={titleId}>{title}</h2>
-          <button type="button" className={styles.close} onClick={onClose} aria-label={text.settings.cancel}>
+          <button type="button" className={styles.close} onClick={onClose} aria-label={text.settings.cancel} data-tutorial="dialog-close">
             <CloseIcon size={18} />
           </button>
         </header>
         <div className={styles.body}>{children}</div>
       </div>
+      <div ref={hostRef} className={styles.host} />
     </dialog>
   );
 }

@@ -18,7 +18,7 @@ export function Slabs() {
 
   if (slabs.length === 0) {
     return (
-      <div className={styles.emptyCase}>
+      <div className={styles.emptyCase} data-tutorial="slabs-panel">
         <span className={styles.ghostCase} aria-hidden="true" />
         <p>{text.grading.slabs.none}</p>
       </div>
@@ -30,7 +30,7 @@ export function Slabs() {
 
   return (
     <>
-      <section className={styles.stats} aria-label={text.grading.slabs.summary(slabs.length, total)}>
+      <section className={styles.stats} aria-label={text.grading.slabs.summary(slabs.length, total)} data-tutorial="slabs-panel">
         <div>
           <small>{text.grading.slabs.count}</small>
           <strong>{slabs.length}</strong>

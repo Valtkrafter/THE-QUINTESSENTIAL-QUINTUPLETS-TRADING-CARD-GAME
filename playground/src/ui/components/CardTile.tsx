@@ -20,10 +20,12 @@ export interface CardTileProps {
   readonly selected?: boolean;
   /** One more line under the finish, for example what the copy is worth. */
   readonly extra?: ReactNode;
+  /** Where the introduction can point at it (`data-tutorial`). */
+  readonly anchor?: string | undefined;
 }
 
 /** One owned copy: its picture, and below it the name, the rarity and the finish. A graded copy carries its score in a corner. */
-export function CardTile({ copy, href, onSelect, selected = false, extra }: CardTileProps) {
+export function CardTile({ copy, href, onSelect, selected = false, extra, anchor }: CardTileProps) {
   const card = cardById(copy.cardId);
   if (card === undefined) {
     return null;
@@ -33,7 +35,11 @@ export function CardTile({ copy, href, onSelect, selected = false, extra }: Card
   const label = `${card.name.en}, ${card.title}, ${finish.label}${copy.grade === null ? '' : `, score ${copy.grade.overall}`}`;
 
   return (
-    <li className={cx(styles.tile, selected && styles.selected, copy.grade !== null && styles.graded)} style={copy.grade === null ? undefined : bandStyle(gradeBand(copy.grade.overall).id)}>
+    <li
+      className={cx(styles.tile, selected && styles.selected, copy.grade !== null && styles.graded)}
+      style={copy.grade === null ? undefined : bandStyle(gradeBand(copy.grade.overall).id)}
+      data-tutorial={anchor}
+    >
       {href !== undefined ? (
         <Link href={href} className={styles.hit} aria-label={label}>
           {face}

@@ -12,6 +12,7 @@ import type { SaveErrorCode } from '../domain/save';
 import type { PackErrorCode } from '../packs/openPack';
 import type { GraphicsLevel, PullAnimation } from '../state/preferences';
 import { LOCALE } from './locale';
+import { tutorialWords } from './tutorial/words';
 
 function plural(count: number, one: string, many: string): string {
   return `${count} ${count === 1 ? one : many}`;
@@ -26,6 +27,9 @@ export const text = {
   appTagline: 'Trading card game',
   loading: 'Loading …',
   back: 'Back',
+
+  /** The introduction of every tab (the words are in tutorial/words.ts, because there are so many). */
+  tutorial: tutorialWords,
 
   nav: {
     packs: 'Packs',
