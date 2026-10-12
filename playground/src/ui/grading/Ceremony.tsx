@@ -1,24 +1,52 @@
-// The reveal after a card was sent to Grading: the card is checked, its four marks appear one by one, then the score is
-// stamped and the card sits in its case. The grading itself is long done when this opens (the save was written first), so
-// the player can skip it at any moment; it only shows what happened.
+// The reveal after a card was sent to Grading. The card lies under a lamp and is looked over four times (centering, corners, edges,
+// surface); after each look a dial fills up with the mark, then the marks are added up, the score is stamped and the card is sealed
+// in its slab, which turns in 3D. The grading itself is long done when this opens (the save was written first), so the player can
+// skip it at any moment; it only shows what happened.
 
-import { useCallback, useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type MouseEvent } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent } from 'react';
 import { useLocation } from 'wouter';
 import { cardById } from '../../cards/catalog';
 import { gradeBand, slabValue, type Graded } from '../../domain/grading';
+import { sellPrice } from '../../domain/prices';
+import { DEFAULT_SETTINGS, type HoloSettings } from '../../holo/settings';
+import { usePreferences } from '../../state/app';
+import { MAX_PIXEL_RATIO } from '../../state/preferences';
 import { CardFace } from '../components/CardFace';
 import { Button } from '../components/controls';
+import { ErrorBoundary } from '../components/ErrorBoundary';
 import { trapTab } from '../components/focusTrap';
-import { cx, formatGrade, formatSubGrade } from '../format';
-import { text } from '../text';
+import { cx, formatGrade, formatSubGrade, formatYen } from '../format';
 import { usePullAudio } from '../pull/usePullAudio';
+import { text } from '../text';
 import { bandStyle } from './bandStyle';
 import { MARKS } from './marks';
+import { slabLabelInfo } from './slabInfo';
 import { SlabFlat } from './SlabFlat';
 import styles from './Ceremony.module.css';
 
-/** The step at which everything is shown: the four marks (steps 1 to 4) and then the score. */
-const FINAL = MARKS.length + 1;
+// The 3D slab brings three.js with it (the biggest part of the game), so it loads only when a card is graded.
+const CardViewer = lazy(() => import('../../scene/CardViewer').then((module) => ({ default: module.CardViewer })));
+
+type Step =
+  | { readonly kind: 'lamp' }
+  | { readonly kind: 'inspect'; readonly mark: number }
+  | { readonly kind: 'reveal'; readonly mark: number }
+  | { readonly kind: 'sum' }
+  | { readonly kind: 'final' };
+
+/** Lamp, then for every mark a look and the reveal of its dial, then the adding up, then the score. */
+const STEPS: readonly Step[] = [
+  { kind: 'lamp' },
+  ...MARKS.flatMap((_, mark): Step[] => [
+    { kind: 'inspect', mark },
+    { kind: 'reveal', mark },
+  ]),
+  { kind: 'sum' },
+  { kind: 'final' },
+];
+const FINAL = STEPS.length - 1;
+
+const DURATION: Readonly<Record<Exclude<Step['kind'], 'final'>, number>> = { lamp: 1200, inspect: 880, reveal: 640, sum: 1500 };
 
 /** Where the sparkles of a very good card sit, in percent of the screen, and when they start. */
 const SPARKLES: readonly { readonly x: number; readonly y: number; readonly delay: number; readonly size: number }[] = [
@@ -30,17 +58,106 @@ const SPARKLES: readonly { readonly x: number; readonly y: number; readonly dela
   { x: 63, y: 30, delay: 1.4, size: 13 },
   { x: 71, y: 74, delay: 0.2, size: 10 },
   { x: 80, y: 18, delay: 0.7, size: 14 },
-  { x: 88, y: 52, delay: 1.2, size: 9 },
+  { x: 88, y: 52, delay: 0.9, size: 9 },
   { x: 93, y: 84, delay: 0.4, size: 11 },
   { x: 6, y: 52, delay: 1.0, size: 12 },
   { x: 38, y: 60, delay: 1.6, size: 8 },
 ];
 
-function toneOf(mark: number): 'great' | 'fair' | 'poor' {
-  if (mark >= 9) {
-    return 'great';
+/** A number that runs up from zero to `target` when `active` turns on; `instant` shows the end at once. */
+function useCountUp(target: number, active: boolean, instant: boolean, milliseconds = 560): number {
+  const [value, setValue] = useState(instant ? target : 0);
+  useEffect(() => {
+    if (!active || instant) {
+      return undefined;
+    }
+    let frame = 0;
+    const started = performance.now();
+    const tick = (now: number): void => {
+      const t = Math.min(1, (now - started) / milliseconds);
+      setValue(target * (1 - (1 - t) ** 3));
+      if (t < 1) {
+        frame = window.requestAnimationFrame(tick);
+      }
+    };
+    frame = window.requestAnimationFrame(tick);
+    return () => window.cancelAnimationFrame(frame);
+  }, [target, active, instant, milliseconds]);
+  if (instant) {
+    return target;
   }
-  return mark >= 7 ? 'fair' : 'poor';
+  return active ? value : 0;
+}
+
+const CIRCUMFERENCE = 2 * Math.PI * 42;
+
+/** What the graders are looking at in a step, for the picture over the card. */
+function lookOf(step: Step): 'scan' | 'none' | (typeof MARKS)[number] {
+  if (step.kind === 'lamp') {
+    return 'scan';
+  }
+  return step.kind === 'inspect' || step.kind === 'reveal' ? (MARKS[step.mark] ?? 'none') : 'none';
+}
+
+/** One dial: a ring that fills up to the mark, and the mark in its middle. */
+function Dial({ name, mark, revealed, instant, looking }: { readonly name: string; readonly mark: number; readonly revealed: boolean; readonly instant: boolean; readonly looking: boolean }) {
+  const shown = useCountUp(mark, revealed, instant);
+  return (
+    <li className={cx(styles.dial, revealed && styles.revealed, looking && styles.looking)} style={bandStyle(gradeBand(mark).id)}>
+      <svg viewBox="0 0 100 100" className={styles.ring} aria-hidden="true">
+        <circle className={styles.track} cx="50" cy="50" r="42" />
+        <circle
+          className={styles.fill}
+          cx="50"
+          cy="50"
+          r="42"
+          style={{ strokeDasharray: CIRCUMFERENCE, strokeDashoffset: revealed ? CIRCUMFERENCE * (1 - mark / 10) : CIRCUMFERENCE }}
+        />
+      </svg>
+      <output className={styles.number}>{revealed ? formatSubGrade(shown) : '–'}</output>
+      <span className={styles.name}>{name}</span>
+    </li>
+  );
+}
+
+/** The graded card in its slab, turning in 3D. The flat picture stands in until the 3D one is ready, and for devices without it. */
+function SlabStage({ copy }: { readonly copy: Graded['copy'] }) {
+  const preferences = usePreferences();
+  const card = cardById(copy.cardId);
+  const info = useMemo(() => slabLabelInfo(copy), [copy]);
+  const settings = useMemo<HoloSettings>(() => ({ ...DEFAULT_SETTINGS, frameStyle: preferences.frameStyle, idleMotion: true }), [preferences.frameStyle]);
+  const [ready, setReady] = useState(false);
+  const markReady = useCallback(() => setReady(true), []);
+  const flat = (
+    <div className={styles.flatSlab}>
+      <SlabFlat copy={copy} />
+    </div>
+  );
+  if (card === undefined || info === null || preferences.graphics === 'low') {
+    return flat;
+  }
+  return (
+    <div className={styles.slabStage}>
+      <div className={cx(styles.flatLayer, ready && styles.gone)}>{flat}</div>
+      <div className={cx(styles.viewer, ready && styles.shown)}>
+        <ErrorBoundary fallback={() => null}>
+          <Suspense fallback={null}>
+            <CardViewer
+              card={card}
+              finishId={copy.finish}
+              settings={settings}
+              maxPixelRatio={MAX_PIXEL_RATIO[preferences.graphics]}
+              flipRequest={0}
+              condition={copy.condition}
+              wearKey={copy.uid}
+              slab={info}
+              onReady={markReady}
+            />
+          </Suspense>
+        </ErrorBoundary>
+      </div>
+    </div>
+  );
 }
 
 export interface CeremonyProps {
@@ -53,12 +170,20 @@ export function Ceremony({ graded, onClose }: CeremonyProps) {
   const card = cardById(copy.cardId);
   const [location, navigate] = useLocation();
   const audio = usePullAudio();
-  const [shown, setShown] = useState(() => (window.matchMedia('(prefers-reduced-motion: reduce)').matches ? FINAL : 0));
+  const [reduced] = useState(() => window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  const [index, setIndex] = useState(reduced ? FINAL : 0);
   const rootRef = useRef<HTMLDivElement>(null);
-  const lastSound = useRef(0);
-  const done = shown >= FINAL;
+  const lastSound = useRef(-1);
+  const done = index >= FINAL;
+  const step = STEPS[index] ?? STEPS[FINAL];
   const band = gradeBand(grade.overall);
   const bright = band.id === 'pristine' || band.id === 'gem';
+  const low = band.id === 'good' || band.id === 'played';
+
+  // How many dials are filled, and which look is going on.
+  const revealedCount = STEPS.slice(0, index + 1).filter((entry) => entry.kind === 'reveal').length;
+  const looking = step?.kind === 'inspect' ? step.mark : null;
+  const average = (grade.sub.centering + grade.sub.corners + grade.sub.edges + grade.sub.surface) / 4;
 
   // The page behind must not scroll while the reveal is open.
   useEffect(() => {
@@ -70,31 +195,36 @@ export function Ceremony({ graded, onClose }: CeremonyProps) {
     };
   }, []);
 
-  // One step after the other: a pause while the card is checked, a beat for each mark, a longer one before the score.
+  // One step after the other.
   useEffect(() => {
-    if (shown >= FINAL) {
+    const current = STEPS[index];
+    if (current === undefined || current.kind === 'final') {
       return undefined;
     }
-    const wait = shown === 0 ? 1300 : shown === MARKS.length ? 1500 : 950;
-    const timer = window.setTimeout(() => setShown(shown + 1), wait);
+    const timer = window.setTimeout(() => setIndex(index + 1), DURATION[current.kind]);
     return () => window.clearTimeout(timer);
-  }, [shown]);
+  }, [index]);
 
-  // Sound: a bell for each mark, the stamp for the score. A skipped step stays silent.
+  // Sound: a sweep under the lamp, a bell for each mark, the stamp for the score. A skipped step stays silent.
   useEffect(() => {
-    if (audio === null || shown === 0 || lastSound.current === shown) {
+    const current = STEPS[index];
+    if (audio === null || current === undefined || lastSound.current === index) {
       return;
     }
-    lastSound.current = shown;
-    const part = MARKS[shown - 1];
-    if (part !== undefined) {
-      audio.gradeMark(shown - 1, grade.sub[part]);
-    } else if (shown === FINAL) {
+    lastSound.current = index;
+    if (current.kind === 'lamp') {
+      audio.gradeScan();
+    } else if (current.kind === 'reveal') {
+      const part = MARKS[current.mark];
+      if (part !== undefined) {
+        audio.gradeMark(current.mark, grade.sub[part]);
+      }
+    } else if (current.kind === 'final') {
       audio.gradeStamp(grade.overall);
     }
-  }, [audio, shown, grade]);
+  }, [audio, index, grade]);
 
-  const skip = useCallback(() => setShown(FINAL), []);
+  const skip = useCallback(() => setIndex(FINAL), []);
 
   const seeSlab = () => {
     const target = `/card/${copy.uid}`;
@@ -127,9 +257,17 @@ export function Ceremony({ graded, onClose }: CeremonyProps) {
     }
   };
 
-  if (card === undefined) {
+  if (card === undefined || step === undefined) {
     return null;
   }
+
+  const looseYen = sellPrice(card.rarity, copy.finish);
+  const message =
+    step.kind === 'lamp'
+      ? text.grading.ceremony.under
+      : step.kind === 'inspect' || step.kind === 'reveal'
+        ? text.grading.ceremony.checking[MARKS[step.mark] ?? 'centering']
+        : text.grading.ceremony.sealing;
 
   return (
     <div
@@ -141,9 +279,11 @@ export function Ceremony({ graded, onClose }: CeremonyProps) {
       tabIndex={-1}
       style={bandStyle(band.id)}
       data-band={band.id}
+      data-low={low ? 'true' : undefined}
       onKeyDown={onKeyDown}
       onClick={onClick}
     >
+      <span className={styles.lampCone} aria-hidden="true" />
       {done && bright && (
         <span className={styles.backdrop} aria-hidden="true">
           {band.id === 'pristine' && <i className={styles.rays} />}
@@ -158,39 +298,47 @@ export function Ceremony({ graded, onClose }: CeremonyProps) {
       )}
 
       <div className={styles.stage}>
-        <div className={styles.side}>
+        <div className={styles.exhibit}>
           {done ? (
             <div className={styles.slabbed}>
-              <SlabFlat copy={copy} />
+              <SlabStage copy={copy} />
+              <p className={styles.turn}>{text.grading.ceremony.turn}</p>
             </div>
           ) : (
-            <div className={styles.inspecting}>
-              <CardFace card={card} finish={copy.finish} interactive={false} live={false} />
-              <span className={styles.scan} aria-hidden="true" />
+            <div className={styles.table}>
+              <div className={styles.inspecting} data-look={lookOf(step)}>
+                <CardFace card={card} finish={copy.finish} interactive={false} live={false} />
+                <span className={styles.scope} aria-hidden="true">
+                  <i className={styles.guideLeft} />
+                  <i className={styles.guideRight} />
+                  <i className={styles.guideTop} />
+                  <i className={styles.guideBottom} />
+                  <i className={styles.cornerA} />
+                  <i className={styles.cornerB} />
+                  <i className={styles.cornerC} />
+                  <i className={styles.cornerD} />
+                  <i className={styles.edgeRun} />
+                  <i className={styles.laser} />
+                </span>
+              </div>
+              <span className={styles.pool} aria-hidden="true" />
             </div>
           )}
         </div>
 
-        <div className={styles.panel}>
-          <p className={styles.kicker}>{done ? card.name.en : text.grading.ceremony.checking}</p>
-          <ul className={styles.marks}>
-            {MARKS.map((part, index) => {
-              const revealed = shown > index;
-              const mark = grade.sub[part];
-              return (
-                <li key={part} className={cx(styles.mark, revealed && styles.revealed)} style={{ '--fill': mark / 10 } as CSSProperties} data-tone={toneOf(mark)}>
-                  <div className={styles.markHead}>
-                    <strong>{text.grading.parts[part].name}</strong>
-                    <span>{text.grading.parts[part].hint}</span>
-                  </div>
-                  <output className={styles.value}>{revealed ? formatSubGrade(mark) : '–'}</output>
-                  <div className={styles.bar}>
-                    <i />
-                  </div>
-                </li>
-              );
-            })}
+        <div className={styles.board}>
+          <p className={styles.kicker}>{done ? card.name.en : message}</p>
+          <ul className={styles.dials}>
+            {MARKS.map((part, mark) => (
+              <Dial key={part} name={text.grading.parts[part].name} mark={grade.sub[part]} revealed={revealedCount > mark || done} instant={reduced || done} looking={looking === mark} />
+            ))}
           </ul>
+
+          {!done && step.kind === 'sum' && (
+            <p className={styles.sum}>
+              {text.grading.ceremony.average} <strong>{average.toFixed(2)}</strong>
+            </p>
+          )}
 
           {done && (
             <div className={styles.result}>
@@ -198,9 +346,24 @@ export function Ceremony({ graded, onClose }: CeremonyProps) {
                 <strong>{formatGrade(grade.overall)}</strong>
                 <span>{band.label}</span>
               </div>
+              <p className={styles.average}>
+                {text.grading.ceremony.average} {average.toFixed(2)}
+              </p>
               <p className={styles.verdict}>{text.grading.ceremony.verdict[band.id]}</p>
-              <p className={styles.worth}>{text.grading.ceremony.worth(slabValue(copy))}</p>
-              <p className={styles.fee}>{text.grading.ceremony.fee(fee)}</p>
+              <dl className={styles.money}>
+                <div>
+                  <dt>{text.grading.ceremony.worthLabel}</dt>
+                  <dd className={styles.worth}>{formatYen(slabValue(copy))}</dd>
+                </div>
+                <div>
+                  <dt>{text.grading.ceremony.feeLabel}</dt>
+                  <dd>{formatYen(fee)}</dd>
+                </div>
+                <div>
+                  <dt>{text.grading.ceremony.looseLabel}</dt>
+                  <dd>{formatYen(looseYen)}</dd>
+                </div>
+              </dl>
             </div>
           )}
 

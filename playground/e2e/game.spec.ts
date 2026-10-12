@@ -110,7 +110,7 @@ test('a loose card is sent to Grading and comes back in its slab, which can be s
   const reveal = page.getByRole('dialog', { name: 'Grading' });
   await expect(reveal).toBeVisible();
   await reveal.getByRole('button', { name: 'Skip', exact: true }).click();
-  await expect(reveal.getByText(/Worth ¥[\d,]+ now/)).toBeVisible();
+  await expect(reveal.getByText('Worth in its case')).toBeVisible();
   await reveal.getByRole('button', { name: 'See the slab' }).click();
 
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
@@ -119,7 +119,7 @@ test('a loose card is sent to Grading and comes back in its slab, which can be s
 
   await goTo(page, 'Grading');
   await page.getByRole('button', { name: 'Your slabs' }).click();
-  await expect(page.getByText(/1 slab · worth ¥/)).toBeVisible();
+  await expect(page.getByText('Worth together')).toBeVisible();
 
   await page.getByRole('link', { name: /score/ }).first().click();
   await page.getByRole('button', { name: /^Sell slab · ¥/ }).click();

@@ -39,15 +39,16 @@ export const ownedCardSchema = z.strictObject({
 });
 export type OwnedCard = z.infer<typeof ownedCardSchema>;
 
-const MEAN_LOSS = 1.1;
+const MEAN_LOSS = 1.2;
 
 function oneDecimal(value: number): number {
   return Math.round(value * 10) / 10;
 }
 
 /**
- * Rolls how well one copy came out of the factory: most copies lose a little on each point (about 1 on average),
- * a few lose a lot, and some come out perfect. The same seed always gives the same copy.
+ * Rolls how well one copy came out of the factory: most copies lose a little on each point (a bit over 1 on average),
+ * a few lose a lot, and some come out perfect. This is the wear that shows in the 3D view; the graders find more (see grading.ts).
+ * The same seed always gives the same copy.
  */
 export function rollCondition(rng: Rng): Condition {
   const roll = (): number => {

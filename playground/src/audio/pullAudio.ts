@@ -39,6 +39,8 @@ export interface PullAudio {
   reveal(rarity: Rarity, tier: SoundTier, isNew: boolean): void;
   tap(): void;
   summary(): void;
+  /** The card lies under the lamp and is scanned: a thin sweep that rises. */
+  gradeScan(): void;
   /** One mark of a grading label is shown: a bell note that climbs with its place in the row and grows with the mark (1 to 10). */
   gradeMark(index: number, mark: number): void;
   /** The score is stamped: a thud, and a chord and a flourish that grow with the score. */
@@ -410,6 +412,15 @@ export async function createPullAudio(): Promise<PullAudio> {
       arpeggio(['E5', 'A5', 'B5', 'E6'], start + 0.1, 0.12, 0.5);
     },
 
+    gradeScan() {
+      oneShot(1.4, (start) => {
+        const sweep = noiseSweep(start, 1.1, 900, 5200, 0.16, 'pink', 2.4);
+        sparkle.triggerAttackRelease('E6', 0.1, start + 0.5, 0.3);
+        sparkle.triggerAttackRelease('B6', 0.14, start + 0.95, 0.3);
+        return sweep.nodes;
+      });
+    },
+
     gradeMark(index, mark) {
       const start = Tone.now() + 0.02;
       const strength = 0.4 + 0.4 * Math.min(1, Math.max(0, (mark - 5) / 5));
@@ -466,6 +477,7 @@ export async function createPullAudio(): Promise<PullAudio> {
     reveal: (rarity, tier, isNew) => attempt(() => raw.reveal(rarity, tier, isNew)),
     tap: () => attempt(() => raw.tap()),
     summary: () => attempt(() => raw.summary()),
+    gradeScan: () => attempt(() => raw.gradeScan()),
     gradeMark: (index, mark) => attempt(() => raw.gradeMark(index, mark)),
     gradeStamp: (score) => attempt(() => raw.gradeStamp(score)),
     stop: () => attempt(() => raw.stop()),

@@ -1,100 +1,134 @@
+// The Grading screen: the graders' desk. On the left the loose cards (with how each one looks to the eye), on the right the desk
+// with what the graders may say about the chosen card and the button to send it in; the second tab is the display case of the
+// slabs that came back.
+
 import { useMemo, useState } from 'react';
 import { cardById } from '../../cards/catalog';
+import { RARITIES } from '../../cards/model';
 import { filterCollection, NO_FILTER, sortCollection, type SortKey } from '../../domain/collection';
-import { gradeBand, gradeLabel, gradingFee, populationReport, rawCopies, slabValue, slabsOf } from '../../domain/grading';
+import { eyeCheck, gradeOutlook, gradingFee, rawCopies, slabsOf, type Outlook } from '../../domain/grading';
 import type { OwnedCard } from '../../domain/ownership';
-import { findFinish } from '../../holo/finishes';
 import { useSave } from '../../state/app';
-import { CardFace } from '../components/CardFace';
 import { CardTile } from '../components/CardTile';
-import { Button, LinkButton, Pill, SearchField, SelectField, Segmented } from '../components/controls';
+import { Button, LinkButton, SearchField, SelectField, Segmented } from '../components/controls';
 import { SearchIcon } from '../components/icons';
 import { PageHeader } from '../components/PageHeader';
-import { formatGrade, formatYen } from '../format';
+import { formatYen } from '../format';
 import { NARROW_QUERY, useMediaQuery } from '../hooks/useMediaQuery';
 import { text } from '../text';
-import { bandStyle } from './bandStyle';
+import { eyeStyle } from './eye';
+import { GradeDesk } from './GradeDesk';
 import { GradeFlow } from './GradeFlow';
-import { PriceLadder } from './PriceLadder';
+import { Slabs } from './Slabs';
 import styles from './GradingScreen.module.css';
 
 type Tab = 'send' | 'slabs';
 
-const SEND_SORTS: readonly SortKey[] = ['rarity', 'finish', 'number', 'newest'];
+/**
+ * The ways to order the loose cards. "bet" puts the cards first that are most worth grading (what the graders may say, the fee
+ * counted); "looks" the cards with the least wear.
+ */
+type SendSort = Extract<SortKey, 'rarity' | 'finish' | 'number' | 'newest'> | 'bet' | 'looks';
+const SEND_SORTS: readonly SendSort[] = ['bet', 'looks', 'rarity', 'finish', 'number', 'newest'];
 
-/** The rules of Grading in a few lines. Open on a wide screen, folded on a phone where the room is needed for the cards. */
-function HowItWorks() {
-  const [open, setOpen] = useState(() => window.matchMedia('(min-width: 700px)').matches);
+const SORT_LABEL = { bet: text.grading.send.sortBet, looks: text.grading.send.sortLooks } as const;
+
+type Show = 'all' | 'clean';
+
+function wear(copy: OwnedCard): number {
+  const { centering, corners, edges, surface } = copy.condition;
+  return (centering + corners + edges + surface) / 4;
+}
+
+function orderedBy(copies: readonly OwnedCard[], sort: SendSort, outlooks: ReadonlyMap<string, Outlook>): OwnedCard[] {
+  if (sort === 'bet') {
+    // The best bet first; among equals the cleaner card.
+    return [...copies].sort((a, b) => (outlooks.get(b.uid)?.edge ?? 0) - (outlooks.get(a.uid)?.edge ?? 0) || wear(b) - wear(a));
+  }
+  if (sort === 'looks') {
+    // The cleanest first; among equals the rarer card first, because it is worth more.
+    const rank = (copy: OwnedCard): number => RARITIES.findIndex((rarity) => rarity.id === cardById(copy.cardId)?.rarity);
+    return [...copies].sort((a, b) => wear(b) - wear(a) || rank(b) - rank(a));
+  }
+  return sortCollection(copies, sort);
+}
+
+/** The three steps, as three small cards. */
+function Steps() {
+  const copy = text.grading.steps;
   return (
-    <details className={styles.how} open={open} onToggle={(event) => setOpen(event.currentTarget.open)}>
-      <summary>{text.grading.howTitle}</summary>
-      <ul>
-        {text.grading.how.map((line) => (
-          <li key={line}>{line}</li>
+    <section className={styles.steps} aria-label={copy.title}>
+      <ol>
+        {copy.list.map((step, index) => (
+          <li key={step.title}>
+            <span className={styles.number} aria-hidden="true">
+              {index + 1}
+            </span>
+            <div>
+              <strong>{step.title}</strong>
+              <p>{step.text}</p>
+            </div>
+          </li>
         ))}
-      </ul>
-      <p>{text.grading.odds}</p>
-    </details>
+      </ol>
+    </section>
   );
 }
 
-/** The card chosen on a wide screen: what it costs to grade it, what it would be worth, and the way to send it in. */
-function ChosenPanel({ copy, onSend }: { readonly copy: OwnedCard | undefined; readonly onSend: (uid: string) => void }) {
+/** The chosen card on the wide screen: the desk, with the button that asks the final question. */
+function Panel({ copy, onSend }: { readonly copy: OwnedCard | undefined; readonly onSend: (uid: string) => void }) {
   const save = useSave();
   const card = copy === undefined ? undefined : cardById(copy.cardId);
   if (copy === undefined || card === undefined) {
-    return <p className={styles.hint}>{text.grading.send.choose}</p>;
+    return <p className={styles.hint}>{text.grading.desk.empty}</p>;
   }
   const fee = gradingFee(card.rarity);
   const missing = fee - save.player.yen;
   return (
-    <>
-      <div className={styles.chosen}>
-        <span className={styles.chosenFace}>
-          <CardFace card={card} finish={copy.finish} interactive={false} />
-        </span>
-        <div className={styles.chosenInfo}>
-          <strong>{card.name.en}</strong>
-          <span className={styles.title}>{card.title}</span>
-          <Pill>
-            {findFinish(copy.finish).label} · {card.rarity}
-          </Pill>
-        </div>
-      </div>
-      <div className={styles.fee}>
-        <span>{text.grading.send.fee}</span>
-        <strong>{formatYen(fee)}</strong>
-      </div>
-      <PriceLadder rarity={card.rarity} finish={copy.finish} />
-      <div className={styles.panelActions}>
-        <LinkButton href={`/card/${copy.uid}`} kind="quiet">
-          {text.grading.send.look}
-        </LinkButton>
-        <Button kind="primary" disabled={missing > 0} onClick={() => onSend(copy.uid)}>
-          {missing > 0 ? text.grading.send.short(missing) : text.grading.send.button(fee)}
-        </Button>
-      </div>
-    </>
+    <GradeDesk copy={copy}>
+      <LinkButton href={`/card/${copy.uid}`} kind="quiet">
+        {text.grading.send.look}
+      </LinkButton>
+      <Button kind="primary" disabled={missing > 0} onClick={() => onSend(copy.uid)}>
+        {missing > 0 ? text.grading.send.short(missing) : text.grading.send.button(fee)}
+      </Button>
+    </GradeDesk>
   );
 }
 
 function Send() {
   const save = useSave();
-  // On a narrow screen there is no room for a side panel: a tap on a card opens the question (with the price ladder) at once.
+  // On a narrow screen there is no room for a side panel: a tap on a card opens the desk in a window.
   const narrow = useMediaQuery(NARROW_QUERY);
   const [query, setQuery] = useState('');
-  const [sort, setSort] = useState<SortKey>('rarity');
+  const [sort, setSort] = useState<SendSort>('bet');
+  const [show, setShow] = useState<Show>('all');
   const [pickedUid, setPickedUid] = useState<string | null>(null);
-  const [flowUid, setFlowUid] = useState<string | null>(null);
+  const [flow, setFlow] = useState<{ readonly uid: string; readonly confirmOnly: boolean } | null>(null);
 
   const loose = useMemo(() => rawCopies(save.collection), [save.collection]);
-  const shown = useMemo(() => sortCollection(filterCollection(loose, { ...NO_FILTER, query }), sort), [loose, query, sort]);
+  // What the graders may say about every loose card: worked out once, it is what the order and the tags are made from.
+  const outlooks = useMemo(
+    () =>
+      new Map(
+        loose.flatMap((copy) => {
+          const card = cardById(copy.cardId);
+          return card === undefined ? [] : [[copy.uid, gradeOutlook(copy.condition, card.rarity, copy.finish)] as const];
+        }),
+      ),
+    [loose],
+  );
+  const shown = useMemo(() => {
+    const found = filterCollection(loose, { ...NO_FILTER, query });
+    const clean = show === 'clean' ? found.filter((copy) => ['perfect', 'clean'].includes(eyeCheck(copy.condition))) : found;
+    return orderedBy(clean, sort, outlooks);
+  }, [loose, query, sort, show, outlooks]);
   // A card that has been graded since drops out of the list, and with it out of the selection.
   const chosen = loose.find((copy) => copy.uid === pickedUid);
 
   return (
     <>
-      <HowItWorks />
+      <Steps />
       {loose.length === 0 ? (
         <p className={styles.empty}>{save.collection.length === 0 ? text.grading.send.none : text.grading.send.allDone}</p>
       ) : (
@@ -105,7 +139,16 @@ function Send() {
               value={sort}
               onChange={setSort}
               label={text.grading.send.sort}
-              options={SEND_SORTS.map((key) => ({ value: key, label: text.binder.sortOptions[key] }))}
+              options={SEND_SORTS.map((key) => ({ value: key, label: key === 'bet' || key === 'looks' ? SORT_LABEL[key] : text.binder.sortOptions[key] }))}
+            />
+            <Segmented
+              value={show}
+              onChange={setShow}
+              label={text.grading.send.filters}
+              options={[
+                { value: 'all', label: text.grading.send.showAll },
+                { value: 'clean', label: text.grading.send.showClean },
+              ]}
             />
           </div>
           <div className={styles.layout}>
@@ -114,65 +157,37 @@ function Send() {
                 <p className={styles.empty}>{text.grading.send.noMatch}</p>
               ) : (
                 <ul className={styles.grid}>
-                  {shown.map((copy) => (
-                    <CardTile
-                      key={copy.uid}
-                      copy={copy}
-                      selected={!narrow && copy.uid === pickedUid}
-                      onSelect={() => (narrow ? setFlowUid(copy.uid) : setPickedUid(copy.uid))}
-                    />
-                  ))}
+                  {shown.map((copy) => {
+                    const eye = eyeCheck(copy.condition);
+                    const verdict = outlooks.get(copy.uid)?.verdict;
+                    return (
+                      <CardTile
+                        key={copy.uid}
+                        copy={copy}
+                        selected={!narrow && copy.uid === pickedUid}
+                        onSelect={() => (narrow ? setFlow({ uid: copy.uid, confirmOnly: false }) : setPickedUid(copy.uid))}
+                        extra={
+                          <span className={styles.tileEye} style={eyeStyle(eye)}>
+                            <i aria-hidden="true" />
+                            {text.grading.eye[eye].label}
+                            {(verdict === 'great' || verdict === 'good') && <b className={styles.betChip}>{text.grading.send.betChip[verdict]}</b>}
+                          </span>
+                        }
+                      />
+                    );
+                  })}
                 </ul>
               )}
             </div>
             {!narrow && (
               <aside className={styles.panel} aria-label={text.grading.send.chosen}>
-                <ChosenPanel copy={chosen} onSend={setFlowUid} />
+                <Panel copy={chosen} onSend={(uid) => setFlow({ uid, confirmOnly: true })} />
               </aside>
             )}
           </div>
         </>
       )}
-      {flowUid !== null && <GradeFlow uid={flowUid} lookHref={`/card/${flowUid}`} onClose={() => setFlowUid(null)} />}
-    </>
-  );
-}
-
-function Slabs() {
-  const save = useSave();
-  const slabs = useMemo(() => slabsOf(save.collection), [save.collection]);
-  const report = useMemo(() => populationReport(save.collection), [save.collection]);
-
-  if (slabs.length === 0) {
-    return <p className={styles.empty}>{text.grading.slabs.none}</p>;
-  }
-  const total = slabs.reduce((sum, copy) => sum + slabValue(copy), 0);
-  const most = Math.max(...report.map((row) => row.count));
-
-  return (
-    <>
-      <p className={styles.summary}>{text.grading.slabs.summary(slabs.length, total)}</p>
-      <section className={styles.report} aria-label={text.grading.slabs.report}>
-        <h2>{text.grading.slabs.report}</h2>
-        <p>{text.grading.slabs.reportNote}</p>
-        <ul>
-          {report.map((row) => (
-            <li key={row.overall} style={bandStyle(gradeBand(row.overall).id)}>
-              <strong>{formatGrade(row.overall)}</strong>
-              <span>{gradeLabel(row.overall)}</span>
-              <i className={styles.bar} aria-hidden="true">
-                <b style={{ width: `${(row.count / most) * 100}%` }} />
-              </i>
-              <output>{row.count}</output>
-            </li>
-          ))}
-        </ul>
-      </section>
-      <ul className={styles.grid}>
-        {slabs.map((copy) => (
-          <CardTile key={copy.uid} copy={copy} href={`/card/${copy.uid}`} extra={text.grading.slabs.worth(slabValue(copy))} />
-        ))}
-      </ul>
+      {flow !== null && <GradeFlow uid={flow.uid} confirmOnly={flow.confirmOnly} lookHref={`/card/${flow.uid}`} onClose={() => setFlow(null)} />}
     </>
   );
 }
@@ -181,13 +196,14 @@ function Slabs() {
 export default function GradingScreen() {
   const save = useSave();
   const [tab, setTab] = useState<Tab>('send');
+  const slabCount = useMemo(() => slabsOf(save.collection).length, [save.collection]);
   return (
     <>
       <PageHeader
         title={text.grading.title}
         subtitle={text.grading.subtitle}
         actions={
-          <div>
+          <div className={styles.wallet}>
             <span>{text.grading.yen}</span> <strong>{formatYen(save.player.yen)}</strong>
           </div>
         }
@@ -199,7 +215,7 @@ export default function GradingScreen() {
           label={text.grading.title}
           options={[
             { value: 'send', label: text.grading.tabs.send },
-            { value: 'slabs', label: text.grading.tabs.slabs },
+            { value: 'slabs', label: slabCount === 0 ? text.grading.tabs.slabs : `${text.grading.tabs.slabs} (${slabCount})` },
           ]}
         />
       </div>

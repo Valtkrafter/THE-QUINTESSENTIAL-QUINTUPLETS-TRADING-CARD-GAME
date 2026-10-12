@@ -1,9 +1,10 @@
-// Sending one card to Grading: first a question (what the card is worth at every score, what the fee is), then the reveal.
-// Both the Grading screen and the inspect screen open it with the uid of a loose copy; it closes itself through `onClose`.
+// Sending one card to Grading: first a question, then the reveal. The question is either the whole desk (what the graders may say
+// about this card, for a screen that does not show it already) or, where the desk is on the screen, just the last check before the
+// fee is paid. Both the Grading screen and the inspect screen open it with the uid of a loose copy; it closes itself through `onClose`.
 
 import { useState } from 'react';
 import { cardById } from '../../cards/catalog';
-import { GradingError, gradingFee, submitForGrading, type Graded } from '../../domain/grading';
+import { GradingError, eyeCheck, gradeOutlook, gradingFee, submitForGrading, type Graded } from '../../domain/grading';
 import { findFinish } from '../../holo/finishes';
 import { gameStore, useSave } from '../../state/app';
 import { CardFace } from '../components/CardFace';
@@ -11,7 +12,8 @@ import { Button, LinkButton, Pill } from '../components/controls';
 import { Dialog } from '../components/Dialog';
 import { text } from '../text';
 import { Ceremony } from './Ceremony';
-import { PriceLadder } from './PriceLadder';
+import { eyeStyle } from './eye';
+import { GradeDesk } from './GradeDesk';
 import styles from './GradeFlow.module.css';
 
 export interface GradeFlowProps {
@@ -20,9 +22,11 @@ export interface GradeFlowProps {
   readonly onClose: () => void;
   /** Adds a link to the 3D view of the card, for a screen that does not show it already. */
   readonly lookHref?: string;
+  /** The desk is on the screen already: ask only the last question. */
+  readonly confirmOnly?: boolean;
 }
 
-export function GradeFlow({ uid, onClose, lookHref }: GradeFlowProps) {
+export function GradeFlow({ uid, onClose, lookHref, confirmOnly = false }: GradeFlowProps) {
   const save = useSave();
   const [graded, setGraded] = useState<Graded | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -55,6 +59,42 @@ export function GradeFlow({ uid, onClose, lookHref }: GradeFlowProps) {
     }
   };
 
+  const buttons = (
+    <>
+      {lookHref !== undefined && !confirmOnly && (
+        <span className={styles.look}>
+          <LinkButton href={lookHref} kind="quiet">
+            {text.grading.send.look}
+          </LinkButton>
+        </span>
+      )}
+      <Button onClick={onClose}>{text.grading.send.cancel}</Button>
+      <Button kind="primary" disabled={missing > 0} onClick={send}>
+        {missing > 0 ? text.grading.send.short(missing) : text.grading.send.confirmYes}
+      </Button>
+    </>
+  );
+  const failure = error !== null && (
+    <p className={styles.error} role="alert">
+      {error}
+    </p>
+  );
+
+  if (!confirmOnly) {
+    return (
+      <Dialog title={text.grading.send.confirmTitle} onClose={onClose}>
+        <div className={styles.full}>
+          <GradeDesk copy={copy} compact>
+            {buttons}
+          </GradeDesk>
+          {failure}
+        </div>
+      </Dialog>
+    );
+  }
+
+  const outlook = gradeOutlook(copy.condition, card.rarity, copy.finish);
+  const eye = eyeCheck(copy.condition);
   return (
     <Dialog title={text.grading.send.confirmTitle} onClose={onClose}>
       <div className={styles.confirm}>
@@ -68,28 +108,18 @@ export function GradeFlow({ uid, onClose, lookHref }: GradeFlowProps) {
             <Pill>
               {findFinish(copy.finish).label} · {card.rarity}
             </Pill>
-            <p>{text.grading.send.confirm(card.name.en, fee)}</p>
+            <p className={styles.eye} style={eyeStyle(eye)}>
+              <i aria-hidden="true" />
+              {text.grading.eye[eye].label}
+            </p>
           </div>
         </div>
-        <PriceLadder rarity={card.rarity} finish={copy.finish} />
-        {error !== null && (
-          <p className={styles.error} role="alert">
-            {error}
-          </p>
-        )}
-        <div className={styles.actions}>
-          {lookHref !== undefined && (
-            <span className={styles.look}>
-              <LinkButton href={lookHref} kind="quiet">
-                {text.grading.send.look}
-              </LinkButton>
-            </span>
-          )}
-          <Button onClick={onClose}>{text.grading.send.cancel}</Button>
-          <Button kind="primary" disabled={missing > 0} onClick={send}>
-            {missing > 0 ? text.grading.send.short(missing) : text.grading.send.confirmYes}
-          </Button>
-        </div>
+        <p>{text.grading.send.confirm(card.name.en, fee)}</p>
+        <p className={styles.verdict} data-verdict={outlook.verdict}>
+          <strong>{text.grading.desk.verdict[outlook.verdict]}.</strong> {text.grading.desk.verdictLine[outlook.verdict](Math.round(Math.abs(outlook.edge)))}
+        </p>
+        {failure}
+        <div className={styles.actions}>{buttons}</div>
       </div>
     </Dialog>
   );

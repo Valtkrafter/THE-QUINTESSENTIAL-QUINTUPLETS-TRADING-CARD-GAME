@@ -1,8 +1,24 @@
+/* The question before a card is sent in. */
+
+.full {
+  --pad: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: min(100%, 420px);
+}
+
 .confirm {
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
   min-width: min(100%, 420px);
+}
+
+.confirm > p {
+  color: var(--text-soft);
+  font-size: var(--text-sm);
+  line-height: 1.55;
 }
 
 .summary {
@@ -15,6 +31,7 @@
 .face {
   display: block;
   border-radius: 5% / 3.6%;
+  box-shadow: var(--shadow-card);
 }
 
 .about {
@@ -35,10 +52,42 @@
   font-style: italic;
 }
 
-.about p {
-  color: var(--text-soft);
+.eye {
+  --eye: var(--accent);
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--eye);
   font-size: var(--text-sm);
-  line-height: 1.5;
+  font-weight: 650;
+}
+
+.eye i {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--eye);
+  box-shadow: 0 0 10px color-mix(in oklab, var(--eye) 80%, transparent);
+}
+
+.verdict {
+  padding: var(--space-3) var(--space-4);
+  border-left: 4px solid var(--accent);
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunken);
+}
+
+.verdict[data-verdict='great'],
+.verdict[data-verdict='good'] {
+  border-left-color: var(--ok);
+}
+
+.verdict[data-verdict='poor'] {
+  border-left-color: var(--warn);
+}
+
+.verdict[data-verdict='bad'] {
+  border-left-color: var(--danger);
 }
 
 .error {
