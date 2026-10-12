@@ -370,3 +370,9 @@
   color: var(--text-faint);
   font-size: var(--text-xs);
 }
+
+.explainerNote a {
+  color: var(--accent-strong);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}

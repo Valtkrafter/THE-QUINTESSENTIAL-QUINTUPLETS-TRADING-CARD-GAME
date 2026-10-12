@@ -804,6 +804,8 @@ export const text = {
       title: 'How a turn works',
       frameTitle: 'An animation that shows a battle turn step by step',
       note: 'Use the buttons under the picture to pause, go back or skip ahead. On a phone, turn it sideways for a bigger picture.',
+      failed: 'The animation could not be shown in this window.',
+      openInTab: 'Open it in a tab of its own',
       newHere: 'New to battles?',
       newHereText: 'Watch one turn explained step by step. It takes about two minutes.',
     },
